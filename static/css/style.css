@@ -607,6 +607,7 @@ body {
 .students-table-container {
     max-height: 680px;
     overflow-y: auto;
+    overflow-x: auto;
     border-radius: 16px;
 }
 .students-table thead th {
@@ -629,6 +630,22 @@ body {
 }
 .table-zebra tbody tr:hover {
     background-color: rgba(238, 242, 255, 0.65) !important;
+}
+
+/* Sticky Action Column on the left */
+.students-table th:last-child,
+.students-table td:last-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: #ffffff !important;
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.08);
+}
+.students-table th:last-child {
+    background-color: #f8fafc !important;
+}
+.table-zebra tbody tr:hover td:last-child {
+    background-color: #eef2ff !important;
 }
 
 /* Premium Focus Ring */
