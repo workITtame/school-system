@@ -1,112 +1,273 @@
 {% extends 'layout.html' %}
 
-{% block title %}تعديل بيانات طالب{% endblock %}
+{% block title %}تعديل بيانات طالب - {{ student.SName }}{% endblock %}
+{% block page_title %}تعديل بيانات الطالب{% endblock %}
+{% block page_subtitle %}الرئيسية / إدارة الطلاب / تعديل بيانات طالب{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center fade-in">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-header bg-warning text-dark py-3 rounded-top-4 border-0">
-                <h5 class="mb-0 fw-bold">✏️ تعديل بيانات الطالب</h5>
+<style>
+.stepper-header-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+.stepper-steps-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin-bottom: 2.5rem;
+}
+.stepper-steps-bar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+.stepper-step-item {
+    position: relative;
+    z-index: 2;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 0 0.5rem;
+}
+.stepper-icon-circle {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: 2px solid #cbd5e1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stepper-step-item.active .stepper-icon-circle {
+    background: #eab308;
+    color: #ffffff;
+    border-color: #eab308;
+    box-shadow: 0 0 0 5px rgba(234, 179, 8, 0.2);
+}
+.stepper-step-item.completed .stepper-icon-circle {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+}
+.stepper-step-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-top: 0.5rem;
+    transition: all 0.2s;
+}
+.stepper-step-item.active .stepper-step-title {
+    color: #ca8a04;
+}
+.form-step-pane {
+    display: none;
+}
+.form-step-pane.active {
+    display: block;
+    animation: fadeIn 0.35s ease-in-out;
+}
+.drag-drop-avatar-box {
+    border: 2px dashed #cbd5e1;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.drag-drop-avatar-box:hover {
+    border-color: #eab308;
+    background: #fefce8;
+}
+.drag-drop-avatar-box input[type="file"] {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+}
+.input-icon-prepend {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    z-index: 4;
+}
+.input-with-icon {
+    padding-right: 42px !important;
+}
+</style>
+
+<div class="fade-in px-1">
+
+    <!-- Hero Header -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 border-start border-4 border-warning">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-warning-subtle text-dark rounded-pill px-3 py-1 font-monospace" style="font-size: 0.82rem;">
+                        <i class="fa-solid fa-house me-1"></i> الرئيسية / إدارة الطلاب / تعديل البيانات
+                    </span>
+                </div>
+                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-warning"></i> تعديل بيانات الطالب: {{ student.SName }}
+                </h4>
             </div>
-            <div class="card-body p-4">
-                <form method="POST" action="{{ url_for('students.edit_student', id=student.SID) }}" enctype="multipart/form-data" class="needs-validation" novalidate>
-                    <div class="mb-3 text-center">
-                        {% if student.Image %}
-                        <img src="{{ url_for('static', filename=student.Image) }}" alt="صورة الطالب" class="rounded-circle mb-3 shadow" style="width: 100px; height: 100px; object-fit: cover;">
-                        {% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="name" class="form-label fw-bold text-secondary">اسم الطالب <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-lg bg-light border-0" id="name" name="name" value="{{ student.SName }}" required placeholder="أدخل اسم الطالب الرباعي">
-                        <div class="invalid-feedback">يرجى إدخال اسم الطالب.</div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <label for="gender" class="form-label fw-bold text-secondary">الجنس</label>
-                            <select class="form-select form-select-lg bg-light border-0" id="gender" name="gender">
-                                <option value="Male" {% if student.Gender == 'Male' %}selected{% endif %}>ذكر</option>
-                                <option value="Female" {% if student.Gender == 'Female' %}selected{% endif %}>أنثى</option>
-                            </select>
+
+            <div class="d-flex align-items-center gap-2 no-print">
+                <a href="{{ url_for('students.view_student', id=student.SID) }}" class="btn btn-outline-primary rounded-pill px-3 fw-bold">
+                    <i class="fa-solid fa-eye me-1"></i> عرض الملف
+                </a>
+                <a href="{{ url_for('students.home') }}" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                    <i class="fa-solid fa-arrow-right me-1"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stepper Progress Bar & Card Form Container -->
+    <div class="card border-0 shadow-lg rounded-4 bg-white p-4">
+        
+        <!-- Interactive 5-Step Bar -->
+        <div class="stepper-steps-bar">
+            <div class="stepper-step-item active" data-step="0">
+                <div class="stepper-icon-circle"><i class="fa-solid fa-user"></i></div>
+                <span class="stepper-step-title">1. البيانات الشخصية</span>
+            </div>
+            <div class="stepper-step-item" data-step="1">
+                <div class="stepper-icon-circle"><i class="fa-solid fa-graduation-cap"></i></div>
+                <span class="stepper-step-title">2. البيانات الأكاديمية</span>
+            </div>
+            <div class="stepper-step-item" data-step="2">
+                <div class="stepper-icon-circle"><i class="fa-solid fa-user-shield"></i></div>
+                <span class="stepper-step-title">3. ولي الأمر والعنوان</span>
+            </div>
+            <div class="stepper-step-item" data-step="3">
+                <div class="stepper-icon-circle"><i class="fa-solid fa-folder-open"></i></div>
+                <span class="stepper-step-title">4. المرفقات</span>
+            </div>
+            <div class="stepper-step-item" data-step="4">
+                <div class="stepper-icon-circle"><i class="fa-solid fa-check-double"></i></div>
+                <span class="stepper-step-title">5. المراجعة والحفظ</span>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form method="POST" action="{{ url_for('students.edit_student', id=student.SID) }}" enctype="multipart/form-data" id="studentForm" data-turbo="false" class="needs-validation" novalidate>
+            
+            <!-- STEP 1: Personal Information -->
+            <div class="form-step-pane active" id="paneStep0">
+                <h5 class="fw-extrabold text-warning mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-id-card"></i> البيانات الشخصية والصورة
+                </h5>
+
+                <div class="row g-4">
+                    <!-- Fields Column -->
+                    <div class="col-lg-8">
+                        <div class="mb-3 position-relative">
+                            <label class="form-label fw-bold text-dark">اسم الطالب الرباعي بالكامل <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <i class="fa-solid fa-user input-icon-prepend"></i>
+                                <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="name" id="inputName" value="{{ student.SName }}" required placeholder="أدخل اسم الطالب رباعياً">
+                            </div>
                         </div>
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <label for="dob" class="form-label fw-bold text-secondary">تاريخ الميلاد</label>
-                            <input type="date" class="form-control form-control-lg bg-light border-0" id="dob" name="dob" value="{{ student.DOB or '' }}">
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark">تاريخ الميلاد <span class="text-danger">*</span></label>
+                                <div class="position-relative">
+                                    <i class="fa-solid fa-calendar input-icon-prepend"></i>
+                                    <input type="date" class="form-control form-control-lg input-with-icon rounded-3" name="dob" id="inputDob" value="{{ student.DOB or '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark">الجنس <span class="text-danger">*</span></label>
+                                <div class="position-relative">
+                                    <i class="fa-solid fa-venus-mars input-icon-prepend"></i>
+                                    <select class="form-select form-select-lg input-with-icon rounded-3" name="gender" id="inputGender" required>
+                                        <option value="Male" {% if student.Gender in ['Male', 'ذكر'] %}selected{% endif %}>ذكر</option>
+                                        <option value="Female" {% if student.Gender in ['Female', 'أنثى'] %}selected{% endif %}>أنثى</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label for="parent_number" class="form-label fw-bold text-secondary">رقم هاتف ولي الأمر</label>
-                            <input type="tel" class="form-control form-control-lg bg-light border-0" id="parent_number" name="parent_number" value="{{ student.Parent_Number or '' }}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark">رقم الهوية الوطنية / إقامة الطالب</label>
+                            <div class="position-relative">
+                                <i class="fa-solid fa-id-badge input-icon-prepend"></i>
+                                <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="identity_number" id="inputIdentity" value="{{ student.Identity_Number or student.SID }}" placeholder="رقم الهوية الوطنية أو الإقامة">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="parent_name" class="form-label fw-bold text-secondary">اسم ولي الأمر</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" id="parent_name" name="parent_name" value="{{ student.Parent_Name or '' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="parent_work" class="form-label fw-bold text-secondary">عمل ولي الأمر</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" id="parent_work" name="parent_work" value="{{ student.Parent_Work or '' }}">
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold text-secondary">الدولة</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" name="country_name" list="countryList" value="{{ student.country.Country_Name if student.country else '' }}" placeholder="اختر أو اكتب الدولة">
-                            <datalist id="countryList">
-                                {% for c in countries %}
-                                <option value="{{ c.Country_Name }}"></option>
-                                {% endfor %}
-                            </datalist>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold text-secondary">المحافظة</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" name="g_name" list="gList" value="{{ student.governorate.G_Name if student.governorate else '' }}" placeholder="اختر أو اكتب المحافظة">
-                            <datalist id="gList">
-                                {% for g in governorates %}
-                                <option value="{{ g.G_Name }}"></option>
-                                {% endfor %}
-                            </datalist>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold text-secondary">المديرية</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" name="directorate_name" list="dirList" value="{{ student.directorate.Disc_Name if student.directorate else '' }}" placeholder="اختر أو اكتب المديرية">
-                            <datalist id="dirList">
-                                {% for d in directorates %}
-                                <option value="{{ d.Disc_Name }}"></option>
-                                {% endfor %}
-                            </datalist>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold text-secondary">الحي / المنطقة</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0" name="neighborhood" list="neighborhoodList" value="{{ student.Neighborhood or '' }}" placeholder="اختر أو اكتب الحي">
-                            <datalist id="neighborhoodList">
-                                <option value="الستين"></option>
-                                <option value="حدة"></option>
-                                <option value="الصافية"></option>
-                                <option value="سعوان"></option>
-                                <option value="الجراف"></option>
-                                <option value="شميلة"></option>
-                                <option value="مذبح"></option>
-                            </datalist>
+                    <!-- Photo Upload Box Column -->
+                    <div class="col-lg-4">
+                        <label class="form-label fw-bold text-dark mb-2">تحديث صورة الطالب</label>
+                        <div class="drag-drop-avatar-box shadow-sm" id="avatarDropZone">
+                            {% if student.Image %}
+                            <img id="photoPreview" src="{{ url_for('static', filename=student.Image) }}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
+                            {% else %}
+                            <i class="fa-solid fa-cloud-arrow-up fs-1 text-warning mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">اسحب الصورة الجديدة هنا</h6>
+                            <p class="small text-muted mb-0">JPG, PNG (الحد الأقصى 2MB)</p>
+                            <img id="photoPreview" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
+                            {% endif %}
+                            <input type="file" name="photo" accept="image/*" id="photoInput">
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="class_id" class="form-label fw-bold text-secondary">الصف الدراسي</label>
-                            <select class="form-select form-select-lg bg-light border-0" id="class_id" name="class_id">
-                                <option value="">اختر الصف</option>
+            <!-- STEP 2: Academic Information -->
+            <div class="form-step-pane" id="paneStep1">
+                <h5 class="fw-extrabold text-warning mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap"></i> القيد الأكاديمي والصف
+                </h5>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">الصف الدراسي <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-school input-icon-prepend"></i>
+                            <select class="form-select form-select-lg input-with-icon rounded-3" name="class_id" id="inputClass" required>
+                                <option value="">اختر الصف الدراسي</option>
                                 {% for c in classes %}
                                 <option value="{{ c.CID }}" {% if student.CID == c.CID %}selected{% endif %}>{{ c.CName }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label for="section_id" class="form-label fw-bold text-secondary">الشعبة</label>
-                            <select class="form-select form-select-lg bg-light border-0" id="section_id" name="section_id">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">الشعبة <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-cubes input-icon-prepend"></i>
+                            <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required>
                                 <option value="">اختر الشعبة</option>
                                 {% for s in sections %}
                                 <option value="{{ s.SectionID }}" {% if student.SectionID == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
@@ -115,18 +276,246 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label for="photo" class="form-label fw-bold text-secondary">تحديث صورة الطالب (اختياري)</label>
-                        <input class="form-control form-control-lg bg-light border-0" type="file" id="photo" name="photo" accept="image/*">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">حالة القيد بالمنظومة</label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-user-shield input-icon-prepend"></i>
+                            <select class="form-select form-select-lg input-with-icon rounded-3" name="status">
+                                <option value="نشط" {% if student.Status == 'نشط' or not student.Status %}selected{% endif %}>نشط (منتظم)</option>
+                                <option value="غير نشط" {% if student.Status == 'غير نشط' %}selected{% endif %}>غير نشط / موقف</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: Parent Information & Residence Address -->
+            <div class="form-step-pane" id="paneStep2">
+                <h5 class="fw-extrabold text-warning mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-user-shield"></i> بيانات ولي الأمر والعنوان السكني
+                </h5>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">اسم ولي الأمر <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-user-tie input-icon-prepend"></i>
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_name" id="inputParentName" value="{{ student.Parent_Name or '' }}" required placeholder="أدخل اسم ولي الأمر">
+                        </div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-warning btn-lg rounded-pill shadow-sm fw-bold text-dark">حفظ التعديلات</button>
-                        <a href="{{ url_for('students.home') }}" class="btn btn-light btn-lg rounded-pill text-muted fw-bold">إلغاء</a>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">رقم هاتف ولي الأمر <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-phone input-icon-prepend"></i>
+                            <input type="tel" class="form-control form-control-lg input-with-icon rounded-3 font-monospace" name="parent_number" id="inputParentPhone" value="{{ student.Parent_Number or '' }}" required placeholder="مثال: 0555123456">
+                        </div>
                     </div>
-                </form>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">مهنة / عمل ولي الأمر</label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-briefcase input-icon-prepend"></i>
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_work" value="{{ student.Parent_Work or '' }}" placeholder="وظيفة أو عمل ولي الأمر">
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-secondary mb-3 border-top pt-3"><i class="fa-solid fa-location-dot me-1"></i> بيانات السكن والإقامة</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-muted small">الدولة</label>
+                        <input type="text" class="form-control rounded-3" name="country_name" list="countryList" value="{{ student.country.Country_Name if student.country else 'اليمن' }}">
+                        <datalist id="countryList">
+                            {% for c in countries %}<option value="{{ c.Country_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-muted small">المحافظة</label>
+                        <input type="text" class="form-control rounded-3" name="g_name" list="gList" value="{{ student.governorate.G_Name if student.governorate else 'صنعاء' }}">
+                        <datalist id="gList">
+                            {% for g in governorates %}<option value="{{ g.G_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-muted small">المديرية</label>
+                        <input type="text" class="form-control rounded-3" name="directorate_name" list="dirList" value="{{ student.directorate.Disc_Name if student.directorate else 'السبعين' }}">
+                        <datalist id="dirList">
+                            {% for d in directorates %}<option value="{{ d.Disc_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-muted small">الحي / المنطقة</label>
+                        <input type="text" class="form-control rounded-3" name="neighborhood" value="{{ student.Neighborhood or '' }}" placeholder="اسم الحي أو الشارع">
+                    </div>
+                </div>
             </div>
-        </div>
+
+            <!-- STEP 4: Attachments -->
+            <div class="form-step-pane" id="paneStep3">
+                <h5 class="fw-extrabold text-warning mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-folder-open"></i> المرفقات والوثائق
+                </h5>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border-dashed p-4 text-center rounded-4 bg-light">
+                            <i class="fa-solid fa-id-card fs-1 text-primary mb-2"></i>
+                            <h6 class="fw-bold mb-1">صورة الهوية الوطنية / إقامة الطالب</h6>
+                            <p class="small text-muted mb-3">صيغة PDF أو صورة (الحد الأقصى 5MB)</p>
+                            <input type="file" class="form-control rounded-3">
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card border-dashed p-4 text-center rounded-4 bg-light">
+                            <i class="fa-solid fa-file-medical fs-1 text-success mb-2"></i>
+                            <h6 class="fw-bold mb-1">الشهادة الصحية أو السجل الطبي</h6>
+                            <p class="small text-muted mb-3">صيغة PDF أو صورة (الحد الأقصى 5MB)</p>
+                            <input type="file" class="form-control rounded-3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 5: Review & Submit Summary -->
+            <div class="form-step-pane" id="paneStep4">
+                <h5 class="fw-extrabold text-warning mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-check-double"></i> مراجعة البيانات قبل الحفظ
+                </h5>
+
+                <div class="card border-0 bg-warning-subtle text-dark rounded-4 p-4 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-circle-check fs-1 text-warning"></i>
+                        <div>
+                            <h5 class="fw-bold mb-1">جاهز لتحديث بيانات الطالب</h5>
+                            <p class="mb-0 small text-muted">يرجى التأكد من التعديلات المدخلة ثم الضغط على "حفظ التعديلات".</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 bg-light rounded-4 p-4 text-start">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block fw-bold mb-1">اسم الطالب الرباعي:</small>
+                        <span id="reviewName" class="fw-bold text-dark fs-6">{{ student.SName }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block fw-bold mb-1">اسم ولي الأمر:</small>
+                        <span id="reviewParent" class="fw-bold text-dark fs-6">{{ student.Parent_Name or '—' }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block fw-bold mb-1">هاتف ولي الأمر:</small>
+                        <span id="reviewPhone" class="fw-bold text-dark fs-6 font-monospace">{{ student.Parent_Number or '—' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Navigation Action Bar -->
+            <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" id="prevBtn" style="display: none;">
+                    <i class="fa-solid fa-arrow-right me-1"></i> الخطوة السابقة
+                </button>
+                <div></div>
+                <button type="button" class="btn btn-warning text-dark rounded-pill px-5 fw-bold shadow-sm" id="nextBtn">
+                    الخطوة التالية <i class="fa-solid fa-arrow-left ms-1"></i>
+                </button>
+                <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow" id="submitBtn" style="display: none;">
+                    <i class="fa-solid fa-check me-1"></i> حفظ التعديلات
+                </button>
+            </div>
+
+        </form>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", initFormWizard);
+document.addEventListener("turbo:load", initFormWizard);
+
+function initFormWizard() {
+    const stepItems = document.querySelectorAll('.stepper-step-item');
+    const stepPanes = document.querySelectorAll('.form-step-pane');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    let currentStep = 0;
+
+    function showStep(index) {
+        stepItems.forEach((item, i) => {
+            item.classList.toggle('active', i === index);
+            item.classList.toggle('completed', i < index);
+        });
+
+        stepPanes.forEach((pane, i) => {
+            pane.classList.toggle('active', i === index);
+        });
+
+        prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+        
+        if (index === stepPanes.length - 1) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'inline-block';
+            populateReviewSummary();
+        } else {
+            nextBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'none';
+        }
+        currentStep = index;
+    }
+
+    function populateReviewSummary() {
+        document.getElementById('reviewName').textContent = document.getElementById('inputName').value || '—';
+        document.getElementById('reviewParent').textContent = document.getElementById('inputParentName').value || '—';
+        document.getElementById('reviewPhone').textContent = document.getElementById('inputParentPhone').value || '—';
+    }
+
+    stepItems.forEach((item, i) => {
+        item.addEventListener('click', () => showStep(i));
+    });
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const currentPane = stepPanes[currentStep];
+            const inputs = currentPane.querySelectorAll('input[required], select[required]');
+            let valid = true;
+
+            inputs.forEach(input => {
+                if (!input.checkValidity()) {
+                    input.reportValidity();
+                    valid = false;
+                }
+            });
+
+            if (valid && currentStep < stepPanes.length - 1) {
+                showStep(currentStep + 1);
+            }
+        });
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 0) showStep(currentStep - 1);
+        });
+    }
+
+    // Photo Live Preview
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+    if (photoInput && photoPreview) {
+        photoInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreview.src = e.target.result;
+                    photoPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+}
+</script>
 {% endblock %}
