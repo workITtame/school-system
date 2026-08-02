@@ -1,7 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from werkzeug.utils import secure_filename
 import os
+import io
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 from models import db, Student, Classes, Sections, Directorate, Country, Governorates
 from datetime import datetime, timedelta
 import uuid
@@ -246,3 +250,123 @@ def view_student(id):
         return redirect(url_for('auth.login'))
     student = Student.query.get_or_404(id)
     return render_template('view_student.html', student=student)
+
+@students_bp.route('/export/excel')
+def export_students_excel():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    ids_param = request.args.get('ids', '').strip()
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.SID.in_(id_list), Student.is_deleted == False).all()
+    else:
+        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(is_deleted=False).order_by(Student.SID.desc()).all()
+        
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "قائمة الطلاب"
+    ws.sheet_view.rightToLeft = True
+    
+    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    
+    headers = ["الرقم الطلابي", "اسم الطالب", "الصف الدراسي", "الشعبة", "العمر", "الجنس", "ولي الأمر", "هاتف ولي الأمر", "الحي السكني", "الحالة"]
+    ws.append(headers)
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        
+    today = datetime.now().date()
+    for st in students:
+        age = today.year - st.DOB.year - ((today.month, today.day) < (st.DOB.month, st.DOB.day)) if st.DOB else '—'
+        class_name = st.school_class.CName if st.school_class else '—'
+        sec_name = st.section.SectionName if st.section else '—'
+        
+        row = [st.SID, st.SName, class_name, sec_name, age, st.Gender or '—', st.Parent_Name or '—', st.Parent_Number or '—', st.Neighborhood or '—', st.Status or 'نشط']
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = align_center
+            
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
+        ws.column_dimensions[col].width = 20
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True, download_name='students_export.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@students_bp.route('/export/pdf')
+def export_students_pdf():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    ids_param = request.args.get('ids', '').strip()
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.SID.in_(id_list), Student.is_deleted == False).all()
+    else:
+        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(is_deleted=False).order_by(Student.SID.desc()).all()
+        
+    return render_template('students_pdf_report.html', students=students, generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
+
+@students_bp.route('/bulk-delete', methods=['POST'])
+@admin_required
+def bulk_delete_students():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+        
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي طالب للحذف'}), 400
+        
+    Student.query.filter(Student.SID.in_(ids)).update({Student.is_deleted: True}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم حذف {len(ids)} طلاب بنجاح', 'count': len(ids)})
+
+@students_bp.route('/bulk-status', methods=['POST'])
+@admin_required
+def bulk_status_students():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+        
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    new_status = data.get('status', 'نشط')
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي طالب لتحديث الحالة'}), 400
+        
+    Student.query.filter(Student.SID.in_(ids)).update({Student.Status: new_status}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تغيير حالة {len(ids)} طلاب إلى "{new_status}" بنجاح', 'count': len(ids)})
+
+@students_bp.route('/bulk-transfer', methods=['POST'])
+@admin_required
+def bulk_transfer_students():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+        
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    class_id = data.get('class_id')
+    section_id = data.get('section_id')
+    
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي طالب للنقل'}), 400
+        
+    update_dict = {}
+    if class_id:
+        update_dict[Student.CID] = class_id
+    if section_id:
+        update_dict[Student.SectionID] = section_id
+        
+    if update_dict:
+        Student.query.filter(Student.SID.in_(ids)).update(update_dict, synchronize_session=False)
+        db.session.commit()
+        
+    return jsonify({'success': True, 'message': f'تم نقل {len(ids)} طلاب بنجاح', 'count': len(ids)})

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير قائمة الطلاب - منظومة المدارس</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #1e293b; padding: 2rem; }
+        .header-title { border-bottom: 3px solid #2563eb; padding-bottom: 1rem; margin-bottom: 2rem; }
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <a href="/students" class="btn btn-secondary">العودة لإدارة الطلاب</a>
+        <button onclick="window.print()" class="btn btn-primary">طباعة / حفظ كـ PDF</button>
+    </div>
+
+    <div class="header-title d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">مدرسة المستقبل - تقرير قائمة الطلاب</h2>
+            <p class="text-muted mb-0">تاريخ التصدير: {{ generated_at }} | إجمالي الطلاب بالتقرير: {{ students|length }}</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary fs-6">التقرير الرسمي</span>
+        </div>
+    </div>
+
+    <table class="table table-bordered align-middle text-center">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>رقم الطالب</th>
+                <th>اسم الطالب</th>
+                <th>الصف</th>
+                <th>الشعبة</th>
+                <th>الجنس</th>
+                <th>ولي الأمر</th>
+                <th>هاتف ولي الأمر</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for st in students %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ st.SID }}</td>
+                <td class="fw-bold text-start px-3">{{ st.SName }}</td>
+                <td>{{ st.school_class.CName if st.school_class else '—' }}</td>
+                <td>{{ st.section.SectionName if st.section else '—' }}</td>
+                <td>{{ st.Gender or '—' }}</td>
+                <td>{{ st.Parent_Name or '—' }}</td>
+                <td>{{ st.Parent_Number or '—' }}</td>
+                <td><span class="badge bg-{{ 'success' if st.Status == 'نشط' else 'danger' }}">{{ st.Status or 'نشط' }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

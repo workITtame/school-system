@@ -34,8 +34,8 @@
                 <button type="button" class="btn btn-outline-danger px-3 py-2 rounded-3 fw-bold" onclick="exportData('pdf')" data-bs-toggle="tooltip" title="تصدير كملف PDF">
                     <i class="fa-solid fa-file-pdf me-1"></i> تصدير PDF
                 </button>
-                <button type="button" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold" onclick="fetchStudents(currentPage)" data-bs-toggle="tooltip" title="تحديث البيانات المباشرة">
-                    <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold" onclick="refreshStudentsTable()" data-bs-toggle="tooltip" title="تحديث البيانات المباشرة">
+                    <i class="fa-solid fa-arrows-rotate me-1" id="refreshBtnIcon"></i> Refresh
                 </button>
             </div>
         </div>
@@ -650,9 +650,23 @@
         });
     }
 
+    function refreshStudentsTable() {
+        const icon = document.getElementById('refreshBtnIcon');
+        if (icon) icon.classList.add('fa-spin');
+        fetchStudents(currentPage);
+        setTimeout(() => {
+            if (icon) icon.classList.remove('fa-spin');
+            showToast('تم تحديث بيانات الطلاب بنجاح', 'success');
+        }, 500);
+    }
+
     function triggerBulkAction(actionType) {
-        const count = selectedStudentIds.size;
-        if (count === 0) return;
+        const idList = Array.from(selectedStudentIds);
+        const count = idList.length;
+        if (count === 0) {
+            showToast('الرجاء تحديد طالب واحد على الأقل من القائمة', 'warning');
+            return;
+        }
 
         if (actionType === 'delete') {
             Swal.fire({
@@ -662,29 +676,127 @@
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'نعم، احذف',
+                confirmButtonText: 'نعم، احذف الكل',
                 cancelButtonText: 'إلغاء'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    showToast(`تم إرسال أمر حذف ${count} طلاب`, 'info');
-                    selectedStudentIds.clear();
-                    fetchStudents(currentPage);
+                    fetch('/students/bulk-delete', {
+                        method: 'POST',
+                        headers: apiHeaders,
+                        body: JSON.stringify({ ids: idList })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            selectedStudentIds.clear();
+                            fetchStudents(currentPage);
+                        } else {
+                            showToast(data.message || 'حدث خطأ أثناء الحذف الجماعي', 'error');
+                        }
+                    });
+                }
+            });
+        } else if (actionType === 'status') {
+            Swal.fire({
+                title: 'تغيير حالة الطلاب المحدد في دفعة واحدة',
+                input: 'select',
+                inputOptions: {
+                    'نشط': 'نشط',
+                    'غير نشط': 'غير نشط / موقف'
+                },
+                inputPlaceholder: 'اختر الحالة الجديدة',
+                showCancelButton: true,
+                confirmButtonText: 'تحديث الحالة',
+                cancelButtonText: 'إلغاء',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'يجب اختيار حالة جديدة!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    fetch('/students/bulk-status', {
+                        method: 'POST',
+                        headers: apiHeaders,
+                        body: JSON.stringify({ ids: idList, status: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            selectedStudentIds.clear();
+                            fetchStudents(currentPage);
+                        } else {
+                            showToast(data.message || 'حدث خطأ أثناء تغيير الحالة', 'error');
+                        }
+                    });
+                }
+            });
+        } else if (actionType === 'transfer_class') {
+            const classSelect = document.getElementById('filterClass');
+            let optionsHtml = '';
+            if (classSelect) {
+                Array.from(classSelect.options).forEach(opt => {
+                    if (opt.value) {
+                        optionsHtml += `<option value="${opt.value}">${opt.text}</option>`;
+                    }
+                });
+            }
+
+            Swal.fire({
+                title: 'نقل الطلاب المحدد لصف دراسي',
+                html: `
+                    <div class="text-start">
+                        <label class="form-label fw-bold">اختر الصف الدراسي الجديد:</label>
+                        <select id="swalClassSelect" class="form-select mb-3">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد النقل',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const selectedCid = document.getElementById('swalClassSelect').value;
+                    if (!selectedCid) {
+                        Swal.showValidationMessage('الرجاء اختيار صف دراسي');
+                    }
+                    return selectedCid;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    fetch('/students/bulk-transfer', {
+                        method: 'POST',
+                        headers: apiHeaders,
+                        body: JSON.stringify({ ids: idList, class_id: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            selectedStudentIds.clear();
+                            fetchStudents(currentPage);
+                        } else {
+                            showToast(data.message || 'حدث خطأ أثناء النقل', 'error');
+                        }
+                    });
                 }
             });
         } else if (actionType === 'export') {
-            exportData('excel');
-        } else {
-            Swal.fire({
-                title: 'ميزة تفاعلية مستقبلية',
-                text: `ميزة (${actionType}) الجماعية جاهزة برمجياً وسيتم تفعيلها بالكامل بالربط القادم.`,
-                icon: 'info',
-                confirmButtonText: 'حسناً'
-            });
+            window.location.href = `/students/export/excel?ids=${idList.join(',')}`;
+            showToast(`جاري تصدير ${count} طلاب محددين كملف Excel...`, 'success');
         }
     }
 
     function exportData(format) {
-        showToast(`جاري تصدير قائمة الطلاب بصيغة ${format.toUpperCase()}...`, 'info');
+        if (format === 'excel') {
+            showToast('جاري تحضير وتنزيل ملف Excel للطلاب...', 'info');
+            window.location.href = '/students/export/excel';
+        } else if (format === 'pdf') {
+            showToast('جاري فتح تقرير PDF للطلاب للطباعة والتنزيل...', 'info');
+            window.open('/students/export/pdf', '_blank');
+        }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
