@@ -1,4 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload, selectinload
 from models import db, Student, Teacher, Classes, Subject, User, Qualifications
 from models.timetable import SchoolTable
 from models.schemas import students_schema, student_schema, teachers_schema, teacher_schema, classes_schema, class_schema, school_tables_schema
@@ -28,18 +30,81 @@ def status():
 def get_students():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
-    search_term = request.args.get('search', '', type=str)
+    search_term = request.args.get('search', '', type=str).strip()
+    class_id = request.args.get('class_id', type=int)
+    section_id = request.args.get('section_id', type=int)
+    gender = request.args.get('gender', type=str)
+    status_filter = request.args.get('status', type=str)
     
     try:
-        query = Student.query.filter_by(is_deleted=False)
+        query = Student.query.options(
+            joinedload(Student.school_class),
+            joinedload(Student.section),
+            selectinload(Student.attendances)
+        ).filter_by(is_deleted=False)
         
         if search_term:
-            query = query.filter(Student.SName.like(f"%{search_term}%"))
+            search_pattern = f"%{search_term}%"
+            query = query.filter(or_(
+                Student.SName.like(search_pattern),
+                Student.SID.like(search_pattern),
+                Student.Parent_Name.like(search_pattern),
+                Student.Parent_Number.like(search_pattern),
+                Student.Neighborhood.like(search_pattern)
+            ))
+            
+        if class_id:
+            query = query.filter(Student.CID == class_id)
+        if section_id:
+            query = query.filter(Student.SectionID == section_id)
+        if gender:
+            query = query.filter(Student.Gender == gender)
+        if status_filter:
+            query = query.filter(Student.Status == status_filter)
             
         paginated = query.order_by(Student.SID.desc()).paginate(page=page, per_page=limit, error_out=False)
         
-        # Use Marshmallow schema for serialization
-        data = students_schema.dump(paginated.items)
+        from models.grade import Marks
+        
+        # Batch fetch marks for current page students to avoid N+1 queries
+        student_ids = [s.SID for s in paginated.items]
+        student_marks_map = {}
+        if student_ids:
+            marks_records = Marks.query.filter(Marks.SID.in_(student_ids)).all()
+            for m in marks_records:
+                if m.SID not in student_marks_map:
+                    student_marks_map[m.SID] = []
+                if m.Score is not None:
+                    student_marks_map[m.SID].append(m.Score)
+        
+        data = []
+        today = datetime.now().date()
+        
+        for s in paginated.items:
+            s_dict = student_schema.dump(s)
+            
+            # Class & Section names
+            s_dict['class_name'] = s.school_class.CName if s.school_class else '—'
+            s_dict['section_name'] = s.section.SectionName if s.section else '—'
+            
+            # Attendance Rate calculation
+            total_att = len(s.attendances) if s.attendances else 0
+            present_att = sum(1 for a in s.attendances if a.Status in ['حاضر', 'Present', 'حضور']) if s.attendances else 0
+            s_dict['attendance_rate'] = round((present_att / total_att) * 100, 1) if total_att > 0 else 100.0
+            
+            # GPA / Average Grade calculation
+            scores = student_marks_map.get(s.SID, [])
+            s_dict['gpa'] = round(sum(scores) / len(scores), 1) if scores else '—'
+            
+            # Age calculation
+            if s.DOB:
+                age = today.year - s.DOB.year - ((today.month, today.day) < (s.DOB.month, s.DOB.day))
+                s_dict['age'] = age
+            else:
+                s_dict['age'] = '—'
+                
+            s_dict['updated_at_formatted'] = s.updated_at.strftime('%Y-%m-%d') if hasattr(s, 'updated_at') and s.updated_at else '—'
+            data.append(s_dict)
             
         return api_response(True, "Students retrieved successfully", data, meta={
             "total": paginated.total,

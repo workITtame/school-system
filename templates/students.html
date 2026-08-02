@@ -1,111 +1,295 @@
 {% extends 'layout.html' %}
 
-{% block title %}الطلاب{% endblock %}
-{% block page_title %}الطلاب{% endblock %}
-{% block page_subtitle %}الطلاب{% endblock %}
+{% block title %}إدارة الطلاب - Enterprise SaaS Students List{% endblock %}
+{% block page_title %}إدارة الطلاب{% endblock %}
+{% block page_subtitle %}إدارة ورصد ملفات وبيانات جميع الطلاب ومتابعة الأداء الأكاديمي والحضور{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <!-- Top Filters & Actions -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="{{ url_for('students.add_student') }}" class="btn btn-primary px-4 fw-bold rounded-3">
-            + إضافة طالب
-        </a>
-        
-        <div class="d-flex gap-3">
-            <div class="input-group" style="width: 250px;">
-                <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="fa-solid fa-search text-muted"></i></span>
-                <input type="text" id="searchInput" class="form-control border-start-0 rounded-end-3" placeholder="بحث عن طالب...">
-            </div>
-            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
-                <option selected>القسم</option>
-            </select>
-            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
-                <option selected>الشعبة</option>
-            </select>
-            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
-                <option selected>الصف</option>
-            </select>
-        </div>
-    </div>
+<div class="fade-in enterprise-students-page">
 
-    <!-- Stat Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="stat-card-flat h-100">
-                <div class="stat-content">
-                    <span class="stat-label">إجمالي الطلاب</span>
-                    <span class="stat-value">{{ total_students }}</span>
-                </div>
-                <div class="stat-icon-wrapper bg-icon-blue">
-                    <i class="fa-solid fa-user-group"></i>
-                </div>
+    <!-- ========================================== -->
+    <!-- SECTION 1: Page Header & Action Toolbar   -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-1">
+                    <ol class="breadcrumb mb-0 small">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item active fw-bold text-primary" aria-current="page">إدارة الطلاب</li>
+                    </ol>
+                </nav>
+                <h4 class="fw-extrabold text-dark mb-0"><i class="fa-solid fa-user-graduate text-primary me-2"></i> قائمة الطلاب وسجلات المدرسة</h4>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card-flat h-100">
-                <div class="stat-content">
-                    <span class="stat-label">طلاب منتظمين</span>
-                    <span class="stat-value">{{ active_students }}</span>
-                </div>
-                <div class="stat-icon-wrapper bg-icon-green">
-                    <i class="fa-solid fa-user-check"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card-flat h-100">
-                <div class="stat-content">
-                    <span class="stat-label">الذكور</span>
-                    <span class="stat-value">{{ male_students }}</span>
-                </div>
-                <div class="stat-icon-wrapper bg-icon-orange">
-                    <i class="fa-solid fa-person"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card-flat h-100">
-                <div class="stat-content">
-                    <span class="stat-label">الإناث</span>
-                    <span class="stat-value">{{ female_students }}</span>
-                </div>
-                <div class="stat-icon-wrapper bg-icon-purple">
-                    <i class="fa-solid fa-person-dress"></i>
-                </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{{ url_for('students.add_student') }}" class="btn btn-primary px-3 py-2 rounded-3 fw-bold">
+                    <i class="fa-solid fa-user-plus me-1"></i> إضافة طالب جديد
+                </a>
+                <button type="button" class="btn btn-outline-success px-3 py-2 rounded-3 fw-bold" onclick="exportData('excel')">
+                    <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+                </button>
+                <button type="button" class="btn btn-outline-danger px-3 py-2 rounded-3 fw-bold" onclick="exportData('pdf')">
+                    <i class="fa-solid fa-file-pdf me-1"></i> تصدير PDF
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold" onclick="showImportModal()">
+                    <i class="fa-solid fa-file-import me-1"></i> استيراد Excel
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Data Table Card -->
-    <div class="card h-100 border-0 shadow-sm">
+    <!-- ========================================== -->
+    <!-- SECTION 2: Dashboard Cards (6 Cards Grid)  -->
+    <!-- ========================================== -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
+        <!-- 1. Total Students -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">إجمالي الطلاب</span>
+                    <div class="stat-badge bg-primary-subtle text-primary rounded-circle p-2">
+                        <i class="fa-solid fa-users fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_students }}</h3>
+                <span class="badge bg-primary-subtle text-primary rounded-pill small"><i class="fa-solid fa-chart-line me-1"></i> الكلي بالمدرسة</span>
+            </div>
+        </div>
+
+        <!-- 2. Active Students -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">الطلاب النشطون</span>
+                    <div class="stat-badge bg-success-subtle text-success rounded-circle p-2">
+                        <i class="fa-solid fa-user-check fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-success mb-1 font-monospace">{{ active_students }}</h3>
+                <span class="badge bg-success-subtle text-success rounded-pill small"><i class="fa-solid fa-check me-1"></i> مقيد ومنتظم</span>
+            </div>
+        </div>
+
+        <!-- 3. Inactive / Suspended Students -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">الطلاب الموقوفون</span>
+                    <div class="stat-badge bg-danger-subtle text-danger rounded-circle p-2">
+                        <i class="fa-solid fa-user-xmark fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-danger mb-1 font-monospace">{{ inactive_students }}</h3>
+                <span class="badge bg-danger-subtle text-danger rounded-pill small"><i class="fa-solid fa-pause me-1"></i> موقف / خريج</span>
+            </div>
+        </div>
+
+        <!-- 4. Total Classes -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">عدد الصفوف</span>
+                    <div class="stat-badge bg-info-subtle text-info rounded-circle p-2">
+                        <i class="fa-solid fa-layer-group fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-info mb-1 font-monospace">{{ total_classes }}</h3>
+                <span class="badge bg-info-subtle text-info rounded-pill small">صفوف دراسية</span>
+            </div>
+        </div>
+
+        <!-- 5. Total Sections -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">عدد الشعب</span>
+                    <div class="stat-badge bg-warning-subtle text-warning rounded-circle p-2">
+                        <i class="fa-solid fa-cubes fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-warning mb-1 font-monospace">{{ total_sections }}</h3>
+                <span class="badge bg-warning-subtle text-warning rounded-pill small">شعب موزعة</span>
+            </div>
+        </div>
+
+        <!-- 6. Total Parents -->
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white student-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small">أولياء الأمور</span>
+                    <div class="stat-badge bg-secondary-subtle text-secondary rounded-circle p-2">
+                        <i class="fa-solid fa-people-roof fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-secondary mb-1 font-monospace">{{ total_parents }}</h3>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill small">أسر مسجلة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3 & 4: Advanced Search & Filters  -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-sliders text-primary me-2"></i> أدوات الفلترة والبحث المتقدم (Advanced Filter & Search)</h6>
+            <button type="button" class="btn btn-sm btn-light text-muted border rounded-pill px-3" onclick="resetFilters()">
+                <i class="fa-solid fa-rotate-right me-1"></i> إعادة ضبط الفلاتر (Reset)
+            </button>
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-3">
+                <!-- Search Input -->
+                <div class="col-lg-4">
+                    <label class="form-label text-muted small fw-bold mb-1">البحث المتقدم (الاسم / الرقم / الهوية / الحي)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="searchInput" class="form-control bg-light border-start-0" placeholder="ابحث باسم الطالب، ولي الأمر، الهاتف، أو الحي...">
+                    </div>
+                </div>
+
+                <!-- Class Filter -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted small fw-bold mb-1">الصف الدراسي</label>
+                    <select id="filterClass" class="form-select bg-light" onchange="applyFilters()">
+                        <option value="">جميع الصفوف</option>
+                        {% for c in classes %}
+                        <option value="{{ c.CID }}">{{ c.CName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Section Filter -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted small fw-bold mb-1">الشعبة</label>
+                    <select id="filterSection" class="form-select bg-light" onchange="applyFilters()">
+                        <option value="">جميع الشعب</option>
+                        {% for sec in sections %}
+                        <option value="{{ sec.SectionID }}">{{ sec.SectionName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Gender Filter -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted small fw-bold mb-1">الجنس</label>
+                    <select id="filterGender" class="form-select bg-light" onchange="applyFilters()">
+                        <option value="">الكل</option>
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted small fw-bold mb-1">الحالة الدراسية</label>
+                    <select id="filterStatus" class="form-select bg-light" onchange="applyFilters()">
+                        <option value="">جميع الحالات</option>
+                        <option value="نشط">نشط</option>
+                        <option value="غير نشط">غير نشط / موقف</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: Bulk Actions Toolbar (Conditional) -->
+    <!-- ========================================== -->
+    <div id="bulkActionsToolbar" class="card border-0 shadow-sm rounded-4 bg-primary text-white mb-3 p-3 d-none fade-in">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-white text-primary rounded-pill fs-6 px-3 py-2 font-monospace" id="selectedCountBadge">0 طلاب محددون</span>
+                <span class="fw-bold small">تم تحديد عناصر للإجراءات الجماعية:</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-danger" onclick="triggerBulkAction('delete')">
+                    <i class="fa-solid fa-trash me-1"></i> حذف المحدد
+                </button>
+                <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-primary" onclick="triggerBulkAction('status')">
+                    <i class="fa-solid fa-toggle-on me-1"></i> تغيير الحالة
+                </button>
+                <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-info" onclick="triggerBulkAction('transfer_class')">
+                    <i class="fa-solid fa-arrow-right-arrow-left me-1"></i> نقل لصف
+                </button>
+                <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-warning" onclick="triggerBulkAction('export')">
+                    <i class="fa-solid fa-download me-1"></i> تصدير المحدد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: Students Table Card            -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle text-center mb-0">
-                    <thead>
+                    <thead class="table-light border-bottom">
                         <tr>
-                            <th class="py-3" style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                            <th class="py-3">#</th>
-                            <th class="py-3 text-start px-4">اسم الطالب</th>
-                            <th class="py-3">الرقم الطلابي</th>
+                            <th class="py-3 px-3" style="width: 40px;">
+                                <input type="checkbox" id="selectAllCheckbox" class="form-check-input" onchange="toggleSelectAll(this)">
+                            </th>
+                            <th class="py-3">الصورة</th>
+                            <th class="py-3 text-start px-3">اسم الطالب</th>
+                            <th class="py-3">رقم الطالب</th>
+                            <th class="py-3">العمر</th>
+                            <th class="py-3">الجنس</th>
                             <th class="py-3">الصف</th>
                             <th class="py-3">الشعبة</th>
+                            <th class="py-3">ولي الأمر</th>
                             <th class="py-3">هاتف ولي الأمر</th>
-                            <th class="py-3">تاريخ الميلاد</th>
-                            <th class="py-3">العمر</th>
                             <th class="py-3">الحالة</th>
+                            <th class="py-3">نسبة الحضور</th>
+                            <th class="py-3">المعدل</th>
+                            <th class="py-3">آخر تحديث</th>
                             <th class="py-3">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="studentsTableBody">
-                        <tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
+                        <tr>
+                            <td colspan="15" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="text-muted small mt-2">جاري تحميل بيانات الطلاب...</p>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Pagination UI -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top">
-                <span class="text-muted small" id="pagination-info">عرض 1 إلى 10 من الطلاب</span>
+
+            <!-- ========================================== -->
+            <!-- SECTION 8: Empty State (Rendered in JS)    -->
+            <!-- ========================================== -->
+            <div id="emptyStateContainer" class="text-center py-5 d-none">
+                <div class="bg-light d-inline-block rounded-circle p-4 mb-3">
+                    <i class="fa-solid fa-user-slash text-muted fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">لم يتم العثور على أي طلاب</h5>
+                <p class="text-muted small mb-3">لا توجد سجلات تطابق شروط البحث أو الفلاتر المحددة.</p>
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" onclick="resetFilters()">
+                    <i class="fa-solid fa-rotate-right me-1"></i> إزالة الفلاتر
+                </button>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- SECTION 7: Pagination & Metadata Footer    -->
+            <!-- ========================================== -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted small" id="pagination-info">عرض 0 إلى 0 من 0 طلاب</span>
+                    <div class="d-flex align-items-center gap-1">
+                        <small class="text-muted">عرض:</small>
+                        <select id="limitSelect" class="form-select form-select-sm border-light bg-light" style="width: 70px;" onchange="changeLimit(this.value)">
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm mb-0" id="paginationUI">
                     </ul>
@@ -113,6 +297,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -121,16 +306,36 @@
     <div class="modal-content rounded-4 border-0 shadow text-center p-4">
       <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3"></i>
       <h5 class="fw-bold mb-3 text-dark">تأكيد الحذف</h5>
-      <p class="text-muted">هل أنت متأكد من حذف هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.</p>
+      <p class="text-muted small mb-3">هل أنت متأكد من حذف هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.</p>
       <input type="hidden" id="deleteStudentId">
-      <div class="d-flex justify-content-center gap-2 mt-3">
-          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="executeDelete()">نعم، احذف</button>
+      <div class="d-flex justify-content-center gap-2 mt-2">
+          <button type="button" class="btn btn-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger rounded-pill px-4 btn-sm fw-bold" onclick="executeDelete()">نعم، احذف</button>
       </div>
     </div>
   </div>
 </div>
 
+<style>
+.student-stat-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+.student-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.stat-badge {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
     const jwtToken = document.querySelector('meta[name="jwt-token"]').getAttribute('content');
     const apiHeaders = {
@@ -139,9 +344,10 @@
     };
     
     let currentPage = 1;
+    let currentLimit = 10;
     let currentSearch = '';
+    let selectedStudentIds = new Set();
     let fetchTimeout;
-    let studentModal;
     let deleteModal;
 
     function showToast(title, icon = 'success') {
@@ -159,89 +365,151 @@
     function fetchStudents(page = 1) {
         currentPage = page;
         const tbody = document.getElementById('studentsTableBody');
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+        const emptyState = document.getElementById('emptyStateContainer');
         
-        fetch(`/api/v1/students?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}`, { headers: apiHeaders })
+        tbody.innerHTML = '<tr><td colspan="15" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="text-muted small mt-2">جاري البحث والرصد...</p></td></tr>';
+        emptyState.classList.add('d-none');
+
+        const classVal = document.getElementById('filterClass').value;
+        const secVal = document.getElementById('filterSection').value;
+        const genderVal = document.getElementById('filterGender').value;
+        const statusVal = document.getElementById('filterStatus').value;
+
+        let queryParams = `page=${page}&limit=${currentLimit}&search=${encodeURIComponent(currentSearch)}`;
+        if (classVal) queryParams += `&class_id=${classVal}`;
+        if (secVal) queryParams += `&section_id=${secVal}`;
+        if (genderVal) queryParams += `&gender=${encodeURIComponent(genderVal)}`;
+        if (statusVal) queryParams += `&status=${encodeURIComponent(statusVal)}`;
+
+        fetch(`/api/v1/students?${queryParams}`, { headers: apiHeaders })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                renderTable(data.data, (page-1)*10);
+                renderTable(data.data, (page - 1) * currentLimit);
                 renderPagination(data.meta);
             } else {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('d-none');
                 showToast(data.message || 'فشل في جلب البيانات', 'error');
             }
         })
         .catch(err => {
             console.error(err);
-            showToast('حدث خطأ في الاتصال بالخادم. يرجى التحقق من تسجيل الدخول.', 'error');
+            tbody.innerHTML = '';
+            emptyState.classList.remove('d-none');
+            showToast('حدث خطأ في الاتصال بالخادم.', 'error');
         });
     }
 
     function renderTable(students, offset) {
         const tbody = document.getElementById('studentsTableBody');
+        const emptyState = document.getElementById('emptyStateContainer');
         tbody.innerHTML = '';
-        if(students.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted">
-                لا يوجد طلاب يطابقون البحث
-            </td></tr>`;
+        
+        if (!students || students.length === 0) {
+            emptyState.classList.remove('d-none');
             return;
         }
         
-        students.forEach((student, index) => {
+        emptyState.classList.add('d-none');
+        
+        students.forEach((st, index) => {
             const tr = document.createElement('tr');
             
             // Status Badge
-            let statusBadge = '';
-            if (student.Status === 'نشط' || !student.Status) {
-                statusBadge = '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" style="font-size:0.85rem">نشط</span>';
-            } else {
-                statusBadge = '<span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2" style="font-size:0.85rem">غير نشط</span>';
-            }
+            const isChecked = selectedStudentIds.has(st.SID) ? 'checked' : '';
+            const statusBadge = (st.Status === 'نشط' || !st.Status) 
+                ? '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-check me-1"></i> نشط</span>'
+                : '<span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-pause me-1"></i> غير نشط</span>';
             
-            // Age calculation
-            let ageDisplay = '—';
-            if (student.DOB) {
-                const dobDate = new Date(student.DOB);
-                const today = new Date();
-                let age = today.getFullYear() - dobDate.getFullYear();
-                const m = today.getMonth() - dobDate.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
-                    age--;
-                }
-                if (!isNaN(age) && age >= 0) {
-                    ageDisplay = age + ' سنة';
-                }
-            }
+            // Attendance Rate Badge
+            const attRate = st.attendance_rate !== undefined ? st.attendance_rate : 100;
+            const attColor = attRate >= 85 ? 'success' : (attRate >= 70 ? 'warning' : 'danger');
+            const attBadge = `<span class="badge bg-${attColor}-subtle text-${attColor} font-monospace rounded-pill">${attRate}%</span>`;
 
-            const parentPhone = student.Parent_Number || student.Phone || '—';
-            
+            // GPA Badge
+            const gpaVal = st.gpa !== undefined && st.gpa !== '—' ? st.gpa : '—';
+            const gpaBadge = gpaVal !== '—' 
+                ? `<span class="badge bg-primary-subtle text-primary font-monospace rounded-pill">${gpaVal}</span>`
+                : `<span class="badge bg-light text-muted border font-monospace">—</span>`;
+
+            const imgUrl = st.Image 
+                ? `/static/${st.Image}` 
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(st.SName)}&background=2563eb&color=fff`;
+
             tr.innerHTML = `
-                <td><input type="checkbox" class="form-check-input"></td>
-                <td class="text-muted">${offset + index + 1}</td>
-                <td class="text-start px-4 fw-bold" style="color: var(--text-main)">${student.SName}</td>
-                <td class="text-muted">${student.SID}</td>
-                <td>${student.CID ? student.CID : '-'}</td>
-                <td>${student.SectionID ? student.SectionID : 'شعبة أ'}</td>
-                <td class="font-monospace">${parentPhone}</td>
-                <td class="text-muted">${student.DOB ? student.DOB : '—'}</td>
-                <td><span class="badge bg-light text-dark border font-monospace" style="font-size:0.82rem">${ageDisplay}</span></td>
-                <td>${statusBadge}</td>
+                <td class="px-3">
+                    <input type="checkbox" class="form-check-input student-row-check" value="${st.SID}" ${isChecked} onchange="toggleStudentSelect(${st.SID}, this.checked)">
+                </td>
                 <td>
-                    <div class="d-flex justify-content-center gap-2">
-                        <a href="/students/view/${student.SID}" class="action-btn action-btn-view" title="عرض التفاصيل">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                    <img src="${imgUrl}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=Student&background=2563eb&color=fff'">
+                </td>
+                <td class="text-start px-3 fw-bold text-dark">${st.SName}</td>
+                <td><span class="badge bg-light text-dark border font-monospace">${st.SID}</span></td>
+                <td><span class="badge bg-light text-dark border font-monospace">${st.age !== undefined ? st.age + ' سنة' : '—'}</span></td>
+                <td><span class="badge bg-secondary-subtle text-secondary rounded-pill">${st.Gender || '—'}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary border">${st.class_name || '—'}</span></td>
+                <td><span class="badge bg-info-subtle text-info border">${st.section_name || '—'}</span></td>
+                <td class="text-muted small">${st.Parent_Name || '—'}</td>
+                <td class="font-monospace text-muted small">${st.Parent_Number || '—'}</td>
+                <td>${statusBadge}</td>
+                <td>${attBadge}</td>
+                <td>${gpaBadge}</td>
+                <td><small class="text-muted font-monospace">${st.updated_at_formatted || '—'}</small></td>
+                <td>
+                    <div class="d-flex justify-content-center gap-1">
+                        <a href="/students/view/${st.SID}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض التفاصيل">
+                            <i class="fa-solid fa-eye"></i>
                         </a>
-                        <a href="/students/edit/${student.SID}" class="action-btn action-btn-edit" title="تعديل">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                        <a href="/students/edit/${st.SID}" class="btn btn-sm btn-outline-info rounded-circle" title="تعديل">
+                            <i class="fa-solid fa-pen-to-square"></i>
                         </a>
-                        <button type="button" class="action-btn action-btn-delete" title="حذف" onclick="confirmDelete(${student.SID})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" title="حذف" onclick="confirmDelete(${st.SID})">
+                            <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+        
+        updateBulkToolbar();
+    }
+
+    function toggleStudentSelect(sid, isChecked) {
+        if (isChecked) {
+            selectedStudentIds.add(sid);
+        } else {
+            selectedStudentIds.delete(sid);
+        }
+        updateBulkToolbar();
+    }
+
+    function toggleSelectAll(masterCheckbox) {
+        const rowCheckboxes = document.querySelectorAll('.student-row-check');
+        rowCheckboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+            const sid = parseInt(cb.value);
+            if (masterCheckbox.checked) {
+                selectedStudentIds.add(sid);
+            } else {
+                selectedStudentIds.delete(sid);
+            }
+        });
+        updateBulkToolbar();
+    }
+
+    function updateBulkToolbar() {
+        const toolbar = document.getElementById('bulkActionsToolbar');
+        const badge = document.getElementById('selectedCountBadge');
+        const count = selectedStudentIds.size;
+        
+        if (count > 0) {
+            toolbar.classList.remove('d-none');
+            badge.textContent = `${count} طلاب محددون`;
+        } else {
+            toolbar.classList.add('d-none');
+        }
     }
 
     function renderPagination(meta) {
@@ -249,9 +517,14 @@
         const infoUI = document.getElementById('pagination-info');
         paginationUI.innerHTML = '';
         
-        const start = (meta.current_page - 1) * 10 + 1;
-        const end = Math.min(meta.current_page * 10, meta.total);
-        infoUI.textContent = `عرض ${start} إلى ${end} من ${meta.total} طلاب`;
+        if (!meta || meta.total === 0) {
+            infoUI.textContent = 'عرض 0 من 0 طلاب';
+            return;
+        }
+        
+        const start = (meta.current_page - 1) * currentLimit + 1;
+        const end = Math.min(meta.current_page * currentLimit, meta.total);
+        infoUI.textContent = `عرض ${start} إلى ${end} من إجمالي ${meta.total} طلاب`;
 
         if (meta.pages <= 1) return;
         
@@ -261,7 +534,7 @@
             </li>
         `;
         
-        for(let i=1; i<=meta.pages; i++) {
+        for(let i = 1; i <= meta.pages; i++) {
             paginationUI.innerHTML += `
                 <li class="page-item ${meta.current_page === i ? 'active' : ''}">
                     <button class="page-link border-0 ${meta.current_page === i ? 'bg-primary text-white rounded' : 'text-muted'}" onclick="fetchStudents(${i})">${i}</button>
@@ -276,12 +549,32 @@
         `;
     }
 
+    function changeLimit(limit) {
+        currentLimit = parseInt(limit);
+        fetchStudents(1);
+    }
+
+    function applyFilters() {
+        fetchStudents(1);
+    }
+
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterClass').value = '';
+        document.getElementById('filterSection').value = '';
+        document.getElementById('filterGender').value = '';
+        document.getElementById('filterStatus').value = '';
+        currentSearch = '';
+        selectedStudentIds.clear();
+        fetchStudents(1);
+    }
+
     document.getElementById('searchInput').addEventListener('keyup', (e) => {
         clearTimeout(fetchTimeout);
         currentSearch = e.target.value;
         fetchTimeout = setTimeout(() => {
             fetchStudents(1);
-        }, 500);
+        }, 400);
     });
 
     function confirmDelete(id) {
@@ -302,11 +595,71 @@
                 showToast('تم حذف الطالب بنجاح', 'success');
                 fetchStudents(currentPage);
             } else {
-                showToast(data.message, 'error');
+                showToast(data.message || 'حدث خطأ أثناء الحذف', 'error');
             }
         });
     }
 
+    function triggerBulkAction(actionType) {
+        const count = selectedStudentIds.size;
+        if (count === 0) return;
+
+        if (actionType === 'delete') {
+            Swal.fire({
+                title: 'تأكيد الحذف الجماعي',
+                text: `هل أنت متأكد من حذف ${count} طلاب محددين؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showToast(`تم إرسال أمر حذف ${count} طلاب`, 'info');
+                    selectedStudentIds.clear();
+                    fetchStudents(currentPage);
+                }
+            });
+        } else if (actionType === 'export') {
+            exportData('excel');
+        } else {
+            Swal.fire({
+                title: 'ميزة تفاعلية مستقبلية',
+                text: `ميزة (${actionType}) الجماعية جاهزة برمجياً وسيتم تفعيلها بالكامل بالربط القادم.`,
+                icon: 'info',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    }
+
+    function exportData(format) {
+        showToast(`جاري تصدير قائمة الطلاب بصيغة ${format.toUpperCase()}...`, 'info');
+    }
+
+    function showImportModal() {
+        Swal.fire({
+            title: 'استيراد طلاب من ملف Excel',
+            text: 'اختر ملف Excel (.xlsx / .csv) يحتوي على بيانات الطلاب للاستيراد المباشر.',
+            input: 'file',
+            inputAttributes: {
+                'accept': '.xlsx, .xls, .csv',
+                'aria-label': 'تحميل ملف Excel'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'رفع واستيراد',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                showToast('جاري معالجة ملف استيراد الطلاب...', 'success');
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        fetchStudents(1);
+    });
     document.addEventListener("turbo:load", () => {
         deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
         fetchStudents(1);

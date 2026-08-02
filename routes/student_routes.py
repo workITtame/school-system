@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.utils import secure_filename
 import os
+from sqlalchemy import func, or_
 from models import db, Student, Classes, Sections, Directorate, Country, Governorates
 from datetime import datetime, timedelta
 import uuid
@@ -27,6 +28,10 @@ def home():
     female_students = Student.query.filter(Student.is_deleted == False, Student.Gender.in_(['أنثى', 'Female'])).count()
     new_students = Student.query.filter(Student.is_deleted == False, Student.created_at >= (datetime.utcnow() - timedelta(days=30))).count()
     
+    total_classes_count = Classes.query.count()
+    total_sections_count = Sections.query.count()
+    total_parents_count = db.session.query(func.count(func.distinct(Student.Parent_Name))).filter(Student.is_deleted == False, Student.Parent_Name.isnot(None), Student.Parent_Name != '').scalar() or 0
+
     return render_template('students.html', 
                            countries=countries, 
                            governorates=governorates, 
@@ -38,7 +43,10 @@ def home():
                            inactive_students=inactive_students,
                            male_students=male_students,
                            female_students=female_students,
-                           new_students=new_students)
+                           new_students=new_students,
+                           total_classes=total_classes_count,
+                           total_sections=total_sections_count,
+                           total_parents=total_parents_count)
 
 @students_bp.route('/add', methods=['GET', 'POST'])
 @admin_required
