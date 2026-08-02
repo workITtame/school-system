@@ -532,3 +532,18 @@ body {
 .font-monospace {
     font-family: 'Cairo', 'Inter', monospace !important;
 }
+
+/* Layout Refactor Containment Styles */
+.admin-dashboard-container {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.overflow-y-auto {
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+}
+
+.footer-mini {
+    border-top: 1px solid var(--border-color);
+}
