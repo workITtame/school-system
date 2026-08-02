@@ -41,10 +41,14 @@
     align-items: center;
     cursor: pointer;
     padding: 0 0.5rem;
+    transition: transform 0.25s ease;
+}
+.stepper-step-item:hover {
+    transform: translateY(-2px);
 }
 .stepper-icon-circle {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: #f1f5f9;
     color: #64748b;
@@ -57,13 +61,13 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .stepper-step-item.active .stepper-icon-circle {
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: #ffffff;
     border-color: #2563eb;
-    box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
 }
 .stepper-step-item.completed .stepper-icon-circle {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #ffffff;
     border-color: #10b981;
 }
@@ -119,6 +123,25 @@
 }
 .input-with-icon {
     padding-right: 42px !important;
+    transition: all 0.25s ease;
+}
+.input-with-icon:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+}
+.sticky-form-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+    padding: 1.2rem 1.5rem;
+    margin-top: 2rem;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    margin-bottom: -1.5rem;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 20px 20px;
 }
 </style>
 
@@ -147,7 +170,7 @@
     </div>
 
     <!-- Stepper Progress Bar & Card Form Container -->
-    <div class="card border-0 shadow-lg rounded-4 bg-white p-4">
+    <div class="card border-0 shadow-lg rounded-4 bg-white p-4 overflow-hidden">
         
         <!-- Progress Bar & Indicator -->
         <div class="mb-4">
@@ -160,25 +183,25 @@
             </div>
         </div>
 
-        <!-- Interactive 5-Step Bar -->
-        <div class="stepper-steps-bar">
-            <div class="stepper-step-item active" data-step="0">
+        <!-- Interactive 5-Step Bar with ARIA -->
+        <div class="stepper-steps-bar" role="tablist" aria-label="خطوات تسجيل الطالب">
+            <div class="stepper-step-item active" data-step="0" role="tab" aria-selected="true" aria-controls="paneStep0" tabindex="0">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-user"></i></div>
                 <span class="stepper-step-title">1. البيانات الشخصية</span>
             </div>
-            <div class="stepper-step-item" data-step="1">
+            <div class="stepper-step-item" data-step="1" role="tab" aria-selected="false" aria-controls="paneStep1" tabindex="-1">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-graduation-cap"></i></div>
                 <span class="stepper-step-title">2. البيانات الأكاديمية</span>
             </div>
-            <div class="stepper-step-item" data-step="2">
+            <div class="stepper-step-item" data-step="2" role="tab" aria-selected="false" aria-controls="paneStep2" tabindex="-1">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-user-shield"></i></div>
                 <span class="stepper-step-title">3. ولي الأمر والعنوان</span>
             </div>
-            <div class="stepper-step-item" data-step="3">
+            <div class="stepper-step-item" data-step="3" role="tab" aria-selected="false" aria-controls="paneStep3" tabindex="-1">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-folder-open"></i></div>
                 <span class="stepper-step-title">4. المرفقات</span>
             </div>
-            <div class="stepper-step-item" data-step="4">
+            <div class="stepper-step-item" data-step="4" role="tab" aria-selected="false" aria-controls="paneStep4" tabindex="-1">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-check-double"></i></div>
                 <span class="stepper-step-title">5. المراجعة والحفظ</span>
             </div>
@@ -188,16 +211,20 @@
         <form method="POST" action="{{ url_for('students.add_student') }}" enctype="multipart/form-data" id="studentForm" data-turbo="false" class="needs-validation" novalidate>
             
             <!-- STEP 1: Personal Information -->
-            <div class="form-step-pane active" id="paneStep0">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-id-card"></i> البيانات الشخصية والصورة
+            <div class="form-step-pane active" id="paneStep0" role="tabpanel">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span><i class="fa-solid fa-id-card me-2"></i> البيانات الشخصية والصورة</span>
+                    <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 1 من 5</span>
                 </h5>
 
                 <div class="row g-4">
                     <!-- Fields Column -->
                     <div class="col-lg-8">
                         <div class="mb-3 position-relative">
-                            <label class="form-label fw-bold text-dark">اسم الطالب الرباعي بالكامل <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold text-dark d-flex align-items-center gap-1">
+                                اسم الطالب الرباعي بالكامل <span class="text-danger">*</span>
+                                <i class="fa-solid fa-circle-info text-muted small ms-auto" data-bs-toggle="tooltip" title="يرجى كتابة اسم الطالب رباعياً حسب وثيقة الهوية الرسمية"></i>
+                            </label>
                             <div class="position-relative">
                                 <i class="fa-solid fa-user input-icon-prepend"></i>
                                 <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="name" id="inputName" required placeholder="أدخل اسم الطالب رباعياً">
@@ -245,16 +272,17 @@
                             <h6 class="fw-bold text-dark mb-1">اسحب الصورة هنا أو اضغط للرفع</h6>
                             <p class="small text-muted mb-0">JPG, PNG (الحد الأقصى 2MB)</p>
                             <input type="file" name="photo" accept="image/*" id="photoInput">
-                            <img id="photoPreview" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
+                            <img id="photoPreview" alt="معاينة الصورة" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- STEP 2: Academic Information -->
-            <div class="form-step-pane" id="paneStep1">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-graduation-cap"></i> القيد الأكاديمي والصف
+            <div class="form-step-pane" id="paneStep1" role="tabpanel">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span><i class="fa-solid fa-graduation-cap me-2"></i> القيد الأكاديمي والصف</span>
+                    <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 2 من 5</span>
                 </h5>
 
                 <div class="row g-4">
@@ -300,9 +328,10 @@
             </div>
 
             <!-- STEP 3: Parent Information & Residence Address -->
-            <div class="form-step-pane" id="paneStep2">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-user-shield"></i> بيانات ولي الأمر والعنوان السكني
+            <div class="form-step-pane" id="paneStep2" role="tabpanel">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span><i class="fa-solid fa-user-shield me-2"></i> بيانات ولي الأمر والعنوان السكني</span>
+                    <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 3 من 5</span>
                 </h5>
 
                 <div class="row g-4 mb-4">
@@ -367,9 +396,10 @@
             </div>
 
             <!-- STEP 4: Attachments -->
-            <div class="form-step-pane" id="paneStep3">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-folder-open"></i> المرفقات والوثائق
+            <div class="form-step-pane" id="paneStep3" role="tabpanel">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span><i class="fa-solid fa-folder-open me-2"></i> المرفقات والوثائق</span>
+                    <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 4 من 5</span>
                 </h5>
 
                 <div class="row g-4">
@@ -394,9 +424,10 @@
             </div>
 
             <!-- STEP 5: Review & Submit Summary -->
-            <div class="form-step-pane" id="paneStep4">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-check-double"></i> مراجعة البيانات قبل التجسيل
+            <div class="form-step-pane" id="paneStep4" role="tabpanel">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span><i class="fa-solid fa-check-double me-2"></i> مراجعة البيانات قبل التسجيل</span>
+                    <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 5 من 5</span>
                 </h5>
 
                 <div class="card border-0 bg-primary-subtle text-primary rounded-4 p-4 mb-4">
@@ -425,8 +456,8 @@
                 </div>
             </div>
 
-            <!-- Form Navigation Action Bar -->
-            <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+            <!-- Sticky Form Navigation Action Footer -->
+            <div class="sticky-form-footer d-flex justify-content-between align-items-center shadow-sm">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" id="prevBtn" style="display: none;">
                     <i class="fa-solid fa-arrow-right me-1"></i> الخطوة السابقة
                 </button>
@@ -466,8 +497,11 @@ function initFormWizard() {
 
     function showStep(index) {
         stepItems.forEach((item, i) => {
-            item.classList.toggle('active', i === index);
+            const isActive = i === index;
+            item.classList.toggle('active', isActive);
             item.classList.toggle('completed', i < index);
+            item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            item.setAttribute('tabindex', isActive ? '0' : '-1');
         });
 
         stepPanes.forEach((pane, i) => {
