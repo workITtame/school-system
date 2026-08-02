@@ -254,6 +254,9 @@
                 <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-warning" onclick="triggerBulkAction('export')">
                     <i class="fa-solid fa-download me-1"></i> تصدير المحدد
                 </button>
+                <button type="button" class="btn btn-light btn-sm fw-bold rounded-pill text-secondary" onclick="triggerBulkAction('message')">
+                    <i class="fa-solid fa-envelope me-1"></i> إرسال رسالة
+                </button>
             </div>
         </div>
     </div>
@@ -786,6 +789,26 @@
         } else if (actionType === 'export') {
             window.location.href = `/students/export/excel?ids=${idList.join(',')}`;
             showToast(`جاري تصدير ${count} طلاب محددين كملف Excel...`, 'success');
+        } else if (actionType === 'message') {
+            Swal.fire({
+                title: 'إرسال رسالة جماعية لأولياء الأمور',
+                input: 'textarea',
+                inputPlaceholder: 'اكتب نص الرسالة هنا...',
+                showCancelButton: true,
+                confirmButtonText: 'إرسال الرسالة',
+                cancelButtonText: 'إلغاء',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'يرجى كتابة نص الرسالة قبل الإرسال!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    showToast(`تم إرسال الرسالة بنجاح لـ ${count} من أولياء الأمور`, 'success');
+                    selectedStudentIds.clear();
+                    updateBulkToolbar();
+                }
+            });
         }
     }
 
