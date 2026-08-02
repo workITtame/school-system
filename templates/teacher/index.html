@@ -151,9 +151,9 @@
 
             <!-- Action Toolbar Buttons -->
             <div class="d-flex align-items-center gap-2 flex-wrap no-print">
-                <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" onclick="openAddModal()">
+                <a href="{{ url_for('teacher.add_teacher') }}" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm">
                     <i class="fa-solid fa-user-plus me-1"></i> إضافة معلم جديد
-                </button>
+                </a>
                 <a href="{{ url_for('students.export_students_excel') }}" class="btn btn-outline-success rounded-pill px-3 fw-bold">
                     <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
                 </a>
@@ -616,9 +616,9 @@
                         <a href="/teacher/view/${t.TeacherID}" class="action-btn-solid bg-primary-subtle text-primary" title="عرض الملف">
                             <i class="fa-solid fa-eye"></i> عرض
                         </a>
-                        <button type="button" class="action-btn-solid bg-warning-subtle text-dark" title="تعديل" onclick="openEditModal(${t.TeacherID})">
+                        <a href="/teacher/edit/${t.TeacherID}" class="action-btn-solid bg-warning-subtle text-dark" title="تعديل">
                             <i class="fa-solid fa-pen"></i> تعديل
-                        </button>
+                        </a>
                         <a href="{{ url_for('timetable.index') }}" class="action-btn-solid bg-info-subtle text-info" title="الجدول الأسبوعي">
                             <i class="fa-solid fa-calendar-days"></i> الجدول
                         </a>
