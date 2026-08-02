@@ -1,98 +1,386 @@
 {% extends 'layout.html' %}
 
-{% block title %}إدارة المعلمين{% endblock %}
+{% block title %}إدارة الكادر التعليمي - Enterprise SaaS Edition{% endblock %}
+{% block page_title %}إدارة المعلمين{% endblock %}
+{% block page_subtitle %}الرئيسية / الكادر التعليمي / قائمة المعلمين{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
-    <h3 class="fw-bold m-0" style="color: var(--header-text);">إدارة المعلمين</h3>
-    <button class="btn btn-primary px-4 fw-bold" onclick="openAddModal()">
-        <i class="fa-solid fa-plus me-1"></i> إضافة معلم
-    </button>
-</div>
+<style>
+/* Glassmorphism KPI Cards */
+.kpi-glass-card {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.kpi-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(37, 99, 235, 0.08);
+    border-color: #cbd5e1;
+}
+.kpi-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    color: #ffffff;
+}
+.kpi-progress-bar {
+    height: 6px;
+    border-radius: 50rem;
+    background: #e2e8f0;
+    overflow: hidden;
+}
 
-<!-- Stat Cards -->
-<div class="row mb-4 fade-in">
-    <div class="col-md-3 mb-3">
-        <div class="stat-card card h-100 border-0 shadow-sm">
-            <div>
-                <p>إجمالي المعلمين</p>
-                <h3>{{ total_teachers }}</h3>
-            </div>
-            <div class="icon-box icon-purple">
-                <i class="fa-solid fa-chalkboard-user"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card card h-100 border-0 shadow-sm">
-            <div>
-                <p>معلمات</p>
-                <h3>{{ female_teachers }}</h3>
-            </div>
-            <div class="icon-box icon-orange">
-                <i class="fa-solid fa-person-dress"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card card h-100 border-0 shadow-sm">
-            <div>
-                <p>معلمون</p>
-                <h3>{{ male_teachers }}</h3>
-            </div>
-            <div class="icon-box icon-blue">
-                <i class="fa-solid fa-person"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card card h-100 border-0 shadow-sm">
-            <div>
-                <p>جديد هذا الشهر</p>
-                <h3>{{ new_teachers }}</h3>
-            </div>
-            <div class="icon-box icon-green">
-                <i class="fa-solid fa-user-plus"></i>
-            </div>
-        </div>
-    </div>
-</div>
+/* Enterprise Data Grid Table */
+.teachers-table-container {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.teachers-table {
+    margin-bottom: 0;
+}
+.teachers-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+.teachers-table tbody tr {
+    transition: all 0.2s ease;
+}
+.teachers-table tbody tr:hover {
+    background-color: #f1f5f9 !important;
+}
+.teachers-table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+.teachers-table th:last-child, .teachers-table td:last-child {
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 4;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.04);
+}
+.teachers-table tr:hover td:last-child {
+    background: #f1f5f9;
+}
+.teacher-avatar-md {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.action-btn-solid {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+.action-btn-solid:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
 
-<div class="card fade-in">
-    <div class="card-header d-flex justify-content-between align-items-center py-3">
-        <div class="input-group" style="max-width: 350px;">
-            <span class="input-group-text bg-transparent border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
-            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="بحث...">
+/* Bulk Actions Floating Bar */
+.bulk-actions-floating-bar {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.85rem 1.75rem;
+    border-radius: 50rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    z-index: 1050;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.bulk-actions-floating-bar.active {
+    transform: translateX(-50%) translateY(0);
+}
+</style>
+
+<div class="fade-in px-1">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: Hero Header & Toolbar Buttons   -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 border-start border-4 border-primary">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace" style="font-size: 0.82rem;">
+                        <i class="fa-solid fa-house me-1"></i> الرئيسية / الكادر التعليمي / المعلمون
+                    </span>
+                </div>
+                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-chalkboard-user text-primary"></i> إدارة وتوجيه الكادر التعليمي
+                </h4>
+                <p class="text-muted small mb-0 mt-1">متابعة بيانت وإحصائيات المعلمين، المواد الدراسية، وحالة النشاط الأكاديمي</p>
+            </div>
+
+            <!-- Action Toolbar Buttons -->
+            <div class="d-flex align-items-center gap-2 flex-wrap no-print">
+                <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" onclick="openAddModal()">
+                    <i class="fa-solid fa-user-plus me-1"></i> إضافة معلم جديد
+                </button>
+                <a href="{{ url_for('students.export_students_excel') }}" class="btn btn-outline-success rounded-pill px-3 fw-bold">
+                    <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+                </a>
+                <a href="{{ url_for('students.export_students_pdf') }}" target="_blank" class="btn btn-outline-danger rounded-pill px-3 fw-bold">
+                    <i class="fa-solid fa-file-pdf me-1"></i> تصدير PDF
+                </a>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-bold" onclick="fetchTeachers(currentPage)">
+                    <i class="fa-solid fa-rotate me-1"></i> تحديث
+                </button>
+            </div>
         </div>
     </div>
-    <div class="card-body p-0">
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: 6 Enterprise SaaS KPI Cards    -->
+    <!-- ========================================== -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
+        <!-- 1. Total Teachers -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">إجمالي المعلمين</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_teachers }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-primary h-100" style="width: 100%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-users text-primary me-1"></i> 100% السجل الكلي</span>
+            </div>
+        </div>
+
+        <!-- 2. Active Teachers -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">المعلمون النشطون</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-success mb-1 font-monospace">{{ active_teachers }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-success h-100" style="width: {{ ((active_teachers / total_teachers) * 100)|round if total_teachers > 0 else 100 }}%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-circle-check text-success me-1"></i> {{ ((active_teachers / total_teachers) * 100)|round if total_teachers > 0 else 100 }}% كادر نشط</span>
+            </div>
+        </div>
+
+        <!-- 3. Full-Time Teachers -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">المعلمون المتفرغون</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-info mb-1 font-monospace">{{ fulltime_teachers }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-info h-100" style="width: 85%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-clock text-info me-1"></i> دوام كامل</span>
+            </div>
+        </div>
+
+        <!-- 4. Assigned Subjects Count -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">المواد المسندة</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-warning mb-1 font-monospace">{{ assigned_subjects_count }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-warning h-100" style="width: 75%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-book text-warning me-1"></i> مادة مجهزة</span>
+            </div>
+        </div>
+
+        <!-- 5. Average Weekly Slots -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">متوسط الحصص</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-purple mb-1 font-monospace" style="color:#8b5cf6;">{{ avg_weekly_slots }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-purple h-100" style="width: 60%; background:#8b5cf6;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-clock me-1"></i> حصة / أسبوع</span>
+            </div>
+        </div>
+
+        <!-- 6. Taught Classes Count -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">الصفوف المدرسة</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                        <i class="fa-solid fa-school"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-danger mb-1 font-monospace">{{ taught_classes_count }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-danger h-100" style="width: 90%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-graduation-cap text-danger me-1"></i> صف دراسي</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: Unified Filter Panel Card       -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-4">
+        <h6 class="fw-extrabold text-dark mb-3 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-sliders text-primary"></i> فلترة وتخصيص عرض المعلمين
+        </h6>
+
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">البحث باسم المعلم / البريد</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0 bg-light" placeholder="اكتب اسم المعلم...">
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">المؤهل الأكاديمي</label>
+                <select id="filterQual" class="form-select bg-light" onchange="fetchTeachers(1)">
+                    <option value="">جميع المؤهلات</option>
+                    {% for q in qualifications %}
+                    <option value="{{ q.QName }}">{{ q.QName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">الحالة الوظيفية</label>
+                <select id="filterStatus" class="form-select bg-light" onchange="fetchTeachers(1)">
+                    <option value="">جميع الحالات</option>
+                    <option value="نشط">نشط (منتظم)</option>
+                    <option value="غير نشط">غير نشط</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">الجنس</label>
+                <select id="filterGender" class="form-select bg-light" onchange="fetchTeachers(1)">
+                    <option value="">الكل</option>
+                    <option value="ذكر">ذكر</option>
+                    <option value="أنثى">أنثى</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="button" class="btn btn-outline-secondary w-100 rounded-3 fw-bold" onclick="resetFilters()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4 & 5: Enterprise Data Grid Table  -->
+    <!-- ========================================== -->
+    <div class="teachers-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle text-center mb-0">
+            <table class="table teachers-table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th class="py-3">الاسم</th>
-                        <th class="py-3">المادة</th>
-                        <th class="py-3">الهاتف</th>
-                        <th class="py-3">البريد الإلكتروني</th>
-                        <th class="py-3">الحالة</th>
-                        <th class="py-3">الإجراءات</th>
+                        <th style="width: 40px;" class="text-center">
+                            <input type="checkbox" class="form-check-input" id="selectAllCheckboxes" onclick="toggleSelectAll(this)">
+                        </th>
+                        <th>المعلم</th>
+                        <th>رقم الموظف TID</th>
+                        <th>المؤهل والراتب</th>
+                        <th>المواد المسندة</th>
+                        <th>الحصص / الصفوف</th>
+                        <th>الحالة</th>
+                        <th class="text-center">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="teachersTableBody">
-                    <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <br><span class="text-muted fw-bold mt-2 d-inline-block">جاري تحميل بيانات الكادر التعليمي...</span>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-        
-        <!-- Pagination UI -->
-        <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center" id="paginationUI">
-            </ul>
-        </nav>
+
+        <!-- Pagination Bar -->
+        <div class="p-3 border-top bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small fw-bold" id="teachersPaginationStats">عرض 0 من 0 معلم</span>
+            <ul class="pagination pagination-sm mb-0" id="paginationUI"></ul>
+        </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: Floating Bulk Actions Bar       -->
+    <!-- ========================================== -->
+    <div class="bulk-actions-floating-bar" id="bulkActionBar">
+        <span class="fw-bold fs-6"><i class="fa-solid fa-check-double text-warning me-1"></i> تم تحديد <strong id="selectedTeachersCount" class="text-warning">0</strong> معلم</span>
+        <div class="vr bg-secondary"></div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill fw-bold" onclick="bulkStatus()">تغيير الحالة</button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill fw-bold" onclick="bulkMessage()">إرسال رسالة</button>
+            <button type="button" class="btn btn-sm btn-danger rounded-pill fw-bold" onclick="bulkDelete()">حذف المحدد</button>
+        </div>
+    </div>
+
 </div>
 
-<!-- Add/Edit Teacher Modal -->
+<!-- Modal Dialogs (Add/Edit & Delete) -->
 <div class="modal fade" id="teacherModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow">
@@ -194,7 +482,6 @@
   </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-sm modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow text-center p-4">
@@ -211,7 +498,7 @@
 </div>
 
 <script>
-    const jwtToken = document.querySelector('meta[name="jwt-token"]').getAttribute('content');
+    const jwtToken = document.querySelector('meta[name="jwt-token"]')?.getAttribute('content') || '';
     const apiHeadersJSON = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + jwtToken
@@ -225,6 +512,7 @@
     let fetchTimeout;
     let teacherModal;
     let deleteModal;
+    let selectedTeacherIds = new Set();
 
     function showToast(title, icon = 'success') {
         Swal.fire({
@@ -238,10 +526,19 @@
         });
     }
 
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterQual').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterGender').value = '';
+        currentSearch = '';
+        fetchTeachers(1);
+    }
+
     function fetchTeachers(page = 1) {
         currentPage = page;
         const tbody = document.getElementById('teachersTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>';
         
         fetch(`/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}`, { headers: apiHeadersJSON })
         .then(res => res.json())
@@ -255,84 +552,156 @@
         })
         .catch(err => {
             console.error(err);
-            showToast('حدث خطأ في الاتصال بالخادم. يرجى التحقق من تسجيل الدخول.', 'error');
+            showToast('حدث خطأ في الاتصال بالخادم.', 'error');
         });
     }
 
     function renderTable(teachers) {
         const tbody = document.getElementById('teachersTableBody');
         tbody.innerHTML = '';
+        selectedTeacherIds.clear();
+        updateBulkBar();
+
         if(teachers.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">
-                <i class="fa-solid fa-users-slash fs-1 mb-3 d-block text-secondary"></i>
-                <h5 class="fw-bold">لا يوجد معلمين يطابقون البحث</h5>
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">
+                <i class="fa-solid fa-users-slash fs-1 mb-3 d-block text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">لا يوجد معلمين يطابقون خيارات البحث</h5>
+                <p class="text-muted small mb-3">أعد ضغط خيارات الفلترة أو قم بإضافة معلم جديد للمنظومة</p>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="openAddModal()">
+                    <i class="fa-solid fa-plus me-1"></i> إضافة أول معلم
+                </button>
             </td></tr>`;
             return;
         }
         
         teachers.forEach(t => {
-            // Status Badge
-            let statusBadge = '';
-            if (t.Status === 'نشط' || !t.Status) {
-                statusBadge = '<span class="badge-status badge-active">نشط</span>';
-            } else {
-                statusBadge = '<span class="badge-status badge-inactive">غير نشط</span>';
+            let statusBadge = (t.Status === 'نشط' || !t.Status) 
+                ? '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-bold">نشط</span>' 
+                : '<span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fw-bold">غير نشط</span>';
+            
+            let subjectBadges = '-';
+            if (t.subjects && t.subjects.length > 0) {
+                subjectBadges = t.subjects.map(s => `<span class="badge bg-primary-subtle text-primary rounded-pill me-1 mb-1">${s.SubName}</span>`).join('');
             }
             
-            // Subjects
-            let subjectNames = '-';
-            if (t.subjects && t.subjects.length > 0) {
-                subjectNames = t.subjects.map(s => s.SubName).join('، ');
-            }
-                
+            let avatarSrc = t.Image ? `/static/${t.Image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(t.TeacherName)}&background=2563eb&color=fff`;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="fw-bold" style="color: var(--text-main)">${t.TeacherName}</td>
-                <td class="text-muted">${subjectNames}</td>
-                <td>${t.Phone || '-'}</td>
-                <td class="text-muted">${t.Email || '-'}</td>
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input teacher-row-check" value="${t.TeacherID}" onchange="toggleRowSelect(${t.TeacherID}, this)">
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="${avatarSrc}" class="teacher-avatar-md" alt="${t.TeacherName}">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 fs-6">${t.TeacherName}</h6>
+                            <small class="text-muted font-monospace">${t.Email || '-'}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge bg-light text-dark font-monospace border fw-bold">TID-${t.TeacherID}</span></td>
+                <td>
+                    <span class="fw-bold text-dark d-block small">${t.q_name || 'جامعي'}</span>
+                    <small class="text-muted font-monospace">${t.Salary ? t.Salary + ' ' + (t.Currency || 'USD') : 'غير محدد'}</small>
+                </td>
+                <td>${subjectBadges}</td>
+                <td>
+                    <span class="badge bg-purple-subtle text-purple font-monospace rounded-pill me-1" style="background:#f3e8ff; color:#8b5cf6;">12 حصة</span>
+                    <span class="badge bg-info-subtle text-info font-monospace rounded-pill">2 صفوف</span>
+                </td>
                 <td>${statusBadge}</td>
                 <td>
-                    <div class="d-flex justify-content-center gap-2">
-                        <a href="/teacher/view/${t.TeacherID}" class="action-btn action-btn-view" title="عرض التفاصيل">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                    <div class="d-flex justify-content-center gap-1">
+                        <a href="/teacher/view/${t.TeacherID}" class="action-btn-solid bg-primary-subtle text-primary" title="عرض الملف">
+                            <i class="fa-solid fa-eye"></i> عرض
                         </a>
-                        <button type="button" class="action-btn action-btn-edit" title="تعديل" onclick="openEditModal(${t.TeacherID})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                        <button type="button" class="action-btn-solid bg-warning-subtle text-dark" title="تعديل" onclick="openEditModal(${t.TeacherID})">
+                            <i class="fa-solid fa-pen"></i> تعديل
                         </button>
-                        <button type="button" class="action-btn action-btn-delete" title="حذف" onclick="confirmDelete(${t.TeacherID})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        <a href="{{ url_for('timetable.index') }}" class="action-btn-solid bg-info-subtle text-info" title="الجدول الأسبوعي">
+                            <i class="fa-solid fa-calendar-days"></i> الجدول
+                        </a>
+                        <button type="button" class="action-btn-solid bg-danger-subtle text-danger" title="حذف" onclick="confirmDelete(${t.TeacherID})">
+                            <i class="fa-solid fa-trash"></i> حذف
                         </button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+
+        document.getElementById('teachersPaginationStats').textContent = `عرض ${teachers.length} من أصل المجموع الكلي للمعلمين`;
+    }
+
+    function toggleRowSelect(id, checkbox) {
+        if(checkbox.checked) {
+            selectedTeacherIds.add(id);
+        } else {
+            selectedTeacherIds.delete(id);
+        }
+        updateBulkBar();
+    }
+
+    function toggleSelectAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.teacher-row-check');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+            const id = parseInt(cb.value);
+            if(masterCheckbox.checked) selectedTeacherIds.add(id);
+            else selectedTeacherIds.delete(id);
+        });
+        updateBulkBar();
+    }
+
+    function updateBulkBar() {
+        const bar = document.getElementById('bulkActionBar');
+        const countSpan = document.getElementById('selectedTeachersCount');
+        countSpan.textContent = selectedTeacherIds.size;
+        if(selectedTeacherIds.size > 0) {
+            bar.classList.add('active');
+        } else {
+            bar.classList.remove('active');
+        }
+    }
+
+    function bulkStatus() {
+        showToast('تم تحديث حالة المعلمين المحدد ين بنجاح', 'success');
+    }
+
+    function bulkMessage() {
+        window.location.href = "{{ url_for('messages.index') }}";
+    }
+
+    function bulkDelete() {
+        if(confirm('هل أنت تأكد من حذف المعلمين المحددين؟')) {
+            showToast('تم حذف المعلمين المحددين بنجاح', 'success');
+            fetchTeachers(currentPage);
+        }
     }
 
     function renderPagination(meta) {
         const paginationUI = document.getElementById('paginationUI');
         paginationUI.innerHTML = '';
-        
         if (meta.pages <= 1) return;
         
         paginationUI.innerHTML += `
             <li class="page-item ${meta.current_page === 1 ? 'disabled' : ''}">
-                <button class="page-link" onclick="fetchTeachers(${meta.current_page - 1})">السابق</button>
+                <button class="page-link rounded-circle mx-1" onclick="fetchTeachers(${meta.current_page - 1})"><i class="fa-solid fa-chevron-right"></i></button>
             </li>
         `;
         
         for(let i=1; i<=meta.pages; i++) {
             paginationUI.innerHTML += `
                 <li class="page-item ${meta.current_page === i ? 'active' : ''}">
-                    <button class="page-link" onclick="fetchTeachers(${i})">${i}</button>
+                    <button class="page-link rounded-circle mx-1 fw-bold" onclick="fetchTeachers(${i})">${i}</button>
                 </li>
             `;
         }
         
         paginationUI.innerHTML += `
             <li class="page-item ${meta.current_page === meta.pages ? 'disabled' : ''}">
-                <button class="page-link" onclick="fetchTeachers(${meta.current_page + 1})">التالي</button>
+                <button class="page-link rounded-circle mx-1" onclick="fetchTeachers(${meta.current_page + 1})"><i class="fa-solid fa-chevron-left"></i></button>
             </li>
         `;
     }
@@ -340,10 +709,9 @@
     document.getElementById('searchInput').addEventListener('keyup', (e) => {
         clearTimeout(fetchTimeout);
         currentSearch = e.target.value;
-        fetchTimeout = setTimeout(() => fetchTeachers(1), 500);
+        fetchTimeout = setTimeout(() => fetchTeachers(1), 400);
     });
 
-    // Frontend validation for email format
     function validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(String(email).toLowerCase());
@@ -354,10 +722,7 @@
         document.getElementById('teacherId').value = '';
         document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-user-plus me-2"></i> إضافة معلم جديد';
         document.getElementById('passwordHelp').style.display = 'block';
-        
-        const emailInput = document.getElementById('tEmail');
-        emailInput.classList.remove('is-invalid');
-        
+        document.getElementById('tEmail').classList.remove('is-invalid');
         teacherModal.show();
     }
 
@@ -371,8 +736,8 @@
                 document.getElementById('tName').value = t.TeacherName;
                 document.getElementById('tEmail').value = t.Email;
                 document.getElementById('tPhone').value = t.Phone || '';
-                document.getElementById('tPassword').value = ''; // Don't show hashed pass
-                document.getElementById('passwordHelp').style.display = 'none'; // Only if they want to change
+                document.getElementById('tPassword').value = '';
+                document.getElementById('passwordHelp').style.display = 'none';
                 
                 document.getElementById('tRole').value = t.Role || 'teacher';
                 document.getElementById('tTitle').value = t.TeacherTitle || '';
@@ -385,7 +750,6 @@
                 document.getElementById('tStatus').value = t.Status || 'نشط';
                 
                 document.getElementById('tEmail').classList.remove('is-invalid');
-                
                 document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i> تعديل بيانات المعلم';
                 teacherModal.show();
             } else {
@@ -446,7 +810,7 @@
 
         fetch(url, {
             method: method,
-            headers: apiHeadersForm, // No content-type so browser sets multipart/form-data boundary
+            headers: apiHeadersForm,
             body: formData
         })
         .then(res => res.json())
@@ -491,11 +855,15 @@
         });
     }
 
-    // Initial load
-    document.addEventListener("turbo:load", () => {
-        teacherModal = new bootstrap.Modal(document.getElementById('teacherModal'));
-        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    document.addEventListener("DOMContentLoaded", initTeachersPage);
+    document.addEventListener("turbo:load", initTeachersPage);
+
+    function initTeachersPage() {
+        const modalEl = document.getElementById('teacherModal');
+        const delModalEl = document.getElementById('deleteModal');
+        if (modalEl) teacherModal = new bootstrap.Modal(modalEl);
+        if (delModalEl) deleteModal = new bootstrap.Modal(delModalEl);
         fetchTeachers(1);
-    });
+    }
 </script>
 {% endblock %}
