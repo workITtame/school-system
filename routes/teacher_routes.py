@@ -99,7 +99,7 @@ def view_teacher(id):
 @teacher_bp.route('/add', methods=['GET', 'POST'])
 def add_teacher():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    from models import Qualifications, Teacher, User, db
+    from models import Qualifications, Teacher, Subject, User, db
     import werkzeug.security
     import os
     from flask import current_app
@@ -116,6 +116,7 @@ def add_teacher():
         dob = request.form.get('dob')
         pob = request.form.get('pob')
         gender = request.form.get('gender', 'ذكر')
+        selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
         
         qual = Qualifications.query.filter_by(QName=q_name).first() if q_name else None
         
@@ -149,6 +150,9 @@ def add_teacher():
             Status='نشط'
         )
         
+        if selected_subject_ids:
+            new_teacher.subjects = Subject.query.filter(Subject.SubID.in_(selected_subject_ids)).all()
+
         photo = request.files.get('photo')
         if photo and photo.filename:
             filename = f"teacher_{int(time.time())}_{photo.filename}"
@@ -162,12 +166,13 @@ def add_teacher():
         return redirect(url_for('teacher.index'))
 
     qualifications = Qualifications.query.all()
-    return render_template('teacher/add.html', qualifications=qualifications)
+    all_subjects = Subject.query.all()
+    return render_template('teacher/add.html', qualifications=qualifications, all_subjects=all_subjects)
 
 @teacher_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_teacher(id):
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    from models import Qualifications, Teacher, db
+    from models import Qualifications, Teacher, Subject, db
     import os
     import time
     from flask import current_app
@@ -182,6 +187,10 @@ def edit_teacher(id):
         teacher.Currency = request.form.get('currency', teacher.Currency)
         teacher.Gender = request.form.get('gender', teacher.Gender)
         teacher.POB = request.form.get('pob', teacher.POB)
+        
+        selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
+        if selected_subject_ids:
+            teacher.subjects = Subject.query.filter(Subject.SubID.in_(selected_subject_ids)).all()
         
         q_name = request.form.get('q_name')
         if q_name:
@@ -200,4 +209,5 @@ def edit_teacher(id):
         return redirect(url_for('teacher.view_teacher', id=teacher.TeacherID))
 
     qualifications = Qualifications.query.all()
-    return render_template('teacher/edit.html', teacher=teacher, qualifications=qualifications)
+    all_subjects = Subject.query.all()
+    return render_template('teacher/edit.html', teacher=teacher, qualifications=qualifications, all_subjects=all_subjects)
