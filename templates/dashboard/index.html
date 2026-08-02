@@ -1,8 +1,8 @@
 {% extends 'layout.html' %}
 
-{% block title %}لوحة التحكم الرئيسية (إدارة النظام) - SaaS Dashboard{% endblock %}
-{% block page_title %}لوحة تحكم مدير النظام{% endblock %}
-{% block page_subtitle %}مراقبة فورية وتحليلات حية لأداء المدرسة من واقع قاعدة البيانات{% endblock %}
+{% block title %}لوحة التحكم الرئيسية (إدارة النظام) - SaaS Smart Dashboard{% endblock %}
+{% block page_title %}لوحة تحكم مدير النظام - Smart Dashboard{% endblock %}
+{% block page_subtitle %}تحليلات ذكية ومراقبة فورية شاملة لكافة أركان المدرسة والمؤشرات التشغيلية{% endblock %}
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +22,7 @@
                         <i class="fa-solid fa-user-graduate fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_students }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_students }}">{{ total_students }}</h3>
                 <span class="badge bg-success-subtle text-success font-monospace rounded-pill small"><i class="fa-solid fa-check me-1"></i> طلاب مقيدون</span>
             </div>
         </div>
@@ -36,7 +36,7 @@
                         <i class="fa-solid fa-chalkboard-user fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_teachers }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_teachers }}">{{ total_teachers }}</h3>
                 <span class="badge bg-info-subtle text-info font-monospace rounded-pill small"><i class="fa-solid fa-user-tie me-1"></i> كادر تعليمي</span>
             </div>
         </div>
@@ -50,7 +50,7 @@
                         <i class="fa-solid fa-layer-group fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_classes }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_classes }}">{{ total_classes }}</h3>
                 <span class="badge bg-success-subtle text-success font-monospace rounded-pill small">صفوف مفعلة</span>
             </div>
         </div>
@@ -64,7 +64,7 @@
                         <i class="fa-solid fa-cubes fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_sections }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_sections }}">{{ total_sections }}</h3>
                 <span class="badge bg-secondary-subtle text-secondary font-monospace rounded-pill small">شعب دراسية</span>
             </div>
         </div>
@@ -78,7 +78,7 @@
                         <i class="fa-solid fa-book-open fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_subjects }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_subjects }}">{{ total_subjects }}</h3>
                 <span class="badge bg-warning-subtle text-warning font-monospace rounded-pill small">مناهج مسجلة</span>
             </div>
         </div>
@@ -92,7 +92,7 @@
                         <i class="fa-solid fa-users-gear fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-dark mb-1 font-monospace">{{ total_users }}</h3>
+                <h3 class="fw-extrabold text-dark mb-1 font-monospace counter-val" data-target="{{ total_users }}">{{ total_users }}</h3>
                 <span class="badge bg-light text-dark font-monospace rounded-pill border small">حسابات النظام</span>
             </div>
         </div>
@@ -120,7 +120,7 @@
                         <i class="fa-solid fa-pen-ruler fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-warning mb-1 font-monospace">{{ active_homework_count }}</h3>
+                <h3 class="fw-extrabold text-warning mb-1 font-monospace counter-val" data-target="{{ active_homework_count }}">{{ active_homework_count }}</h3>
                 <span class="badge bg-warning-subtle text-warning font-monospace rounded-pill small">قيد المتابعة</span>
             </div>
         </div>
@@ -134,7 +134,7 @@
                         <i class="fa-solid fa-file-signature fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-danger mb-1 font-monospace">{{ upcoming_exams_count }}</h3>
+                <h3 class="fw-extrabold text-danger mb-1 font-monospace counter-val" data-target="{{ upcoming_exams_count }}">{{ upcoming_exams_count }}</h3>
                 <span class="badge bg-danger-subtle text-danger font-monospace rounded-pill small">اختبارات مجدولة</span>
             </div>
         </div>
@@ -148,7 +148,7 @@
                         <i class="fa-regular fa-envelope fs-5"></i>
                     </div>
                 </div>
-                <h3 class="fw-extrabold text-info mb-1 font-monospace">{{ unread_messages_count }}</h3>
+                <h3 class="fw-extrabold text-info mb-1 font-monospace counter-val" data-target="{{ unread_messages_count }}">{{ unread_messages_count }}</h3>
                 <span class="badge bg-info-subtle text-info font-monospace rounded-pill small">وارد جديد</span>
             </div>
         </div>
@@ -156,102 +156,49 @@
 
 
     <!-- ========================================== -->
-    <!-- SECTION 2 & 3: Attendance & Today's Summary -->
+    <!-- WIDGET: Academic Overview (ملخص المدرسة)  -->
     <!-- ========================================== -->
-    <div class="row g-4 mb-4">
-        <!-- Section 2: Today's Attendance -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-clipboard-user me-2 text-primary"></i> حضور اليوم (Today's Attendance)</h6>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace">{{ attendance_rate }}% نسبة الحضور</span>
-                </div>
-                <div class="card-body p-4">
-                    {% if today_present > 0 or today_absent > 0 or today_late > 0 %}
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <div style="height: 180px;" class="position-relative d-flex align-items-center justify-content-center">
-                                <canvas id="attendanceDoughnutChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex flex-column gap-3">
-                                <div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-success-subtle border border-success-subtle">
-                                    <span class="fw-bold text-success"><i class="fa-solid fa-circle-check me-2"></i> الحاضرون</span>
-                                    <span class="fw-extrabold font-monospace text-success fs-5">{{ today_present }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-danger-subtle border border-danger-subtle">
-                                    <span class="fw-bold text-danger"><i class="fa-solid fa-circle-xmark me-2"></i> الغائبون</span>
-                                    <span class="fw-extrabold font-monospace text-danger fs-5">{{ today_absent }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center p-2 rounded-3 bg-warning-subtle border border-warning-subtle">
-                                    <span class="fw-bold text-warning"><i class="fa-solid fa-clock me-2"></i> المتأخرون</span>
-                                    <span class="fw-extrabold font-monospace text-warning fs-5">{{ today_late }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- Empty State for Attendance -->
-                    <div class="text-center py-4 my-2">
-                        <div class="bg-light d-inline-block rounded-circle p-3 mb-3">
-                            <i class="fa-solid fa-clipboard-question text-muted fs-1"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark mb-1">لم يتم رصد حضور اليوم حتى الآن</h6>
-                        <p class="text-muted small mb-3">يمكنك الانتقال لوحدة الحضور والغياب لتسجيل رصد الطلاب اليومي.</p>
-                        <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">
-                            <i class="fa-solid fa-plus me-1"></i> تسجيل الحضور اليومي
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-school me-2 text-primary"></i> ملخص المدرسة الأكاديمي (Academic Overview)</h6>
+            <span class="badge bg-primary-subtle text-primary border">مؤشرات تشغيلية حية</span>
         </div>
-
-        <!-- Section 3: Today's Schedule & Summary -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-calendar-day me-2 text-info"></i> ملخص اليوم الدراسي (Today's Schedule)</h6>
+        <div class="card-body p-4">
+            <div class="row g-3 text-center">
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">الصفوف</small>
+                        <span class="fw-extrabold fs-4 text-dark font-monospace">{{ total_classes }}</span>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row g-3">
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">أول حصة</small>
-                                <span class="fw-extrabold text-primary font-monospace fs-6">{{ today_summary.first_lesson_time }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">آخر حصة</small>
-                                <span class="fw-extrabold text-info font-monospace fs-6">{{ today_summary.last_lesson_time }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">حصص اليوم</small>
-                                <span class="fw-extrabold text-dark font-monospace fs-6">{{ today_summary.today_lessons_count }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">صفوف لها حصص</small>
-                                <span class="fw-extrabold text-success font-monospace fs-6">{{ today_summary.classes_with_lessons_count }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">معلمون مشغولون</small>
-                                <span class="fw-extrabold text-warning font-monospace fs-6">{{ today_summary.busy_teachers_count }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <div class="p-3 bg-light rounded-4 text-center border h-100">
-                                <small class="text-muted d-block fw-bold mb-1">امتحانات اليوم</small>
-                                <span class="fw-extrabold text-danger font-monospace fs-6">{{ today_summary.today_exams_count }}</span>
-                            </div>
-                        </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">الشعب</small>
+                        <span class="fw-extrabold fs-4 text-dark font-monospace">{{ total_sections }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">المواد</small>
+                        <span class="fw-extrabold fs-4 text-warning font-monospace">{{ total_subjects }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">المعلمون</small>
+                        <span class="fw-extrabold fs-4 text-info font-monospace">{{ total_teachers }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">الطلاب</small>
+                        <span class="fw-extrabold fs-4 text-success font-monospace">{{ total_students }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-primary-subtle rounded-4 border border-primary-subtle">
+                        <small class="text-primary fw-bold d-block mb-1">متوسط طلاب/صف</small>
+                        <span class="fw-extrabold fs-4 text-primary font-monospace">{{ avg_students_per_class }}</span>
                     </div>
                 </div>
             </div>
@@ -260,7 +207,412 @@
 
 
     <!-- ========================================== -->
-    <!-- SECTION 4: Analytics Charts (3 Modern Charts) -->
+    <!-- WIDGETS: Class & Section Occupancy         -->
+    <!-- ========================================== -->
+    <div class="row g-4 mb-4">
+        <!-- Class Occupancy Widget -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-simple me-2 text-primary"></i> نسبة إشغال الصفوف (Class Occupancy)</h6>
+                    <span class="badge bg-light text-muted border font-monospace">الطاقة الاستيعابية</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if class_occupancy %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for item in class_occupancy %}
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark">{{ item.name }}</span>
+                                <small class="fw-bold font-monospace text-muted">{{ item.count }} / {{ item.max }} طالب ({{ item.rate }}%)</small>
+                            </div>
+                            <div class="progress rounded-pill style-progress" style="height: 10px;">
+                                <div class="progress-bar bg-primary rounded-pill progress-bar-animated" role="progressbar" style="width: {{ item.rate }}%;" aria-valuenow="{{ item.rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fa-solid fa-border-none text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا توجد صفوف مضافة حالياً</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Occupancy Widget -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-cubes me-2 text-success"></i> نسبة إشغال الشعب (Section Occupancy)</h6>
+                    <span class="badge bg-light text-muted border font-monospace">مؤشر الإشغال</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if section_occupancy %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for sec in section_occupancy %}
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark">{{ sec.name }}</span>
+                                <small class="fw-bold font-monospace text-{{ sec.color }}">{{ sec.count }} / {{ sec.max }} ({{ sec.rate }}%)</small>
+                            </div>
+                            <div class="progress rounded-pill style-progress" style="height: 10px;">
+                                <div class="progress-bar bg-{{ sec.color }} rounded-pill progress-bar-animated" role="progressbar" style="width: {{ sec.rate }}%;" aria-valuenow="{{ sec.rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fa-solid fa-cubes-stacked text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا توجد شعب مضافة حالياً</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- WIDGETS: Recent Students & Recent Teachers -->
+    <!-- ========================================== -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Students (Part 4) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-graduate me-2 text-primary"></i> أحدث الطلاب المضافين (Recent Students)</h6>
+                    <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">إدارة الطلاب</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-2 text-start px-3">الطالب</th>
+                                    <th class="py-2">الصف</th>
+                                    <th class="py-2">الشعبة</th>
+                                    <th class="py-2">تاريخ الإضافة</th>
+                                    <th class="py-2">الملف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for st in recent_students %}
+                                <tr>
+                                    <td class="text-start px-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img src="{{ url_for('static', filename=st.image) if st.image else 'https://ui-avatars.com/api/?name=' + st.name + '&background=2563eb&color=fff' }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                            <span class="fw-bold text-dark">{{ st.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ st.class_name }}</span></td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary border">{{ st.section_name }}</span></td>
+                                    <td><small class="text-muted font-monospace">{{ st.date }}</small></td>
+                                    <td>
+                                        <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-primary action-btn-view rounded-circle" title="عرض الملف">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-user-slash text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لم يتم إضافة طلاب مؤخراً</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Teachers (Part 5) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chalkboard-user me-2 text-info"></i> أحدث المعلمين (Recent Teachers)</h6>
+                    <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold">إدارة المعلمين</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_teachers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-2 text-start px-3">المعلم</th>
+                                    <th class="py-2">المسمى</th>
+                                    <th class="py-2">المواد</th>
+                                    <th class="py-2">الحصص</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in recent_teachers %}
+                                <tr>
+                                    <td class="text-start px-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img src="{{ url_for('static', filename=t.image) if t.image else 'https://ui-avatars.com/api/?name=' + t.name + '&background=10b981&color=fff' }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                            <span class="fw-bold text-dark">{{ t.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ t.title }}</span></td>
+                                    <td><span class="badge bg-info-subtle text-info border font-monospace">{{ t.subjects_count }} مواد</span></td>
+                                    <td><span class="fw-bold text-primary font-monospace">{{ t.lessons_count }} حصة</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-user-xmark text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لم يتم إضافة معلمين مؤخراً</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- WIDGETS: Recent Exams & Homework Summary   -->
+    <!-- ========================================== -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Exams (Part 6) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-file-signature me-2 text-danger"></i> الامتحانات القادمة (Recent Exams)</h6>
+                    <a href="{{ url_for('exams.index') }}" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">الجدول الكامل</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_exams %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="py-2 text-start px-3">الامتحان</th>
+                                    <th class="py-2">المادة</th>
+                                    <th class="py-2">الصف</th>
+                                    <th class="py-2">التاريخ</th>
+                                    <th class="py-2">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ex in recent_exams %}
+                                <tr>
+                                    <td class="text-start px-3 fw-bold text-dark">{{ ex.name }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ ex.subject }}</span></td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary border">{{ ex.class_name }}</span></td>
+                                    <td><small class="text-muted font-monospace">{{ ex.date }}</small></td>
+                                    <td><span class="badge bg-danger-subtle text-danger rounded-pill px-3">{{ ex.status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-calendar-xmark text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا توجد امتحانات قادمة مجدولة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Homework Summary (Part 7) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-book-bookmark me-2 text-warning"></i> ملخص الواجبات الدراسية (Homework Summary)</h6>
+                    <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">الواجبات</a>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-4">
+                            <div class="p-2 bg-warning-subtle rounded-3 border border-warning-subtle">
+                                <small class="text-warning fw-bold d-block">نشطة</small>
+                                <span class="fw-extrabold text-warning font-monospace">{{ active_homework_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-success-subtle rounded-3 border border-success-subtle">
+                                <small class="text-success fw-bold d-block">منتهية</small>
+                                <span class="fw-extrabold text-success font-monospace">{{ completed_homework_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-danger-subtle rounded-3 border border-danger-subtle">
+                                <small class="text-danger fw-bold d-block">متأخرة</small>
+                                <span class="fw-extrabold text-danger font-monospace">{{ late_homework_count }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if recent_homeworks %}
+                    <div class="list-group list-group-flush border-top">
+                        {% for hw in recent_homeworks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.85rem;">{{ hw.title }}</h6>
+                                <small class="text-muted">{{ hw.subject }} - {{ hw.class_name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ hw.color }}-subtle text-{{ hw.color }} rounded-pill mb-1 d-block">{{ hw.status }}</span>
+                                <small class="text-muted font-monospace d-block" style="font-size: 0.72rem;">تسليم: {{ hw.due_date }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted small">لا توجد واجبات دراسية مسجلة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- WIDGETS: Notifications & Upcoming Events  -->
+    <!-- ========================================== -->
+    <div class="row g-4 mb-4">
+        <!-- Notifications Center (Part 8) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-bell me-2 text-danger"></i> مركز الإشعارات والتنبيهات (Notifications Center)</h6>
+                    <span class="badge bg-danger-subtle text-danger rounded-pill px-3">التنبيهات المباشرة</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if notifications_list %}
+                    <div class="list-group list-group-flush border-top">
+                        {% for notif in notifications_list %}
+                        <div class="list-group-item d-flex align-items-center gap-3 p-3">
+                            <div class="rounded-circle p-2 bg-{{ notif.color }}-subtle text-{{ notif.color }} flex-shrink-0" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-circle-info fs-6"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;">{{ notif.text }}</span>
+                                    <span class="badge bg-{{ notif.color }}-subtle text-{{ notif.color }} rounded-pill small">{{ notif.priority }}</span>
+                                </div>
+                                <small class="text-muted font-monospace" style="font-size: 0.75rem;">{{ notif.time }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Empty State -->
+                    <div class="text-center py-5">
+                        <i class="fa-regular fa-bell-slash text-muted fs-1 mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">لا توجد إشعارات حالياً</h6>
+                        <p class="text-muted small">ستظهر التنبيهات المهمة والتحديثات هنا تلقائياً.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Events (Part 10) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-calendar-check me-2 text-info"></i> الأحداث والفعاليات القادمة (Upcoming Events)</h6>
+                    <span class="badge bg-info-subtle text-info border">مرتبة زمنيّاً</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if upcoming_events %}
+                    <div class="list-group list-group-flush border-top">
+                        {% for ev in upcoming_events %}
+                        <div class="list-group-item d-flex align-items-center gap-3 p-3">
+                            <div class="rounded-circle p-2 bg-{{ ev.color }}-subtle text-{{ ev.color }} flex-shrink-0" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid {{ ev.icon }} fs-6"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ ev.title }}</span>
+                                    <span class="badge bg-light text-dark border font-monospace">{{ ev.type }}</span>
+                                </div>
+                                <small class="text-muted font-monospace" style="font-size: 0.75rem;"><i class="fa-regular fa-clock me-1"></i> التاريخ: {{ ev.date }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-calendar-minus text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا توجد أحدث أو امتحانات مجدولة قادمة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- WIDGET: System Health & Security (Part 11) -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-shield-halved me-2 text-dark"></i> حالة النظام والأمان (System Health & Security)</h6>
+            <span class="badge bg-success-subtle text-success border"><i class="fa-solid fa-check-double me-1"></i> النظام مستقر</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3 text-center">
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">إجمالي الحسابات</small>
+                        <span class="fw-extrabold fs-5 text-dark font-monospace">{{ system_health.total_users }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">الحسابات المقفلة</small>
+                        <span class="fw-extrabold fs-5 text-danger font-monospace">{{ system_health.locked_accounts }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">إجمالي الرسائل</small>
+                        <span class="fw-extrabold fs-5 text-info font-monospace">{{ system_health.total_messages }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">إجمالي الواجبات</small>
+                        <span class="fw-extrabold fs-5 text-warning font-monospace">{{ system_health.total_homeworks }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">إجمالي الامتحانات</small>
+                        <span class="fw-extrabold fs-5 text-primary font-monospace">{{ system_health.total_exams }}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <small class="text-muted fw-bold d-block mb-1">آخر تسجيل دخول</small>
+                        <span class="fw-bold text-muted font-monospace style-small-text" style="font-size: 0.78rem;">{{ system_health.last_login_time }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: Analytics Charts (5 Charts)     -->
     <!-- ========================================== -->
     <div class="row g-4 mb-4">
         <!-- Chart 1: Student Distribution -->
@@ -275,10 +627,9 @@
                         <canvas id="classStudentsChart"></canvas>
                     </div>
                     {% else %}
-                    <!-- Empty State -->
                     <div class="text-center py-5">
                         <i class="fa-solid fa-chart-bar text-muted fs-1 mb-2"></i>
-                        <p class="text-muted small">لا يوجد طلاب مسجلون في الصفوف حالياً</p>
+                        <p class="text-muted small">لا يوجد طلاب مسجلون حالياً</p>
                     </div>
                     {% endif %}
                 </div>
@@ -297,17 +648,16 @@
                         <canvas id="attendanceTrendChart"></canvas>
                     </div>
                     {% else %}
-                    <!-- Empty State -->
                     <div class="text-center py-5">
                         <i class="fa-solid fa-chart-line text-muted fs-1 mb-2"></i>
-                        <p class="text-muted small">لا توجد سجلات حضور خلال الأسبوع الماضي</p>
+                        <p class="text-muted small">لا توجد سجلات حضور بالرصد</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Chart 3: Grade Distribution (Marks.Score) -->
+        <!-- Chart 3: Grade Distribution -->
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                 <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
@@ -319,199 +669,51 @@
                         <canvas id="gradeDistChart"></canvas>
                     </div>
                     {% else %}
-                    <!-- Empty State -->
                     <div class="text-center py-5">
                         <i class="fa-solid fa-graduation-cap text-muted fs-1 mb-2"></i>
-                        <p class="text-muted small">لم يتم إدخال درجات واختبارات بعد</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ========================================== -->
-    <!-- SECTION 5 & 6: Recent Activities & Messages -->
-    <!-- ========================================== -->
-    <div class="row g-4 mb-4">
-        <!-- Section 5: Recent Activities -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i> أحدث الأنشطة والعمليات (System Activity Log)</h6>
-                    <span class="badge bg-light text-muted border">بيانات حية</span>
-                </div>
-                <div class="card-body p-0">
-                    {% if latest_activities %}
-                    <div class="list-group list-group-flush border-top">
-                        {% for act in latest_activities %}
-                        <div class="list-group-item d-flex align-items-center gap-3 p-3">
-                            <div class="rounded-circle p-2 bg-{{ act.color }}-subtle text-{{ act.color }} flex-shrink-0" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa-solid {{ act.icon }} fs-6"></i>
-                            </div>
-                            <div class="flex-grow-1 overflow-hidden">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.88rem;">{{ act.title }}</h6>
-                                    <small class="text-muted font-monospace" style="font-size: 0.75rem;">{{ act.time }}</small>
-                                </div>
-                                <p class="mb-0 text-muted small text-truncate">{{ act.details }}</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <!-- Empty State for Activities -->
-                    <div class="text-center py-5">
-                        <i class="fa-solid fa-list-check text-muted fs-1 mb-2"></i>
-                        <h6 class="fw-bold text-dark mb-1">لا توجد عمليات مسجلة حديثاً</h6>
-                        <p class="text-muted small">ستظهر عمليات الإضافة والتعديل تلقائياً هنا.</p>
+                        <p class="text-muted small">لم يتم رصد درجات بعد</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Section 6: Latest Messages -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-regular fa-envelope me-2 text-info"></i> آخر الرسائل (Latest Messages)</h6>
-                    <a href="{{ url_for('messages.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">صندوق الرسائل</a>
-                </div>
-                <div class="card-body p-0">
-                    {% if latest_messages %}
-                    <div class="list-group list-group-flush border-top">
-                        {% for msg in latest_messages %}
-                        <div class="list-group-item p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="fa-solid fa-user-circle me-1 text-muted"></i> {{ msg.sender_name }}</span>
-                                <small class="text-muted font-monospace" style="font-size: 0.75rem;">{{ msg.time }}</small>
-                            </div>
-                            <p class="text-muted small mb-2 text-truncate">{{ msg.content }}</p>
-                            <div>
-                                {% if msg.is_read %}
-                                <span class="badge bg-light text-muted border rounded-pill">مقروءة</span>
-                                {% else %}
-                                <span class="badge bg-info-subtle text-info rounded-pill">رسالة جديدة</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <!-- Empty State for Messages -->
-                    <div class="text-center py-5">
-                        <i class="fa-regular fa-envelope-open text-muted fs-1 mb-2"></i>
-                        <h6 class="fw-bold text-dark mb-1">صندوق الرسائل فارغ</h6>
-                        <p class="text-muted small mb-3">لم تصلك أي رسائل جديدة حتى الآن.</p>
-                        <a href="{{ url_for('messages.index') }}" class="btn btn-sm btn-light border rounded-pill px-3">إرسال رسالة جديدة</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ========================================== -->
-    <!-- SECTION 7 & 8: Top Students & Top Teachers -->
-    <!-- ========================================== -->
-    <div class="row g-4 mb-4">
-        <!-- Section 7: Top Students -->
+        <!-- Chart 4: Class Occupancy Bar Chart (New) -->
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                 <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-trophy me-2 text-warning"></i> أفضل الطلاب المتفوقين (Top Students)</h6>
-                    <span class="badge bg-warning-subtle text-warning border">حسب متوسط الدرجات</span>
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-bar me-2 text-info"></i> رسم نسبة إشغال الصفوف (Class Occupancy Chart)</h6>
                 </div>
-                <div class="card-body p-0">
-                    {% if top_students %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 text-center">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="py-2">#</th>
-                                    <th class="py-2 text-start px-3">اسم الطالب</th>
-                                    <th class="py-2">الصف</th>
-                                    <th class="py-2">المعدل</th>
-                                    <th class="py-2">شارة التميز</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for st in top_students %}
-                                <tr>
-                                    <td class="fw-bold text-muted font-monospace">{{ loop.index }}</td>
-                                    <td class="text-start px-3">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <img src="{{ url_for('static', filename=st.image) if st.image else 'https://ui-avatars.com/api/?name=' + st.name + '&background=2563eb&color=fff' }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
-                                            <span class="fw-bold text-dark">{{ st.name }}</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark border">{{ st.class_name }}</span></td>
-                                    <td><span class="fw-extrabold text-primary font-monospace">{{ st.avg_score }}%</span></td>
-                                    <td><span class="badge bg-{{ st.badge_color }}-subtle text-{{ st.badge_color }} rounded-pill px-3 py-1">{{ st.badge_text }}</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="card-body p-3">
+                    {% if class_occ_data and class_occ_data|sum > 0 %}
+                    <div style="height: 220px;">
+                        <canvas id="classOccupancyBarChart"></canvas>
                     </div>
                     {% else %}
-                    <!-- Empty State for Top Students -->
                     <div class="text-center py-5">
-                        <i class="fa-solid fa-award text-muted fs-1 mb-2"></i>
-                        <h6 class="fw-bold text-dark mb-1">لا توجد درجات مسجلة بعد</h6>
-                        <p class="text-muted small">قم بإدخال رصد الدرجات للاختبارات لاحتساب الطلاب المتفوقين.</p>
+                        <i class="fa-solid fa-chart-bar text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا توجد بيانات إشغال متاحة</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Section 8: Top Teachers -->
+        <!-- Chart 5: Teacher Workload Chart (New) -->
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                 <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-star me-2 text-info"></i> المعلمون الأنشط (Top Teachers)</h6>
-                    <span class="badge bg-info-subtle text-info border">حسب النصاب والطلاب</span>
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-users me-2 text-primary"></i> رسم النصاب الأسبوعي للمعلمين (Teacher Workload)</h6>
                 </div>
-                <div class="card-body p-0">
-                    {% if top_teachers %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 text-center">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="py-2">#</th>
-                                    <th class="py-2 text-start px-3">اسم المعلم</th>
-                                    <th class="py-2">عدد المواد</th>
-                                    <th class="py-2">عدد الطلاب</th>
-                                    <th class="py-2">الحصص الأسبوعية</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for t in top_teachers %}
-                                <tr>
-                                    <td class="fw-bold text-muted font-monospace">{{ loop.index }}</td>
-                                    <td class="text-start px-3">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <img src="{{ url_for('static', filename=t.image) if t.image else 'https://ui-avatars.com/api/?name=' + t.name + '&background=10b981&color=fff' }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
-                                            <span class="fw-bold text-dark">{{ t.name }}</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark border font-monospace">{{ t.subjects_count }} مواد</span></td>
-                                    <td><span class="badge bg-success-subtle text-success border font-monospace">{{ t.students_count }} طالب</span></td>
-                                    <td><span class="fw-bold text-primary font-monospace">{{ t.lessons_count }} حصة</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="card-body p-3">
+                    {% if teacher_workload_data and teacher_workload_data|sum > 0 %}
+                    <div style="height: 220px;">
+                        <canvas id="teacherWorkloadChart"></canvas>
                     </div>
                     {% else %}
-                    <!-- Empty State for Top Teachers -->
                     <div class="text-center py-5">
-                        <i class="fa-solid fa-chalkboard-user text-muted fs-1 mb-2"></i>
-                        <h6 class="fw-bold text-dark mb-1">لا يوجد كادر تعليمي مضاف</h6>
-                        <p class="text-muted small">إضافة المعلمين وتوزيع المواد يتيح متابعة الأداء الكادر.</p>
+                        <i class="fa-solid fa-users-slash text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small">لا يوجد نصاب حصص مسجل للمعلمين</p>
                     </div>
                     {% endif %}
                 </div>
@@ -591,27 +793,49 @@
 
 <style>
 .kpi-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .kpi-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
 }
 .quick-action-tile {
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 }
 .quick-action-tile:hover {
     background-color: #ffffff !important;
     border-color: var(--primary-color) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+}
+.progress-bar-animated {
+    transition: width 1s ease-in-out;
 }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function renderAdminDashboardCharts() {
+function renderAdminDashboardChartsPhase2() {
+    // Counter Animation
+    document.querySelectorAll('.counter-val').forEach(counter => {
+        const target = +counter.getAttribute('data-target');
+        if (!isNaN(target) && target > 0) {
+            let count = 0;
+            const speed = Math.ceil(target / 20);
+            const updateCount = () => {
+                count += speed;
+                if (count < target) {
+                    counter.innerText = count;
+                    setTimeout(updateCount, 30);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+            updateCount();
+        }
+    });
+
     // 1. Attendance Doughnut Chart
     const attDoughnutCanvas = document.getElementById('attendanceDoughnutChart');
     if (attDoughnutCanvas) {
@@ -630,9 +854,7 @@ function renderAdminDashboardCharts() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     }
@@ -685,7 +907,7 @@ function renderAdminDashboardCharts() {
         });
     }
 
-    // 4. Grade Distribution Doughnut Chart
+    // 4. Grade Distribution Chart
     const gradeDistCanvas = document.getElementById('gradeDistChart');
     if (gradeDistCanvas && {{ grade_dist_data|tojson }}.length > 0) {
         if (gradeDistCanvas.chartInstance) gradeDistCanvas.chartInstance.destroy();
@@ -707,9 +929,55 @@ function renderAdminDashboardCharts() {
             }
         });
     }
+
+    // 5. Class Occupancy Bar Chart (New)
+    const classOccCanvas = document.getElementById('classOccupancyBarChart');
+    if (classOccCanvas && {{ class_occ_data|tojson }}.length > 0) {
+        if (classOccCanvas.chartInstance) classOccCanvas.chartInstance.destroy();
+        classOccCanvas.chartInstance = new Chart(classOccCanvas, {
+            type: 'bar',
+            data: {
+                labels: {{ class_occ_labels|tojson }},
+                datasets: [{
+                    label: 'عدد الطلاب المقيدين',
+                    data: {{ class_occ_data|tojson }},
+                    backgroundColor: '#0d9488',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // 6. Teacher Workload Chart (New)
+    const teacherWorkloadCanvas = document.getElementById('teacherWorkloadChart');
+    if (teacherWorkloadCanvas && {{ teacher_workload_data|tojson }}.length > 0) {
+        if (teacherWorkloadCanvas.chartInstance) teacherWorkloadCanvas.chartInstance.destroy();
+        teacherWorkloadCanvas.chartInstance = new Chart(teacherWorkloadCanvas, {
+            type: 'bar',
+            data: {
+                labels: {{ teacher_workload_labels|tojson }},
+                datasets: [{
+                    label: 'عدد الحصص الأسبوعية',
+                    data: {{ teacher_workload_data|tojson }},
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
 }
 
-document.addEventListener("DOMContentLoaded", renderAdminDashboardCharts);
-document.addEventListener("turbo:load", renderAdminDashboardCharts);
+document.addEventListener("DOMContentLoaded", renderAdminDashboardChartsPhase2);
+document.addEventListener("turbo:load", renderAdminDashboardChartsPhase2);
 </script>
 {% endblock %}
