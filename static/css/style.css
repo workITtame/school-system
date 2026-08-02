@@ -547,3 +547,80 @@ body {
 .footer-mini {
     border-top: 1px solid var(--border-color);
 }
+
+/* ========================================== */
+/* STUDENT LIST UI POLISH (MODERN SAAS STYLES)*/
+/* ========================================== */
+.student-kpi-card {
+    border: 1px solid rgba(226, 232, 240, 0.7) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+}
+.student-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.12) !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+}
+.student-kpi-icon {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+.kpi-gradient-blue { background: linear-gradient(135deg, rgba(239, 246, 255, 1) 0%, rgba(219, 234, 254, 0.5) 100%); }
+.kpi-gradient-green { background: linear-gradient(135deg, rgba(240, 253, 244, 1) 0%, rgba(220, 252, 231, 0.5) 100%); }
+.kpi-gradient-red { background: linear-gradient(135deg, rgba(254, 242, 242, 1) 0%, rgba(254, 226, 226, 0.5) 100%); }
+.kpi-gradient-info { background: linear-gradient(135deg, rgba(236, 254, 255, 1) 0%, rgba(207, 250, 254, 0.5) 100%); }
+.kpi-gradient-warning { background: linear-gradient(135deg, rgba(254, 252, 232, 1) 0%, rgba(254, 240, 138, 0.3) 100%); }
+.kpi-gradient-purple { background: linear-gradient(135deg, rgba(245, 243, 255, 1) 0%, rgba(237, 233, 254, 0.5) 100%); }
+
+/* Sticky Table Header & Zebra Rows */
+.students-table-container {
+    max-height: 650px;
+    overflow-y: auto;
+}
+.students-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f8fafc !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+.table-zebra tbody tr:nth-of-type(even) {
+    background-color: rgba(248, 250, 252, 0.5);
+}
+.table-zebra tbody tr:hover {
+    background-color: rgba(239, 246, 255, 0.6) !important;
+}
+
+/* Skeleton Loading Animation */
+.skeleton-box {
+    display: inline-block;
+    height: 1em;
+    position: relative;
+    overflow: hidden;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    width: 100%;
+}
+.skeleton-box::after {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.4) 20%,
+        rgba(255, 255, 255, 0.7) 60%,
+        rgba(255, 255, 255, 0)
+    );
+    animation: shimmer 1.5s infinite;
+    content: '';
+}
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
