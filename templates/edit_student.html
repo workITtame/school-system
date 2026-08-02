@@ -19,7 +19,7 @@
     justify-content: space-between;
     align-items: center;
     position: relative;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
 }
 .stepper-steps-bar::before {
     content: '';
@@ -152,6 +152,17 @@
     <!-- Stepper Progress Bar & Card Form Container -->
     <div class="card border-0 shadow-lg rounded-4 bg-white p-4">
         
+        <!-- Progress Bar & Indicator -->
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark small"><i class="fa-solid fa-chart-line text-warning me-1"></i> نسبة اكتمال تعديل نموذج البيانات:</span>
+                <span class="badge bg-warning-subtle text-dark font-monospace fw-bold rounded-pill px-3 py-1" id="wizardProgressPercent">20%</span>
+            </div>
+            <div class="progress rounded-pill" style="height: 8px;">
+                <div class="progress-bar bg-warning rounded-pill" id="wizardProgressBar" style="width: 20%; transition: width 0.4s ease;"></div>
+            </div>
+        </div>
+
         <!-- Interactive 5-Step Bar -->
         <div class="stepper-steps-bar">
             <div class="stepper-step-item active" data-step="0">
@@ -193,6 +204,7 @@
                             <div class="position-relative">
                                 <i class="fa-solid fa-user input-icon-prepend"></i>
                                 <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="name" id="inputName" value="{{ student.SName }}" required placeholder="أدخل اسم الطالب رباعياً">
+                                <div class="invalid-feedback">يرجى إدخال اسم الطالب الرباعي</div>
                             </div>
                         </div>
 
@@ -202,6 +214,7 @@
                                 <div class="position-relative">
                                     <i class="fa-solid fa-calendar input-icon-prepend"></i>
                                     <input type="date" class="form-control form-control-lg input-with-icon rounded-3" name="dob" id="inputDob" value="{{ student.DOB or '' }}" required>
+                                    <div class="invalid-feedback">يرجى تحديد تاريخ الميلاد</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -212,6 +225,7 @@
                                         <option value="Male" {% if student.Gender in ['Male', 'ذكر'] %}selected{% endif %}>ذكر</option>
                                         <option value="Female" {% if student.Gender in ['Female', 'أنثى'] %}selected{% endif %}>أنثى</option>
                                     </select>
+                                    <div class="invalid-feedback">يرجى اختيار الجنس</div>
                                 </div>
                             </div>
                         </div>
@@ -260,6 +274,7 @@
                                 <option value="{{ c.CID }}" {% if student.CID == c.CID %}selected{% endif %}>{{ c.CName }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="invalid-feedback">يرجى اختيار الصف الدراسي</div>
                         </div>
                     </div>
 
@@ -270,9 +285,10 @@
                             <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required>
                                 <option value="">اختر الشعبة</option>
                                 {% for s in sections %}
-                                <option value="{{ s.SectionID }}" {% if student.SectionID == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
+                                <option value="{{ s.SectionID }}" data-class-id="{{ s.CID }}" {% if student.SectionID == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="invalid-feedback">يرجى اختيار الشعبة</div>
                         </div>
                     </div>
 
@@ -301,6 +317,7 @@
                         <div class="position-relative">
                             <i class="fa-solid fa-user-tie input-icon-prepend"></i>
                             <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_name" id="inputParentName" value="{{ student.Parent_Name or '' }}" required placeholder="أدخل اسم ولي الأمر">
+                            <div class="invalid-feedback">يرجى إدخال اسم ولي الأمر</div>
                         </div>
                     </div>
 
@@ -309,6 +326,7 @@
                         <div class="position-relative">
                             <i class="fa-solid fa-phone input-icon-prepend"></i>
                             <input type="tel" class="form-control form-control-lg input-with-icon rounded-3 font-monospace" name="parent_number" id="inputParentPhone" value="{{ student.Parent_Number or '' }}" required placeholder="مثال: 0555123456">
+                            <div class="invalid-feedback">يرجى إدخال رقم هاتف ولي الأمر</div>
                         </div>
                     </div>
 
@@ -431,6 +449,7 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/student_form_ux.js') }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", initFormWizard);
 document.addEventListener("turbo:load", initFormWizard);
@@ -441,7 +460,15 @@ function initFormWizard() {
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const progressPercentEl = document.getElementById('wizardProgressPercent');
+    const progressBarEl = document.getElementById('wizardProgressBar');
     let currentStep = 0;
+
+    function updateProgress(index) {
+        const percent = Math.round(((index + 1) / stepPanes.length) * 100);
+        if (progressPercentEl) progressPercentEl.textContent = percent + '%';
+        if (progressBarEl) progressBarEl.style.width = percent + '%';
+    }
 
     function showStep(index) {
         stepItems.forEach((item, i) => {
@@ -452,6 +479,8 @@ function initFormWizard() {
         stepPanes.forEach((pane, i) => {
             pane.classList.toggle('active', i === index);
         });
+
+        updateProgress(index);
 
         prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
         
@@ -464,6 +493,10 @@ function initFormWizard() {
             submitBtn.style.display = 'none';
         }
         currentStep = index;
+
+        // Auto Focus first input of pane
+        const firstInput = stepPanes[index].querySelector('input, select');
+        if (firstInput) firstInput.focus();
     }
 
     function populateReviewSummary() {
@@ -484,12 +517,18 @@ function initFormWizard() {
 
             inputs.forEach(input => {
                 if (!input.checkValidity()) {
+                    input.classList.add('is-invalid');
                     input.reportValidity();
                     valid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
                 }
             });
 
-            if (valid && currentStep < stepPanes.length - 1) {
+            if (!valid && window.scrollToFirstError) {
+                window.scrollToFirstError(currentPane);
+            } else if (valid && currentStep < stepPanes.length - 1) {
                 showStep(currentStep + 1);
             }
         });
