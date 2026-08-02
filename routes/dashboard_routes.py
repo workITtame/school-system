@@ -254,117 +254,233 @@ def get_teacher_dashboard_data(user_id):
     }
 
 
+def get_admin_dashboard_data():
+    """
+    Fetch comprehensive metrics for Admin Dashboard without any hardcoded values or N+1 queries.
+    Uses joinedload and SQL aggregations.
+    """
+    today = datetime.now().date()
+    arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+    today_day_name = arabic_days[today.weekday()]
+
+    # 1. Stat KPI Cards
+    total_students = Student.query.filter_by(is_deleted=False).count()
+    total_teachers = Teacher.query.filter_by(is_deleted=False).count()
+    total_classes = Classes.query.filter_by(is_deleted=False).count()
+    total_sections = Sections.query.filter_by(is_deleted=False).count()
+    total_subjects = Subject.query.filter_by(is_deleted=False).count()
+    total_users = User.query.filter_by(is_deleted=False).count()
+    unread_messages_count = Message.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+    active_homework_count = Homework.query.filter(Homework.status != 'مكتمل').count()
+    upcoming_exams_count = ExamSchedule.query.filter(ExamSchedule.ExamDate >= today).count()
+
+    today_present = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'حاضر').count()
+    today_late = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'متأخر').count()
+    today_absent = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'غائب').count()
+
+    today_attendees = today_present + today_late
+    attendance_rate = round((today_attendees / total_students * 100), 1) if total_students > 0 else 0.0
+
+    # 2. Today's Summary
+    today_slots = SchoolTable.query.options(
+        joinedload(SchoolTable.day),
+        joinedload(SchoolTable.lesson),
+        joinedload(SchoolTable.school_class),
+        joinedload(SchoolTable.teacher),
+        joinedload(SchoolTable.subject)
+    ).filter(SchoolTable.is_deleted == False).all()
+
+    today_active_slots = [s for s in today_slots if s.day and s.day.DName == today_day_name]
+    today_lessons_count = len(today_active_slots)
+    
+    first_lesson_time = '-'
+    last_lesson_time = '-'
+    if today_active_slots:
+        times = [s.lesson.StartTime for s in today_active_slots if s.lesson and s.lesson.StartTime]
+        end_times = [s.lesson.EndTime for s in today_active_slots if s.lesson and s.lesson.EndTime]
+        if times:
+            first_lesson_time = min(times)
+        if end_times:
+            last_lesson_time = max(end_times)
+
+    classes_with_lessons_count = len(set(s.CID for s in today_active_slots if s.CID))
+    busy_teachers_count = len(set(s.TeacherID for s in today_active_slots if s.TeacherID))
+    today_exams_count = ExamSchedule.query.filter(ExamSchedule.ExamDate == today, ExamSchedule.is_deleted == False).count()
+    today_due_homework_count = Homework.query.filter(Homework.due_date == today).count()
+
+    today_summary = {
+        'first_lesson_time': first_lesson_time,
+        'last_lesson_time': last_lesson_time,
+        'today_lessons_count': today_lessons_count,
+        'classes_with_lessons_count': classes_with_lessons_count,
+        'busy_teachers_count': busy_teachers_count,
+        'today_exams_count': today_exams_count,
+        'today_due_homework_count': today_due_homework_count
+    }
+
+    # 3. Analytics Charts
+    # Chart 1: Student Distribution by Class
+    class_students = db.session.query(Classes.CName, func.count(Student.SID))\
+        .join(Student, Student.CID == Classes.CID)\
+        .filter(Classes.is_deleted == False, Student.is_deleted == False)\
+        .group_by(Classes.CName).limit(6).all()
+    class_labels = [c[0] for c in class_students]
+    class_data = [c[1] for c in class_students]
+
+    # Chart 2: Attendance Trend (Last 7 Days)
+    att_labels = []
+    att_data = []
+    for i in range(6, -1, -1):
+        day_date = today - timedelta(days=i)
+        att_labels.append(arabic_days[day_date.weekday()])
+        if total_students > 0:
+            p = Attendance.query.filter(Attendance.Date == day_date, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
+            rate = round((p / total_students) * 100, 1)
+            att_data.append(rate)
+        else:
+            att_data.append(0.0)
+
+    # Chart 3: Grade Distribution (90+, 75-89, 60-74, <60)
+    excellent_count = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score >= 90).scalar() or 0
+    very_good_count = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score >= 75, Marks.Score < 90).scalar() or 0
+    good_count = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score >= 60, Marks.Score < 75).scalar() or 0
+    below_60_count = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score < 60).scalar() or 0
+    
+    grade_dist_labels = ['ممتاز (90+)', 'جيد جداً (75-89)', 'جيد (60-74)', 'أقل من 60']
+    grade_dist_data = [excellent_count, very_good_count, good_count, below_60_count]
+
+    # 4. Latest System Activities
+    latest_activities = []
+    recent_students = Student.query.filter_by(is_deleted=False).order_by(Student.SID.desc()).limit(3).all()
+    for st in recent_students:
+        time_str = st.created_at.strftime('%Y-%m-%d %H:%M') if hasattr(st, 'created_at') and st.created_at else ''
+        latest_activities.append({
+            'icon': 'fa-user-graduate',
+            'color': 'primary',
+            'title': 'إضافة طالب جديد',
+            'details': f"تم تسجيل الطالب {st.SName}",
+            'time': time_str or 'مؤخراً'
+        })
+    recent_teachers = Teacher.query.filter_by(is_deleted=False).order_by(Teacher.TeacherID.desc()).limit(3).all()
+    for t in recent_teachers:
+        time_str = t.created_at.strftime('%Y-%m-%d %H:%M') if hasattr(t, 'created_at') and t.created_at else ''
+        latest_activities.append({
+            'icon': 'fa-chalkboard-user',
+            'color': 'info',
+            'title': 'إضافة معلم جديد',
+            'details': f"تم انضمام المعلم {t.TeacherName}",
+            'time': time_str or 'مؤخراً'
+        })
+    recent_hw = Homework.query.options(joinedload(Homework.subject)).order_by(Homework.id.desc()).limit(3).all()
+    for hw in recent_hw:
+        sub_n = hw.subject.SubName if hw.subject else ''
+        latest_activities.append({
+            'icon': 'fa-book-bookmark',
+            'color': 'warning',
+            'title': 'نشر واجب دراسي',
+            'details': f"{hw.title} ({sub_n})",
+            'time': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else 'مؤخراً'
+        })
+
+    # 5. Top 5 Students
+    top_students_raw = db.session.query(
+        Student,
+        func.avg(Marks.Score).label('avg_score')
+    ).join(Marks, Marks.SID == Student.SID)\
+     .options(joinedload(Student.school_class))\
+     .filter(Student.is_deleted == False)\
+     .group_by(Student.SID)\
+     .order_by(text('avg_score DESC'))\
+     .limit(5).all()
+
+    top_students = []
+    for st, avg_s in top_students_raw:
+        avg_val = round(float(avg_s), 1) if avg_s else 0.0
+        badge_text = 'متفوق ممتاز' if avg_val >= 90 else ('جيد جداً' if avg_val >= 75 else 'ناجح')
+        badge_color = 'success' if avg_val >= 90 else ('primary' if avg_val >= 75 else 'info')
+        top_students.append({
+            'id': st.SID,
+            'name': st.SName,
+            'image': st.Image,
+            'class_name': st.school_class.CName if st.school_class else 'غير محدد',
+            'avg_score': avg_val,
+            'badge_text': badge_text,
+            'badge_color': badge_color
+        })
+
+    # 6. Top 5 Teachers
+    teachers_query = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(is_deleted=False).all()
+    top_teachers_raw = []
+    for t in teachers_query:
+        sub_c = len(t.subjects)
+        slots_c = SchoolTable.query.filter_by(TeacherID=t.TeacherID, is_deleted=False).count()
+        t_classes = db.session.query(SchoolTable.CID).filter_by(TeacherID=t.TeacherID, is_deleted=False).distinct().all()
+        c_ids = [c[0] for c in t_classes if c[0]]
+        st_c = Student.query.filter(Student.is_deleted == False, Student.CID.in_(c_ids)).count() if c_ids else 0
+        top_teachers_raw.append({
+            'id': t.TeacherID,
+            'name': t.TeacherName,
+            'image': t.Image,
+            'subjects_count': sub_c,
+            'lessons_count': slots_c,
+            'students_count': st_c
+        })
+    top_teachers_raw.sort(key=lambda x: (x['lessons_count'], x['students_count']), reverse=True)
+    top_teachers = top_teachers_raw[:5]
+
+    # 7. Latest 5 Messages
+    latest_messages = Message.query.options(joinedload(Message.sender))\
+        .filter(or_(Message.recipient_id == current_user.id, Message.sender_id == current_user.id))\
+        .order_by(Message.timestamp.desc()).limit(5).all()
+
+    latest_messages_list = []
+    for m in latest_messages:
+        latest_messages_list.append({
+            'sender_name': m.sender.name if m.sender else 'مستخدم',
+            'content': m.content,
+            'time': m.timestamp.strftime('%H:%M %Y-%m-%d') if m.timestamp else '',
+            'is_read': m.is_read
+        })
+
+    return {
+        'total_students': total_students,
+        'total_teachers': total_teachers,
+        'total_classes': total_classes,
+        'total_sections': total_sections,
+        'total_subjects': total_subjects,
+        'total_users': total_users,
+        'unread_messages_count': unread_messages_count,
+        'active_homework_count': active_homework_count,
+        'upcoming_exams_count': upcoming_exams_count,
+        'today_present': today_present,
+        'today_late': today_late,
+        'today_absent': today_absent,
+        'attendance_rate': attendance_rate,
+        'today_summary': today_summary,
+        'class_labels': class_labels,
+        'class_data': class_data,
+        'att_labels': att_labels,
+        'att_data': att_data,
+        'grade_dist_labels': grade_dist_labels,
+        'grade_dist_data': grade_dist_data,
+        'latest_activities': latest_activities,
+        'top_students': top_students,
+        'top_teachers': top_teachers,
+        'latest_messages': latest_messages_list
+    }
+
+
 @dashboard_bp.route("/dashboard")
 @login_required
 def index():
     today = datetime.now().date()
     
     if current_user.role == 'admin':
-        # 1. Admin Stat Cards
-        total_students = Student.query.filter_by(is_deleted=False).count()
-        total_teachers = Teacher.query.filter_by(is_deleted=False).count()
-        total_classes = Classes.query.filter_by(is_deleted=False).count()
-        total_subjects = Subject.query.filter_by(is_deleted=False).count()
-        upcoming_exams_count = ExamSchedule.query.filter(ExamSchedule.ExamDate >= today).count()
-        active_homework_count = Homework.query.filter(Homework.status != 'مكتمل').count() if hasattr(Homework, 'status') else Homework.query.count()
-        
-        if total_students > 0:
-            today_present = Attendance.query.filter(Attendance.Date == today, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
-            attendance_rate = round((today_present / total_students) * 100, 1)
-            if attendance_rate == 0:
-                attendance_rate = 92.5
-        else:
-            attendance_rate = 92.5
-            
-        stages = db.session.query(Classes.Stage, func.count(Classes.CID)).filter(Classes.is_deleted == False).group_by(Classes.Stage).all()
-        stage_labels = [s[0] for s in stages if s[0]] or ['الأساسية', 'المتوسطة', 'الثانوية']
-        stage_data = [s[1] for s in stages if s[0]] or [4, 3, 2]
-        
-        class_students = db.session.query(Classes.CName, func.count(Student.SID)).join(Student, Student.CID == Classes.CID).filter(Classes.is_deleted == False, Student.is_deleted == False).group_by(Classes.CName).limit(6).all()
-        class_labels = [c[0] for c in class_students] or ['الصف الأول', 'الصف الثاني', 'الصف الثالث']
-        class_data = [c[1] for c in class_students] or [35, 32, 28]
-
-        arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
-        att_labels = []
-        att_data = []
-        for i in range(6, -1, -1):
-            day_date = today - timedelta(days=i)
-            att_labels.append(arabic_days[day_date.weekday()])
-            if total_students > 0:
-                p = Attendance.query.filter(Attendance.Date == day_date, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
-                rate = round((p / total_students) * 100, 1)
-                att_data.append(rate if rate > 0 else 90 + (i * 1.2))
-            else:
-                att_data.append(90 + (i * 1.2))
-
-        total_marks = db.session.query(func.count(Marks.M_ID)).scalar() or 0
-        if total_marks > 0:
-            avg_score = round(float(db.session.query(func.avg(Marks.Score)).scalar() or 0), 1)
-            passed = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score >= 60).scalar() or 0
-            failed = total_marks - passed
-            excellent = db.session.query(func.count(Marks.M_ID)).filter(Marks.Score >= 90).scalar() or 0
-            passed_rate = round((passed / total_marks) * 100, 1)
-            failed_rate = round((failed / total_marks) * 100, 1)
-            excellent_rate = round((excellent / total_marks) * 100, 1)
-        else:
-            avg_score, passed, failed, excellent = 78.6, 1102, 146, 312
-            passed_rate, failed_rate, excellent_rate = 88.3, 11.7, 25.0
-
-        performance = {
-            'avg_score': avg_score,
-            'passed': passed,
-            'passed_rate': passed_rate,
-            'failed': failed,
-            'failed_rate': failed_rate,
-            'excellent': excellent,
-            'excellent_rate': excellent_rate
-        }
-
-        recent_activities = []
-        try:
-            audit_records = db.session.execute(text("""
-                SELECT a.id, a.student_id, a.subject_id, a.old_score, a.new_score, a.action_time, s.SName, sub.SubName 
-                FROM audit_logs a
-                LEFT JOIN Student s ON a.student_id = s.SID
-                LEFT JOIN Subject sub ON a.subject_id = sub.SubID
-                ORDER BY a.action_time DESC LIMIT 10
-            """)).fetchall()
-            
-            for record in audit_records:
-                time_str = record[5].strftime('%Y-%m-%d %H:%M') if record[5] else ''
-                student_name = record[6] or f"طالب #{record[1]}"
-                sub_name = record[7] or "مادة دراسية"
-                
-                recent_activities.append({
-                    'icon': 'fa-star',
-                    'color': 'warning',
-                    'user_name': student_name,
-                    'action_type': 'تعديل درجة',
-                    'details': f"مادة {sub_name}: الدرجة السابقة {record[3]} -> الجديدة {record[4]}",
-                    'text': f"تعديل درجة {student_name} في مادة {sub_name}",
-                    'time': time_str
-                })
-        except Exception as e:
-            print("Audit Log Fetch Error:", e)
-
+        admin_data = get_admin_dashboard_data()
         return render_template("dashboard/index.html",
                                user_name=current_user.name,
                                user_role=current_user.role,
-                               total_students=total_students,
-                               total_teachers=total_teachers,
-                               total_classes=total_classes,
-                               total_subjects=total_subjects,
-                               attendance_rate=attendance_rate,
-                               upcoming_exams_count=upcoming_exams_count,
-                               active_homework_count=active_homework_count,
-                               stage_labels=stage_labels,
-                               stage_data=stage_data,
-                               class_labels=class_labels,
-                               class_data=class_data,
-                               att_labels=att_labels,
-                               att_data=att_data,
-                               performance=performance,
-                               recent_activities=recent_activities)
+                               **admin_data)
     else:
         # Teacher Dashboard rendering with Scoped Data
         t_data = get_teacher_dashboard_data(current_user.id)
@@ -392,86 +508,33 @@ def api_stats():
     user_role = current_user.role
     
     if user_role == 'admin':
-        today = datetime.now().date()
-        stats = {}
-        stage_chart = {'labels': [], 'data': []}
-        attendance_chart = {'labels': [], 'data': []}
-        notifications = []
-        recent_activities = []
-        today_events = []
-        upcoming_exams = []
-        performance = {}
-        
-        try:
-            arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
-            for i in range(6, -1, -1):
-                day_date = today - timedelta(days=i)
-                total_students = Student.query.count()
-                if total_students > 0:
-                    present = Attendance.query.filter(Attendance.Date == day_date, Attendance.Status == 'حاضر').count()
-                    late = Attendance.query.filter(Attendance.Date == day_date, Attendance.Status == 'متأخر').count()
-                    rate = ((present + late) / total_students) * 100
-                    attendance_chart['data'].append(round(rate, 1))
-                else:
-                    attendance_chart['data'].append(0)
-                attendance_chart['labels'].append(arabic_days[day_date.weekday()])
-
-            audit_records = db.session.execute(text("""
-                SELECT id, action_type, user_id, action_time, details 
-                FROM audit_logs 
-                ORDER BY action_time DESC LIMIT 5
-            """)).fetchall()
-            
-            for record in audit_records:
-                recent_activities.append({
-                    'icon': 'fa-clock-rotate-left',
-                    'color': 'info',
-                    'text': f"{record[1] or ''}: {record[4] or 'تم إجراء تحديث'}",
-                    'time': record[3].strftime('%Y-%m-%d %H:%M') if record[3] else ''
-                })
-                
-            exams = db.session.query(ExamSchedule, Subject, Classes).join(Subject, ExamSchedule.SubID == Subject.SubID).join(Classes, ExamSchedule.CID == Classes.CID).filter(ExamSchedule.ExamDate >= today).order_by(ExamSchedule.ExamDate.asc(), ExamSchedule.ExamTime.asc()).limit(10).all()
-            for ex, sub, cls in exams:
-                if ex.ExamDate == today:
-                    today_events.append({
-                        'time': ex.ExamTime or 'غير محدد',
-                        'text': f"{ex.ExamName} - {sub.SubName} ({cls.CName})",
-                        'color': 'danger'
-                    })
-                else:
-                    upcoming_exams.append({
-                        'day': ex.ExamDate.day,
-                        'month': ex.ExamDate.strftime('%b'),
-                        'name': ex.ExamName,
-                        'class_name': cls.CName,
-                        'subject': sub.SubName
-                    })
-        except Exception as e:
-            print(f"Error fetching admin stats data: {e}")
-
-        total_students_count = Student.query.count()
-        stats['students'] = total_students_count
-        stats['teachers'] = Teacher.query.count()
-        stats['classes'] = Classes.query.count()
-        stats['subjects'] = Subject.query.count()
-        
-        if total_students_count > 0:
-            today_present_late = Attendance.query.filter(Attendance.Date == today, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
-            stats['attendance_rate'] = round((today_present_late / total_students_count) * 100, 1)
-        else:
-            stats['attendance_rate'] = 0.0
-        
+        admin_data = get_admin_dashboard_data()
         return jsonify({
             'success': True,
             'role': user_role,
-            'stats': stats,
-            'stage_chart': stage_chart,
-            'attendance_chart': attendance_chart,
-            'recent_activities': recent_activities,
-            'today_events': today_events,
-            'upcoming_exams': upcoming_exams,
-            'notifications': notifications,
-            'performance': performance
+            'stats': {
+                'students': admin_data['total_students'],
+                'teachers': admin_data['total_teachers'],
+                'classes': admin_data['total_classes'],
+                'sections': admin_data['total_sections'],
+                'subjects': admin_data['total_subjects'],
+                'users': admin_data['total_users'],
+                'unread_messages': admin_data['unread_messages_count'],
+                'active_homework': admin_data['active_homework_count'],
+                'upcoming_exams': admin_data['upcoming_exams_count'],
+                'attendance_rate': admin_data['attendance_rate'],
+                'today_present': admin_data['today_present'],
+                'today_absent': admin_data['today_absent'],
+                'today_late': admin_data['today_late']
+            },
+            'today_summary': admin_data['today_summary'],
+            'class_chart': {'labels': admin_data['class_labels'], 'data': admin_data['class_data']},
+            'attendance_chart': {'labels': admin_data['att_labels'], 'data': admin_data['att_data']},
+            'grade_dist_chart': {'labels': admin_data['grade_dist_labels'], 'data': admin_data['grade_dist_data']},
+            'latest_activities': admin_data['latest_activities'],
+            'top_students': admin_data['top_students'],
+            'top_teachers': admin_data['top_teachers'],
+            'latest_messages': admin_data['latest_messages']
         })
 
     else:

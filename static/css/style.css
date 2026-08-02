@@ -493,3 +493,39 @@ body {
 .action-btn-download:hover i {
     color: #ffffff !important;
 }
+
+/* SaaS Dashboard Modernization Styles */
+.admin-dashboard .kpi-card {
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-dashboard .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.12) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.admin-dashboard .kpi-icon-badge {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-dashboard .quick-action-tile {
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-dashboard .quick-action-tile:hover {
+    background-color: #ffffff !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.15) !important;
+}
+
+.font-monospace {
+    font-family: 'Cairo', 'Inter', monospace !important;
+}
