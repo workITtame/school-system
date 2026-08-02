@@ -248,8 +248,83 @@ def delete_student(id):
 def view_student(id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    student = Student.query.get_or_404(id)
-    return render_template('view_student.html', student=student)
+        
+    student = Student.query.options(
+        joinedload(Student.school_class),
+        joinedload(Student.section),
+        joinedload(Student.country),
+        joinedload(Student.governorate),
+        joinedload(Student.directorate)
+    ).get_or_404(id)
+    
+    from models import Attendance, Homework, Marks, Message
+    
+    # Marks and GPA
+    marks = Marks.query.filter_by(SID=id).all()
+    total_score = sum(float(m.Score) for m in marks if m.Score is not None)
+    marks_count = len([m for m in marks if m.Score is not None])
+    gpa = round(total_score / marks_count, 1) if marks_count > 0 else '—'
+    
+    # Attendance stats
+    attendance_records = Attendance.query.filter_by(SID=id).order_by(Attendance.Date.desc()).all()
+    total_att = len(attendance_records)
+    present_count = len([a for a in attendance_records if a.Status in ['حاضر', 'Present', 'حضور']])
+    absent_count = len([a for a in attendance_records if a.Status in ['غائب', 'Absent', 'غياب', 'مجاز']])
+    late_count = len([a for a in attendance_records if a.Status in ['متأخر', 'Late']])
+    attendance_rate = round((present_count / total_att) * 100, 1) if total_att > 0 else 100
+    
+    # Homeworks for student's class/section
+    homeworks = Homework.query.filter(
+        (Homework.class_id == student.CID) | (Homework.section_id == student.SectionID)
+    ).order_by(Homework.due_date.desc()).all()
+    
+    # Messages count
+    messages_count = Message.query.filter(
+        (Message.sender_id == student.SID) | (Message.recipient_id == student.SID)
+    ).count()
+    
+    # Recent activity items
+    recent_activity = []
+    if attendance_records:
+        recent_activity.append({
+            'type': 'attendance',
+            'title': f'سجل حضور: {attendance_records[0].Status}',
+            'date': attendance_records[0].Date.strftime('%Y-%m-%d') if attendance_records[0].Date else '—',
+            'icon': 'fa-clipboard-user',
+            'color': 'success' if attendance_records[0].Status in ['حاضر', 'Present', 'حضور'] else 'danger'
+        })
+    if marks:
+        recent_activity.append({
+            'type': 'mark',
+            'title': f'رصد درجة جديدة ({marks[0].Score})',
+            'date': marks[0].created_at.strftime('%Y-%m-%d') if hasattr(marks[0], 'created_at') and marks[0].created_at else '—',
+            'icon': 'fa-graduation-cap',
+            'color': 'primary'
+        })
+    if homeworks:
+        recent_activity.append({
+            'type': 'homework',
+            'title': f'واجب جديد: {homeworks[0].title}',
+            'date': homeworks[0].due_date.strftime('%Y-%m-%d') if homeworks[0].due_date else '—',
+            'icon': 'fa-book-open',
+            'color': 'warning'
+        })
+        
+    today = datetime.now().date()
+    age = today.year - student.DOB.year - ((today.month, today.day) < (student.DOB.month, student.DOB.day)) if student.DOB else '—'
+
+    return render_template('view_student.html', 
+                           student=student,
+                           age=age,
+                           marks=marks,
+                           gpa=gpa,
+                           attendance_rate=attendance_rate,
+                           present_count=present_count,
+                           absent_count=absent_count,
+                           late_count=late_count,
+                           homeworks=homeworks,
+                           messages_count=messages_count,
+                           recent_activity=recent_activity)
 
 @students_bp.route('/export/excel')
 def export_students_excel():
