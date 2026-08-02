@@ -1,0 +1,235 @@
+{% extends 'layout.html' %}
+
+{% block title %}الرسائل والمحادثات{% endblock %}
+{% block page_title %}الرسائل{% endblock %}
+{% block page_subtitle %}التواصل والمحادثات{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row g-4" style="height: calc(100vh - 170px); min-height: 550px;">
+        <!-- Conversations List (Sidebar) -->
+        <div class="col-md-4 col-lg-4 h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="fa-regular fa-comments text-primary me-2"></i> المحادثات</h5>
+                    <button class="btn btn-sm btn-primary rounded-circle" style="width: 32px; height: 32px;" onclick="document.getElementById('searchUser').focus()">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <div class="p-3 border-bottom bg-light">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="searchUser" class="form-control border-start-0 bg-white" placeholder="بحث في المحادثات...">
+                    </div>
+                </div>
+                <div class="card-body p-0 overflow-auto" id="conversationsList">
+                    <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-8 col-lg-8 h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden d-flex flex-column" id="chatCard">
+                <!-- Empty State -->
+                <div id="chatEmptyState" class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <i class="fa-solid fa-paper-plane fs-1 mb-3 text-primary opacity-50"></i>
+                    <h5 class="fw-bold">اختر محادثة للبدء في التواصل</h5>
+                    <p class="small text-muted">يمكنك التواصل مع المعلمين ومدراء النظام بكل سهولة.</p>
+                </div>
+
+                <!-- Chat Header -->
+                <div id="chatHeader" class="card-header bg-white py-3 border-bottom d-none align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="position-relative">
+                            <img src="https://ui-avatars.com/api/?name=User&background=2563eb&color=fff" id="chatAvatar" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle"></span>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold" id="chatUserName">اسم المستخدم</h6>
+                            <small class="text-muted" id="chatUserRole">الدور الوظيفي</small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-light btn-sm border"><i class="fa-solid fa-phone text-muted"></i></button>
+                        <button class="btn btn-light btn-sm border"><i class="fa-solid fa-ellipsis-vertical text-muted"></i></button>
+                    </div>
+                </div>
+
+                <!-- Chat Body (Messages Thread) -->
+                <div id="chatBody" class="card-body p-4 overflow-auto d-none flex-grow-1 bg-light" style="background-color: #f8fafc !important;">
+                    <div id="messagesContainer" class="d-flex flex-column gap-3">
+                        <!-- Messages populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Chat Footer (Input) -->
+                <div id="chatFooter" class="card-footer bg-white p-3 border-top d-none">
+                    <form id="messageForm" class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-light border rounded-circle" style="width: 40px; height: 40px;"><i class="fa-solid fa-paperclip text-muted"></i></button>
+                        <input type="text" id="messageInput" class="form-control rounded-pill px-3 bg-light border-0" placeholder="اكتب رسالتك هنا..." required autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-circle shadow-sm" style="width: 40px; height: 40px;"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message-bubble {
+    max-width: 70%;
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    position: relative;
+    word-break: break-word;
+}
+.message-mine {
+    background: #2563eb;
+    color: white;
+    align-self: flex-end;
+    border-bottom-left-radius: 4px;
+}
+.message-other {
+    background: white;
+    color: #1e293b;
+    align-self: flex-start;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.conversation-item {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.conversation-item:hover, .conversation-item.active {
+    background-color: #f1f5f9;
+}
+</style>
+
+<script>
+document.addEventListener("turbo:load", function() {
+    let activeRecipientId = null;
+    let conversationsData = [];
+
+    const conversationsList = document.getElementById('conversationsList');
+    const chatEmptyState = document.getElementById('chatEmptyState');
+    const chatHeader = document.getElementById('chatHeader');
+    const chatBody = document.getElementById('chatBody');
+    const chatFooter = document.getElementById('chatFooter');
+    const messagesContainer = document.getElementById('messagesContainer');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+
+    function loadConversations() {
+        fetch('/messages/api/conversations')
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    conversationsData = data.conversations;
+                    renderConversations(conversationsData);
+                }
+            });
+    }
+
+    function renderConversations(list) {
+        conversationsList.innerHTML = '';
+        if(list.length === 0) {
+            conversationsList.innerHTML = '<div class="p-4 text-center text-muted">لا يوجد مستخدمين آخرين</div>';
+            return;
+        }
+
+        list.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `conversation-item p-3 border-bottom d-flex align-items-center justify-content-between ${activeRecipientId === item.user_id ? 'active' : ''}`;
+            div.onclick = () => selectConversation(item.user_id, item.name, item.role);
+
+            div.innerHTML = `
+                <div class="d-flex align-items-center gap-3 overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=2563eb&color=fff" class="rounded-circle flex-shrink-0" style="width: 45px; height: 45px; object-fit: cover;">
+                    <div class="overflow-hidden">
+                        <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.95rem;">${item.name}</h6>
+                        <small class="text-muted text-truncate d-block" style="font-size: 0.8rem;">${item.last_message}</small>
+                    </div>
+                </div>
+                <div class="text-end flex-shrink-0 ms-2">
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">${item.last_time.split(' ')[0] || ''}</small>
+                    ${item.unread_count > 0 ? `<span class="badge bg-primary rounded-circle">${item.unread_count}</span>` : ''}
+                </div>
+            `;
+            conversationsList.appendChild(div);
+        });
+    }
+
+    function selectConversation(userId, name, role) {
+        activeRecipientId = userId;
+        chatEmptyState.classList.add('d-none');
+        chatHeader.classList.remove('d-none');
+        chatHeader.classList.add('d-flex');
+        chatBody.classList.remove('d-none');
+        chatFooter.classList.remove('d-none');
+
+        document.getElementById('chatUserName').textContent = name;
+        document.getElementById('chatUserRole').textContent = role;
+        document.getElementById('chatAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff`;
+
+        renderConversations(conversationsData);
+        loadThread(userId);
+    }
+
+    function loadThread(userId) {
+        messagesContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        fetch(`/messages/api/thread/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    messagesContainer.innerHTML = '';
+                    if(data.messages.length === 0) {
+                        messagesContainer.innerHTML = '<div class="text-center py-4 text-muted small">لا توجد رسائل سابقة. ابدأ المحادثة الآن!</div>';
+                    } else {
+                        data.messages.forEach(msg => {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = `message-bubble ${msg.is_mine ? 'message-mine' : 'message-other'}`;
+                            msgDiv.innerHTML = `
+                                <div>${msg.content}</div>
+                                <div class="text-start opacity-75 mt-1" style="font-size: 0.7rem;">${msg.time}</div>
+                            `;
+                            messagesContainer.appendChild(msgDiv);
+                        });
+                    }
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }
+            });
+    }
+
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        if(!text || !activeRecipientId) return;
+
+        fetch('/messages/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient_id: activeRecipientId, content: text })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                messageInput.value = '';
+                loadThread(activeRecipientId);
+                loadConversations();
+            }
+        });
+    });
+
+    document.getElementById('searchUser').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const filtered = conversationsData.filter(c => c.name.toLowerCase().includes(term));
+        renderConversations(filtered);
+    });
+
+    loadConversations();
+});
+</script>
+{% endblock %}

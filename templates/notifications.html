@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+
+{% block title %}مركز الإشعارات والتنبيهات{% endblock %}
+{% block page_title %}الإشعارات{% endblock %}
+{% block page_subtitle %}الرئيسية / الإشعارات والتنبيهات{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-bell text-primary me-2"></i> مركز الإشعارات والتنبيهات</h5>
+            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="Swal.fire('تحديث', 'تم تحديد جميع الإشعارات كمقروءة', 'success')">تحديد الكل كمقروء</button>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for n in notifications %}
+                <div class="list-group-item p-3 d-flex align-items-center justify-content-between {% if not n.read %}bg-light{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center {% if n.category == 'واجبات' %}bg-primary bg-opacity-10 text-primary{% elif n.category == 'اختبارات' %}bg-warning bg-opacity-10 text-warning{% else %}bg-success bg-opacity-10 text-success{% endif %}" style="width: 45px; height: 45px;">
+                            <i class="fa-solid {% if n.category == 'واجبات' %}fa-book-open{% elif n.category == 'اختبارات' %}fa-file-signature{% else %}fa-bullhorn{% endif %} fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1 fw-bold text-dark">{{ n.title }}</h6>
+                            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i> {{ n.time }}</small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2 me-2">{{ n.category }}</span>
+                        {% if not n.read %}
+                        <span class="badge bg-danger rounded-circle p-1" style="width: 10px; height: 10px; display: inline-block;"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

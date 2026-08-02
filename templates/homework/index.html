@@ -1,0 +1,184 @@
+{% extends 'layout.html' %}
+
+{% block title %}إدارة الواجبات والمهام{% endblock %}
+{% block page_title %}الواجبات اليومية{% endblock %}
+{% block page_subtitle %}الواجبات / جميع الواجبات{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold m-0 text-dark">إدارة الواجبات الدراسية</h3>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">متابعة وإسناد الواجبات المدرسية للطلاب</p>
+        </div>
+        <button class="btn btn-primary fw-bold px-4 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
+            <i class="fa-solid fa-plus me-1"></i> إضافة واجب
+        </button>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">إجمالي الواجبات</span>
+                    <span class="stat-value">{{ total_count }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-blue">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">مكتمل</span>
+                    <span class="stat-value text-success">{{ completed_count }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-green">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">معلق</span>
+                    <span class="stat-value text-warning">{{ pending_count }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-orange">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">متأخر</span>
+                    <span class="stat-value text-danger">{{ late_count }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-purple" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="py-3 text-muted">#</th>
+                            <th class="py-3 text-muted text-start px-4">عنوان الواجب</th>
+                            <th class="py-3 text-muted">المادة</th>
+                            <th class="py-3 text-muted">الصف</th>
+                            <th class="py-3 text-muted">الشعبة</th>
+                            <th class="py-3 text-muted">تاريخ التسليم</th>
+                            <th class="py-3 text-muted">الحالة</th>
+                            <th class="py-3 text-muted">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hw in homework_list %}
+                        <tr>
+                            <td class="text-muted fw-bold">{{ loop.index }}</td>
+                            <td class="text-start px-4 fw-bold" style="color: var(--text-main);">{{ hw.title }}</td>
+                            <td class="text-muted"><span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">{{ hw.subject.SubName if hw.subject else '-' }}</span></td>
+                            <td class="text-muted">{{ hw.school_class.CName if hw.school_class else '-' }}</td>
+                            <td class="text-muted">{{ hw.section.SectionName if hw.section else 'جميع الشعب' }}</td>
+                            <td class="text-muted fw-bold">{{ hw.due_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if hw.status == 'مكتمل' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">مكتمل</span>
+                                {% elif hw.status == 'معلق' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">معلق</span>
+                                {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">متأخر</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button type="button" class="action-btn action-btn-view" title="عرض التفاصيل" onclick="Swal.fire('تفاصيل الواجب', '{{ hw.description or hw.title }}', 'info')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                                    </button>
+                                    <button type="button" class="action-btn action-btn-edit" title="تعديل" onclick="Swal.fire('تعديل الواجب', 'الواجب: {{ hw.title }}', 'info')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                                    </button>
+                                    <form action="{{ url_for('homework.delete_homework', id=hw.id) }}" method="POST" class="d-inline mb-0">
+                                        <button type="submit" class="action-btn action-btn-delete" title="حذف" onclick="return confirm('هل أنت متأكد من حذف هذا الواجب؟')">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-muted py-5"><i class="fa-solid fa-book-open fs-1 text-light mb-3 d-block"></i>لا توجد واجبات مضافة حالياً</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Homework Modal -->
+<div class="modal fade" id="addHomeworkModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle me-2 text-primary"></i> إضافة واجب دراسي جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('homework.add_homework') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted">عنوان الواجب *</label>
+                        <input type="text" name="title" class="form-control bg-light border-0" required placeholder="مثال: حل تمارين درس المعادلة التربيعية">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">المادة الدراسية *</label>
+                            <select name="sub_id" class="form-select bg-light border-0" required>
+                                {% for s in subjects %}
+                                <option value="{{ s.SubID }}">{{ s.SubName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">الصف الدراسي *</label>
+                            <select name="class_id" class="form-select bg-light border-0" required>
+                                {% for c in classes %}
+                                <option value="{{ c.CID }}">{{ c.CName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">تاريخ التسليم *</label>
+                            <input type="date" name="due_date" class="form-control bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">الحالة</label>
+                            <select name="status" class="form-select bg-light border-0">
+                                <option value="معلق">معلق</option>
+                                <option value="مكتمل">مكتمل</option>
+                                <option value="متأخر">متأخر</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">تفاصيل وملاحظات الواجب</label>
+                        <textarea name="description" class="form-control bg-light border-0" rows="3" placeholder="ملاحظات توضيحية للطلاب..."></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100 py-2 fw-bold rounded-pill shadow-sm" type="submit">حفظ الواجب</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

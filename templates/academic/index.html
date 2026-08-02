@@ -1,0 +1,331 @@
+{% extends 'layout.html' %}
+
+{% block title %}الإعدادات الأكاديمية{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <h3 class="text-primary fw-bold"><i class="fa-solid fa-graduation-cap me-2"></i> الإعدادات الأكاديمية والتكوين</h3>
+</div>
+
+<!-- Top Stat Cards -->
+<div class="row mb-4 fade-in">
+    <div class="col-md-4 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>إجمالي الصفوف</p>
+                <h3>{{ total_classes }}</h3>
+            </div>
+            <div class="icon-box icon-purple">
+                <i class="fa-solid fa-school"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>إجمالي الشعب</p>
+                <h3>{{ total_sections }}</h3>
+            </div>
+            <div class="icon-box icon-green">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>إجمالي المواد</p>
+                <h3>{{ total_subjects }}</h3>
+            </div>
+            <div class="icon-box icon-orange">
+                <i class="fa-solid fa-book"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row fade-in">
+    <!-- Classes Section -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent py-3 border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-school me-2 text-primary"></i> الصفوف الدراسية</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_class') }}" method="POST" class="mb-4 needs-validation" novalidate>
+                    <div class="d-flex gap-2 mb-3">
+                        <input type="text" name="name" class="form-control" placeholder="اسم الصف..." required>
+                        <select name="stage" class="form-select w-50">
+                            <option value="الأساسية">الأساسية</option>
+                            <option value="المتوسطة">المتوسطة</option>
+                            <option value="الثانوية">الثانوية</option>
+                        </select>
+                        <button class="btn btn-primary px-3" type="submit"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </form>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover align-middle text-center mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-2">الصف</th>
+                                <th class="py-2">المرحلة</th>
+                                <th class="py-2">الشعب</th>
+                                <th class="py-2">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in classes %}
+                            <tr>
+                                <td class="fw-bold">{{ c.CName }}</td>
+                                <td class="text-muted">{{ c.Stage or '-' }}</td>
+                                <td><span class="badge bg-secondary rounded-pill">{{ c.sections|length }}</span></td>
+                                <td>
+                                    <form action="{{ url_for('academic.delete_class', id=c.CID) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-muted py-4">لا توجد صفوف مضافة</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subjects Section -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent py-3 border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-book me-2 text-warning"></i> إدارة المواد الدراسية</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_subject') }}" method="POST" class="mb-4 needs-validation" novalidate>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <input type="text" name="name" class="form-control" placeholder="اسم المادة..." required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="type" class="form-select">
+                                <option value="أساسية">أساسية</option>
+                                <option value="اختيارية">اختيارية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="department" class="form-select">
+                                <option value="جميع المراحل">جميع المراحل</option>
+                                <option value="علمي">علمي</option>
+                                <option value="أدبي">أدبي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="نشط">نشط</option>
+                                <option value="غير نشط">غير نشط</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-primary w-100" type="submit"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </form>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover align-middle text-center mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-2">المادة</th>
+                                <th class="py-2">النوع</th>
+                                <th class="py-2">القسم</th>
+                                <th class="py-2">الحالة</th>
+                                <th class="py-2">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in subjects %}
+                            <tr>
+                                <td class="fw-bold">{{ s.SubName }}</td>
+                                <td class="text-muted">{{ s.Type or 'أساسية' }}</td>
+                                <td class="text-muted">{{ s.Department or 'جميع المراحل' }}</td>
+                                <td>
+                                    {% if s.Status == 'نشط' or not s.Status %}
+                                    <span class="badge-status badge-active">نشط</span>
+                                    {% else %}
+                                    <span class="badge-status badge-inactive">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('academic.delete_subject', id=s.SubID) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-muted py-4">لا توجد مواد مضافة</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row fade-in" style="animation-delay: 0.1s;">
+    <!-- Terms Section -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-gradient-primary py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-days me-2"></i> الأترام</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_term') }}" method="POST" class="mb-3 needs-validation" novalidate>
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="مثال: الترم الأول" required>
+                        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-plus"></i> إضافة</button>
+                    </div>
+                </form>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                        {% for t in terms %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-bottom border-light">
+                            {{ t.T_Name }}
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary border-0" onclick="editItem('{{ url_for('academic.edit_term', id=t.T_ID) }}', '{{ t.T_Name }}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                                <form action="{{ url_for('academic.delete_term', id=t.T_ID) }}" method="POST" class="d-inline mb-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 ajax-delete-btn"><i class="fa-solid fa-trash"></i> حذف</button>
+                                </form>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-muted text-center border-0">لا توجد أترام مضافة</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Types Section -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-gradient-danger py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-file-pen me-2"></i> أنواع الاختبارات</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_exam_type') }}" method="POST" class="mb-3 needs-validation" novalidate>
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="مثال: نصف الترم" required>
+                        <button class="btn btn-danger" type="submit"><i class="fa-solid fa-plus"></i> إضافة</button>
+                    </div>
+                </form>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                        {% for e in exam_types %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-bottom border-light">
+                            {{ e.ExamName }}
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary border-0" onclick="editItem('{{ url_for('academic.edit_exam_type', id=e.ExamID) }}', '{{ e.ExamName }}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                                <form action="{{ url_for('academic.delete_exam_type', id=e.ExamID) }}" method="POST" class="d-inline mb-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 ajax-delete-btn"><i class="fa-solid fa-trash"></i> حذف</button>
+                                </form>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-muted text-center border-0">لا توجد أنواع اختبارات مضافة</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Days Section -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-gradient-info py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-sun me-2"></i> أيام الأسبوع</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_day') }}" method="POST" class="mb-3 needs-validation" novalidate>
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="الأحد" required>
+                        <button class="btn btn-primary" style="background: var(--info-gradient);" type="submit"><i class="fa-solid fa-plus"></i> إضافة</button>
+                    </div>
+                </form>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                        {% for d in days %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-bottom border-light">
+                            {{ d.DName }}
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary border-0" onclick="editItem('{{ url_for('academic.edit_day', id=d.DayID) }}', '{{ d.DName }}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                                <form action="{{ url_for('academic.delete_day', id=d.DayID) }}" method="POST" class="d-inline mb-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 ajax-delete-btn"><i class="fa-solid fa-trash"></i> حذف</button>
+                                </form>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-muted text-center border-0">لا توجد أيام مضافة</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lessons Section -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-gradient-dark py-3 rounded-top-4 border-0 text-white">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clock me-2"></i> الحصص</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('academic.add_lesson') }}" method="POST" class="mb-3 needs-validation" novalidate>
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="الحصة الأولى" required>
+                        <button class="btn btn-dark" type="submit"><i class="fa-solid fa-plus"></i> إضافة</button>
+                    </div>
+                </form>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                        {% for l in lessons %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-bottom border-light">
+                            {{ l.LessonName }}
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary border-0" onclick="editItem('{{ url_for('academic.edit_lesson', id=l.LessonID) }}', '{{ l.LessonName }}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+                                <form action="{{ url_for('academic.delete_lesson', id=l.LessonID) }}" method="POST" class="d-inline mb-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 ajax-delete-btn"><i class="fa-solid fa-trash"></i> حذف</button>
+                                </form>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-muted text-center border-0">لا توجد حصص مضافة</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function editItem(url, currentName) {
+    let newName = prompt('تعديل الاسم:', currentName);
+    if (newName && newName.trim() !== '' && newName !== currentName) {
+        let form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'name';
+        input.value = newName.trim();
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'layout.html' %}
+
+{% block title %}كشف درجات طالب{% endblock %}
+
+{% block content %}
+<div class="row fade-in d-print-none">
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent py-3 border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-magnifying-glass me-2 text-primary"></i> تحديد الطالب</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('reports.student_report') }}" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary fw-bold">الصف</label>
+                        <select name="class_id" class="form-select bg-light border-0" required onchange="this.form.submit()">
+                            <option value="">اختر الصف</option>
+                            {% for c in classes %}
+                            <option value="{{ c.CID }}" {% if sel_class_id|string == c.CID|string %}selected{% endif %}>{{ c.CName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary fw-bold">الشعبة</label>
+                        <select name="section_id" class="form-select bg-light border-0" required onchange="this.form.submit()">
+                            <option value="">اختر الشعبة</option>
+                            {% for s in sections %}
+                            <option value="{{ s.SectionID }}" {% if sel_section_id|string == s.SectionID|string %}selected{% endif %}>{{ s.SectionName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-secondary fw-bold">الطالب</label>
+                        <select name="student_id" class="form-select bg-light border-0" required>
+                            <option value="">اختر الطالب</option>
+                            {% for st in students %}
+                            <option value="{{ st.SID }}" {% if sel_student_id|string == st.SID|string %}selected{% endif %}>{{ st.SName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 text-center mt-4">
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold">📄 عرض كشف الدرجات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_student and report_data is not none %}
+<!-- Printable Report -->
+<div class="card shadow-sm border-0 h-100" id="printable-report">
+    <div class="card-body p-5">
+        <!-- Report Header -->
+        <div class="text-center mb-5 pb-3 border-bottom border-2 border-primary">
+            <h2 class="fw-bold text-primary mb-3">نظام الإدارة المدرسية الاحترافي</h2>
+            <h4 class="fw-bold text-secondary">كشف درجات طالب</h4>
+        </div>
+        
+        <!-- Student Info -->
+        <div class="row mb-5">
+            <div class="col-md-8">
+                <table class="table table-borderless table-sm fs-5">
+                    <tr><th class="text-muted w-25">اسم الطالب:</th><td class="fw-bold">{{ selected_student.SName }}</td></tr>
+                    <tr><th class="text-muted">الصف:</th><td>{{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }}</td></tr>
+                    <tr><th class="text-muted">الشعبة:</th><td>{{ selected_student.section.SectionName if selected_student.section else 'غير محدد' }}</td></tr>
+                    <tr><th class="text-muted">ولي الأمر:</th><td>{{ selected_student.Parent_Name or 'غير محدد' }}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if selected_student.Image %}
+                <img src="{{ url_for('static', filename=selected_student.Image) }}" class="rounded-circle shadow" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grades Tables by Exam -->
+        {% if report_data %}
+            {% for exam_name, grades in report_data.items() %}
+            <div class="mb-5">
+                <h5 class="fw-bold text-primary mb-3"><i class="fa fa-file-alt"></i> {{ exam_name }}</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center align-middle border-primary border-opacity-25">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>المادة</th>
+                                <th>الدرجة</th>
+                                <th>التقدير</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grade in grades %}
+                            <tr>
+                                <td class="fw-bold">{{ grade.subject_name }}</td>
+                                <td>{{ grade.score }}</td>
+                                <td>
+                                    {% if grade.score >= 90 %}ممتاز
+                                    {% elif grade.score >= 80 %}جيد جداً
+                                    {% elif grade.score >= 70 %}جيد
+                                    {% elif grade.score >= 50 %}مقبول
+                                    {% else %}<span class="text-danger fw-bold">ضعيف</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Summary -->
+            <div class="alert alert-info rounded-4 border-0 d-flex justify-content-between align-items-center p-4">
+                <h4 class="mb-0 text-dark fw-bold">المتوسط العام:</h4>
+                <h3 class="mb-0 fw-bold text-primary">{{ average }}%</h3>
+            </div>
+            
+        {% else %}
+            <div class="alert alert-warning text-center">لا توجد درجات مسجلة لهذا الطالب حتى الآن.</div>
+        {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="text-center mt-5 d-print-none" id="action-buttons">
+            <button onclick="window.print()" class="btn btn-dark btn-lg rounded-pill px-4 shadow fw-bold me-2">🖨️ طباعة</button>
+            <a href="{{ url_for('reports.student_report_pdf_fast', student_id=selected_student.SID) }}" class="btn btn-danger btn-lg rounded-pill px-4 shadow fw-bold me-2">⚡ تحميل كشهادة PDF (سريع جداً)</a>
+            <a href="{{ url_for('reports.student_report_excel', student_id=selected_student.SID) }}" class="btn btn-success btn-lg rounded-pill px-4 shadow fw-bold">
+                <i class="fa-solid fa-file-excel me-2"></i> تصدير Excel
+            </a>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+@media print {
+    @page { margin: 1cm; }
+    body { background-color: white !important; }
+    .d-print-none { display: none !important; }
+    #sidebar, .navbar { display: none !important; }
+    .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+    .card { box-shadow: none !important; border: none !important; }
+    
+    /* تقليل المسافات لضمان بقاء المحتوى في صفحة واحدة */
+    .p-5 { padding: 1.5rem !important; }
+    .mb-5 { margin-bottom: 1.5rem !important; }
+    .table { margin-bottom: 1rem !important; }
+    
+    /* منع الانقسام داخل العناصر المهمة */
+    .alert { page-break-inside: avoid; break-inside: avoid; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+}
+</style>
+{% endif %}
+{% endblock %}

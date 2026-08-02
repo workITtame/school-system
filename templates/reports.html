@@ -1,0 +1,56 @@
+{% extends 'layout.html' %}
+
+{% block title %}التقارير{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h3 class="fw-bold m-0 text-dark">التقارير</h3>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">الرئيسية / التقارير</p>
+    </div>
+</div>
+
+<div class="row g-4 fade-in">
+    <!-- Report Card 1 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-5 stat-card-flat" style="flex-direction: column; align-items: center; justify-content: center; min-height: 300px;">
+            <div class="stat-icon-wrapper bg-icon-blue mb-4" style="width: 80px; height: 80px; font-size: 2rem;">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color: var(--text-main)">كشف درجات الطلاب</h4>
+            <p class="text-muted mb-4 px-3" style="font-size: 0.95rem;">استخراج كشوفات درجات مفصلة للطلاب حسب الصف والشعبة والمادة.</p>
+            <a href="/reports/student_report" class="btn btn-primary px-4 py-2 fw-bold rounded-3 w-75 mt-auto">
+                عرض التقرير <i class="fa-solid fa-arrow-left ms-2"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Card 2 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-5 stat-card-flat" style="flex-direction: column; align-items: center; justify-content: center; min-height: 300px;">
+            <div class="stat-icon-wrapper bg-icon-orange mb-4" style="width: 80px; height: 80px; font-size: 2rem;">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color: var(--text-main)">تقرير الأداء الأكاديمي</h4>
+            <p class="text-muted mb-4 px-3" style="font-size: 0.95rem;">تحليل مستوى أداء الطلاب والنسب العامة للنجاح والرسوب.</p>
+            <a href="/reports/performance" class="btn btn-primary px-4 py-2 fw-bold rounded-3 w-75 mt-auto">
+                عرض التقرير <i class="fa-solid fa-arrow-left ms-2"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Card 3 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-5 stat-card-flat" style="flex-direction: column; align-items: center; justify-content: center; min-height: 300px;">
+            <div class="stat-icon-wrapper bg-icon-green mb-4" style="width: 80px; height: 80px; font-size: 2rem;">
+                <i class="fa-solid fa-clipboard-user"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color: var(--text-main)">تقرير الحضور والغياب</h4>
+            <p class="text-muted mb-4 px-3" style="font-size: 0.95rem;">سجل حضور وغياب الطلاب بشكل يومي أو شهري.</p>
+            <button class="btn btn-light px-4 py-2 fw-bold rounded-3 w-75 mt-auto text-muted border" disabled>
+                قريباً
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

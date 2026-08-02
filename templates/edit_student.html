@@ -1,0 +1,132 @@
+{% extends 'layout.html' %}
+
+{% block title %}تعديل بيانات طالب{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-warning text-dark py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold">✏️ تعديل بيانات الطالب</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('students.edit_student', id=student.SID) }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <div class="mb-3 text-center">
+                        {% if student.Image %}
+                        <img src="{{ url_for('static', filename=student.Image) }}" alt="صورة الطالب" class="rounded-circle mb-3 shadow" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold text-secondary">اسم الطالب <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg bg-light border-0" id="name" name="name" value="{{ student.SName }}" required placeholder="أدخل اسم الطالب الرباعي">
+                        <div class="invalid-feedback">يرجى إدخال اسم الطالب.</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label for="gender" class="form-label fw-bold text-secondary">الجنس</label>
+                            <select class="form-select form-select-lg bg-light border-0" id="gender" name="gender">
+                                <option value="Male" {% if student.Gender == 'Male' %}selected{% endif %}>ذكر</option>
+                                <option value="Female" {% if student.Gender == 'Female' %}selected{% endif %}>أنثى</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label for="dob" class="form-label fw-bold text-secondary">تاريخ الميلاد</label>
+                            <input type="date" class="form-control form-control-lg bg-light border-0" id="dob" name="dob" value="{{ student.DOB or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="parent_number" class="form-label fw-bold text-secondary">رقم هاتف ولي الأمر</label>
+                            <input type="tel" class="form-control form-control-lg bg-light border-0" id="parent_number" name="parent_number" value="{{ student.Parent_Number or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="parent_name" class="form-label fw-bold text-secondary">اسم ولي الأمر</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" id="parent_name" name="parent_name" value="{{ student.Parent_Name or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="parent_work" class="form-label fw-bold text-secondary">عمل ولي الأمر</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" id="parent_work" name="parent_work" value="{{ student.Parent_Work or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary">الدولة</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="country_name" list="countryList" value="{{ student.country.Country_Name if student.country else '' }}" placeholder="اختر أو اكتب الدولة">
+                            <datalist id="countryList">
+                                {% for c in countries %}
+                                <option value="{{ c.Country_Name }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary">المحافظة</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="g_name" list="gList" value="{{ student.governorate.G_Name if student.governorate else '' }}" placeholder="اختر أو اكتب المحافظة">
+                            <datalist id="gList">
+                                {% for g in governorates %}
+                                <option value="{{ g.G_Name }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary">المديرية</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="directorate_name" list="dirList" value="{{ student.directorate.Disc_Name if student.directorate else '' }}" placeholder="اختر أو اكتب المديرية">
+                            <datalist id="dirList">
+                                {% for d in directorates %}
+                                <option value="{{ d.Disc_Name }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-secondary">الحي / المنطقة</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="neighborhood" list="neighborhoodList" value="{{ student.Neighborhood or '' }}" placeholder="اختر أو اكتب الحي">
+                            <datalist id="neighborhoodList">
+                                <option value="الستين"></option>
+                                <option value="حدة"></option>
+                                <option value="الصافية"></option>
+                                <option value="سعوان"></option>
+                                <option value="الجراف"></option>
+                                <option value="شميلة"></option>
+                                <option value="مذبح"></option>
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="class_id" class="form-label fw-bold text-secondary">الصف الدراسي</label>
+                            <select class="form-select form-select-lg bg-light border-0" id="class_id" name="class_id">
+                                <option value="">اختر الصف</option>
+                                {% for c in classes %}
+                                <option value="{{ c.CID }}" {% if student.CID == c.CID %}selected{% endif %}>{{ c.CName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="section_id" class="form-label fw-bold text-secondary">الشعبة</label>
+                            <select class="form-select form-select-lg bg-light border-0" id="section_id" name="section_id">
+                                <option value="">اختر الشعبة</option>
+                                {% for s in sections %}
+                                <option value="{{ s.SectionID }}" {% if student.SectionID == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="photo" class="form-label fw-bold text-secondary">تحديث صورة الطالب (اختياري)</label>
+                        <input class="form-control form-control-lg bg-light border-0" type="file" id="photo" name="photo" accept="image/*">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg rounded-pill shadow-sm fw-bold text-dark">حفظ التعديلات</button>
+                        <a href="{{ url_for('students.home') }}" class="btn btn-light btn-lg rounded-pill text-muted fw-bold">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

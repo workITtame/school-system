@@ -1,0 +1,107 @@
+{% extends 'layout.html' %}
+
+{% block title %}إضافة معلم جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-primary text-white py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold">✨ إضافة معلم جديد</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('teacher.add_teacher') }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary">الاسم الكامل <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control bg-light border-0" name="name" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">البريد الإلكتروني (يستخدم لتسجيل الدخول) <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control bg-light border-0" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">كلمة المرور الافتراضية</label>
+                            <input type="text" class="form-control bg-light border-0" name="password" value="123456" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">اللقب / المسمى الوظيفي</label>
+                            <input type="text" class="form-control bg-light border-0" name="teacher_title" list="titleList" placeholder="مثال: أستاذ أول">
+                            <datalist id="titleList">
+                                <option value="أستاذ"></option>
+                                <option value="أستاذ مساعد"></option>
+                                <option value="معلم أول"></option>
+                                <option value="مدرب"></option>
+                                <option value="وكيل"></option>
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">رقم الهاتف</label>
+                            <input type="text" class="form-control bg-light border-0" name="phone">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">تاريخ الميلاد</label>
+                            <input type="date" class="form-control bg-light border-0" name="dob">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">مكان الميلاد</label>
+                            <input type="text" class="form-control bg-light border-0" name="pob" list="pobList" placeholder="مثال: صنعاء">
+                            <datalist id="pobList">
+                                <option value="أمانة العاصمة"></option>
+                                <option value="صنعاء"></option>
+                                <option value="عدن"></option>
+                                <option value="تعز"></option>
+                                <option value="الحديدة"></option>
+                                <option value="إب"></option>
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">الراتب</label>
+                            <input type="number" step="0.01" class="form-control bg-light border-0" name="salary">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">العملة</label>
+                            <select class="form-select bg-light border-0" name="currency">
+                                <option value="YER">ريال يمني (YER)</option>
+                                <option value="USD">دولار أمريكي (USD)</option>
+                                <option value="SAR">ريال سعودي (SAR)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">المؤهل التعليمي</label>
+                            <input type="text" class="form-control bg-light border-0" name="q_name" list="qList" placeholder="اختر أو اكتب المؤهل">
+                            <datalist id="qList">
+                                {% for q in qualifications %}
+                                <option value="{{ q.QName }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">الصورة الشخصية (اختياري)</label>
+                            <input type="file" class="form-control bg-light border-0" name="photo" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm fw-bold">حفظ بيانات المعلم</button>
+                        <a href="{{ url_for('teacher.index') }}" class="btn btn-light btn-lg rounded-pill text-muted fw-bold">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

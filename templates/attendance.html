@@ -1,0 +1,271 @@
+{% extends 'layout.html' %}
+
+{% block title %}الحضور والغياب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h3 class="fw-bold m-0 text-dark">الحضور والغياب</h3>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">الرئيسية / الحضور والغياب</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 mb-4 fade-in">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <button class="btn btn-light border text-muted fw-bold px-4 rounded-pill" onclick="exportAttendanceReport()">
+                <i class="fa-solid fa-file-export me-2"></i> تصدير التقرير
+            </button>
+            <div class="d-flex gap-3 align-items-center flex-grow-1 justify-content-end">
+                <div style="width: 200px;">
+                    <input type="date" class="form-control bg-light border-0" id="filterDate" value="{{ today }}">
+                </div>
+                <div style="width: 150px;">
+                    <select class="form-select bg-light border-0" id="filterClass">
+                        <option value="">الصف</option>
+                        {% for c in classes %}
+                        <option value="{{ c.CID }}">{{ c.CName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="width: 150px;">
+                    <select class="form-select bg-light border-0" id="filterSection">
+                        <option value="">الشعبة</option>
+                        {% for s in sections %}
+                        <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Cards & Chart -->
+<div class="row g-4 mb-4 fade-in">
+    <!-- Chart -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                <span class="fw-bold text-muted mb-3">نسبة الحضور</span>
+                <div class="position-relative d-inline-block">
+                    <svg viewBox="0 0 36 36" style="width: 100px; height: 100px;">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+                        <path class="circle" id="attendanceCircle" stroke-dasharray="{{ attendance_rate }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--success)" stroke-width="3" style="transition: stroke-dasharray 0.5s ease;"/>
+                    </svg>
+                    <div class="position-absolute top-50 start-50 translate-middle">
+                        <span class="fw-bold fs-5 text-dark" id="statRate">{{ attendance_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="col-md-9">
+        <div class="row g-4 h-100">
+            <div class="col-md-3">
+                <div class="stat-card-flat h-100">
+                    <div class="stat-content">
+                        <span class="stat-label">حاضر</span>
+                        <span class="stat-value text-success" id="statPresent">{{ present if present else 0 }}</span>
+                    </div>
+                    <div class="stat-icon-wrapper bg-icon-green">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card-flat h-100">
+                    <div class="stat-content">
+                        <span class="stat-label">متأخر</span>
+                        <span class="stat-value text-warning" id="statLate">{{ late }}</span>
+                    </div>
+                    <div class="stat-icon-wrapper bg-icon-orange">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card-flat h-100">
+                    <div class="stat-content">
+                        <span class="stat-label">غائب</span>
+                        <span class="stat-value text-danger" id="statAbsent">{{ absent }}</span>
+                    </div>
+                    <div class="stat-icon-wrapper bg-icon-purple" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card-flat h-100">
+                    <div class="stat-content">
+                        <span class="stat-label">إجمالي الطلاب</span>
+                        <span class="stat-value" id="statTotal">{{ total_students }}</span>
+                    </div>
+                    <div class="stat-icon-wrapper bg-icon-blue">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 fade-in">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="py-3 text-muted">#</th>
+                        <th class="py-3 text-muted">اسم الطالب</th>
+                        <th class="py-3 text-muted">الرقم الجامعي/الأكاديمي</th>
+                        <th class="py-3 text-muted">الحالة</th>
+                        <th class="py-3 text-muted">وقت الحضور</th>
+                        <th class="py-3 text-muted">ملاحظات</th>
+                        <th class="py-3 text-muted">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-users fs-1 mb-3"></i>
+                            <h5 class="fw-bold">الرجاء اختيار الصف والشعبة لعرض الطلاب</h5>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("turbo:load", function() {
+        const filterDate = document.getElementById('filterDate');
+        const filterClass = document.getElementById('filterClass');
+        const filterSection = document.getElementById('filterSection');
+        const tbody = document.getElementById('attendanceTableBody');
+
+        function loadStudents() {
+            const classId = filterClass.value;
+            const sectionId = filterSection.value;
+            const date = filterDate.value;
+
+            if (!classId || !sectionId) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-users fs-1 mb-3"></i>
+                    <h5 class="fw-bold">الرجاء اختيار الصف والشعبة لعرض الطلاب</h5>
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+
+            fetch(`/attendance/api/students?class_id=${classId}&section_id=${sectionId}&date=${date}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTable(data.data);
+                        updateLocalStats(data.data);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message}</td></tr>`;
+                    }
+                });
+        }
+
+        function renderTable(students) {
+            tbody.innerHTML = '';
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">لا يوجد طلاب في هذه الشعبة</td></tr>`;
+                return;
+            }
+
+            students.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                
+                // Status Dropdown
+                const statusOptions = `
+                    <select class="form-select form-select-sm border-0 fw-bold status-select ${getStatusColorClass(student.Status)}" onchange="updateAttendance(${student.SID}, this.value)" style="width: 120px; margin: 0 auto; cursor: pointer;">
+                        <option value="Present" ${student.Status === 'Present' || student.Status === 'حاضر' ? 'selected' : ''}>حاضر</option>
+                        <option value="Absent" ${student.Status === 'Absent' || student.Status === 'غائب' ? 'selected' : ''}>غائب</option>
+                        <option value="Late" ${student.Status === 'Late' || student.Status === 'متأخر' ? 'selected' : ''}>متأخر</option>
+                        <option value="غير مسجل" ${student.Status === 'غير مسجل' ? 'selected' : ''}>-- تسجيل --</option>
+                    </select>
+                `;
+
+                tr.innerHTML = `
+                    <td class="text-muted fw-bold">${index + 1}</td>
+                    <td class="fw-bold" style="color: var(--text-main);">${student.SName}</td>
+                    <td class="text-muted">${student.SID}</td>
+                    <td>${statusOptions}</td>
+                    <td class="text-muted" style="font-size: 0.85rem;">${student.Time ? new Date(student.Time).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
+                    <td class="text-muted" style="font-size: 0.85rem;">${student.Note || '-'}</td>
+                    <td>
+                        <a href="/students/view/${student.SID}" class="action-btn action-btn-view" title="عرض الملف">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getStatusColorClass(status) {
+            if (status === 'Present' || status === 'حاضر') return 'text-success bg-success bg-opacity-10';
+            if (status === 'Absent' || status === 'غائب') return 'text-danger bg-danger bg-opacity-10';
+            if (status === 'Late' || status === 'متأخر') return 'text-warning bg-warning bg-opacity-10';
+            return 'text-secondary bg-light';
+        }
+
+        function updateLocalStats(students) {
+            let present = 0;
+            let absent = 0;
+            let late = 0;
+            
+            students.forEach(s => {
+                if (s.Status === 'Present' || s.Status === 'حاضر') present++;
+                if (s.Status === 'Absent' || s.Status === 'غائب') absent++;
+                if (s.Status === 'Late' || s.Status === 'متأخر') late++;
+            });
+
+            document.getElementById('statTotal').innerText = students.length;
+            document.getElementById('statPresent').innerText = present;
+            document.getElementById('statAbsent').innerText = absent;
+            document.getElementById('statLate').innerText = late;
+            
+            let rate = students.length > 0 ? ((present / students.length) * 100).toFixed(1) : 0;
+            document.getElementById('statRate').innerText = rate + '%';
+            document.getElementById('attendanceCircle').style.strokeDasharray = rate + ', 100';
+        }
+
+        window.updateAttendance = function(sid, status) {
+            const date = filterDate.value;
+            fetch('/attendance/api/mark', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sid, date, status })
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: 'تم تحديث حالة الحضور', showConfirmButton: false, timer: 1500
+                    });
+                    loadStudents(); // reload to update stats
+                }
+            });
+        };
+
+        window.exportAttendanceReport = function() {
+            const classId = filterClass.value;
+            const sectionId = filterSection.value;
+            const date = filterDate.value;
+            window.location.href = `/attendance/export?class_id=${classId}&section_id=${sectionId}&date=${date}`;
+        };
+
+        filterDate.addEventListener('change', loadStudents);
+        filterClass.addEventListener('change', loadStudents);
+        filterSection.addEventListener('change', loadStudents);
+    });
+</script>
+{% endblock %}

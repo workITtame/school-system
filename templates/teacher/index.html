@@ -1,0 +1,501 @@
+{% extends 'layout.html' %}
+
+{% block title %}إدارة المعلمين{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <h3 class="fw-bold m-0" style="color: var(--header-text);">إدارة المعلمين</h3>
+    <button class="btn btn-primary px-4 fw-bold" onclick="openAddModal()">
+        <i class="fa-solid fa-plus me-1"></i> إضافة معلم
+    </button>
+</div>
+
+<!-- Stat Cards -->
+<div class="row mb-4 fade-in">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>إجمالي المعلمين</p>
+                <h3>{{ total_teachers }}</h3>
+            </div>
+            <div class="icon-box icon-purple">
+                <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>معلمات</p>
+                <h3>{{ female_teachers }}</h3>
+            </div>
+            <div class="icon-box icon-orange">
+                <i class="fa-solid fa-person-dress"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>معلمون</p>
+                <h3>{{ male_teachers }}</h3>
+            </div>
+            <div class="icon-box icon-blue">
+                <i class="fa-solid fa-person"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card card h-100 border-0 shadow-sm">
+            <div>
+                <p>جديد هذا الشهر</p>
+                <h3>{{ new_teachers }}</h3>
+            </div>
+            <div class="icon-box icon-green">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card fade-in">
+    <div class="card-header d-flex justify-content-between align-items-center py-3">
+        <div class="input-group" style="max-width: 350px;">
+            <span class="input-group-text bg-transparent border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="بحث...">
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center mb-0">
+                <thead>
+                    <tr>
+                        <th class="py-3">الاسم</th>
+                        <th class="py-3">المادة</th>
+                        <th class="py-3">الهاتف</th>
+                        <th class="py-3">البريد الإلكتروني</th>
+                        <th class="py-3">الحالة</th>
+                        <th class="py-3">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="teachersTableBody">
+                    <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination UI -->
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center" id="paginationUI">
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Add/Edit Teacher Modal -->
+<div class="modal fade" id="teacherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header bg-primary text-white rounded-top-4">
+        <h5 class="modal-title fw-bold" id="modalTitle">إضافة معلم</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="teacherForm">
+            <input type="hidden" id="teacherId">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">الاسم الرباعي واللقب <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="tName" required minlength="3">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">البريد الإلكتروني <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control rounded-3" id="tEmail" required>
+                    <div id="emailFeedback" class="invalid-feedback">البريد الإلكتروني غير صالح أو مستخدم مسبقاً.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">رقم الهاتف <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="tPhone" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">كلمة المرور</label>
+                    <input type="password" class="form-control rounded-3" id="tPassword" placeholder="اتركه فارغاً للحفاظ على القديم">
+                    <small class="text-muted" id="passwordHelp">الافتراضي: 123456</small>
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">الصلاحية (Role)</label>
+                    <select class="form-select rounded-3" id="tRole">
+                        <option value="teacher">معلم</option>
+                        <option value="admin">مدير (Admin)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">المسمى الوظيفي</label>
+                    <input type="text" class="form-control rounded-3" id="tTitle">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">المؤهل</label>
+                    <input class="form-control rounded-3" list="qualificationsOptions" id="tQual">
+                    <datalist id="qualificationsOptions">
+                        {% for q in qualifications %}
+                        <option value="{{ q.QName }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">الراتب</label>
+                    <input type="number" step="0.01" class="form-control rounded-3" id="tSalary">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">العملة</label>
+                    <select class="form-select rounded-3" id="tCurrency">
+                        <option value="USD">دولار أمريكي (USD)</option>
+                        <option value="RY">ريال يمني (RY)</option>
+                        <option value="SAR">ريال سعودي (SAR)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">تاريخ الميلاد</label>
+                    <input type="date" class="form-control rounded-3" id="tDOB">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">محل الميلاد</label>
+                    <input type="text" class="form-control rounded-3" id="tPOB">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">الجنس</label>
+                    <select class="form-select rounded-3" id="tGender">
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">الحالة</label>
+                    <select class="form-select rounded-3" id="tStatus">
+                        <option value="نشط">نشط</option>
+                        <option value="غير نشط">غير نشط</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">الصورة الشخصية</label>
+                    <input type="file" class="form-control rounded-3" id="tImage" accept="image/*">
+                </div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0 bg-light rounded-bottom-4">
+        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="saveTeacher()"><i class="fa-solid fa-save me-1"></i> حفظ البيانات</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+      <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3"></i>
+      <h5 class="fw-bold mb-3 text-dark">تأكيد الحذف</h5>
+      <p class="text-muted">هل أنت متأكد من حذف هذا المعلم؟ لا يمكن التراجع عن هذا الإجراء.</p>
+      <input type="hidden" id="deleteTeacherId">
+      <div class="d-flex justify-content-center gap-2 mt-3">
+          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="executeDelete()">نعم، احذف</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    const jwtToken = document.querySelector('meta[name="jwt-token"]').getAttribute('content');
+    const apiHeadersJSON = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + jwtToken
+    };
+    const apiHeadersForm = {
+        'Authorization': 'Bearer ' + jwtToken
+    };
+    
+    let currentPage = 1;
+    let currentSearch = '';
+    let fetchTimeout;
+    let teacherModal;
+    let deleteModal;
+
+    function showToast(title, icon = 'success') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: title,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+
+    function fetchTeachers(page = 1) {
+        currentPage = page;
+        const tbody = document.getElementById('teachersTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>';
+        
+        fetch(`/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}`, { headers: apiHeadersJSON })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                renderTable(data.data);
+                renderPagination(data.meta);
+            } else {
+                showToast(data.message || 'فشل في جلب البيانات', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('حدث خطأ في الاتصال بالخادم. يرجى التحقق من تسجيل الدخول.', 'error');
+        });
+    }
+
+    function renderTable(teachers) {
+        const tbody = document.getElementById('teachersTableBody');
+        tbody.innerHTML = '';
+        if(teachers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">
+                <i class="fa-solid fa-users-slash fs-1 mb-3 d-block text-secondary"></i>
+                <h5 class="fw-bold">لا يوجد معلمين يطابقون البحث</h5>
+            </td></tr>`;
+            return;
+        }
+        
+        teachers.forEach(t => {
+            // Status Badge
+            let statusBadge = '';
+            if (t.Status === 'نشط' || !t.Status) {
+                statusBadge = '<span class="badge-status badge-active">نشط</span>';
+            } else {
+                statusBadge = '<span class="badge-status badge-inactive">غير نشط</span>';
+            }
+            
+            // Subjects
+            let subjectNames = '-';
+            if (t.subjects && t.subjects.length > 0) {
+                subjectNames = t.subjects.map(s => s.SubName).join('، ');
+            }
+                
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fw-bold" style="color: var(--text-main)">${t.TeacherName}</td>
+                <td class="text-muted">${subjectNames}</td>
+                <td>${t.Phone || '-'}</td>
+                <td class="text-muted">${t.Email || '-'}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="/teacher/view/${t.TeacherID}" class="action-btn action-btn-view" title="عرض التفاصيل">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                        </a>
+                        <button type="button" class="action-btn action-btn-edit" title="تعديل" onclick="openEditModal(${t.TeacherID})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                        </button>
+                        <button type="button" class="action-btn action-btn-delete" title="حذف" onclick="confirmDelete(${t.TeacherID})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPagination(meta) {
+        const paginationUI = document.getElementById('paginationUI');
+        paginationUI.innerHTML = '';
+        
+        if (meta.pages <= 1) return;
+        
+        paginationUI.innerHTML += `
+            <li class="page-item ${meta.current_page === 1 ? 'disabled' : ''}">
+                <button class="page-link" onclick="fetchTeachers(${meta.current_page - 1})">السابق</button>
+            </li>
+        `;
+        
+        for(let i=1; i<=meta.pages; i++) {
+            paginationUI.innerHTML += `
+                <li class="page-item ${meta.current_page === i ? 'active' : ''}">
+                    <button class="page-link" onclick="fetchTeachers(${i})">${i}</button>
+                </li>
+            `;
+        }
+        
+        paginationUI.innerHTML += `
+            <li class="page-item ${meta.current_page === meta.pages ? 'disabled' : ''}">
+                <button class="page-link" onclick="fetchTeachers(${meta.current_page + 1})">التالي</button>
+            </li>
+        `;
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', (e) => {
+        clearTimeout(fetchTimeout);
+        currentSearch = e.target.value;
+        fetchTimeout = setTimeout(() => fetchTeachers(1), 500);
+    });
+
+    // Frontend validation for email format
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+    }
+
+    function openAddModal() {
+        document.getElementById('teacherForm').reset();
+        document.getElementById('teacherId').value = '';
+        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-user-plus me-2"></i> إضافة معلم جديد';
+        document.getElementById('passwordHelp').style.display = 'block';
+        
+        const emailInput = document.getElementById('tEmail');
+        emailInput.classList.remove('is-invalid');
+        
+        teacherModal.show();
+    }
+
+    function openEditModal(id) {
+        fetch('/api/v1/teachers/' + id, { headers: apiHeadersJSON })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const t = data.data;
+                document.getElementById('teacherId').value = t.TeacherID;
+                document.getElementById('tName').value = t.TeacherName;
+                document.getElementById('tEmail').value = t.Email;
+                document.getElementById('tPhone').value = t.Phone || '';
+                document.getElementById('tPassword').value = ''; // Don't show hashed pass
+                document.getElementById('passwordHelp').style.display = 'none'; // Only if they want to change
+                
+                document.getElementById('tRole').value = t.Role || 'teacher';
+                document.getElementById('tTitle').value = t.TeacherTitle || '';
+                document.getElementById('tQual').value = t.q_name || '';
+                document.getElementById('tSalary').value = t.Salary || '';
+                document.getElementById('tCurrency').value = t.Currency || 'USD';
+                document.getElementById('tDOB').value = t.DOB || '';
+                document.getElementById('tPOB').value = t.POB || '';
+                document.getElementById('tGender').value = t.Gender || 'ذكر';
+                document.getElementById('tStatus').value = t.Status || 'نشط';
+                
+                document.getElementById('tEmail').classList.remove('is-invalid');
+                
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i> تعديل بيانات المعلم';
+                teacherModal.show();
+            } else {
+                showToast(data.message, 'error');
+            }
+        });
+    }
+
+    function saveTeacher() {
+        const id = document.getElementById('teacherId').value;
+        const name = document.getElementById('tName').value.trim();
+        const email = document.getElementById('tEmail').value.trim();
+        const phone = document.getElementById('tPhone').value.trim();
+        
+        if (!name || name.length < 3) {
+            showToast('الاسم الرباعي مطلوب ويجب أن يكون 3 أحرف على الأقل', 'warning');
+            return;
+        }
+        
+        if (!email || !validateEmail(email)) {
+            document.getElementById('tEmail').classList.add('is-invalid');
+            showToast('صيغة البريد الإلكتروني غير صالحة', 'warning');
+            return;
+        } else {
+            document.getElementById('tEmail').classList.remove('is-invalid');
+        }
+        
+        if (!phone) {
+            showToast('رقم الهاتف مطلوب', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('TeacherName', name);
+        formData.append('Email', email);
+        formData.append('Phone', phone);
+        
+        const password = document.getElementById('tPassword').value;
+        if(password) formData.append('Password', password);
+        
+        formData.append('Role', document.getElementById('tRole').value);
+        formData.append('TeacherTitle', document.getElementById('tTitle').value);
+        formData.append('q_name', document.getElementById('tQual').value);
+        formData.append('Salary', document.getElementById('tSalary').value);
+        formData.append('Currency', document.getElementById('tCurrency').value);
+        formData.append('DOB', document.getElementById('tDOB').value);
+        formData.append('POB', document.getElementById('tPOB').value);
+        formData.append('Gender', document.getElementById('tGender').value);
+        formData.append('Status', document.getElementById('tStatus').value);
+        
+        const imageFile = document.getElementById('tImage').files[0];
+        if (imageFile) {
+            formData.append('Image', imageFile);
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/v1/teachers/' + id : '/api/v1/teachers';
+
+        fetch(url, {
+            method: method,
+            headers: apiHeadersForm, // No content-type so browser sets multipart/form-data boundary
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                teacherModal.hide();
+                showToast(id ? 'تم تعديل البيانات بنجاح' : 'تمت إضافة المعلم بنجاح', 'success');
+                fetchTeachers(currentPage);
+            } else {
+                if (data.message.includes('مسجل مسبقاً')) {
+                    document.getElementById('tEmail').classList.add('is-invalid');
+                }
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(err => {
+            showToast('حدث خطأ غير متوقع', 'error');
+            console.error(err);
+        });
+    }
+
+    function confirmDelete(id) {
+        document.getElementById('deleteTeacherId').value = id;
+        deleteModal.show();
+    }
+
+    function executeDelete() {
+        const id = document.getElementById('deleteTeacherId').value;
+        fetch('/api/v1/teachers/' + id, {
+            method: 'DELETE',
+            headers: apiHeadersJSON
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                deleteModal.hide();
+                showToast('تم حذف المعلم بنجاح', 'success');
+                fetchTeachers(currentPage);
+            } else {
+                showToast(data.message, 'error');
+            }
+        });
+    }
+
+    // Initial load
+    document.addEventListener("turbo:load", () => {
+        teacherModal = new bootstrap.Modal(document.getElementById('teacherModal'));
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        fetchTeachers(1);
+    });
+</script>
+{% endblock %}

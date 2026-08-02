@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+
+{% block title %}تعديل بيانات المعلم{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-primary text-white py-3 rounded-top-4 border-0">
+                <h5 class="mb-0 fw-bold">✏️ تعديل بيانات المعلم</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('teacher.edit_teacher', id=teacher.TeacherID) }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <div class="mb-3 text-center">
+                        {% if teacher.Image %}
+                        <img src="{{ url_for('static', filename=teacher.Image) }}" alt="صورة المعلم" class="rounded-circle mb-3 shadow" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary">الاسم الكامل <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control bg-light border-0" name="name" value="{{ teacher.TeacherName }}" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">اسم المستخدم (للدخول) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-light border-0" name="username" value="{% if teacher.user %}{{ teacher.user.username }}{% endif %}" readonly>
+                            <small class="text-muted">لا يمكن تغيير اسم المستخدم بعد الإنشاء</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">كلمة المرور (اتركه فارغاً لعدم التغيير)</label>
+                            <input type="password" class="form-control bg-light border-0" name="password" placeholder="••••••">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">اللقب / المسمى الوظيفي</label>
+                            <input type="text" class="form-control bg-light border-0" name="teacher_title" list="titleList" value="{{ teacher.TeacherTitle or '' }}" placeholder="مثال: أستاذ أول">
+                            <datalist id="titleList">
+                                <option value="أستاذ"></option>
+                                <option value="أستاذ مساعد"></option>
+                                <option value="معلم أول"></option>
+                                <option value="مدرب"></option>
+                                <option value="وكيل"></option>
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">رقم الهاتف</label>
+                            <input type="text" class="form-control bg-light border-0" name="phone" value="{{ teacher.Phone or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">البريد الإلكتروني</label>
+                            <input type="email" class="form-control bg-light border-0" name="email" value="{{ teacher.Email or '' }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">مكان الميلاد</label>
+                            <input type="text" class="form-control bg-light border-0" name="pob" list="pobList" value="{{ teacher.POB or '' }}" placeholder="مثال: صنعاء">
+                            <datalist id="pobList">
+                                <option value="أمانة العاصمة"></option>
+                                <option value="صنعاء"></option>
+                                <option value="عدن"></option>
+                                <option value="تعز"></option>
+                                <option value="الحديدة"></option>
+                                <option value="إب"></option>
+                            </datalist>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">تاريخ الميلاد</label>
+                            <input type="date" class="form-control bg-light border-0" name="dob" value="{{ teacher.DOB or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">الراتب</label>
+                            <input type="number" step="0.01" class="form-control bg-light border-0" name="salary" value="{{ teacher.Salary or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">العملة</label>
+                            <select class="form-select bg-light border-0" name="currency">
+                                <option value="YER" {% if teacher.Currency == 'YER' %}selected{% endif %}>ريال يمني (YER)</option>
+                                <option value="USD" {% if teacher.Currency == 'USD' %}selected{% endif %}>دولار أمريكي (USD)</option>
+                                <option value="SAR" {% if teacher.Currency == 'SAR' %}selected{% endif %}>ريال سعودي (SAR)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">المؤهل التعليمي</label>
+                            <input type="text" class="form-control bg-light border-0" name="q_name" list="qList" value="{{ teacher.qualification.QName if teacher.qualification else '' }}" placeholder="اختر أو اكتب المؤهل">
+                            <datalist id="qList">
+                                {% for q in qualifications %}
+                                <option value="{{ q.QName }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">تحديث الصورة الشخصية (اختياري)</label>
+                            <input type="file" class="form-control bg-light border-0" name="photo" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm fw-bold">حفظ التعديلات</button>
+                        <a href="{{ url_for('teacher.index') }}" class="btn btn-light btn-lg rounded-pill text-muted fw-bold">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

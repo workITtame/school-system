@@ -1,0 +1,546 @@
+{% extends 'layout.html' %}
+
+{% block title %}الجدول الدراسي{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <h3 class="fw-bold m-0" style="color: var(--header-text);"><i class="fa-solid fa-calendar-days me-2 text-primary"></i> إدارة الجدول الدراسي</h3>
+</div>
+
+<div class="row fade-in">
+    <!-- فلترة الجدول أو إضافة حصة جديدة -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 mb-4 h-100">
+            <div class="card-header bg-transparent py-3 border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-filter me-2 text-primary"></i> عرض الجدول</h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">الترم الدراسي</label>
+                        <select id="filterTerm" name="term_id" class="form-select bg-light" required>
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">الصف</label>
+                        <select id="filterClass" name="class_id" class="form-select bg-light" required>
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">الشعبة</label>
+                        <select id="filterSection" name="section_id" class="form-select bg-light" required disabled>
+                            <option value="">اختر الصف أولاً</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm" id="btnFilter" disabled>
+                        <i class="fa-solid fa-eye me-2"></i> عرض الجدول
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 h-100" id="addSlotCard" style="display: none;">
+            <div class="card-header bg-transparent py-3 border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-plus-circle me-2 text-success"></i> إضافة حصة</h5>
+            </div>
+            <div class="card-body">
+                <form id="addSlotForm" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">اليوم</label>
+                        <select id="addDay" name="day_id" class="form-select bg-light" required>
+                            <!-- Dynamic -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">الحصة</label>
+                        <select id="addLesson" name="lesson_id" class="form-select bg-light" required>
+                            <!-- Dynamic -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">المادة</label>
+                        <select id="addSubject" name="subject_id" class="form-select bg-light" required disabled>
+                            <option value="">اختر المادة</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">المعلم</label>
+                        <select id="addTeacher" name="teacher_id" class="form-select bg-light" required disabled>
+                            <option value="">اختر المادة أولاً</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold shadow-sm">
+                        <i class="fa-solid fa-check me-2"></i> حفظ الحصة
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- عرض الجدول -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="fa-regular fa-calendar-check me-2 text-warning"></i> الجدول الدراسي الأسبوعي</h5>
+            </div>
+            <div class="card-body p-4 position-relative">
+                <div id="loadingOverlay" class="position-absolute w-100 h-100 d-none justify-content-center align-items-center" style="background: rgba(255,255,255,0.8); z-index: 10; top: 0; left: 0;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                
+                <div id="emptyState" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-table-list fs-1 text-light mb-3"></i>
+                    <h5 class="mb-3 fw-bold">لم يتم جلب أي جدول بعد</h5>
+                </div>
+                
+                <div id="timetableWrapper" class="table-responsive d-none">
+                    <table class="table table-bordered text-center align-middle" style="border-radius: 10px; overflow: hidden; table-layout: fixed;" id="mainTable">
+                        <thead class="bg-light">
+                            <tr id="tableHeaderRow">
+                                <th class="bg-gradient-dark text-white border-0 py-3" style="width: 15%;">اليوم / الحصة</th>
+                                <!-- Dynamic Headers -->
+                            </tr>
+                        </thead>
+                        <tbody id="timetableBody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timetable-cell {
+    position: relative;
+    vertical-align: middle;
+    height: 90px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.timetable-cell:hover {
+    background-color: #e9ecef !important;
+}
+.slot-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+.slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    z-index: 5;
+}
+.slot-card:hover .delete-btn {
+    opacity: 1;
+}
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.9);
+}
+</style>
+
+<script>
+document.addEventListener('turbo:load', function() {
+    const jwtToken = document.querySelector('meta[name="jwt-token"]')?.getAttribute('content');
+    const apiHeadersJSON = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (jwtToken || '')
+    };
+    
+    // UI Elements
+    const filterTerm = document.getElementById('filterTerm');
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const btnFilter = document.getElementById('btnFilter');
+    
+    const addDay = document.getElementById('addDay');
+    const addLesson = document.getElementById('addLesson');
+    const addSubject = document.getElementById('addSubject');
+    const addTeacher = document.getElementById('addTeacher');
+    
+    const tableHeaderRow = document.getElementById('tableHeaderRow');
+    const timetableBody = document.getElementById('timetableBody');
+    
+    const filterForm = document.getElementById('filterForm');
+    const addSlotForm = document.getElementById('addSlotForm');
+    const addSlotCard = document.getElementById('addSlotCard');
+    const timetableWrapper = document.getElementById('timetableWrapper');
+    const emptyState = document.getElementById('emptyState');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const tableSubtitle = document.getElementById('tableSubtitle');
+    
+    // Data Storage
+    let referenceData = null;
+    let currentTermId = null;
+    let currentClassId = null;
+    let currentSectionId = null;
+
+    // SweetAlert Toast setup
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+    });
+    
+    function showToast(message, icon) {
+        Toast.fire({ icon: icon, title: message });
+    }
+
+    // Generate consistent colors for subjects
+    function getSubjectColor(subId, dbColor) {
+        if (dbColor && dbColor !== 'None') return dbColor;
+        if (!subId) return 'linear-gradient(135deg, #6c757d, #adb5bd)';
+        const hue = (subId * 137.508) % 360; // Golden angle approximation
+        return `linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${hue}, 70%, 55%))`;
+    }
+
+    // 1. Fetch Reference Data
+    function loadReferenceData() {
+        fetch('/api/v1/timetable/reference-data', { headers: apiHeadersJSON })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    referenceData = data.data;
+                    populateDropdowns();
+                    buildTableStructure();
+                    btnFilter.disabled = false;
+                } else {
+                    showToast('خطأ في تحميل البيانات الأساسية', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('فشل الاتصال بالخادم لتحميل البيانات', 'error');
+            });
+    }
+
+    // 2. Populate Initial Dropdowns
+    function populateDropdowns() {
+        // Terms
+        filterTerm.innerHTML = '';
+        referenceData.terms.forEach(t => {
+            filterTerm.innerHTML += `<option value="${t.T_ID}">${t.T_Name}</option>`;
+        });
+        
+        // Classes
+        filterClass.innerHTML = '<option value="">اختر الصف</option>';
+        referenceData.classes.forEach(c => {
+            filterClass.innerHTML += `<option value="${c.CID}">${c.CName}</option>`;
+        });
+
+        // Days
+        addDay.innerHTML = '';
+        referenceData.days.forEach(d => {
+            addDay.innerHTML += `<option value="${d.DayID}">${d.DName}</option>`;
+        });
+
+        // Lessons
+        addLesson.innerHTML = '';
+        referenceData.lessons.forEach(l => {
+            addLesson.innerHTML += `<option value="${l.LessonID}">${l.LessonName}</option>`;
+        });
+    }
+
+    // 3. Cascaded Filtering Logic
+    filterClass.addEventListener('change', function() {
+        const classId = parseInt(this.value);
+        filterSection.innerHTML = '<option value="">اختر الشعبة</option>';
+        addSubject.innerHTML = '<option value="">اختر المادة</option>';
+        addTeacher.innerHTML = '<option value="">اختر المادة أولاً</option>';
+        addTeacher.disabled = true;
+
+        if (!classId) {
+            filterSection.disabled = true;
+            addSubject.disabled = true;
+            return;
+        }
+
+        const selectedClass = referenceData.classes.find(c => c.CID === classId);
+        if (selectedClass) {
+            // Populate Sections
+            selectedClass.sections.forEach(s => {
+                filterSection.innerHTML += `<option value="${s.SectionID}">${s.SectionName}</option>`;
+            });
+            filterSection.disabled = false;
+
+            // Populate Subjects (for Add form)
+            if (selectedClass.subjects && selectedClass.subjects.length > 0) {
+                selectedClass.subjects.forEach(sub => {
+                    addSubject.innerHTML += `<option value="${sub.SubID}">${sub.SubName}</option>`;
+                });
+            } else {
+                addSubject.innerHTML = '<option value="">لا توجد مواد لهذا الصف</option>';
+            }
+            addSubject.disabled = false;
+        }
+    });
+
+    addSubject.addEventListener('change', function() {
+        const subId = parseInt(this.value);
+        addTeacher.innerHTML = '<option value="">اختر المعلم</option>';
+        
+        if (!subId) {
+            addTeacher.disabled = true;
+            return;
+        }
+        
+        addTeacher.disabled = false;
+        
+        // Filter teachers who teach this subject
+        const teachersForSubject = referenceData.teachers.filter(t => t.subjects && t.subjects.includes(subId));
+        
+        if (teachersForSubject.length > 0) {
+            teachersForSubject.forEach(t => {
+                addTeacher.innerHTML += `<option value="${t.TeacherID}">${t.TeacherName}</option>`;
+            });
+        } else {
+            // Fallback if no teachers are strictly assigned to this subject (UX improvement)
+            addTeacher.innerHTML = '<option value="">لا يوجد معلمين مخصصين (إظهار الكل)</option>';
+            referenceData.teachers.forEach(t => {
+                addTeacher.innerHTML += `<option value="${t.TeacherID}">${t.TeacherName}</option>`;
+            });
+            showToast('لا يوجد معلمين مرتبطين بهذه المادة مباشرة، تم عرض جميع المعلمين.', 'warning');
+        }
+    });
+
+    // Handle Cell Click (Click-to-Edit / Add)
+    window.handleCellClick = function(dayId, lessonId) {
+        addDay.value = dayId;
+        addLesson.value = lessonId;
+        
+        // Highlight form momentarily
+        addSlotCard.classList.add('border-primary');
+        addSlotCard.style.borderWidth = '2px';
+        setTimeout(() => {
+            addSlotCard.classList.remove('border-primary');
+            addSlotCard.style.borderWidth = '0px';
+        }, 800);
+        
+        // Focus on subject select
+        addSubject.focus();
+        showToast('تم تحديد الخلية، اختر المادة والمعلم للحفظ', 'info');
+    };
+
+    // 4. Build Table Structure (Headers and Rows)
+    function buildTableStructure() {
+        // Headers
+        let headerHTML = '<th class="bg-gradient-dark text-white border-0 py-3" style="width: 15%;">اليوم / الحصة</th>';
+        referenceData.lessons.forEach(l => {
+            headerHTML += `<th class="text-primary fw-bold border-0" data-lesson-id="${l.LessonID}">${l.LessonName}</th>`;
+        });
+        tableHeaderRow.innerHTML = headerHTML;
+
+        // Rows
+        let bodyHTML = '';
+        referenceData.days.forEach(day => {
+            bodyHTML += `<tr data-day-id="${day.DayID}">
+                <td class="fw-bold bg-light border-0">${day.DName}</td>`;
+            
+            referenceData.lessons.forEach(l => {
+                bodyHTML += `
+                <td class="p-2 border-0 timetable-cell" data-lesson-id="${l.LessonID}" style="background-color: #f8fafc;" onclick="handleCellClick(${day.DayID}, ${l.LessonID})">
+                    <div class="cell-content text-muted"><small class="opacity-50"><i class="fa-solid fa-plus opacity-25"></i></small></div>
+                </td>`;
+            });
+            
+            bodyHTML += `</tr>`;
+        });
+        timetableBody.innerHTML = bodyHTML;
+    }
+
+    // Load Timetable
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        currentTermId = filterTerm.value;
+        currentClassId = filterClass.value;
+        currentSectionId = filterSection.value;
+        
+        if (!currentClassId || !currentSectionId) return;
+        
+        tableSubtitle.innerHTML = `الصف: <span class="fw-bold">${filterClass.options[filterClass.selectedIndex].text}</span> | الشعبة: <span class="fw-bold">${filterSection.options[filterSection.selectedIndex].text}</span>`;
+        
+        fetchTimetable();
+    });
+
+    function fetchTimetable() {
+        loadingOverlay.classList.remove('d-none');
+        emptyState.classList.add('d-none');
+        
+        const url = `/api/v1/timetable?term_id=${currentTermId}&class_id=${currentClassId}&section_id=${currentSectionId}`;
+        
+        fetch(url, { headers: apiHeadersJSON })
+        .then(res => res.json())
+        .then(data => {
+            loadingOverlay.classList.add('d-none');
+            
+            if(data.success) {
+                renderTimetable(data.data);
+                timetableWrapper.classList.remove('d-none');
+                addSlotCard.style.display = 'block';
+            } else {
+                showToast(data.message || 'فشل في جلب الجدول', 'error');
+            }
+        })
+        .catch(err => {
+            loadingOverlay.classList.add('d-none');
+            console.error(err);
+            showToast('حدث خطأ في الاتصال بالخادم.', 'error');
+        });
+    }
+
+    function renderTimetable(entries) {
+        // Reset all cells to empty clickable state
+        document.querySelectorAll('.timetable-cell').forEach(cell => {
+            const dayId = cell.parentElement.getAttribute('data-day-id');
+            const lessonId = cell.getAttribute('data-lesson-id');
+            cell.innerHTML = `<div class="cell-content text-muted"><small class="opacity-50"><i class="fa-solid fa-plus opacity-25"></i></small></div>`;
+            cell.onclick = () => handleCellClick(dayId, lessonId);
+        });
+        
+        // Populate cells with dynamic colored cards
+        entries.forEach(entry => {
+            const row = document.querySelector(`tr[data-day-id="${entry.DayID}"]`);
+            if (row) {
+                const cell = row.querySelector(`td[data-lesson-id="${entry.LessonID}"]`);
+                if (cell) {
+                    // Remove click to add, since it's already populated
+                    cell.onclick = null; 
+                    
+                    const gradientBg = getSubjectColor(entry.SubID, entry.SubjectColor);
+                    
+                    cell.innerHTML = `
+                        <div class="text-white p-2 rounded-3 shadow-sm slot-card" style="background: ${gradientBg};">
+                            <button class="delete-btn" onclick="deleteSlot(${entry.SchoolTableID}, event)" title="حذف الحصة">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <div class="fw-bold mb-1" style="font-size: 0.95rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);"><i class="fa-solid fa-book-open opacity-75 me-1"></i> ${entry.SubjectName || 'غير محدد'}</div>
+                            <small class="d-block text-white opacity-75" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.2);"><i class="fa-solid fa-chalkboard-user me-1"></i> ${entry.TeacherName || 'غير محدد'}</small>
+                        </div>
+                    `;
+                }
+            }
+        });
+    }
+
+    // Add Slot
+    addSlotForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if(!addSlotForm.checkValidity()) {
+            addSlotForm.classList.add('was-validated');
+            return;
+        }
+        
+        const payload = {
+            term_id: currentTermId,
+            class_id: currentClassId,
+            section_id: currentSectionId,
+            day_id: addDay.value,
+            lesson_id: addLesson.value,
+            subject_id: addSubject.value,
+            teacher_id: addTeacher.value
+        };
+        
+        const submitBtn = addSlotForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الحفظ...';
+
+        fetch('/api/v1/timetable', {
+            method: 'POST',
+            headers: apiHeadersJSON,
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i> حفظ الحصة';
+            
+            if(data.success) {
+                showToast(data.message, 'success');
+                fetchTimetable();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: data.message,
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#0d6efd'
+                });
+            }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i> حفظ الحصة';
+            console.error(err);
+            showToast('حدث خطأ أثناء الاتصال بالخادم', 'error');
+        });
+    });
+
+    // Delete Slot
+    window.deleteSlot = function(id, event) {
+        if (event) event.stopPropagation(); // Prevent triggering cell click if any
+        
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "لن تتمكن من التراجع عن حذف هذه الحصة!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'نعم، احذفها!',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/v1/timetable/${id}`, {
+                    method: 'DELETE',
+                    headers: apiHeadersJSON
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        showToast(data.message, 'success');
+                        fetchTimetable();
+                    } else {
+                        showToast(data.message || 'فشل في الحذف', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('حدث خطأ في الاتصال', 'error');
+                });
+            }
+        });
+    };
+
+    // Initialize
+    loadReferenceData();
+});
+</script>
+{% endblock %}

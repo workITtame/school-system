@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="jwt-token" content="{{ session.get('jwt_token', '') }}">
+    <title>{% block title %}نظام إدارة المدرسة{% endblock %}</title>
+    <!-- Bootstrap RTL CSS for Arabic support -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.min.css" rel="stylesheet">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
+</head>
+<body>
+    {% if request.endpoint != 'auth.login' %}
+    <nav class="navbar navbar-expand-lg glass-nav mb-5 shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand text-gradient fs-4 fw-bold" href="/">
+                <i class="fa-solid fa-school me-2"></i> نظام الإدارة المتقدم
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto fw-bold text-dark">
+                    {% if session.user_id %}
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('dashboard.index') }}">الرئيسية</a>
+                    </li>
+                    {% if session.user_role == 'admin' %}
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('students.home') }}">الطلاب</a>
+                    </li>
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('teacher.index') }}">المعلمين</a>
+                    </li>
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('academic.index') }}">الأكاديمي</a>
+                    </li>
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('timetable.index') }}">الجدول</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item px-2">
+                        <a class="nav-link" href="{{ url_for('grades.manage_grades') }}">الامتحانات</a>
+                    </li>
+                    {% if session.user_role == 'admin' %}
+                    <li class="nav-item dropdown px-2">
+                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">التقارير</a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2" aria-labelledby="reportsDropdown">
+                            <li><a class="dropdown-item py-2 rounded-3" href="{{ url_for('reports.student_report') }}">كشف درجات طالب</a></li>
+                            <li><a class="dropdown-item py-2 rounded-3" href="{{ url_for('reports.performance') }}">تقرير الأداء الأكاديمي</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item ms-lg-4 mt-2 mt-lg-0">
+                        <a class="btn btn-outline-danger btn-sm rounded-pill px-4 shadow-sm fw-bold" href="{{ url_for('auth.logout') }}">
+                            <i class="fa-solid fa-arrow-right-from-bracket ms-1"></i> خروج ({{ session.user_name }})
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% if request.endpoint != 'auth.login' %}
+    <div class="container mb-5">
+    {% else %}
+    <div class="container-fluid p-0 m-0">
+    {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <script>
+                    document.addEventListener("turbo:load", function() {
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer)
+                                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                            }
+                        });
+
+                        {% for category, message in messages %}
+                            // Map flask categories to sweetalert icons
+                            let icon = 'info';
+                            if ('{{ category }}' === 'success') icon = 'success';
+                            if ('{{ category }}' === 'danger' || '{{ category }}' === 'error') icon = 'error';
+                            if ('{{ category }}' === 'warning') icon = 'warning';
+
+                            Toast.fire({
+                                icon: icon,
+                                title: '{{ message }}'
+                            });
+                        {% endfor %}
+                    });
+                </script>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

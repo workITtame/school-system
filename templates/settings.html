@@ -1,0 +1,89 @@
+{% extends 'layout.html' %}
+
+{% block title %}إعدادات النظام - مدرسة المستقبل{% endblock %}
+{% block page_title %}إعدادات النظام{% endblock %}
+{% block page_subtitle %}الرئيسية / إعدادات النظام الإداري{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body py-2 px-3">
+            <ul class="nav nav-pills nav-fill gap-2" id="settingsTabs">
+                <li class="nav-item"><button class="nav-link active fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabGeneral">الإعدادات العامة</button></li>
+                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabSystem">إعدادات النظام</button></li>
+                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabNotif">إعدادات الإشعارات</button></li>
+                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabBackup">النسخ الاحتياطي</button></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="tab-content">
+                <!-- Tab 1: General -->
+                <div class="tab-pane fade show active" id="tabGeneral">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-sliders me-2"></i> بيانات المدرسة والنظام</h5>
+                    <form action="{{ url_for('dashboard.settings') }}" method="POST">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">اسم المدرسة</label>
+                                <input type="text" name="school_name" value="مدرسة المستقبل الأهلية" class="form-control bg-light border-0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">البريد الإلكتروني الرسمي</label>
+                                <input type="email" name="school_email" value="info@future-school.com" class="form-control bg-light border-0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">رقم الهاتف التواصل</label>
+                                <input type="text" name="school_phone" value="0555123456" class="form-control bg-light border-0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">العنوان والمنطقة</label>
+                                <input type="text" name="school_address" value="الرياض - حي النزهة" class="form-control bg-light border-0">
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-shield-halved me-2 text-primary"></i> أمان وحماية النظام</h6>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="bruteForceSwitch" checked>
+                            <label class="form-check-label fw-bold" for="bruteForceSwitch">تفعيل حظر الحسابات التلقائي عند المحاولات الخاطئة (5 محاولات)</label>
+                        </div>
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" id="jwtSwitch" checked>
+                            <label class="form-check-label fw-bold" for="jwtSwitch">تفعيل التشفير الآمن لمعرفات الـ JWT HMAC</label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ الإعدادات</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab 2: System -->
+                <div class="tab-pane fade" id="tabSystem">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-server me-2"></i> تفاصيل الخادم وقاعدة البيانات</h5>
+                    <p class="text-muted mb-2">نوع قاعدة البيانات المحلية: <span class="badge bg-success">MySQL Database (school_system_db)</span></p>
+                    <p class="text-muted">بيئة التشغيل: <span class="badge bg-primary">Flask 3.x / Python 3.12</span></p>
+                </div>
+
+                <!-- Tab 3: Notifications -->
+                <div class="tab-pane fade" id="tabNotif">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-bell me-2"></i> تخصيص الإشعارات</h5>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" checked>
+                        <label class="form-check-label fw-bold">إرسال إشعارات البريد الإلكتروني عند غياب الطالب</label>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Backup -->
+                <div class="tab-pane fade" id="tabBackup">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-database me-2"></i> النسخ الاحتياطي لقاعدة البيانات</h5>
+                    <button type="button" class="btn btn-outline-primary rounded-pill fw-bold" onclick="Swal.fire('تم النسخ', 'تم إنشاء نسخة احتياطية بنجاح من قاعدة البيانات', 'success')">
+                        <i class="fa-solid fa-download me-1"></i> تحميل نسخة احتياطية الآن (SQL)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

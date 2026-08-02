@@ -1,0 +1,428 @@
+{% extends 'layout.html' %}
+
+{% block title %}إدارة الدرجات{% endblock %}
+
+{% block content %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <h3 class="text-primary fw-bold"><i class="fa-solid fa-star me-2 text-warning"></i> نظام الامتحانات والدرجات</h3>
+</div>
+
+<div class="row fade-in">
+    <!-- Filter Panel -->
+    <div class="col-lg-12 mb-4">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-gradient-primary py-3 rounded-top-4 border-0 text-white">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-filter me-2"></i> تصفية لإدخال الدرجات (جماعي)</h5>
+            </div>
+            <div class="card-body p-4">
+                <form id="filterForm" class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label text-muted fw-bold">الترم الدراسي</label>
+                        <select id="filterTerm" name="term_id" class="form-select bg-light" required>
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted fw-bold">نوع الامتحان</label>
+                        <select id="filterExam" name="exam_id" class="form-select bg-light" required>
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted fw-bold">الصف</label>
+                        <select id="filterClass" name="class_id" class="form-select bg-light" required>
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted fw-bold">الشعبة</label>
+                        <select id="filterSection" name="section_id" class="form-select bg-light" required disabled>
+                            <option value="">اختر الصف أولاً</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted fw-bold">المادة</label>
+                        <select id="filterSubject" name="subject_id" class="form-select bg-light" required disabled>
+                            <option value="">اختر الصف أولاً</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-4 text-center">
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold shadow-sm" id="btnLoadStudents" disabled>
+                            <i class="fa-solid fa-users-viewfinder me-2"></i> عرض الطلاب لإدخال الدرجات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="col-12 text-center py-5 d-none">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted fw-bold">جاري تحميل البيانات...</p>
+    </div>
+
+    <!-- Main Workspace (Grid + Chart) -->
+    <div id="workspaceContainer" class="col-lg-12 d-none">
+        <div class="row">
+            
+            <!-- Students Grid -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-primary fw-bold"><i class="fa-solid fa-clipboard-list me-2"></i> قائمة الطلاب (إدخال جماعي)</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table table-hover align-middle text-center m-0" id="studentsTable">
+                                <thead class="bg-light sticky-top">
+                                    <tr>
+                                        <th class="py-3 border-0">#</th>
+                                        <th class="py-3 border-0 text-start">اسم الطالب</th>
+                                        <th class="py-3 border-0" style="width: 200px;">الدرجة (0 - 100)</th>
+                                        <th class="py-3 border-0">التقدير</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsBody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light py-3 border-0 text-end rounded-bottom-4">
+                        <button id="btnSaveBulk" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="fa-solid fa-floppy-disk me-2"></i> حفظ واعتماد الدرجات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Analytics -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-header bg-gradient-info py-3 rounded-top-4 border-0 text-white">
+                        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chart-pie me-2"></i> تحليل الأداء</h5>
+                    </div>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                        <canvas id="performanceChart" width="100" height="100"></canvas>
+                        <div id="chartEmptyState" class="text-muted text-center mt-3">
+                            <i class="fa-solid fa-chart-simple fs-2 opacity-50 mb-2"></i>
+                            <p class="mb-0">أدخل الدرجات لرؤية التوزيع</p>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white py-3 border-0 text-center rounded-bottom-4">
+                        <a href="{{ url_for('grades.student_report_page') }}" class="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm w-100">
+                            <i class="fa-solid fa-file-pdf me-2"></i> طباعة كشوفات الـ PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('turbo:load', function() {
+    const jwtToken = document.querySelector('meta[name="jwt-token"]')?.getAttribute('content');
+    const apiHeadersJSON = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (jwtToken || '')
+    };
+    
+    // UI Elements
+    const filterTerm = document.getElementById('filterTerm');
+    const filterExam = document.getElementById('filterExam');
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const filterSubject = document.getElementById('filterSubject');
+    const btnLoadStudents = document.getElementById('btnLoadStudents');
+    const filterForm = document.getElementById('filterForm');
+    
+    const loadingState = document.getElementById('loadingState');
+    const workspaceContainer = document.getElementById('workspaceContainer');
+    const studentsBody = document.getElementById('studentsBody');
+    const btnSaveBulk = document.getElementById('btnSaveBulk');
+    const chartEmptyState = document.getElementById('chartEmptyState');
+    
+    let referenceData = null;
+    let studentsData = [];
+    let performanceChartInstance = null;
+
+    // Toast Setup
+    const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
+    });
+    function showToast(msg, icon) { Toast.fire({ icon: icon, title: msg }); }
+
+    // 1. Load Reference Data
+    function loadReferenceData() {
+        fetch('/api/v1/grades/reference', { headers: apiHeadersJSON })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    referenceData = data.data;
+                    populateFilters();
+                    btnLoadStudents.disabled = false;
+                } else {
+                    showToast('خطأ في تحميل المراجع', 'error');
+                }
+            })
+            .catch(err => showToast('فشل الاتصال', 'error'));
+    }
+
+    function populateFilters() {
+        filterTerm.innerHTML = '';
+        referenceData.terms.forEach(t => filterTerm.innerHTML += `<option value="${t.T_ID}">${t.T_Name}</option>`);
+        
+        filterExam.innerHTML = '<option value="">اختر الامتحان</option>';
+        referenceData.exams.forEach(e => filterExam.innerHTML += `<option value="${e.ExamID}">${e.ExamName}</option>`);
+
+        filterClass.innerHTML = '<option value="">اختر الصف</option>';
+        referenceData.classes.forEach(c => filterClass.innerHTML += `<option value="${c.CID}">${c.CName}</option>`);
+    }
+
+    // Cascading filters
+    filterClass.addEventListener('change', function() {
+        const cid = parseInt(this.value);
+        filterSection.innerHTML = '<option value="">اختر الشعبة</option>';
+        filterSubject.innerHTML = '<option value="">اختر المادة</option>';
+        
+        if(!cid) {
+            filterSection.disabled = true;
+            filterSubject.disabled = true;
+            return;
+        }
+        
+        const selectedClass = referenceData.classes.find(c => c.CID === cid);
+        if(selectedClass) {
+            selectedClass.sections.forEach(s => filterSection.innerHTML += `<option value="${s.SectionID}">${s.SectionName}</option>`);
+            selectedClass.subjects.forEach(sub => filterSubject.innerHTML += `<option value="${sub.SubID}">${sub.SubName}</option>`);
+            filterSection.disabled = false;
+            filterSubject.disabled = false;
+        }
+    });
+
+    // 2. Load Students Grid
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const term_id = filterTerm.value;
+        const exam_id = filterExam.value;
+        const class_id = filterClass.value;
+        const section_id = filterSection.value;
+        const subject_id = filterSubject.value;
+        
+        if(!term_id || !exam_id || !class_id || !section_id || !subject_id) return;
+        
+        loadingState.classList.remove('d-none');
+        workspaceContainer.classList.add('d-none');
+        
+        const url = `/api/v1/grades/class?term_id=${term_id}&exam_id=${exam_id}&class_id=${class_id}&section_id=${section_id}&subject_id=${subject_id}`;
+        
+        fetch(url, { headers: apiHeadersJSON })
+            .then(res => res.json())
+            .then(data => {
+                loadingState.classList.add('d-none');
+                if(data.success) {
+                    studentsData = data.data;
+                    renderStudentsGrid();
+                    workspaceContainer.classList.remove('d-none');
+                    updateChart(); // Initial chart draw
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(err => {
+                loadingState.classList.add('d-none');
+                showToast('فشل جلب الطلاب', 'error');
+            });
+    });
+
+    function getGradeLetterColor(letter) {
+        switch(letter) {
+            case 'A': return 'bg-success';
+            case 'B': return 'bg-primary';
+            case 'C': return 'bg-warning text-dark';
+            case 'D': return 'bg-orange text-white';
+            case 'F': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    function calculateLetter(score) {
+        if(score === null || score === '' || isNaN(score)) return '-';
+        const s = parseFloat(score);
+        if(s >= 90) return 'A';
+        if(s >= 80) return 'B';
+        if(s >= 70) return 'C';
+        if(s >= 60) return 'D';
+        return 'F';
+    }
+
+    function renderStudentsGrid() {
+        studentsBody.innerHTML = '';
+        if(studentsData.length === 0) {
+            studentsBody.innerHTML = `<tr><td colspan="4" class="py-5 text-muted"><i class="fa-solid fa-user-slash fs-2 mb-2"></i><br>لا يوجد طلاب</td></tr>`;
+            return;
+        }
+        
+        studentsData.forEach((st, index) => {
+            const letter = calculateLetter(st.Score);
+            const badgeClass = letter !== '-' ? getGradeLetterColor(letter) : 'bg-light text-muted';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-muted fw-bold">${index + 1}</td>
+                <td class="fw-bold text-start">${st.StudentName}</td>
+                <td>
+                    <div class="input-group mx-auto" style="width: 150px;">
+                        <input type="number" step="0.01" min="0" max="100" class="form-control text-center score-input fw-bold" 
+                               data-sid="${st.SID}" value="${st.Score !== null ? st.Score : ''}" placeholder="0.00" style="border: 2px solid var(--primary-color);">
+                        <span class="input-group-text bg-light border-0 text-muted">/100</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge rounded-pill ${badgeClass} fs-6 grade-badge" id="badge_${st.SID}" style="width: 40px;">${letter}</span>
+                </td>
+            `;
+            studentsBody.appendChild(tr);
+        });
+
+        // Add live event listeners
+        document.querySelectorAll('.score-input').forEach(input => {
+            input.addEventListener('input', function() {
+                const val = this.value;
+                if(val < 0) this.value = 0;
+                if(val > 100) this.value = 100;
+                
+                const sid = this.getAttribute('data-sid');
+                const badge = document.getElementById(`badge_${sid}`);
+                const letter = calculateLetter(this.value);
+                
+                // Update local array for chart
+                const st = studentsData.find(s => s.SID == sid);
+                if(st) st.Score = this.value !== '' ? parseFloat(this.value) : null;
+                
+                badge.className = `badge rounded-pill ${getGradeLetterColor(letter)} fs-6 grade-badge`;
+                badge.innerText = letter;
+                
+                updateChart(); // Live update chart!
+            });
+        });
+    }
+
+    // 3. Performance Chart
+    function updateChart() {
+        const counts = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
+        let hasData = false;
+        
+        studentsData.forEach(st => {
+            if(st.Score !== null && st.Score !== '') {
+                counts[calculateLetter(st.Score)]++;
+                hasData = true;
+            }
+        });
+        
+        if(!hasData) {
+            chartEmptyState.classList.remove('d-none');
+            if(performanceChartInstance) performanceChartInstance.destroy();
+            return;
+        }
+        
+        chartEmptyState.classList.add('d-none');
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        
+        if(performanceChartInstance) {
+            performanceChartInstance.data.datasets[0].data = [counts.A, counts.B, counts.C, counts.D, counts.F];
+            performanceChartInstance.update();
+        } else {
+            performanceChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ممتاز (A)', 'جيد جدا (B)', 'جيد (C)', 'مقبول (D)', 'راسب (F)'],
+                    datasets: [{
+                        data: [counts.A, counts.B, counts.C, counts.D, counts.F],
+                        backgroundColor: ['#198754', '#0d6efd', '#ffc107', '#fd7e14', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    }
+
+    // 4. Save Bulk
+    btnSaveBulk.addEventListener('click', function() {
+        const payload = {
+            term_id: filterTerm.value,
+            exam_id: filterExam.value,
+            subject_id: filterSubject.value,
+            grades: []
+        };
+        
+        document.querySelectorAll('.score-input').forEach(input => {
+            if(input.value.trim() !== '') {
+                payload.grades.push({
+                    sid: input.getAttribute('data-sid'),
+                    score: parseFloat(input.value)
+                });
+            }
+        });
+        
+        if(payload.grades.length === 0) {
+            showToast('لا توجد درجات للحفظ', 'warning');
+            return;
+        }
+        
+        const originalBtnText = btnSaveBulk.innerHTML;
+        btnSaveBulk.disabled = true;
+        btnSaveBulk.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+        
+        fetch('/api/v1/grades/bulk', {
+            method: 'POST',
+            headers: apiHeadersJSON,
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            btnSaveBulk.disabled = false;
+            btnSaveBulk.innerHTML = originalBtnText;
+            if(data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'عمل رائع!',
+                    text: 'تم حفظ درجات الصف بنجاح وتم رصدها في النظام.',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#6366f1'
+                });
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(err => {
+            btnSaveBulk.disabled = false;
+            btnSaveBulk.innerHTML = originalBtnText;
+            showToast('فشل في الاتصال أثناء الحفظ', 'error');
+        });
+    });
+
+    // Initialize
+    loadReferenceData();
+});
+</script>
+
+<style>
+.bg-orange { background-color: #fd7e14 !important; }
+</style>
+{% endblock %}

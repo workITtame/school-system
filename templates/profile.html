@@ -1,0 +1,72 @@
+{% extends 'layout.html' %}
+
+{% block title %}الملف الشخصي والإعدادات{% endblock %}
+{% block page_title %}الملف الشخصي{% endblock %}
+{% block page_subtitle %}الإعدادات / الملف الشخصي{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-user-gear text-primary me-2"></i> الملف الشخصي والإعدادات</h5>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{ url_for('auth.profile') }}" method="POST" enctype="multipart/form-data">
+                <div class="row g-4 align-items-center mb-4 pb-4 border-bottom">
+                    <div class="col-md-3 text-center">
+                        <div class="position-relative d-inline-block mb-3">
+                            <img src="{{ url_for('static', filename='img/default_avatar.png') }}" onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.name }}&background=2563eb&color=fff'" class="rounded-circle shadow" style="width: 130px; height: 130px; object-fit: cover;">
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="document.getElementById('avatarInput').click()">
+                                <i class="fa-solid fa-camera me-1"></i> تغيير الصورة
+                            </button>
+                            <input type="file" id="avatarInput" name="avatar" class="d-none" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="col-md-9">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">الاسم الكامل</label>
+                                <input type="text" name="name" value="{{ current_user.name }}" class="form-control bg-light border-0 rounded-3" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">البريد الإلكتروني / اسم المستخدم</label>
+                                <input type="text" name="email" value="{{ current_user.username }}" class="form-control bg-light border-0 rounded-3" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">رقم الجوال</label>
+                                <input type="text" name="phone" value="0555123456" class="form-control bg-light border-0 rounded-3">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted">المسمى الوظيفي</label>
+                                <input type="text" value="{{ 'مدير النظام' if current_user.role == 'admin' else 'معلم' }}" class="form-control bg-light border-0 rounded-3" readonly disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-key me-2"></i> تغيير كلمة المرور</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">كلمة المرور الجديدة</label>
+                            <input type="password" name="password" class="form-control bg-light border-0 rounded-3" placeholder="اتركه فارغاً للحفاظ على كلمة المرور الحالية">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">تأكيد كلمة المرور الجديدة</label>
+                            <input type="password" class="form-control bg-light border-0 rounded-3" placeholder="تأكيد كلمة المرور الجديدة">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-light rounded-pill px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

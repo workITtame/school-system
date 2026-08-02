@@ -1,0 +1,193 @@
+{% extends 'layout.html' %}
+
+{% block title %}تقرير الطالب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in d-print-none">
+    <h3 class="text-primary fw-bold"><i class="fa-solid fa-file-pdf me-2"></i> طباعة كشوفات الدرجات</h3>
+    <div>
+        {% if report_data %}
+        <a href="{{ url_for('reports.student_report_pdf_fast', student_id=report_data.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="btn btn-danger rounded-pill px-3 shadow-sm fw-bold me-2">
+            <i class="fa-solid fa-bolt me-1"></i> تحميل سريع PDF
+        </a>
+        <a href="{{ url_for('reports.student_report_excel', student_id=report_data.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="btn btn-success rounded-pill px-3 shadow-sm fw-bold me-2">
+            <i class="fa-solid fa-file-excel me-2"></i> تصدير Excel
+        </a>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-primary rounded-pill px-3 shadow-sm fw-bold">
+            <i class="fa-solid fa-print me-2"></i> طباعة مباشرة
+        </button>
+    </div>
+</div>
+
+<div class="row fade-in d-print-none mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <form method="GET" action="{{ url_for('grades.student_report_page') }}" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted fw-bold">الترم الدراسي</label>
+                        <select name="term_id" class="form-select bg-light" required>
+                            <option value="">اختر الترم</option>
+                            {% for t in terms %}
+                            <option value="{{ t.T_ID }}" {% if request.args.get('term_id')|string == t.T_ID|string %}selected{% endif %}>{{ t.T_Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted fw-bold">الامتحان</label>
+                        <select name="exam_id" class="form-select bg-light" required>
+                            <option value="">اختر الامتحان</option>
+                            {% for ex in exams %}
+                            <option value="{{ ex.ExamID }}" {% if request.args.get('exam_id')|string == ex.ExamID|string %}selected{% endif %}>{{ ex.ExamName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted fw-bold">رقم الطالب (SID)</label>
+                        <input type="number" name="student_id" class="form-control bg-light" value="{{ request.args.get('student_id', '') }}" placeholder="أدخل رقم الطالب" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                            <i class="fa-solid fa-search me-2"></i> عرض
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if report_data %}
+<!-- Print Area -->
+<div class="print-area">
+    <div class="report-header text-center mb-4 pb-3 border-bottom border-2 border-dark">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">مدرسة الأجيال المبدعة</h4>
+                <p class="text-muted mb-0">إدارة التقييم والاختبارات</p>
+            </div>
+            <div>
+                <img src="{{ url_for('static', filename='img/default_avatar.png') }}" style="width: 80px; opacity: 0.2;">
+            </div>
+            <div class="text-start">
+                <h4 class="fw-bold mb-1">Creative Gens School</h4>
+                <p class="text-muted mb-0">Evaluation Department</p>
+            </div>
+        </div>
+        <h3 class="fw-bold text-uppercase mt-4" style="letter-spacing: 2px;">شهادة إشعار درجات</h3>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-6">
+            <table class="table table-sm table-borderless fs-5">
+                <tr><td class="fw-bold text-muted w-25">اسم الطالب:</td><td class="fw-bold">{{ report_data.student.SName }}</td></tr>
+                <tr><td class="fw-bold text-muted">رقم الطالب:</td><td class="fw-bold">{{ report_data.student.SID }}</td></tr>
+            </table>
+        </div>
+        <div class="col-6 text-start">
+            <table class="table table-sm table-borderless fs-5" dir="ltr">
+                <tr><td class="fw-bold text-muted text-end w-50">:Class</td><td class="fw-bold">{{ report_data.student.class_rel.CName if report_data.student.class_rel else '' }}</td></tr>
+                <tr><td class="fw-bold text-muted text-end">:Section</td><td class="fw-bold">{{ report_data.student.section_rel.SectionName if report_data.student.section_rel else '' }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <table class="table table-bordered text-center align-middle print-table">
+        <thead class="table-dark print-dark-header">
+            <tr>
+                <th class="py-3">رقم المادة</th>
+                <th class="py-3">المادة الدراسية (Subject)</th>
+                <th class="py-3">الدرجة (Score)</th>
+                <th class="py-3">التقدير (Grade)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(total=0, count=0) %}
+            {% for mark in report_data.marks %}
+            <tr>
+                <td class="fw-bold text-muted">{{ mark.SubID }}</td>
+                <td class="fw-bold text-start ps-4">{{ mark.subject.SubName if mark.subject else 'غير محدد' }}</td>
+                <td class="fw-bold fs-5">{{ mark.Score }}</td>
+                <td class="fw-bold fs-5">{{ mark.Grade }}</td>
+            </tr>
+            {% set ns.total = ns.total + mark.Score %}
+            {% set ns.count = ns.count + 1 %}
+            {% else %}
+            <tr>
+                <td colspan="4" class="py-4 text-muted">لا توجد درجات مرصودة لهذا الطالب في هذا الامتحان.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if ns.count > 0 %}
+        <tfoot class="table-light print-light-footer">
+            <tr>
+                <td colspan="2" class="text-end fw-bold pe-4 py-3">المجموع الكلي والمتوسط:</td>
+                <td class="fw-bold text-success fs-5 py-3">{{ ns.total }}</td>
+                <td class="fw-bold text-primary fs-5 py-3">Avg: {{ (ns.total / ns.count)|round(2) }}%</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    
+    <div class="row mt-5 pt-5 text-center">
+        <div class="col-4">
+            <h5 class="fw-bold mb-4">توقيع المعلم</h5>
+            <p>...............................</p>
+        </div>
+        <div class="col-4">
+            <h5 class="fw-bold mb-4">توقيع الولي</h5>
+            <p>...............................</p>
+        </div>
+        <div class="col-4">
+            <h5 class="fw-bold mb-4">ختم المدرسة</h5>
+            <p>...............................</p>
+        </div>
+    </div>
+</div>
+{% elif request.args.get('student_id') %}
+<div class="alert alert-warning text-center fw-bold d-print-none">
+    لا توجد بيانات لهذا الطالب بالمعايير المحددة.
+</div>
+{% else %}
+<div class="text-center py-5 text-muted d-print-none">
+    <i class="fa-solid fa-file-pdf fs-1 text-light mb-3"></i>
+    <h5 class="fw-bold">يرجى البحث برقم الطالب لعرض الكشف</h5>
+</div>
+{% endif %}
+
+<style>
+/* Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .print-area, .print-area * {
+        visibility: visible;
+    }
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    .print-table {
+        border-color: #000 !important;
+    }
+    .print-table th, .print-table td {
+        border-color: #000 !important;
+    }
+    .print-dark-header {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+    }
+    .print-light-footer {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+    }
+    @page { margin: 1cm; }
+}
+</style>
+
+{% endblock %}

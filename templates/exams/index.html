@@ -1,0 +1,174 @@
+{% extends 'layout.html' %}
+
+{% block title %}الاختبارات{% endblock %}
+{% block page_title %}الاختبارات{% endblock %}
+{% block page_subtitle %}الاختبارات{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Top Filters & Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-primary px-4 fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#addExamModal">
+            + إضافة اختبار
+        </button>
+        
+        <div class="d-flex gap-3">
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 130px;">
+                <option selected>المادة</option>
+            </select>
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 130px;">
+                <option selected>الفصل</option>
+            </select>
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 130px;">
+                <option selected>الصف</option>
+            </select>
+            <div class="input-group" style="width: 250px;">
+                <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="fa-solid fa-search text-muted"></i></span>
+                <input type="text" id="searchInput" class="form-control border-start-0 rounded-end-3" placeholder="بحث عن اختبار...">
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="py-3 text-muted" style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
+                            <th class="py-3 text-muted">#</th>
+                            <th class="py-3 text-muted text-start px-4">اسم الاختبار</th>
+                            <th class="py-3 text-muted">الفصل الدراسي</th>
+                            <th class="py-3 text-muted">الصف</th>
+                            <th class="py-3 text-muted">تاريخ الاختبار</th>
+                            <th class="py-3 text-muted">الدرجة الكلية</th>
+                            <th class="py-3 text-muted">الحالة</th>
+                            <th class="py-3 text-muted">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in schedules %}
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input"></td>
+                            <td class="text-muted fw-bold">{{ loop.index }}</td>
+                            <td class="text-start px-4 fw-bold" style="color: var(--text-main);">{{ exam.ExamName }}</td>
+                            <td class="text-muted">{{ exam.term.T_Name if exam.term else 'الفصل الأول' }}</td>
+                            <td class="text-muted">{{ exam.school_class.CName if exam.school_class else '-' }}</td>
+                            <td class="text-muted">{{ exam.ExamDate.strftime('%Y-%m-%d') if exam.ExamDate else '-' }}</td>
+                            <td class="text-muted">100</td>
+                            <td>
+                                {% if exam.Status == 'مفعل' or exam.Status == 'مقبل' or exam.Status == 'مجدول' %}
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" style="font-size:0.85rem">مجدول</span>
+                                {% elif exam.Status == 'مكتمل' or exam.Status == 'منتهي' %}
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2" style="font-size:0.85rem">مكتمل</span>
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2" style="font-size:0.85rem">غير نشط</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{{ url_for('grades.manage_grades') }}" class="action-btn action-btn-view" title="عرض وحفظ الدرجات">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/><path d="M4.5 12.5A.5.5 0 0 1 5 12h3a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5z"/></svg>
+                                    </a>
+                                    <button type="button" class="action-btn action-btn-edit" title="تعديل" onclick="Swal.fire('تعديل الاختبار', 'الاختبار: {{ exam.ExamName }}', 'info')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                                    </button>
+                                    <form action="{{ url_for('exams.delete_exam', id=exam.ScheduleID) }}" method="POST" class="d-inline mb-0">
+                                        <button type="submit" class="action-btn action-btn-delete" title="حذف" onclick="return confirm('تأكيد حذف الاختبار؟')">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="9" class="text-center py-5 text-muted">لا توجد اختبارات مسجلة</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination UI -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <span class="text-muted small">عرض 1 إلى {{ total_exams }} من {{ total_exams }} اختبار</span>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><button class="page-link border-0 text-muted"><i class="fa-solid fa-chevron-right"></i></button></li>
+                        <li class="page-item active"><button class="page-link border-0 bg-primary text-white rounded">1</button></li>
+                        <li class="page-item"><button class="page-link border-0 text-muted">2</button></li>
+                        <li class="page-item"><button class="page-link border-0 text-muted">3</button></li>
+                        <li class="page-item"><button class="page-link border-0 text-muted">...</button></li>
+                        <li class="page-item"><button class="page-link border-0 text-muted">9</button></li>
+                        <li class="page-item"><button class="page-link border-0 text-muted"><i class="fa-solid fa-chevron-left"></i></button></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Exam Modal -->
+<div class="modal fade" id="addExamModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-calendar-plus me-2 text-primary"></i> إضافة اختبار جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('exams.add_exam') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted">المادة</label>
+                        <select name="sub_id" class="form-select bg-light border-0" required>
+                            <option value="">اختر المادة...</option>
+                            {% for s in subjects %}
+                            <option value="{{ s.SubID }}">{{ s.SubName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted">الصف</label>
+                        <select name="class_id" class="form-select bg-light border-0" required>
+                            <option value="">اختر الصف...</option>
+                            {% for c in classes %}
+                            <option value="{{ c.CID }}">{{ c.CName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">التاريخ</label>
+                            <input type="date" name="exam_date" class="form-control bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">الوقت</label>
+                            <input type="time" name="exam_time" class="form-control bg-light border-0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted">نوع الاختبار</label>
+                        <select name="exam_type" class="form-select bg-light border-0" required>
+                            {% for t in exam_types %}
+                            <option value="{{ t.ExamName }}">{{ t.ExamName }}</option>
+                            {% else %}
+                            <option value="نصفي">نصفي</option>
+                            <option value="نهائي">نهائي</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">حالة الاختبار</label>
+                        <select name="status" class="form-select bg-light border-0">
+                            <option value="مجدول">مجدول</option>
+                            <option value="مفعل">مفعل</option>
+                            <option value="منتهي">منتهي</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary w-100 py-2 fw-bold rounded-pill" type="submit">حفظ الاختبار</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

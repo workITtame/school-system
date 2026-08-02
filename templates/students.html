@@ -1,0 +1,315 @@
+{% extends 'layout.html' %}
+
+{% block title %}الطلاب{% endblock %}
+{% block page_title %}الطلاب{% endblock %}
+{% block page_subtitle %}الطلاب{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Top Filters & Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{{ url_for('students.add_student') }}" class="btn btn-primary px-4 fw-bold rounded-3">
+            + إضافة طالب
+        </a>
+        
+        <div class="d-flex gap-3">
+            <div class="input-group" style="width: 250px;">
+                <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="fa-solid fa-search text-muted"></i></span>
+                <input type="text" id="searchInput" class="form-control border-start-0 rounded-end-3" placeholder="بحث عن طالب...">
+            </div>
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
+                <option selected>القسم</option>
+            </select>
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
+                <option selected>الشعبة</option>
+            </select>
+            <select class="form-select rounded-3 border-0 shadow-sm" style="width: 120px;">
+                <option selected>الصف</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">إجمالي الطلاب</span>
+                    <span class="stat-value">{{ total_students }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-blue">
+                    <i class="fa-solid fa-user-group"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">طلاب منتظمين</span>
+                    <span class="stat-value">{{ active_students }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-green">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">الذكور</span>
+                    <span class="stat-value">{{ male_students }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-orange">
+                    <i class="fa-solid fa-person"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-flat h-100">
+                <div class="stat-content">
+                    <span class="stat-label">الإناث</span>
+                    <span class="stat-value">{{ female_students }}</span>
+                </div>
+                <div class="stat-icon-wrapper bg-icon-purple">
+                    <i class="fa-solid fa-person-dress"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead>
+                        <tr>
+                            <th class="py-3" style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
+                            <th class="py-3">#</th>
+                            <th class="py-3 text-start px-4">اسم الطالب</th>
+                            <th class="py-3">الرقم الطلابي</th>
+                            <th class="py-3">الصف</th>
+                            <th class="py-3">الشعبة</th>
+                            <th class="py-3">هاتف ولي الأمر</th>
+                            <th class="py-3">تاريخ الميلاد</th>
+                            <th class="py-3">العمر</th>
+                            <th class="py-3">الحالة</th>
+                            <th class="py-3">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        <tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination UI -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <span class="text-muted small" id="pagination-info">عرض 1 إلى 10 من الطلاب</span>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0" id="paginationUI">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+      <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3"></i>
+      <h5 class="fw-bold mb-3 text-dark">تأكيد الحذف</h5>
+      <p class="text-muted">هل أنت متأكد من حذف هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.</p>
+      <input type="hidden" id="deleteStudentId">
+      <div class="d-flex justify-content-center gap-2 mt-3">
+          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="executeDelete()">نعم، احذف</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    const jwtToken = document.querySelector('meta[name="jwt-token"]').getAttribute('content');
+    const apiHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + jwtToken
+    };
+    
+    let currentPage = 1;
+    let currentSearch = '';
+    let fetchTimeout;
+    let studentModal;
+    let deleteModal;
+
+    function showToast(title, icon = 'success') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: title,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+
+    function fetchStudents(page = 1) {
+        currentPage = page;
+        const tbody = document.getElementById('studentsTableBody');
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+        
+        fetch(`/api/v1/students?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}`, { headers: apiHeaders })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                renderTable(data.data, (page-1)*10);
+                renderPagination(data.meta);
+            } else {
+                showToast(data.message || 'فشل في جلب البيانات', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('حدث خطأ في الاتصال بالخادم. يرجى التحقق من تسجيل الدخول.', 'error');
+        });
+    }
+
+    function renderTable(students, offset) {
+        const tbody = document.getElementById('studentsTableBody');
+        tbody.innerHTML = '';
+        if(students.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted">
+                لا يوجد طلاب يطابقون البحث
+            </td></tr>`;
+            return;
+        }
+        
+        students.forEach((student, index) => {
+            const tr = document.createElement('tr');
+            
+            // Status Badge
+            let statusBadge = '';
+            if (student.Status === 'نشط' || !student.Status) {
+                statusBadge = '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" style="font-size:0.85rem">نشط</span>';
+            } else {
+                statusBadge = '<span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2" style="font-size:0.85rem">غير نشط</span>';
+            }
+            
+            // Age calculation
+            let ageDisplay = '—';
+            if (student.DOB) {
+                const dobDate = new Date(student.DOB);
+                const today = new Date();
+                let age = today.getFullYear() - dobDate.getFullYear();
+                const m = today.getMonth() - dobDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
+                    age--;
+                }
+                if (!isNaN(age) && age >= 0) {
+                    ageDisplay = age + ' سنة';
+                }
+            }
+
+            const parentPhone = student.Parent_Number || student.Phone || '—';
+            
+            tr.innerHTML = `
+                <td><input type="checkbox" class="form-check-input"></td>
+                <td class="text-muted">${offset + index + 1}</td>
+                <td class="text-start px-4 fw-bold" style="color: var(--text-main)">${student.SName}</td>
+                <td class="text-muted">${student.SID}</td>
+                <td>${student.CID ? student.CID : '-'}</td>
+                <td>${student.SectionID ? student.SectionID : 'شعبة أ'}</td>
+                <td class="font-monospace">${parentPhone}</td>
+                <td class="text-muted">${student.DOB ? student.DOB : '—'}</td>
+                <td><span class="badge bg-light text-dark border font-monospace" style="font-size:0.82rem">${ageDisplay}</span></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="/students/view/${student.SID}" class="action-btn action-btn-view" title="عرض التفاصيل">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+                        </a>
+                        <a href="/students/edit/${student.SID}" class="action-btn action-btn-edit" title="تعديل">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                        </a>
+                        <button type="button" class="action-btn action-btn-delete" title="حذف" onclick="confirmDelete(${student.SID})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPagination(meta) {
+        const paginationUI = document.getElementById('paginationUI');
+        const infoUI = document.getElementById('pagination-info');
+        paginationUI.innerHTML = '';
+        
+        const start = (meta.current_page - 1) * 10 + 1;
+        const end = Math.min(meta.current_page * 10, meta.total);
+        infoUI.textContent = `عرض ${start} إلى ${end} من ${meta.total} طلاب`;
+
+        if (meta.pages <= 1) return;
+        
+        paginationUI.innerHTML += `
+            <li class="page-item ${meta.current_page === 1 ? 'disabled' : ''}">
+                <button class="page-link border-0 text-muted" onclick="fetchStudents(${meta.current_page - 1})"><i class="fa-solid fa-chevron-right"></i></button>
+            </li>
+        `;
+        
+        for(let i=1; i<=meta.pages; i++) {
+            paginationUI.innerHTML += `
+                <li class="page-item ${meta.current_page === i ? 'active' : ''}">
+                    <button class="page-link border-0 ${meta.current_page === i ? 'bg-primary text-white rounded' : 'text-muted'}" onclick="fetchStudents(${i})">${i}</button>
+                </li>
+            `;
+        }
+        
+        paginationUI.innerHTML += `
+            <li class="page-item ${meta.current_page === meta.pages ? 'disabled' : ''}">
+                <button class="page-link border-0 text-muted" onclick="fetchStudents(${meta.current_page + 1})"><i class="fa-solid fa-chevron-left"></i></button>
+            </li>
+        `;
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', (e) => {
+        clearTimeout(fetchTimeout);
+        currentSearch = e.target.value;
+        fetchTimeout = setTimeout(() => {
+            fetchStudents(1);
+        }, 500);
+    });
+
+    function confirmDelete(id) {
+        document.getElementById('deleteStudentId').value = id;
+        deleteModal.show();
+    }
+
+    function executeDelete() {
+        const id = document.getElementById('deleteStudentId').value;
+        fetch('/api/v1/students/' + id, {
+            method: 'DELETE',
+            headers: apiHeaders
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                deleteModal.hide();
+                showToast('تم حذف الطالب بنجاح', 'success');
+                fetchStudents(currentPage);
+            } else {
+                showToast(data.message, 'error');
+            }
+        });
+    }
+
+    document.addEventListener("turbo:load", () => {
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        fetchStudents(1);
+    });
+</script>
+{% endblock %}
