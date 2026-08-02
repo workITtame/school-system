@@ -215,7 +215,7 @@ body {
     width: 100%;
     max-width: 100vw;
     display: flex;
-    align-items: stretch;
+    align-items: flex-start;
     overflow-x: hidden;
 }
 
@@ -223,10 +223,13 @@ body {
     min-width: 260px;
     max-width: 260px;
     flex: 0 0 260px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
     background: var(--sidebar-bg);
     color: #fff;
     transition: all 0.3s ease;
-    min-height: 100vh;
     z-index: 1000;
 }
 

@@ -13,13 +13,12 @@
     <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 border-start border-4 border-primary">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <nav aria-label="breadcrumb" class="mb-1">
-                    <ol class="breadcrumb mb-0 small">
-                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                        <li class="breadcrumb-item active fw-bold text-primary" aria-current="page">إدارة الطلاب</li>
-                    </ol>
-                </nav>
-                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace" style="font-size: 0.82rem;">
+                        <i class="fa-solid fa-house me-1"></i> الرئيسية / إدارة الطلاب
+                    </span>
+                </div>
+                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2 mt-1">
                     <i class="fa-solid fa-user-graduate text-primary"></i> إدارة الطلاب وسجلات المنظومة
                 </h4>
             </div>
@@ -507,17 +506,17 @@
                 <td>${attBadge}</td>
                 <td>${gpaBadge}</td>
                 <td><small class="text-muted font-monospace">${st.updated_at_formatted || '—'}</small></td>
-                <td>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-light border rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="خيارات الإجراءات">
-                            <i class="fa-solid fa-ellipsis-vertical text-muted"></i>
+                <td class="text-nowrap px-2">
+                    <div class="d-flex justify-content-center gap-1">
+                        <a href="/students/view/${st.SID}" class="btn btn-sm btn-light border text-primary rounded-circle shadow-sm p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="عرض الملف الكامل">
+                            <i class="fa-solid fa-eye" style="font-size: 0.85rem;"></i>
+                        </a>
+                        <a href="/students/edit/${st.SID}" class="btn btn-sm btn-light border text-info rounded-circle shadow-sm p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="تعديل البيانات">
+                            <i class="fa-solid fa-pen-to-square" style="font-size: 0.85rem;"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle shadow-sm p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="حذف الطالب" onclick="confirmDelete(${st.SID})">
+                            <i class="fa-solid fa-trash" style="font-size: 0.85rem;"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
-                            <li><a class="dropdown-menu-item text-primary px-3 py-2 d-block text-decoration-none small" href="/students/view/${st.SID}"><i class="fa-solid fa-eye me-2"></i> عرض الملف الكامل</a></li>
-                            <li><a class="dropdown-menu-item text-info px-3 py-2 d-block text-decoration-none small" href="/students/edit/${st.SID}"><i class="fa-solid fa-pen-to-square me-2"></i> تعديل البيانات</a></li>
-                            <li><hr class="dropdown-divider my-1"></li>
-                            <li><a class="dropdown-menu-item text-danger px-3 py-2 d-block text-decoration-none small" href="javascript:void(0)" onclick="confirmDelete(${st.SID})"><i class="fa-solid fa-trash me-2"></i> حذف الطالب</a></li>
-                        </ul>
                     </div>
                 </td>
             `;
