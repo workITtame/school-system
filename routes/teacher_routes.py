@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
+import time
 from models import Qualifications
 from utils.decorators import admin_required
 
@@ -94,3 +95,109 @@ def view_teacher(id):
                            avg_score=avg_score,
                            homework_count=homework_count,
                            attendance_rate=attendance_rate)
+
+@teacher_bp.route('/add', methods=['GET', 'POST'])
+def add_teacher():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from models import Qualifications, Teacher, User, db
+    import werkzeug.security
+    import os
+    from flask import current_app
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        password = request.form.get('password') or '123456'
+        title = request.form.get('teacher_title')
+        q_name = request.form.get('q_name')
+        salary = request.form.get('salary')
+        currency = request.form.get('currency', 'USD')
+        dob = request.form.get('dob')
+        pob = request.form.get('pob')
+        gender = request.form.get('gender', 'ذكر')
+        
+        qual = Qualifications.query.filter_by(QName=q_name).first() if q_name else None
+        
+        # User account
+        existing_user = User.query.filter_by(email=email).first() if email else None
+        user_id = existing_user.id if existing_user else None
+        if not existing_user and email:
+            new_user = User(
+                name=name,
+                email=email,
+                username=email,
+                password_hash=werkzeug.security.generate_password_hash(password),
+                role='teacher'
+            )
+            db.session.add(new_user)
+            db.session.flush()
+            user_id = new_user.id
+            
+        new_teacher = Teacher(
+            TeacherName=name,
+            Email=email,
+            Phone=phone,
+            Password=werkzeug.security.generate_password_hash(password),
+            TeacherTitle=title,
+            Salary=float(salary) if salary else None,
+            Currency=currency,
+            Gender=gender,
+            POB=pob,
+            QID=qual.QID if qual else None,
+            user_id=user_id,
+            Status='نشط'
+        )
+        
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            filename = f"teacher_{int(time.time())}_{photo.filename}"
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'teachers')
+            os.makedirs(upload_dir, exist_ok=True)
+            photo.save(os.path.join(upload_dir, filename))
+            new_teacher.Image = f"uploads/teachers/{filename}"
+            
+        db.session.add(new_teacher)
+        db.session.commit()
+        return redirect(url_for('teacher.index'))
+
+    qualifications = Qualifications.query.all()
+    return render_template('teacher/add.html', qualifications=qualifications)
+
+@teacher_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit_teacher(id):
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from models import Qualifications, Teacher, db
+    import os
+    import time
+    from flask import current_app
+    
+    teacher = Teacher.query.get_or_404(id)
+    if request.method == 'POST':
+        teacher.TeacherName = request.form.get('name', teacher.TeacherName)
+        teacher.Email = request.form.get('email', teacher.Email)
+        teacher.Phone = request.form.get('phone', teacher.Phone)
+        teacher.TeacherTitle = request.form.get('teacher_title', teacher.TeacherTitle)
+        teacher.Salary = float(request.form.get('salary')) if request.form.get('salary') else teacher.Salary
+        teacher.Currency = request.form.get('currency', teacher.Currency)
+        teacher.Gender = request.form.get('gender', teacher.Gender)
+        teacher.POB = request.form.get('pob', teacher.POB)
+        
+        q_name = request.form.get('q_name')
+        if q_name:
+            qual = Qualifications.query.filter_by(QName=q_name).first()
+            if qual: teacher.QID = qual.QID
+            
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            filename = f"teacher_{int(time.time())}_{photo.filename}"
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'teachers')
+            os.makedirs(upload_dir, exist_ok=True)
+            photo.save(os.path.join(upload_dir, filename))
+            teacher.Image = f"uploads/teachers/{filename}"
+            
+        db.session.commit()
+        return redirect(url_for('teacher.view_teacher', id=teacher.TeacherID))
+
+    qualifications = Qualifications.query.all()
+    return render_template('teacher/edit.html', teacher=teacher, qualifications=qualifications)
