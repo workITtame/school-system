@@ -549,50 +549,69 @@ body {
 }
 
 /* ========================================== */
-/* STUDENT LIST UI POLISH (MODERN SAAS STYLES)*/
+/* ENTERPRISE SAAS PREMIUM DESIGN SYSTEM      */
 /* ========================================== */
 .student-kpi-card {
-    border: 1px solid rgba(226, 232, 240, 0.7) !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.02) !important;
+    border-radius: 16px !important;
+    position: relative;
+    overflow: hidden;
 }
 .student-kpi-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.12) !important;
-    border-color: rgba(37, 99, 235, 0.3) !important;
+    transform: translateY(-5px);
+    box-shadow: 0 16px 32px -8px rgba(37, 99, 235, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
 }
 .student-kpi-icon {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-.kpi-gradient-blue { background: linear-gradient(135deg, rgba(239, 246, 255, 1) 0%, rgba(219, 234, 254, 0.5) 100%); }
-.kpi-gradient-green { background: linear-gradient(135deg, rgba(240, 253, 244, 1) 0%, rgba(220, 252, 231, 0.5) 100%); }
-.kpi-gradient-red { background: linear-gradient(135deg, rgba(254, 242, 242, 1) 0%, rgba(254, 226, 226, 0.5) 100%); }
-.kpi-gradient-info { background: linear-gradient(135deg, rgba(236, 254, 255, 1) 0%, rgba(207, 250, 254, 0.5) 100%); }
-.kpi-gradient-warning { background: linear-gradient(135deg, rgba(254, 252, 232, 1) 0%, rgba(254, 240, 138, 0.3) 100%); }
-.kpi-gradient-purple { background: linear-gradient(135deg, rgba(245, 243, 255, 1) 0%, rgba(237, 233, 254, 0.5) 100%); }
+.kpi-gradient-blue { background: linear-gradient(135deg, rgba(239, 246, 255, 1) 0%, rgba(224, 231, 255, 0.6) 100%); }
+.kpi-gradient-green { background: linear-gradient(135deg, rgba(240, 253, 244, 1) 0%, rgba(220, 252, 231, 0.6) 100%); }
+.kpi-gradient-red { background: linear-gradient(135deg, rgba(254, 242, 242, 1) 0%, rgba(254, 226, 226, 0.6) 100%); }
+.kpi-gradient-info { background: linear-gradient(135deg, rgba(236, 254, 255, 1) 0%, rgba(207, 250, 254, 0.6) 100%); }
+.kpi-gradient-warning { background: linear-gradient(135deg, rgba(254, 252, 232, 1) 0%, rgba(254, 240, 138, 0.4) 100%); }
+.kpi-gradient-purple { background: linear-gradient(135deg, rgba(245, 243, 255, 1) 0%, rgba(237, 233, 254, 0.6) 100%); }
 
 /* Sticky Table Header & Zebra Rows */
 .students-table-container {
-    max-height: 650px;
+    max-height: 680px;
     overflow-y: auto;
+    border-radius: 16px;
 }
 .students-table thead th {
     position: sticky;
     top: 0;
     z-index: 5;
-    background-color: #f8fafc !important;
+    background-color: rgba(248, 250, 252, 0.95) !important;
+    backdrop-filter: blur(8px);
     border-bottom: 2px solid #e2e8f0 !important;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #475569;
+    letter-spacing: 0.2px;
+}
+.table-zebra tbody tr {
+    transition: background-color 0.15s ease, transform 0.15s ease;
 }
 .table-zebra tbody tr:nth-of-type(even) {
-    background-color: rgba(248, 250, 252, 0.5);
+    background-color: rgba(248, 250, 252, 0.4);
 }
 .table-zebra tbody tr:hover {
-    background-color: rgba(239, 246, 255, 0.6) !important;
+    background-color: rgba(238, 242, 255, 0.65) !important;
+}
+
+/* Premium Focus Ring */
+.form-control:focus, .form-select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12) !important;
 }
 
 /* Skeleton Loading Animation */
@@ -602,7 +621,7 @@ body {
     position: relative;
     overflow: hidden;
     background-color: #e2e8f0;
-    border-radius: 4px;
+    border-radius: 6px;
     width: 100%;
 }
 .skeleton-box::after {
@@ -612,11 +631,11 @@ body {
     background-image: linear-gradient(
         90deg,
         rgba(255, 255, 255, 0) 0,
-        rgba(255, 255, 255, 0.4) 20%,
-        rgba(255, 255, 255, 0.7) 60%,
+        rgba(255, 255, 255, 0.5) 20%,
+        rgba(255, 255, 255, 0.8) 60%,
         rgba(255, 255, 255, 0)
     );
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.4s infinite;
     content: '';
 }
 @keyframes shimmer {
