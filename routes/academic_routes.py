@@ -17,21 +17,58 @@ def index():
 @academic_bp.route('/classes')
 def classes():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    classes = Classes.query.all()
-    sections = Sections.query.all()
     
-    middle_school = sum(1 for c in classes if c.Stage == 'المتوسطة')
-    high_school = sum(1 for c in classes if c.Stage == 'الثانوية')
-    total_sections = len(sections)
-    total_classes = len(classes)
+    classes_list = Classes.query.filter_by(is_deleted=False).order_by(Classes.CID.asc()).all()
+    sections_list = Sections.query.filter_by(is_deleted=False).all()
+    
+    total_classes = len(classes_list)
+    total_sections = len(sections_list)
+    active_classes = sum(1 for c in classes_list if getattr(c, 'Status', 'نشط') in ['نشط', None])
+    active_sections = sum(1 for s in sections_list if getattr(s, 'Status', 'نشط') in ['نشط', None])
+    
+    total_students = Student.query.filter_by(is_deleted=False).count()
+    avg_students_per_class = round(total_students / total_classes, 1) if total_classes > 0 else 0
+    
+    # Calculate overall occupancy strictly for classes where MaxStudents is defined
+    total_capacity = sum(c.MaxStudents for c in classes_list if c.MaxStudents and c.MaxStudents > 0)
+    overall_occupancy_rate = round((total_students / total_capacity) * 100, 1) if total_capacity > 0 else None
+    
+    # Enrich each class object with real dynamic metrics
+    for c in classes_list:
+        c.linked_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
+        c.students_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+        c.teachers_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        c.subjects_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
+        
+        # Calculate occupancy rate (MUST be None if MaxStudents is None or 0)
+        if c.MaxStudents and c.MaxStudents > 0:
+            c.occupancy_percentage = round((c.students_count / c.MaxStudents) * 100, 1)
+            if c.occupancy_percentage < 70:
+                c.occupancy_color = 'success'
+            elif c.occupancy_percentage <= 90:
+                c.occupancy_color = 'warning'
+            else:
+                c.occupancy_color = 'danger'
+        else:
+            c.occupancy_percentage = None
+            c.occupancy_color = 'secondary'
+            
+    middle_school = sum(1 for c in classes_list if c.Stage == 'المتوسطة')
+    high_school = sum(1 for c in classes_list if c.Stage == 'الثانوية')
+    primary_school = sum(1 for c in classes_list if c.Stage == 'الأساسية')
     
     return render_template('academic/classes.html', 
-                           classes=classes, 
-                           sections=sections,
+                           classes=classes_list, 
+                           sections=sections_list,
                            middle_school=middle_school,
                            high_school=high_school,
+                           primary_school=primary_school,
                            total_sections=total_sections,
-                           total_classes=total_classes)
+                           total_classes=total_classes,
+                           active_classes=active_classes,
+                           active_sections=active_sections,
+                           avg_students_per_class=avg_students_per_class,
+                           overall_occupancy_rate=overall_occupancy_rate)
 
 @academic_bp.route('/subjects')
 def subjects():
@@ -294,3 +331,141 @@ def delete_exam_type(id):
     et = TypeExams.query.get_or_404(id)
     handle_delete(et)
     return redirect(url_for('academic.index'))
+
+@academic_bp.route('/classes/export/excel')
+def export_classes_excel():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    import io
+    from flask import send_file
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Classes.query.filter_by(is_deleted=False)
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        classes_list = query.filter(Classes.CID.in_(id_list)).all()
+    else:
+        classes_list = query.order_by(Classes.CID.asc()).all()
+        
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "قائمة الصفوف والشعب"
+    ws.sheet_view.rightToLeft = True
+    
+    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    
+    headers = ["كود الصف", "اسم الصف", "المرحلة الدراسية", "عدد الشعب", "عدد الطلاب", "السعة القصوى", "نسبة الإشغال", "عدد المعلمين", "عدد المواد"]
+    ws.append(headers)
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        
+    for c in classes_list:
+        st_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+        t_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        sub_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
+        sec_count = len([sec for sec in c.sections if not getattr(sec, 'is_deleted', False)])
+        
+        occ = f"{round((st_count / c.MaxStudents) * 100, 1)}%" if c.MaxStudents and c.MaxStudents > 0 else "غير محددة"
+        max_st = c.MaxStudents if c.MaxStudents else "غير محددة"
+        
+        row = [
+            f"CLS-{c.CID}",
+            c.CName,
+            c.Stage or 'غير محددة',
+            sec_count,
+            st_count,
+            max_st,
+            occ,
+            t_count,
+            sub_count
+        ]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = align_center
+            
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+        ws.column_dimensions[col].width = 20
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name='classes_export.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@academic_bp.route('/classes/export/pdf')
+def export_classes_pdf():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from datetime import datetime
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Classes.query.filter_by(is_deleted=False)
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        classes_list = query.filter(Classes.CID.in_(id_list)).all()
+    else:
+        classes_list = query.order_by(Classes.CID.asc()).all()
+        
+    for c in classes_list:
+        c.linked_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
+        c.students_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+        c.teachers_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        c.subjects_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
+        c.occ_str = f"{round((c.students_count / c.MaxStudents) * 100, 1)}%" if c.MaxStudents and c.MaxStudents > 0 else "غير محددة"
+        
+    return render_template('academic/classes_pdf_report.html', classes=classes_list, generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
+
+@academic_bp.route('/classes/bulk-delete', methods=['POST'])
+def bulk_delete_classes():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي صف للحذف'}), 400
+        
+    # Student enrollment protection check!
+    blocked_classes = []
+    classes_to_delete = []
+    
+    for cid in ids:
+        c = Classes.query.get(cid)
+        if c:
+            st_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+            if st_count > 0:
+                blocked_classes.append(c.CName)
+            else:
+                classes_to_delete.append(c)
+                
+    if blocked_classes:
+        msg = f"تعذر حذف الصفوف التالية لاحتوائها على طلاب مسجلين: ({', '.join(blocked_classes)}). يرجى نقل الطلاب أولاً."
+        return jsonify({'success': False, 'message': msg, 'blocked': True})
+        
+    for c in classes_to_delete:
+        db.session.delete(c)
+        
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم حذف {len(classes_to_delete)} صفوف بنجاح', 'count': len(classes_to_delete)})
+
+@academic_bp.route('/classes/bulk-status', methods=['POST'])
+def bulk_status_classes():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    new_status = data.get('status', 'نشط')
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي صف لتحديث الحالة'}), 400
+        
+    classes_list = Classes.query.filter(Classes.CID.in_(ids)).all()
+    for c in classes_list:
+        if hasattr(c, 'Status'):
+            c.Status = new_status
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تحديث حالة {len(classes_list)} صفوف إلى "{new_status}" بنجاح', 'count': len(classes_list)})

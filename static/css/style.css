@@ -683,3 +683,81 @@ body {
         transform: translateX(100%);
     }
 }
+
+/* Classes & Enterprise KPI Cards & Floating Bulk Bar */
+.kpi-glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s ease;
+}
+.kpi-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -6px rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+.kpi-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+.kpi-progress-bar {
+    height: 5px;
+    background: #e2e8f0;
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.bulk-action-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px 24px;
+    border-radius: 99px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-width: 380px;
+}
+.bulk-action-bar.active {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.form-control-modern, .form-select-modern {
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.55rem 1rem !important;
+    font-size: 0.9rem !important;
+}
+.form-control-modern:focus, .form-select-modern:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+.custom-enterprise-table thead th {
+    background-color: #f8fafc !important;
+    color: #475569;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 1rem 0.75rem;
+}
+.custom-enterprise-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+.custom-enterprise-table tbody tr:hover {
+    background-color: rgba(239, 246, 255, 0.6) !important;
+}

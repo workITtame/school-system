@@ -1,214 +1,515 @@
 {% extends 'layout.html' %}
 
-{% block title %}الصفوف والشعب{% endblock %}
+{% block title %}إدارة الصفوف والشعب - منظومة المدارس{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
-    <div>
-        <h3 class="fw-bold m-0 text-dark">الصفوف والشعب</h3>
-        <p class="text-muted mb-0" style="font-size: 0.9rem;">الرئيسية / الصفوف والشعب</p>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-light border fw-bold text-muted px-4" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-            <i class="fa-solid fa-plus me-1"></i> إدارة الشعب
-        </button>
-        <button class="btn btn-primary fw-bold px-4" style="background: var(--primary); border: none;" data-bs-toggle="modal" data-bs-target="#addClassModal">
-            <i class="fa-solid fa-plus me-1"></i> إدارة الصفوف
-        </button>
-    </div>
-</div>
+<div class="container-fluid px-0">
 
-<!-- Stat Cards -->
-<div class="row mb-4 fade-in">
-    <div class="col-md-3 mb-3">
-        <div class="stat-card-flat h-100">
-            <div class="stat-content">
-                <span class="stat-label">إجمالي الصفوف</span>
-                <span class="stat-value">{{ total_classes }}</span>
+    <!-- ========================================== -->
+    <!-- SECTION 1: Hero Header & Quick Actions     -->
+    <!-- ========================================== -->
+    <div class="glass-card mb-4 p-4 fade-in position-relative overflow-hidden style-hero-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 2;">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace" style="font-size: 0.82rem;">
+                        <i class="fa-solid fa-house me-1"></i> الرئيسية / الكادر الأكاديمي / إدارة الصفوف والشعب
+                    </span>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-1 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-school text-primary"></i> إدارة وتوجيه الصفوف والشعب الدراسية
+                </h3>
+                <p class="text-muted small mb-0">متابعة بيانت وإحصائيات الصفوف المدرسية، إشغال الشعب، وربط المعلمين بالمواد الدراسية</p>
             </div>
-            <div class="stat-icon-wrapper bg-icon-green">
-                <i class="fa-solid fa-school"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card-flat h-100">
-            <div class="stat-content">
-                <span class="stat-label">إجمالي الشعب</span>
-                <span class="stat-value">{{ total_sections }}</span>
-            </div>
-            <div class="stat-icon-wrapper bg-icon-purple" style="color: #ec4899; background: rgba(236, 72, 153, 0.1);">
-                <i class="fa-solid fa-users-rectangle"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card-flat h-100">
-            <div class="stat-content">
-                <span class="stat-label">المرحلة الثانوية</span>
-                <span class="stat-value">{{ high_school }}</span>
-            </div>
-            <div class="stat-icon-wrapper bg-icon-purple">
-                <i class="fa-solid fa-graduation-cap"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card-flat h-100">
-            <div class="stat-content">
-                <span class="stat-label">المرحلة المتوسطة</span>
-                <span class="stat-value">{{ middle_school }}</span>
-            </div>
-            <div class="stat-icon-wrapper bg-icon-blue">
-                <i class="fa-solid fa-book-open-reader"></i>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="card shadow-sm border-0 rounded-4 fade-in">
-    <div class="card-body p-0">
+            <!-- Action Toolbar Buttons -->
+            <div class="d-flex align-items-center gap-2 flex-wrap no-print">
+                <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addClassModal">
+                    <i class="fa-solid fa-plus me-1"></i> إضافة صف
+                </button>
+                <button type="button" class="btn btn-outline-primary rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                    <i class="fa-solid fa-layer-group me-1"></i> إضافة شعبة
+                </button>
+                <button type="button" class="btn btn-outline-success rounded-pill px-3 fw-bold" onclick="exportClassesExcel()">
+                    <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+                </button>
+                <button type="button" class="btn btn-outline-danger rounded-pill px-3 fw-bold" onclick="exportClassesPDF()">
+                    <i class="fa-solid fa-file-pdf me-1"></i> تصدير PDF
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-bold" onclick="refreshClasses()">
+                    <i class="fa-solid fa-rotate me-1"></i> تحديث
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: 6 Enterprise SaaS KPI Cards     -->
+    <!-- ========================================== -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
+        <!-- 1. Total Classes -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">إجمالي الصفوف</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                        <i class="fa-solid fa-school"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-primary mb-1 font-monospace">{{ total_classes }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-primary h-100" style="width: 100%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-check-circle text-primary me-1"></i> 100% صف دراسي</span>
+            </div>
+        </div>
+
+        <!-- 2. Total Sections -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">إجمالي الشعب</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <i class="fa-solid fa-users-rectangle"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-purple mb-1 font-monospace" style="color: #7c3aed;">{{ total_sections }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="h-100" style="width: 100%; background: #7c3aed;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-layer-group me-1" style="color: #7c3aed;"></i> شعبة دراسية</span>
+            </div>
+        </div>
+
+        <!-- 3. Active Classes -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">الصفوف النشطة</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-success mb-1 font-monospace">{{ active_classes }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-success h-100" style="width: {{ ((active_classes / total_classes) * 100)|round if total_classes > 0 else 100 }}%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-check text-success me-1"></i> {{ ((active_classes / total_classes) * 100)|round if total_classes > 0 else 100 }}% نشطة</span>
+            </div>
+        </div>
+
+        <!-- 4. Active Sections -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">الشعب النشطة</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-info mb-1 font-monospace">{{ active_sections }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-info h-100" style="width: 100%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-bolt text-info me-1"></i> شعب مفعلة</span>
+            </div>
+        </div>
+
+        <!-- 5. Avg Students per Class -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">متوسط الطلاب/صف</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <i class="fa-solid fa-user-group"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-warning mb-1 font-monospace">{{ avg_students_per_class }}</h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-warning h-100" style="width: 70%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-users text-warning me-1"></i> طالب لكل صف</span>
+            </div>
+        </div>
+
+        <!-- 6. Occupancy Rate % -->
+        <div class="col">
+            <div class="kpi-glass-card p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fw-bold small">نسبة الإشغال الإجمالية</span>
+                    <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, #f43f5e, #e11d48);">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-danger mb-1 font-monospace">
+                    {% if overall_occupancy_rate is not none %}
+                        {{ overall_occupancy_rate }}%
+                    {% else %}
+                        غير محددة
+                    {% endif %}
+                </h3>
+                <div class="kpi-progress-bar mt-2">
+                    <div class="bg-danger h-100" style="width: {{ overall_occupancy_rate if overall_occupancy_rate is not none else 0 }}%;"></div>
+                </div>
+                <span class="text-muted small mt-1 d-block font-monospace"><i class="fa-solid fa-percent text-danger me-1"></i> نسبة استيعاب الصفوف</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: Search & Filters Glass Card    -->
+    <!-- ========================================== -->
+    <div class="glass-card mb-4 p-3 fade-in">
+        <div class="row g-2 align-items-center">
+            <!-- 1. Search Bar -->
+            <div class="col-md-4">
+                <div class="position-relative">
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="searchFilter" class="form-control form-control-modern ps-5" placeholder="ابحث باسم الصف أو الكود (مثال: الأول الثانوي)...">
+                </div>
+            </div>
+
+            <!-- 2. Stage Filter -->
+            <div class="col-md-2">
+                <select id="stageFilter" class="form-select form-select-modern">
+                    <option value="ALL">جميع المراحل الدراسية</option>
+                    <option value="الأساسية">المرحلة الأساسية</option>
+                    <option value="المتوسطة">المرحلة المتوسطة</option>
+                    <option value="الثانوية">المرحلة الثانوية</option>
+                </select>
+            </div>
+
+            <!-- 3. Status Filter -->
+            <div class="col-md-2">
+                <select id="statusFilter" class="form-select form-select-modern">
+                    <option value="ALL">جميع الحالات</option>
+                    <option value="نشط">نشط</option>
+                    <option value="غير نشط">غير نشط</option>
+                </select>
+            </div>
+
+            <!-- 4. Sort Filter -->
+            <div class="col-md-2">
+                <select id="sortFilter" class="form-select form-select-modern">
+                    <option value="ID_ASC">ترتيب حسب الكود</option>
+                    <option value="NAME_ASC">ترتيب حسب الاسم</option>
+                    <option value="STUDENTS_DESC">الأكثر طلاباً</option>
+                    <option value="SECTIONS_DESC">الأكثر شعباً</option>
+                    <option value="OCCUPANCY_DESC">الأعلى إشغالاً</option>
+                </select>
+            </div>
+
+            <!-- 5. Reset Button -->
+            <div class="col-md-2 text-end">
+                <button type="button" id="resetFiltersBtn" class="btn btn-light-subtle w-100 rounded-pill fw-bold text-muted border">
+                    <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: Enterprise Data Grid Table      -->
+    <!-- ========================================== -->
+    <div class="glass-card fade-in overflow-hidden position-relative">
         <div class="table-responsive">
-            <table class="table table-hover align-middle text-center mb-0">
-                <thead class="bg-light">
+            <table class="table table-hover align-middle mb-0 text-center custom-enterprise-table" id="classesTable">
+                <thead>
                     <tr>
-                        <th class="py-3 text-muted">الصف</th>
-                        <th class="py-3 text-muted">المرحلة</th>
-                        <th class="py-3 text-muted">عدد الشعب</th>
-                        <th class="py-3 text-muted">عدد الطلاب</th>
-                        <th class="py-3 text-muted">الإجراءات</th>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAllClasses">
+                        </th>
+                        <th>كود الصف</th>
+                        <th class="text-start">اسم الصف الدراسي</th>
+                        <th>المرحلة الدراسية</th>
+                        <th>الشعب المسندة</th>
+                        <th>عدد الطلاب / السعة</th>
+                        <th>المعلمين</th>
+                        <th>المواد</th>
+                        <th>نسبة الإشغال</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="classesTableBody">
                     {% for c in classes %}
-                    <tr>
-                        <td class="fw-bold" style="color: var(--text-main);">{{ c.CName }}</td>
-                        <td class="text-muted">{{ c.Stage or '-' }}</td>
-                        <td class="text-muted">{{ c.sections|length }}</td>
-                        <td class="text-muted">{{ c.students|length if c.students else '0' }}</td>
+                    <tr class="class-row" 
+                        data-id="{{ c.CID }}"
+                        data-name="{{ c.CName }}"
+                        data-code="CLS-{{ c.CID }}"
+                        data-stage="{{ c.Stage or '' }}"
+                        data-status="{{ c.Status or 'نشط' }}"
+                        data-students="{{ c.students_count }}"
+                        data-sections="{{ c.linked_sections|length }}"
+                        data-occupancy="{{ c.occupancy_percentage if c.occupancy_percentage is not none else -1 }}">
+                        
+                        <!-- Checkbox -->
                         <td>
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="{{ url_for('students.home') }}" class="action-btn action-btn-view" title="عرض الطلاب">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
-                                </a>
-                                <button type="button" class="action-btn action-btn-edit" title="تعديل" data-bs-toggle="modal" data-bs-target="#editClassModal{{ c.CID }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 1 .707 0l1.293 1.293a.5.5 0 0 1 0 .707l-9.393 9.393a.5.5 0 0 1-.168.11l-3.951 1.317a.5.5 0 0 1-.637-.637l1.317-3.951a.5.5 0 0 1 .11-.168l9.393-9.393zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 3 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11.5a.5.5 0 0 1-.03-.232z"/></svg>
+                            <input type="checkbox" class="form-check-input class-checkbox" value="{{ c.CID }}">
+                        </td>
+
+                        <!-- Class Code -->
+                        <td>
+                            <span class="badge bg-light text-dark border font-monospace px-2 py-1">CLS-{{ c.CID }}</span>
+                        </td>
+
+                        <!-- Class Name -->
+                        <td class="text-start">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle bg-primary-subtle text-primary fw-bold" style="width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-graduation-cap"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark fs-6">{{ c.CName }}</div>
+                                    <span class="text-muted small font-monospace">كود التخصص: #{{ c.CID }}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Stage -->
+                        <td>
+                            {% if c.Stage == 'الثانوية' %}
+                                <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-3 py-1 rounded-pill" style="color: #7c3aed; background: #f3e8ff;">
+                                    <i class="fa-solid fa-award me-1"></i> الثانوية
+                                </span>
+                            {% elif c.Stage == 'المتوسطة' %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1 rounded-pill">
+                                    <i class="fa-solid fa-book-open me-1"></i> المتوسطة
+                                </span>
+                            {% else %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+                                    <i class="fa-solid fa-shapes me-1"></i> {{ c.Stage or 'الأساسية' }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Linked Sections -->
+                        <td>
+                            {% if c.linked_sections %}
+                                <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                    {% for sec in c.linked_sections %}
+                                    <span class="badge bg-secondary-subtle text-dark border px-2 py-1" style="font-size: 0.78rem;">
+                                        {{ sec.SectionName }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted small">— لا توجد شعب —</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Students / Max Capacity -->
+                        <td>
+                            <div class="font-monospace fw-bold text-dark">
+                                {{ c.students_count }} / 
+                                {% if c.MaxStudents %}
+                                    {{ c.MaxStudents }}
+                                {% else %}
+                                    <span class="text-muted fw-normal" style="font-size: 0.82rem;">غير محددة</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Teachers Count -->
+                        <td>
+                            <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i> {{ c.teachers_count }}</span>
+                        </td>
+
+                        <!-- Subjects Count -->
+                        <td>
+                            <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-book text-warning me-1"></i> {{ c.subjects_count }}</span>
+                        </td>
+
+                        <!-- Occupancy Progress Bar -->
+                        <td>
+                            {% if c.occupancy_percentage is not none %}
+                                <div class="d-flex align-items-center gap-2 justify-content-center">
+                                    <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                                        <div class="progress-bar bg-{{ c.occupancy_color }}" style="width: {{ c.occupancy_percentage }}%;"></div>
+                                    </div>
+                                    <span class="badge bg-{{ c.occupancy_color }}-subtle text-{{ c.occupancy_color }} border border-{{ c.occupancy_color }}-subtle font-monospace" style="font-size: 0.78rem;">
+                                        {{ c.occupancy_percentage }}%
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="text-muted small font-monospace">غير محددة</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td>
+                            <span class="badge bg-{{ 'success' if c.Status == 'نشط' or not c.Status else 'danger' }}-subtle text-{{ 'success' if c.Status == 'نشط' or not c.Status else 'danger' }} border border-{{ 'success' if c.Status == 'نشط' or not c.Status else 'danger' }}-subtle rounded-pill px-3 py-1">
+                                <i class="fa-solid fa-circle me-1" style="font-size: 0.5rem;"></i> {{ c.Status or 'نشط' }}
+                            </span>
+                        </td>
+
+                        <!-- Action Buttons -->
+                        <td>
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle" data-bs-toggle="tooltip" title="عرض الشعب" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                    <i class="fa-solid fa-eye"></i>
                                 </button>
-                                <form action="{{ url_for('academic.delete_class', id=c.CID) }}" method="POST" class="d-inline mb-0">
-                                    <button type="submit" class="action-btn action-btn-delete" title="حذف" onclick="return confirm('تأكيد حذف الصف الدراسي؟')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle" data-bs-toggle="tooltip" title="عرض الطلاب">
+                                    <i class="fa-solid fa-users"></i>
+                                </a>
+                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle" data-bs-toggle="tooltip" title="المعلمون">
+                                    <i class="fa-solid fa-chalkboard-user"></i>
+                                </a>
+                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle" data-bs-toggle="tooltip" title="الجدول">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-muted py-5"><i class="fa-solid fa-school fs-1 text-light mb-3 d-block"></i>لا توجد صفوف مضافة</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div class="card-footer bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-            <small class="text-muted fw-bold">عرض 1 إلى {{ total_classes }} من {{ total_classes }} صف</small>
-            <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled"><a class="page-link border-0 text-muted" href="#"><i class="fa-solid fa-angle-right"></i></a></li>
-                    <li class="page-item active"><a class="page-link rounded bg-primary border-0" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link border-0 text-muted" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link border-0 text-muted" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link border-0 text-muted" href="#"><i class="fa-solid fa-angle-left"></i></a></li>
-                </ul>
-            </nav>
+
+        <!-- SECTION 5: Empty State -->
+        <div id="classesEmptyState" class="text-center py-5" style="display: none;">
+            <div class="mb-3">
+                <i class="fa-solid fa-school-circle-xmark text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">لا توجد صفوف دراسية تطابق خيارات البحث</h5>
+            <p class="text-muted small mb-3">جرب تغيير كلمات البحث أو إعادة ضبط الفلاتر المطبقة</p>
+            <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addClassModal">
+                <i class="fa-solid fa-plus me-1"></i> إضافة صف جديد
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 6: Floating Bulk Action Bar       -->
+<!-- ========================================== -->
+<div id="bulkActionBar" class="bulk-action-bar no-print">
+    <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace" id="selectedClassesCount">0</span>
+            <span class="fw-bold text-white">صفوف محددة</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-light btn-sm rounded-pill fw-bold" onclick="bulkStatus()">
+                <i class="fa-solid fa-toggle-on text-primary me-1"></i> تغيير الحالة
+            </button>
+            <button type="button" class="btn btn-light btn-sm rounded-pill fw-bold" onclick="exportClassesExcel()">
+                <i class="fa-solid fa-file-excel text-success me-1"></i> تصدير المحدد
+            </button>
+            <button type="button" class="btn btn-danger btn-sm rounded-pill fw-bold" onclick="bulkDelete()">
+                <i class="fa-solid fa-trash-can me-1"></i> حذف المحدد
+            </button>
         </div>
     </div>
 </div>
 
-<!-- Add Class Modal -->
-<div class="modal fade" id="addClassModal" tabindex="-1">
+<!-- ========================================== -->
+<!-- SECTION 7: Modals (Add, Edit, Section)     -->
+<!-- ========================================== -->
+
+<!-- 1. Add Class Modal -->
+<div class="modal fade" id="addClassModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 bg-light rounded-top-4">
-                <h5 class="modal-title fw-bold">إضافة صف جديد</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle me-2"></i> إضافة صف دراسي جديد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('academic.add_class') }}" method="POST">
+            <form action="{{ url_for('academic.add_class') }}" method="POST">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">اسم الصف</label>
-                        <input type="text" name="name" class="form-control bg-light border-0" required placeholder="مثال: الأول الثانوي">
+                        <label class="form-label fw-bold text-dark">اسم الصف الدراسي <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control form-control-modern" placeholder="مثال: الأول الثانوي" required>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted">المرحلة</label>
-                        <select name="stage" class="form-select bg-light border-0" required>
-                            <option value="الأساسية">الأساسية</option>
-                            <option value="المتوسطة">المتوسطة</option>
-                            <option value="الثانوية">الثانوية</option>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">المرحلة الدراسية <span class="text-danger">*</span></label>
+                        <select name="stage" class="form-select form-select-modern" required>
+                            <option value="الأساسية">المرحلة الأساسية</option>
+                            <option value="المتوسطة">المرحلة المتوسطة</option>
+                            <option value="الثانوية" selected>المرحلة الثانوية</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary w-100 py-2 fw-bold rounded-pill" type="submit">حفظ التغييرات</button>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ الصف</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Add Section Modal -->
-<div class="modal fade" id="addSectionModal" tabindex="-1">
+<!-- 2. Edit Class Modal -->
+<div class="modal fade" id="editClassModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 bg-light rounded-top-4">
-                <h5 class="modal-title fw-bold">إضافة شعبة جديدة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-warning text-dark py-3">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> تعديل بيانات الصف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('academic.add_section') }}" method="POST">
+            <form action="" method="POST">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">اسم الشعبة</label>
-                        <input type="text" name="name" class="form-control bg-light border-0" required placeholder="مثال: أ, ب, ج">
+                        <label class="form-label fw-bold text-dark">اسم الصف الدراسي <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="editClassNameInput" class="form-control form-control-modern" required>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted">الصف المرتبط</label>
-                        <select name="class_id" class="form-select bg-light border-0" required>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">المرحلة الدراسية <span class="text-danger">*</span></label>
+                        <select name="stage" id="editClassStageSelect" class="form-select form-select-modern" required>
+                            <option value="الأساسية">المرحلة الأساسية</option>
+                            <option value="المتوسطة">المرحلة المتوسطة</option>
+                            <option value="الثانوية">المرحلة الثانوية</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm text-dark">تحديث البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Add Section Modal -->
+<div class="modal fade" id="addSectionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-info text-white py-3">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-layer-group me-2"></i> إضافة شعبة جديدة وتربيطها</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('academic.add_section') }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">اسم الشعبة <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control form-control-modern" placeholder="مثال: شعبة أ / شعبة المتفوقين" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">ربط بالصف الدراسي <span class="text-danger">*</span></label>
+                        <select name="class_id" class="form-select form-select-modern" required>
                             {% for c in classes %}
-                            <option value="{{ c.CID }}">{{ c.CName }}</option>
+                            <option value="{{ c.CID }}">{{ c.CName }} ({{ c.Stage }})</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button class="btn btn-primary w-100 py-2 fw-bold rounded-pill" type="submit">حفظ التغييرات</button>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-info rounded-pill px-4 fw-bold text-white shadow-sm">إضافة الشعبة</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Edit Class Modals -->
-{% for c in classes %}
-<div class="modal fade" id="editClassModal{{ c.CID }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 bg-light rounded-top-4">
-                <h5 class="modal-title fw-bold">تعديل بيانات الصف</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('academic.edit_class', id=c.CID) }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">اسم الصف</label>
-                        <input type="text" name="name" value="{{ c.CName }}" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted">المرحلة</label>
-                        <select name="stage" class="form-select bg-light border-0" required>
-                            <option value="الأساسية" {% if c.Stage == 'الأساسية' %}selected{% endif %}>الأساسية</option>
-                            <option value="المتوسطة" {% if c.Stage == 'المتوسطة' %}selected{% endif %}>المتوسطة</option>
-                            <option value="الثانوية" {% if c.Stage == 'الثانوية' %}selected{% endif %}>الثانوية</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary w-100 py-2 fw-bold rounded-pill" type="submit">حفظ التغييرات</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
+<!-- JavaScript Integration -->
+<script src="{{ url_for('static', filename='js/classes.js') }}"></script>
 {% endblock %}
