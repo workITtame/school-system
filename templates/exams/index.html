@@ -301,83 +301,222 @@
 </div>
 
 <!-- ========================================== -->
-<!-- ADD EXAM MODAL                             -->
+<!-- ADD EXAM ENTERPRISE SAAS WIZARD MODAL      -->
 <!-- ========================================== -->
 <div class="modal fade" id="addExamModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden font-monospace">
+            
+            <!-- Wizard Header -->
             <div class="modal-header bg-primary text-white p-4 border-0">
                 <div class="d-flex align-items-center gap-3">
                     <div class="bg-white bg-opacity-20 p-3 rounded-3">
                         <i class="fa-solid fa-calendar-plus fs-3 text-white"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-extrabold mb-1">إضافة جدول اختبار جديد</h5>
-                        <p class="text-white-50 small mb-0 font-monospace">تحديد المادة والصف والتاريخ والموعد الأكاديمي</p>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace">Enterprise 4-Step Wizard</span>
+                        </div>
+                        <h5 class="modal-title fw-extrabold mb-0">معالج جدولة وإضافة اختبار جديد</h5>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('exams.add_exam') }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold small">المادة الدراسية <span class="text-danger">*</span></label>
-                        <select name="sub_id" class="form-select form-select-modern" required>
-                            <option value="">-- اختر المادة --</option>
-                            {% for s in subjects %}
-                            <option value="{{ s.SubID }}">{{ s.SubName }}</option>
-                            {% endfor %}
-                        </select>
+
+            <!-- Progress Stepper Bar -->
+            <div class="bg-light p-3 border-bottom no-print">
+                <div class="d-flex justify-content-between align-items-center position-relative px-4">
+                    <div class="exam-wz-step-item text-center active" id="ex-wz-step-btn-1" onclick="goToExamWzStep(1)">
+                        <div class="exam-wz-step-circle mx-auto mb-1">1</div>
+                        <span class="extra-small fw-bold">الأساسية</span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold small">الصف الدراسي <span class="text-danger">*</span></label>
-                        <select name="class_id" class="form-select form-select-modern" required>
-                            <option value="">-- اختر الصف --</option>
-                            {% for c in classes %}
-                            <option value="{{ c.CID }}">{{ c.CName }}</option>
-                            {% endfor %}
-                        </select>
+                    <div class="exam-wz-step-item text-center" id="ex-wz-step-btn-2" onclick="goToExamWzStep(2)">
+                        <div class="exam-wz-step-circle mx-auto mb-1">2</div>
+                        <span class="extra-small fw-bold">بيانات الاختبار</span>
                     </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">تاريخ الاختبار <span class="text-danger">*</span></label>
-                            <input type="date" name="exam_date" class="form-control form-select-modern" required>
+                    <div class="exam-wz-step-item text-center" id="ex-wz-step-btn-3" onclick="goToExamWzStep(3)">
+                        <div class="exam-wz-step-circle mx-auto mb-1">3</div>
+                        <span class="extra-small fw-bold">الموعد والتوقيت</span>
+                    </div>
+                    <div class="exam-wz-step-item text-center" id="ex-wz-step-btn-4" onclick="goToExamWzStep(4)">
+                        <div class="exam-wz-step-circle mx-auto mb-1">4</div>
+                        <span class="extra-small fw-bold">المراجعة النهائية</span>
+                    </div>
+                </div>
+            </div>
+
+            <form action="{{ url_for('exams.add_exam') }}" method="POST" id="addExamWizardForm">
+                <div class="modal-body p-4">
+                    
+                    <!-- ① STEP 1: BASIC INFO -->
+                    <div class="exam-wz-step-pane" id="ex-wz-step-1">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-graduation-cap me-2"></i>① المعلومات والأطر الأكاديمية الأساسية</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">المادة الدراسية <span class="text-danger">*</span></label>
+                                <select name="sub_id" id="ex-wz-sub" class="form-select form-select-modern" required onchange="updateExamWzSummary()">
+                                    <option value="">-- اختر المادة --</option>
+                                    {% for s in subjects %}
+                                    <option value="{{ s.SubID }}">{{ s.SubName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الصف الدراسي <span class="text-danger">*</span></label>
+                                <select name="class_id" id="ex-wz-class" class="form-select form-select-modern" required onchange="updateExamWzSummary()">
+                                    <option value="">-- اختر الصف --</option>
+                                    {% for c in classes %}
+                                    <option value="{{ c.CID }}">{{ c.CName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الفصل الدراسي</label>
+                                <select class="form-select form-select-modern" id="ex-wz-term">
+                                    <option value="الفصل الدراسي الأول">الفصل الدراسي الأول</option>
+                                    <option value="الفصل الدراسي الثاني">الفصل الدراسي الثاني</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">العام الدراسي</label>
+                                <input type="text" class="form-control form-select-modern" value="2025 - 2026" readonly>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">الوقت <span class="text-danger">*</span></label>
-                            <input type="time" name="exam_time" class="form-control form-select-modern" required>
+                    </div>
+
+                    <!-- ② STEP 2: EXAM DETAILS -->
+                    <div class="exam-wz-step-pane d-none" id="ex-wz-step-2">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-file-pen me-2"></i>② مواصفات ونوع الاختبار الأكاديمي</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">نوع الاختبار <span class="text-danger">*</span></label>
+                                <select name="exam_type" id="ex-wz-type" class="form-select form-select-modern" required onchange="updateExamWzSummary()">
+                                    {% for t in exam_types %}
+                                    <option value="{{ t.ExamName }}">{{ t.ExamName }}</option>
+                                    {% else %}
+                                    <option value="اختبار نصفي">اختبار نصفي</option>
+                                    <option value="اختبار نهائي">اختبار نهائي</option>
+                                    <option value="اختبار تقويمي">اختبار تقويمي</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">حالة الاختبار المفعلة</label>
+                                <select name="status" id="ex-wz-status" class="form-select form-select-modern" onchange="updateExamWzSummary()">
+                                    <option value="مجدول">مجدول</option>
+                                    <option value="مفعل">مفعل</option>
+                                    <option value="منتهي">منتهي</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الدرجة الكلية (القصوى)</label>
+                                <input type="number" class="form-control form-select-modern" value="100" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">درجة النجاح الأدنى</label>
+                                <input type="number" class="form-control form-select-modern" value="50" readonly>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold small">نوع الاختبار <span class="text-danger">*</span></label>
-                        <select name="exam_type" class="form-select form-select-modern" required>
-                            {% for t in exam_types %}
-                            <option value="{{ t.ExamName }}">{{ t.ExamName }}</option>
-                            {% else %}
-                            <option value="نصفي">نصفي</option>
-                            <option value="نهائي">نهائي</option>
-                            {% endfor %}
-                        </select>
+
+                    <!-- ③ STEP 3: SCHEDULE & TIMING -->
+                    <div class="exam-wz-step-pane d-none" id="ex-wz-step-3">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-clock me-2"></i>③ موعد وتوقيت الاختبار الأكاديمي</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">تاريخ الاختبار <span class="text-danger">*</span></label>
+                                <input type="date" name="exam_date" id="ex-wz-date" class="form-control form-select-modern" required onchange="updateExamWzSummary()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">وقت بداية الاختبار <span class="text-danger">*</span></label>
+                                <input type="time" name="exam_time" id="ex-wz-time" class="form-control form-select-modern" required onchange="updateExamWzSummary()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">المدة الزمنية المقدرة</label>
+                                <select class="form-select form-select-modern">
+                                    <option value="60">ساعة واحدة (60 دقيقة)</option>
+                                    <option value="90">ساعة ونصف (90 دقيقة)</option>
+                                    <option value="120" selected>ساعتان (120 دقيقة)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">مكان / قاعة الاختبار</label>
+                                <input type="text" class="form-control form-select-modern" value="القاعة الأكاديمية الرئيسية" readonly>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label text-muted fw-bold small">حالة الاختبار</label>
-                        <select name="status" class="form-select form-select-modern">
-                            <option value="مجدول">مجدول</option>
-                            <option value="مفعل">مفعل</option>
-                            <option value="منتهي">منتهي</option>
-                        </select>
+
+                    <!-- ④ STEP 4: FINAL REVIEW -->
+                    <div class="exam-wz-step-pane d-none" id="ex-wz-step-4">
+                        <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-check-double me-2"></i>④ المراجعة والاعتماد النهائي لجدول الاختبار</h6>
+                        <div class="p-3 bg-light rounded-4 border mb-3">
+                            <div class="row g-3 small">
+                                <div class="col-md-6">
+                                    <div class="text-muted">المادة المختارة:</div>
+                                    <strong class="text-dark font-monospace" id="ex-sum-sub">لم تتحدد بعد</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">الصف المستهدف:</div>
+                                    <strong class="text-dark font-monospace" id="ex-sum-class">لم يتحدد بعد</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">نوع وحالة الاختبار:</div>
+                                    <strong class="text-primary font-monospace" id="ex-sum-type">اختبار نصفي (مجدول)</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">تاريخ الموعد:</div>
+                                    <strong class="text-dark font-monospace" id="ex-sum-date">2026-08-03</strong>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
-                            <i class="fa-solid fa-check me-1"></i> حفظ وتوثيق
+
+                </div>
+
+                <!-- Wizard Footer Buttons -->
+                <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between align-items-center" id="ex-wz-footer">
+                    <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" id="ex-wz-btn-prev" onclick="prevExamWzStep()" disabled>
+                        <i class="fa-solid fa-arrow-right me-1"></i> السابق
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="ex-wz-btn-next" onclick="nextExamWzStep()">
+                            التالي <i class="fa-solid fa-arrow-left ms-1"></i>
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
+
         </div>
     </div>
 </div>
+
+<style>
+.exam-wz-step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.exam-wz-step-item {
+    cursor: pointer;
+    z-index: 2;
+}
+.exam-wz-step-item.active .exam-wz-step-circle {
+    background-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(37,99,235,0.4);
+}
+.exam-wz-step-item.completed .exam-wz-step-circle {
+    background-color: #22c55e;
+    color: #ffffff;
+}
+</style>
 
 <style>
 @media print {

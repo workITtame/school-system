@@ -29,6 +29,10 @@ function initExamsModule() {
     window.printExamsAnalytics = printExamsAnalytics;
     window.viewExamProfile = viewExamProfile;
     window.printExamProfile = printExamProfile;
+    window.goToExamWzStep = goToExamWzStep;
+    window.nextExamWzStep = nextExamWzStep;
+    window.prevExamWzStep = prevExamWzStep;
+    window.updateExamWzSummary = updateExamWzSummary;
 
     setupExamsEventListeners();
 
@@ -334,4 +338,148 @@ function initExamsAnalyticsCharts() {
 
 function printExamsAnalytics() {
     window.print();
+}
+
+/* ==========================================================================
+   ADD EXAM 4-STEP ENTERPRISE WIZARD CONTROLLER
+   ========================================================================== */
+
+let currentExamWzStep = 1;
+
+function goToExamWzStep(step) {
+    if (step < 1 || step > 4) return;
+
+    if (step > currentExamWzStep) {
+        if (!validateExamWzStep(currentExamWzStep)) return;
+    }
+
+    currentExamWzStep = step;
+    updateExamWzStepUI();
+}
+
+function nextExamWzStep() {
+    if (currentExamWzStep === 4) {
+        const form = document.getElementById('addExamWizardForm');
+        if (form) form.submit();
+        return;
+    }
+
+    if (!validateExamWzStep(currentExamWzStep)) return;
+
+    currentExamWzStep++;
+    updateExamWzStepUI();
+}
+
+function prevExamWzStep() {
+    if (currentExamWzStep > 1) {
+        currentExamWzStep--;
+        updateExamWzStepUI();
+    }
+}
+
+function validateExamWzStep(step) {
+    if (step === 1) {
+        const sub = document.getElementById('ex-wz-sub');
+        const cls = document.getElementById('ex-wz-class');
+        if (!sub || !sub.value) {
+            showToast('الرجاء اختيار المادة الدراسية قبل الانتقال للخطوة التالية', 'warning');
+            if (sub) sub.focus();
+            return false;
+        }
+        if (!cls || !cls.value) {
+            showToast('الرجاء اختيار الصف الدراسي قبل الانتقال للخطوة التالية', 'warning');
+            if (cls) cls.focus();
+            return false;
+        }
+    } else if (step === 2) {
+        const type = document.getElementById('ex-wz-type');
+        if (!type || !type.value) {
+            showToast('الرجاء تحديد نوع الاختبار قبل الانتقال للخطوة التالية', 'warning');
+            if (type) type.focus();
+            return false;
+        }
+    } else if (step === 3) {
+        const dateEl = document.getElementById('ex-wz-date');
+        const timeEl = document.getElementById('ex-wz-time');
+        if (!dateEl || !dateEl.value) {
+            showToast('الرجاء اختيار تاريخ إجراء الاختبار', 'warning');
+            if (dateEl) dateEl.focus();
+            return false;
+        }
+        if (!timeEl || !timeEl.value) {
+            showToast('الرجاء اختيار توقيت بداية الاختبار', 'warning');
+            if (timeEl) timeEl.focus();
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateExamWzStepUI() {
+    for (let i = 1; i <= 4; i++) {
+        const pane = document.getElementById(`ex-wz-step-${i}`);
+        const btn = document.getElementById(`ex-wz-step-btn-${i}`);
+
+        if (pane) {
+            if (i === currentExamWzStep) pane.classList.remove('d-none');
+            else pane.classList.add('d-none');
+        }
+
+        if (btn) {
+            if (i === currentExamWzStep) {
+                btn.className = 'exam-wz-step-item text-center active';
+            } else if (i < currentExamWzStep) {
+                btn.className = 'exam-wz-step-item text-center completed';
+            } else {
+                btn.className = 'exam-wz-step-item text-center';
+            }
+        }
+    }
+
+    const btnPrev = document.getElementById('ex-wz-btn-prev');
+    const btnNext = document.getElementById('ex-wz-btn-next');
+
+    if (btnPrev) btnPrev.disabled = (currentExamWzStep === 1);
+
+    if (btnNext) {
+        if (currentExamWzStep === 4) {
+            btnNext.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> حفظ وتوثيق الجدول النهائي';
+            btnNext.className = 'btn btn-success rounded-pill px-5 fw-bold shadow-sm';
+        } else {
+            btnNext.innerHTML = 'التالي <i class="fa-solid fa-arrow-left ms-1"></i>';
+            btnNext.className = 'btn btn-primary rounded-pill px-5 fw-bold shadow-sm';
+        }
+    }
+
+    updateExamWzSummary();
+}
+
+function updateExamWzSummary() {
+    const sub = document.getElementById('ex-wz-sub');
+    const cls = document.getElementById('ex-wz-class');
+    const type = document.getElementById('ex-wz-type');
+    const status = document.getElementById('ex-wz-status');
+    const dateEl = document.getElementById('ex-wz-date');
+
+    const sumSub = document.getElementById('ex-sum-sub');
+    const sumClass = document.getElementById('ex-sum-class');
+    const sumType = document.getElementById('ex-sum-type');
+    const sumDate = document.getElementById('ex-sum-date');
+
+    if (sumSub && sub) {
+        const txt = sub.options[sub.selectedIndex]?.text || 'لم تتحدد بعد';
+        sumSub.textContent = txt;
+    }
+    if (sumClass && cls) {
+        const txt = cls.options[cls.selectedIndex]?.text || 'لم يتحدد بعد';
+        sumClass.textContent = txt;
+    }
+    if (sumType && type) {
+        const typeVal = type.value || 'نصفي';
+        const statusVal = status?.value || 'مجدول';
+        sumType.textContent = `${typeVal} (${statusVal})`;
+    }
+    if (sumDate && dateEl) {
+        sumDate.textContent = dateEl.value || new Date().toISOString().split('T')[0];
+    }
 }
