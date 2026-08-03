@@ -440,99 +440,244 @@
 </div>
 
 <!-- ========================================== -->
-<!-- SECTION 7: Modals (Add, Edit, Section)     -->
+<!-- SECTION 7: Enterprise SaaS Modals         -->
 <!-- ========================================== -->
 
-<!-- 1. Add Class Modal -->
+<!-- 1. Add Class Enterprise SaaS Modal -->
 <div class="modal fade" id="addClassModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle me-2"></i> إضافة صف دراسي جديد</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('academic.add_class') }}" method="POST">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">اسم الصف الدراسي <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control form-control-modern" placeholder="مثال: الأول الثانوي" required>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
+            <!-- Hero Banner Header -->
+            <div class="modal-hero-header p-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="d-flex align-items-center justify-content-between position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="modal-icon-box bg-white text-primary rounded-4 shadow-sm d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-school-flag"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-extrabold mb-1">إضافة صف دراسي جديد</h4>
+                            <p class="mb-0 text-white-50 small">قم بتكوين وإدراج الصف الدراسي الجديد في الكادر الأكاديمي للمدرسة</p>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">المرحلة الدراسية <span class="text-danger">*</span></label>
-                        <select name="stage" class="form-select form-select-modern" required>
-                            <option value="الأساسية">المرحلة الأساسية</option>
-                            <option value="المتوسطة">المرحلة المتوسطة</option>
-                            <option value="الثانوية" selected>المرحلة الثانوية</option>
-                        </select>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <!-- Step Indicator Tabs -->
+                <div class="d-flex align-items-center gap-3 mt-4 pt-2 border-top border-white-10" style="border-top: 1px solid rgba(255,255,255,0.15);">
+                    <div class="step-badge active-step d-flex align-items-center gap-2 text-white fw-bold small">
+                        <span class="badge bg-white text-primary rounded-circle" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;">1</span>
+                        <span>بيانات الصف الأكاديمي</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-left text-white-50 small"></i>
+                    <div class="step-badge d-flex align-items-center gap-2 text-white-50 small">
+                        <span class="badge bg-white-20 text-white rounded-circle" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">2</span>
+                        <span>مراجعة وتأكيد</span>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 py-3">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ الصف</button>
+            </div>
+
+            <form action="{{ url_for('academic.add_class') }}" method="POST" id="addClassForm">
+                <div class="modal-body p-4 bg-light-subtle">
+                    <div class="row g-3">
+                        <!-- Input: Class Name -->
+                        <div class="col-md-7">
+                            <label class="form-label fw-bold text-dark mb-1">اسم الصف الدراسي <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-graduation-cap"></i></span>
+                                <input type="text" name="name" id="addClassNameInput" class="form-control form-control-modern border-start-0 ps-0" placeholder="مثال: الأول الثانوي العلمي" required>
+                            </div>
+                            <span class="text-muted small d-block mt-1">أدخل الاسم الرسمي المعتمد للصف في الشهادات والجدول.</span>
+                        </div>
+
+                        <!-- Select: Stage -->
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold text-dark mb-1">المرحلة الدراسية <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-award"></i></span>
+                                <select name="stage" id="addClassStageSelect" class="form-select form-select-modern border-start-0 ps-0" required>
+                                    <option value="الأساسية">المرحلة الأساسية</option>
+                                    <option value="المتوسطة">المرحلة المتوسطة</option>
+                                    <option value="الثانوية" selected>المرحلة الثانوية</option>
+                                </select>
+                            </div>
+                            <span class="text-muted small d-block mt-1">اختر المستوى الدراسي التابع للمعايير الوزارية.</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Card -->
+                    <div class="card border border-primary-subtle rounded-3 p-3 mt-4 bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted fw-bold small text-uppercase font-monospace"><i class="fa-solid fa-bolt text-warning me-1"></i> المعاينة المباشرة (Live Preview)</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace" id="previewClassCode">CLS-NEW</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle-gradient" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                <i class="fa-solid fa-school"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-1" id="previewClassName">الاسم يظهر هنا عند الكتابة...</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-purple-subtle text-purple border border-purple-subtle rounded-pill" id="previewClassStage" style="color: #7c3aed; background: #f3e8ff;">المرحلة الثانوية</span>
+                                    <span class="text-muted small font-monospace"><i class="fa-solid fa-users-rectangle me-1"></i> جاهز لإسناد الشعب</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action Buttons -->
+                <div class="modal-footer bg-white border-top p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-md" id="saveClassBtn">
+                        <i class="fa-solid fa-check-circle me-1"></i> حفظ وإدراج الصف
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- 2. Edit Class Modal -->
+<!-- 2. Edit Class Enterprise SaaS Modal -->
 <div class="modal fade" id="editClassModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-warning text-dark py-3">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i> تعديل بيانات الصف</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="" method="POST">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">اسم الصف الدراسي <span class="text-danger">*</span></label>
-                        <input type="text" name="name" id="editClassNameInput" class="form-control form-control-modern" required>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
+            <!-- Hero Banner Header -->
+            <div class="modal-hero-header p-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #d97706, #b45309);">
+                <div class="d-flex align-items-center justify-content-between position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="modal-icon-box bg-white text-warning rounded-4 shadow-sm d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-extrabold mb-1">تعديل بيانات الصف الدراسي</h4>
+                            <p class="mb-0 text-white-50 small">تحديث الاسم والمرحلة الدراسية المعتمدة لهذا الصف</p>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">المرحلة الدراسية <span class="text-danger">*</span></label>
-                        <select name="stage" id="editClassStageSelect" class="form-select form-select-modern" required>
-                            <option value="الأساسية">المرحلة الأساسية</option>
-                            <option value="المتوسطة">المرحلة المتوسطة</option>
-                            <option value="الثانوية">المرحلة الثانوية</option>
-                        </select>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <form action="" method="POST" id="editClassForm">
+                <div class="modal-body p-4 bg-light-subtle">
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="form-label fw-bold text-dark mb-1">اسم الصف الدراسي <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-graduation-cap"></i></span>
+                                <input type="text" name="name" id="editClassNameInput" class="form-control form-control-modern border-start-0 ps-0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold text-dark mb-1">المرحلة الدراسية <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-award"></i></span>
+                                <select name="stage" id="editClassStageSelect" class="form-select form-select-modern border-start-0 ps-0" required>
+                                    <option value="الأساسية">المرحلة الأساسية</option>
+                                    <option value="المتوسطة">المرحلة المتوسطة</option>
+                                    <option value="الثانوية">المرحلة الثانوية</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Card -->
+                    <div class="card border border-warning-subtle rounded-3 p-3 mt-4 bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted fw-bold small text-uppercase font-monospace"><i class="fa-solid fa-eye text-warning me-1"></i> المعاينة قبل التحديث</span>
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill font-monospace">تعديل نشط</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle-gradient" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #d97706, #b45309); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                <i class="fa-solid fa-school"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-1" id="editPreviewClassName">اسم الصف الحالي...</h6>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill" id="editPreviewClassStage">المرحلة...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 py-3">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm text-dark">تحديث البيانات</button>
+
+                <div class="modal-footer bg-white border-top p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-5 fw-bold text-dark shadow-md">
+                        <i class="fa-solid fa-rotate me-1"></i> تحديث البيانات
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- 3. Add Section Modal -->
+<!-- 3. Add Section Enterprise SaaS Modal -->
 <div class="modal fade" id="addSectionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-info text-white py-3">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-layer-group me-2"></i> إضافة شعبة جديدة وتربيطها</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('academic.add_section') }}" method="POST">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">اسم الشعبة <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control form-control-modern" placeholder="مثال: شعبة أ / شعبة المتفوقين" required>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
+            <!-- Hero Banner Header -->
+            <div class="modal-hero-header p-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
+                <div class="d-flex align-items-center justify-content-between position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="modal-icon-box bg-white text-info rounded-4 shadow-sm d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-extrabold mb-1">إضافة شعبة جديدة وتربيطها</h4>
+                            <p class="mb-0 text-white-50 small">إنشاء الشعبة وإسقاطها داخل الصف الدراسي المستهدف</p>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark">ربط بالصف الدراسي <span class="text-danger">*</span></label>
-                        <select name="class_id" class="form-select form-select-modern" required>
-                            {% for c in classes %}
-                            <option value="{{ c.CID }}">{{ c.CName }} ({{ c.Stage }})</option>
-                            {% endfor %}
-                        </select>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <form action="{{ url_for('academic.add_section') }}" method="POST" id="addSectionForm">
+                <div class="modal-body p-4 bg-light-subtle">
+                    <div class="row g-3">
+                        <!-- Input: Section Name -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark mb-1">اسم الشعبة <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-users-rectangle"></i></span>
+                                <input type="text" name="name" id="addSectionNameInput" class="form-control form-control-modern border-start-0 ps-0" placeholder="مثال: شعبة أ / شعبة الأمل" required>
+                            </div>
+                        </div>
+
+                        <!-- Select: Class Linkage -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark mb-1">ربط بالصف الدراسي <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-school"></i></span>
+                                <select name="class_id" id="addSectionClassSelect" class="form-select form-select-modern border-start-0 ps-0" required>
+                                    {% for c in classes %}
+                                    <option value="{{ c.CID }}" data-stage="{{ c.Stage }}">{{ c.CName }} ({{ c.Stage }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Card -->
+                    <div class="card border border-info-subtle rounded-3 p-3 mt-4 bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted fw-bold small text-uppercase font-monospace"><i class="fa-solid fa-bolt text-info me-1"></i> المعاينة المباشرة لشعبة جديدة</span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill font-monospace">تربيط أكاديمي</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle-gradient" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-1" id="previewSectionName">שعبة أ...</h6>
+                                <span class="badge bg-secondary-subtle text-dark border border-secondary-subtle rounded-pill" id="previewSectionClass">مربوطة بصف...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 py-3">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-info rounded-pill px-4 fw-bold text-white shadow-sm">إضافة الشعبة</button>
+
+                <div class="modal-footer bg-white border-top p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-info rounded-pill px-5 fw-bold text-white shadow-md">
+                        <i class="fa-solid fa-plus-circle me-1"></i> إنشاء وإسناد الشعبة
+                    </button>
                 </div>
             </form>
         </div>

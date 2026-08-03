@@ -7,7 +7,66 @@ let selectedClassIds = new Set();
 document.addEventListener('DOMContentLoaded', function () {
     initFilters();
     initCheckboxes();
+    initLivePreviews();
 });
+
+function initLivePreviews() {
+    // Add Class Preview
+    const addClassName = document.getElementById('addClassNameInput');
+    const addClassStage = document.getElementById('addClassStageSelect');
+    const previewClassName = document.getElementById('previewClassName');
+    const previewClassStage = document.getElementById('previewClassStage');
+
+    if (addClassName && previewClassName) {
+        addClassName.addEventListener('input', function() {
+            previewClassName.textContent = this.value.trim() || 'الاسم يظهر هنا عند الكتابة...';
+        });
+    }
+
+    if (addClassStage && previewClassStage) {
+        addClassStage.addEventListener('change', function() {
+            previewClassStage.textContent = this.value;
+        });
+    }
+
+    // Add Section Preview
+    const addSecName = document.getElementById('addSectionNameInput');
+    const addSecClass = document.getElementById('addSectionClassSelect');
+    const previewSecName = document.getElementById('previewSectionName');
+    const previewSecClass = document.getElementById('previewSectionClass');
+
+    if (addSecName && previewSecName) {
+        addSecName.addEventListener('input', function() {
+            previewSecName.textContent = this.value.trim() || 'اسم الشعبة...';
+        });
+    }
+
+    if (addSecClass && previewSecClass) {
+        const updateSecClassPreview = function() {
+            const selectedOpt = addSecClass.options[addSecClass.selectedIndex];
+            previewSecClass.textContent = selectedOpt ? `مربوطة بـ ${selectedOpt.text}` : 'مربوطة بصف...';
+        };
+        addSecClass.addEventListener('change', updateSecClassPreview);
+        updateSecClassPreview();
+    }
+
+    // Edit Class Live Preview
+    const editClassName = document.getElementById('editClassNameInput');
+    const editClassStage = document.getElementById('editClassStageSelect');
+    const editPreviewName = document.getElementById('editPreviewClassName');
+    const editPreviewStage = document.getElementById('editPreviewClassStage');
+
+    if (editClassName && editPreviewName) {
+        editClassName.addEventListener('input', function() {
+            editPreviewName.textContent = this.value.trim() || 'اسم الصف الحقيقي...';
+        });
+    }
+    if (editClassStage && editPreviewStage) {
+        editClassStage.addEventListener('change', function() {
+            editPreviewStage.textContent = this.value;
+        });
+    }
+}
 
 function initFilters() {
     const searchInput = document.getElementById('searchFilter');
@@ -270,8 +329,13 @@ function openEditClassModal(id, name, stage) {
     
     const nameInput = document.getElementById('editClassNameInput');
     const stageSelect = document.getElementById('editClassStageSelect');
+    const editPreviewName = document.getElementById('editPreviewClassName');
+    const editPreviewStage = document.getElementById('editPreviewClassStage');
+
     if (nameInput) nameInput.value = name;
     if (stageSelect) stageSelect.value = stage;
+    if (editPreviewName) editPreviewName.textContent = name;
+    if (editPreviewStage) editPreviewStage.textContent = stage;
     
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
