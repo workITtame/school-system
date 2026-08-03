@@ -121,16 +121,15 @@ def add_teacher():
         qual = Qualifications.query.filter_by(QName=q_name).first() if q_name else None
         
         # User account
-        existing_user = User.query.filter_by(email=email).first() if email else None
+        existing_user = User.query.filter_by(username=email).first() if email else None
         user_id = existing_user.id if existing_user else None
         if not existing_user and email:
             new_user = User(
                 name=name,
-                email=email,
                 username=email,
-                password_hash=werkzeug.security.generate_password_hash(password),
                 role='teacher'
             )
+            new_user.set_password(password)
             db.session.add(new_user)
             db.session.flush()
             user_id = new_user.id
@@ -181,6 +180,8 @@ def edit_teacher(id):
     if request.method == 'POST':
         teacher.TeacherName = request.form.get('name', teacher.TeacherName)
         teacher.Email = request.form.get('email', teacher.Email)
+        if teacher.user and teacher.Email:
+            teacher.user.username = teacher.Email
         teacher.Phone = request.form.get('phone', teacher.Phone)
         teacher.TeacherTitle = request.form.get('teacher_title', teacher.TeacherTitle)
         teacher.Salary = float(request.form.get('salary')) if request.form.get('salary') else teacher.Salary
@@ -189,6 +190,7 @@ def edit_teacher(id):
         teacher.POB = request.form.get('pob', teacher.POB)
         
         selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
+        teacher.subjects.clear()
         if selected_subject_ids:
             teacher.subjects = Subject.query.filter(Subject.SubID.in_(selected_subject_ids)).all()
         
