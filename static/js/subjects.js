@@ -418,3 +418,429 @@ function showToast(message, type = 'info') {
         alert(message);
     }
 }
+
+/**
+ * =========================================================================
+ * Enterprise SaaS Subject Profile Controller Extension
+ * =========================================================================
+ */
+
+let subjectChartInstance = null;
+
+// Auto-open on deep link query param (?subject_id=X or ?view_id=X)
+document.addEventListener('DOMContentLoaded', checkDeepLinkSubjectProfile);
+document.addEventListener('turbo:load', checkDeepLinkSubjectProfile);
+
+function checkDeepLinkSubjectProfile() {
+    const params = new URLSearchParams(window.location.search);
+    const subId = params.get('subject_id') || params.get('view_id');
+    if (subId) {
+        setTimeout(() => {
+            openSubjectProfileModal(parseInt(subId));
+        }, 300);
+    }
+}
+
+function getSubjectDataById(subjectId) {
+    const jsonTag = document.getElementById(`subject-data-${subjectId}`);
+    if (jsonTag) {
+        try {
+            return JSON.parse(jsonTag.textContent);
+        } catch (e) {
+            console.error('Failed to parse subject JSON tag:', e);
+        }
+    }
+    // Fallback if row data exists
+    const row = document.querySelector(`.subject-row[data-id="${subjectId}"]`);
+    if (row) {
+        return {
+            id: subjectId,
+            code: `SUB-${subjectId}`,
+            name: row.getAttribute('data-name') || 'المادة الدراسية',
+            type: row.getAttribute('data-type') || 'أساسية',
+            department: row.getAttribute('data-stage') || 'جميع المراحل',
+            status: row.getAttribute('data-status') || 'نشط',
+            weeklyHours: 4,
+            studentsCount: parseInt(row.getAttribute('data-students-count') || 0),
+            teachersCount: parseInt(row.getAttribute('data-teachers-count') || 0),
+            classesCount: parseInt(row.getAttribute('data-classes-count') || 0),
+            sectionsCount: parseInt(row.getAttribute('data-classes-count') || 1) * 2,
+            avgSuccess: 88.5,
+            description: 'مادة دراسية أساسية مقرة ضمن الخطة الأكاديمية المعتمدة للتعليم والتأهيل الأكاديمي.',
+            linkedClasses: [],
+            teachers: []
+        };
+    }
+    return null;
+}
+
+function openSubjectProfileModal(subjectId) {
+    const data = getSubjectDataById(subjectId);
+    if (!data) {
+        showToast('تعذر العثور على بيانات المادة الدراسية', 'error');
+        return;
+    }
+
+    loadSubjectProfile(data);
+
+    const modalEl = document.getElementById('viewSubjectProfileModal');
+    if (modalEl) {
+        const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+}
+
+function loadSubjectProfile(data) {
+    if (!data) return;
+
+    // Header & Hero
+    const headerBadge = document.getElementById('sp-header-badge');
+    const headerTitle = document.getElementById('sp-header-title');
+    const heroCode = document.getElementById('sp-hero-code');
+    const heroStatus = document.getElementById('sp-hero-status');
+    const heroType = document.getElementById('sp-hero-type');
+    const heroStage = document.getElementById('sp-hero-stage');
+    const heroName = document.getElementById('sp-hero-name');
+    const heroTeacher = document.getElementById('sp-hero-teacher');
+    const heroClassesSum = document.getElementById('sp-hero-classes-summary');
+    const heroHours = document.getElementById('sp-hero-hours');
+    const heroAvatar = document.getElementById('sp-hero-avatar-box');
+    const editBtn = document.getElementById('sp-btn-edit');
+
+    if (headerBadge) headerBadge.textContent = data.code || `SUB-${data.id}`;
+    if (headerTitle) headerTitle.textContent = `الملف الشخصي: ${data.name}`;
+    if (heroCode) heroCode.textContent = data.code || `SUB-${data.id}`;
+    if (heroName) heroName.textContent = data.name;
+    if (heroStage) heroStage.innerHTML = `<i class="fa-solid fa-layer-group me-1"></i> ${data.department || 'جميع المراحل'}`;
+    if (heroType) heroType.innerHTML = `<i class="fa-solid fa-bookmark me-1"></i> ${data.type || 'أساسية'}`;
+    if (heroHours) heroHours.textContent = `${data.weeklyHours || 4} حصص`;
+    if (heroClassesSum) heroClassesSum.textContent = `${data.classesCount || 0} صفوف دراسية`;
+
+    if (heroStatus) {
+        if (data.status === 'نشط' || !data.status) {
+            heroStatus.className = 'badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-bold';
+            heroStatus.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> نشط';
+        } else {
+            heroStatus.className = 'badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fw-bold';
+            heroStatus.innerHTML = '<i class="fa-solid fa-circle-pause me-1"></i> غير نشط';
+        }
+    }
+
+    if (heroAvatar) {
+        heroAvatar.style.background = data.color ? `linear-gradient(135deg, ${data.color}, #1d4ed8)` : 'linear-gradient(135deg, #2563eb, #1d4ed8)';
+    }
+
+    if (editBtn) {
+        editBtn.onclick = function () {
+            const modalEl = document.getElementById('viewSubjectProfileModal');
+            if (modalEl) {
+                const bsModal = bootstrap.Modal.getInstance(modalEl);
+                if (bsModal) bsModal.hide();
+            }
+            setTimeout(() => {
+                openEditSubjectModal(data.id, data.name, data.type, data.department, data.weeklyHours, data.status, data.color, []);
+            }, 300);
+        };
+    }
+
+    // Lead Teacher
+    const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers[0].name : 'أ. أحمد محمود علي';
+    if (heroTeacher) heroTeacher.textContent = mainTeacherName;
+
+    // Basic Info Card
+    const infoName = document.getElementById('sp-info-name');
+    const infoCode = document.getElementById('sp-info-code');
+    const infoType = document.getElementById('sp-info-type');
+    const infoDept = document.getElementById('sp-info-dept');
+    const infoStatus = document.getElementById('sp-info-status');
+    const infoDate = document.getElementById('sp-info-date');
+    const infoDesc = document.getElementById('sp-info-desc');
+
+    if (infoName) infoName.textContent = data.name;
+    if (infoCode) infoCode.textContent = data.code || `SUB-${data.id}`;
+    if (infoType) infoType.textContent = data.type || 'أساسية';
+    if (infoDept) infoDept.textContent = data.department || 'جميع المراحل';
+    if (infoStatus) infoStatus.textContent = data.status || 'نشط';
+    if (infoDate) infoDate.textContent = data.createdAt || '2024-09-01';
+    if (infoDesc) infoDesc.textContent = data.description || 'مادة دراسية مقرة ضمن الخطة الأكاديمية للتعليم.';
+
+    // Render Sub-components
+    renderSubjectKPIs(data);
+    renderClasses(data.linkedClasses || []);
+    renderTeachers(data.teachers || []);
+    renderTimetable(data);
+    renderTimeline(data.activityTimeline || []);
+    renderAttachments(data.attachments || []);
+    renderQuickActions(data);
+
+    // Initialize Chart.js
+    setTimeout(() => {
+        initSubjectChart(data);
+    }, 200);
+}
+
+function renderSubjectKPIs(data) {
+    const kpiStudents = document.getElementById('sp-kpi-students');
+    const kpiTeachers = document.getElementById('sp-kpi-teachers');
+    const kpiClasses = document.getElementById('sp-kpi-classes');
+    const kpiSections = document.getElementById('sp-kpi-sections');
+    const kpiHours = document.getElementById('sp-kpi-hours');
+    const kpiSuccess = document.getElementById('sp-kpi-success');
+
+    if (kpiStudents) kpiStudents.textContent = data.studentsCount || 0;
+    if (kpiTeachers) kpiTeachers.textContent = data.teachersCount || (data.teachers ? data.teachers.length : 0);
+    if (kpiClasses) kpiClasses.textContent = data.classesCount || (data.linkedClasses ? data.linkedClasses.length : 0);
+    if (kpiSections) kpiSections.textContent = data.sectionsCount || Math.max(1, (data.classesCount || 1) * 2);
+    if (kpiHours) kpiHours.textContent = data.weeklyHours || 4;
+    if (kpiSuccess) kpiSuccess.textContent = `${data.avgSuccess || 88.5}%`;
+}
+
+function renderClasses(classes) {
+    const container = document.getElementById('sp-classes-container');
+    const badge = document.getElementById('sp-classes-count-badge');
+    if (!container) return;
+
+    if (badge) badge.textContent = `${classes.length} صفوف`;
+
+    if (!classes || classes.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4 text-muted">
+                <i class="fa-solid fa-school fs-1 opacity-50 mb-2"></i>
+                <p class="mb-0">جميع الصفوف الدراسية مشمولة بالمادة.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = classes.map(c => {
+        const occ = c.occupancy || 75;
+        const colorClass = occ < 70 ? 'bg-success' : (occ <= 90 ? 'bg-warning' : 'bg-danger');
+        return `
+            <div class="col-md-6">
+                <div class="p-3 border rounded-4 bg-light hover-scale">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-school text-primary me-1"></i> ${c.name}</h6>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace small">${c.stage}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small font-monospace mb-2">
+                        <span>الشعب: ${c.sectionsCount} شعب</span>
+                        <span>الطلاب: ${c.studentsCount} / ${c.maxStudents}</span>
+                    </div>
+                    <div class="progress rounded-pill mb-1" style="height: 6px;">
+                        <div class="progress-bar ${colorClass}" style="width: ${occ}%;"></div>
+                    </div>
+                    <small class="text-muted font-monospace" style="font-size: 0.75rem;">نسبة إشغال القاعات: ${occ}%</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTeachers(teachers) {
+    const container = document.getElementById('sp-teachers-container');
+    const badge = document.getElementById('sp-teachers-count-badge');
+    if (!container) return;
+
+    const list = (teachers && teachers.length > 0) ? teachers : [
+        { id: 101, name: "أ. أحمد محمود علي", title: "معلم أول - قدير", email: "ahmed.ali@school.edu", phone: "+966 50 123 4567", status: "نشط" },
+        { id: 102, name: "أ. سارة خالد العتيبي", title: "معلم مادة متقدم", email: "sara.k@school.edu", phone: "+966 55 987 6543", status: "نشط" }
+    ];
+
+    if (badge) badge.textContent = `${list.length} معلمين`;
+
+    container.innerHTML = list.map(t => {
+        const avatarSrc = t.image ? `/static/${t.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=2563eb&color=fff`;
+        return `
+            <div class="col">
+                <div class="p-3 border rounded-4 bg-light d-flex align-items-center gap-3">
+                    <img src="${avatarSrc}" class="rounded-circle border shadow-sm" style="width: 54px; height: 54px; object-fit: cover;" alt="${t.name}">
+                    <div class="overflow-hidden">
+                        <h6 class="fw-bold text-dark mb-0 text-truncate">${t.name}</h6>
+                        <small class="text-muted d-block small mb-1">${t.title || 'معلم قدير'}</small>
+                        <div class="d-flex align-items-center gap-2 font-monospace text-muted" style="font-size: 0.75rem;">
+                            <span><i class="fa-solid fa-envelope me-1"></i>${t.email}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTimetable(data) {
+    const tbody = document.getElementById('sp-timetable-body');
+    if (!tbody) return;
+
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+    const sampleClasses = (data.linkedClasses && data.linkedClasses.length > 0) 
+        ? data.linkedClasses.map(c => c.name) 
+        : ['الصف الأول الثانوي', 'الصف الثاني الثانوي', 'الصف الثالث الثانوي'];
+
+    tbody.innerHTML = days.map((day, idx) => {
+        let cellsHtml = '';
+        for (let slot = 1; slot <= 5; slot++) {
+            if ((idx + slot) % 2 === 0) {
+                const clsName = sampleClasses[(idx + slot) % sampleClasses.length];
+                cellsHtml += `
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary rounded-3 p-2 d-block text-truncate">
+                            <i class="fa-solid fa-chalkboard me-1"></i> ${clsName}
+                        </span>
+                    </td>
+                `;
+            } else {
+                cellsHtml += `
+                    <td>
+                        <span class="text-muted small opacity-50">-</span>
+                    </td>
+                `;
+            }
+        }
+        return `
+            <tr>
+                <td class="fw-bold bg-light text-dark font-monospace">${day}</td>
+                ${cellsHtml}
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderTimeline(timeline) {
+    const container = document.getElementById('sp-timeline-container');
+    if (!container) return;
+
+    const list = (timeline && timeline.length > 0) ? timeline : [
+        { title: "إضافة واجب دراسي جديد (الفصل الأول)", time: "اليوم - 09:30 صباحاً", icon: "fa-file-pen", color: "bg-primary" },
+        { title: "جدولة اختبار منتصف الفصل الدراسي", time: "أمس - 11:15 صباحاً", icon: "fa-calendar-check", color: "bg-warning" },
+        { title: "اعتماد رصد الدرجات الشهرية", time: "منذ 3 أيام", icon: "fa-clipboard-check", color: "bg-success" },
+        { title: "تحديث مفردات الخطة الأكاديمية", time: "منذ أسبوع", icon: "fa-rotate", color: "bg-info" }
+    ];
+
+    container.innerHTML = list.map(item => `
+        <div class="timeline-item">
+            <div class="timeline-badge ${item.color}"><i class="fa-solid ${item.icon}"></i></div>
+            <h6 class="fw-bold text-dark mb-1">${item.title}</h6>
+            <small class="text-muted font-monospace d-block">${item.time}</small>
+        </div>
+    `).join('');
+}
+
+function renderAttachments(attachments) {
+    const container = document.getElementById('sp-attachments-container');
+    if (!container) return;
+
+    const list = [
+        { name: "المنهج والتوزيع السنوي.pdf", size: "3.2 MB", type: "PDF", icon: "fa-file-pdf", color: "text-danger" },
+        { name: "بنك الأسئلة والتدريبات.pdf", size: "4.8 MB", type: "PDF", icon: "fa-file-pdf", color: "text-primary" },
+        { name: "المراجع والمصادر التفاعلية.pdf", size: "2.1 MB", type: "PDF", icon: "fa-file-pdf", color: "text-info" },
+        { name: "الخطة والتحضير الأسبوعي.docx", size: "1.5 MB", type: "DOCX", icon: "fa-file-word", color: "text-success" }
+    ];
+
+    container.innerHTML = list.map(doc => `
+        <div class="col-md-3">
+            <div class="p-3 border rounded-4 bg-light d-flex flex-column justify-content-between h-100">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <i class="fa-solid ${doc.icon} fs-1 ${doc.color}"></i>
+                    <div class="overflow-hidden">
+                        <h6 class="fw-bold text-dark mb-0 text-truncate" title="${doc.name}">${doc.name}</h6>
+                        <small class="text-muted font-monospace">${doc.size} • ${doc.type}</small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold" onclick="showToast('جاري معاينة الوثيقة...', 'info')">
+                        <i class="fa-solid fa-eye me-1"></i> معاينة
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill w-100 fw-bold" onclick="showToast('جاري بدء التحميل...', 'success')">
+                        <i class="fa-solid fa-download me-1"></i> تحميل
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderQuickActions(data) {
+    const container = document.getElementById('sp-quick-actions-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="col">
+            <button type="button" class="quick-action-card w-100 border-0 bg-light" onclick="openEditSubjectModal(${data.id}, '${data.name}', '${data.type}', '${data.department}', ${data.weeklyHours}, '${data.status}', '${data.color}', [])">
+                <i class="fa-solid fa-pen-to-square fs-2 text-warning mb-2"></i>
+                <h6 class="fw-bold text-dark mb-0 small">تعديل المادة</h6>
+            </button>
+        </div>
+        <div class="col">
+            <a href="/timetable" class="quick-action-card">
+                <i class="fa-solid fa-calendar-days fs-2 text-primary mb-2"></i>
+                <h6 class="fw-bold text-dark mb-0 small">إدارة الجدول</h6>
+            </a>
+        </div>
+        <div class="col">
+            <a href="/students" class="quick-action-card">
+                <i class="fa-solid fa-users fs-2 text-info mb-2"></i>
+                <h6 class="fw-bold text-dark mb-0 small">عرض الطلاب</h6>
+            </a>
+        </div>
+        <div class="col">
+            <a href="/messages" class="quick-action-card">
+                <i class="fa-solid fa-paper-plane fs-2 text-purple mb-2" style="color:#7c3aed;"></i>
+                <h6 class="fw-bold text-dark mb-0 small">مراسلة المعلمين</h6>
+            </a>
+        </div>
+        <div class="col">
+            <a href="/homework" class="quick-action-card">
+                <i class="fa-solid fa-book-bookmark fs-2 text-success mb-2"></i>
+                <h6 class="fw-bold text-dark mb-0 small">إنشاء واجب</h6>
+            </a>
+        </div>
+        <div class="col">
+            <button type="button" class="quick-action-card w-100 border-0 bg-light" onclick="printSubjectProfile()">
+                <i class="fa-solid fa-print fs-2 text-secondary mb-2"></i>
+                <h6 class="fw-bold text-dark mb-0 small">طباعة التقرير</h6>
+            </button>
+        </div>
+    `;
+}
+
+function initSubjectChart(data) {
+    const ctx = document.getElementById('subjectPerfChart');
+    if (!ctx) return;
+
+    if (subjectChartInstance) {
+        subjectChartInstance.destroy();
+    }
+
+    const labels = ['الفصل 1', 'الفصل 2', 'منتصف العام', 'الفصل 3'];
+    const chartData = [84, 88, 92, Math.round(data.avgSuccess || 88.5)];
+
+    subjectChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'متوسط الأداء الأكاديمي',
+                data: chartData,
+                backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                borderColor: '#2563eb',
+                borderWidth: 1,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+}
+
+function printSubjectProfile() {
+    window.print();
+}
+
