@@ -377,27 +377,7 @@
                         </div>
                     </div>
 
-                    <div class="col-12 mt-3">
-                        <label class="form-label fw-bold text-dark d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-book-open text-primary"></i> المادة / المواد الدراسية التي يدرسها المعلم <span class="text-danger">*</span>
-                        </label>
-                        <div class="card p-3 border rounded-3 bg-light">
-                            <div class="row row-cols-2 row-cols-md-4 g-2">
-                                {% for sub in all_subjects %}
-                                <div class="col">
-                                    <div class="form-check card p-2 border-0 shadow-sm bg-white rounded-3">
-                                        <input class="form-check-input" type="checkbox" name="subject_ids" value="{{ sub.SubID }}" id="sub_{{ sub.SubID }}">
-                                        <label class="form-check-label fw-bold text-dark me-2" for="sub_{{ sub.SubID }}">
-                                            {{ sub.SubName }} <small class="text-muted font-monospace d-block">({{ sub.Type or 'أساسية' }})</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                {% else %}
-                                <p class="text-muted mb-0 small">لا توجد مواد مسجلة حالياً بالمنظومة</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
