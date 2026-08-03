@@ -214,6 +214,12 @@ def get_teachers():
                 data[idx]['Role'] = t.user.role
             if t.qualification:
                 data[idx]['q_name'] = t.qualification.QName
+            data[idx]['subjects'] = [{'SubID': s.SubID, 'SubName': s.SubName} for s in t.subjects]
+            
+            # Calculate dynamic slots and taught classes from timetable (SchoolTable)
+            t_slots = SchoolTable.query.filter_by(TeacherID=t.TeacherID, is_deleted=False).all()
+            data[idx]['slots_count'] = len(t_slots)
+            data[idx]['classes_count'] = len(set(s.CID for s in t_slots if s.CID))
             
         return api_response(True, "Teachers retrieved successfully", data, meta={
             "total": paginated.total,
@@ -290,10 +296,20 @@ def add_teacher():
             Status=data.get('Status', 'نشط'),
             Image=photo_filename
         )
+
+        subject_ids = data.get('subject_ids') or request.form.getlist('subject_ids')
+        if subject_ids:
+            if isinstance(subject_ids, str):
+                subject_ids = [int(x) for x in subject_ids.split(',') if x.strip().isdigit()]
+            elif isinstance(subject_ids, list):
+                subject_ids = [int(x) for x in subject_ids if str(x).isdigit()]
+            new_teacher.subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all()
+
         db.session.add(new_teacher)
         db.session.commit()
         
         result = teacher_schema.dump(new_teacher)
+        result['subjects'] = [{'SubID': s.SubID, 'SubName': s.SubName} for s in new_teacher.subjects]
         return api_response(True, "تمت إضافة المعلم بنجاح", result, status_code=201)
         
     except Exception as e:
@@ -312,6 +328,7 @@ def get_teacher(id):
         data['Role'] = teacher.user.role
     if teacher.qualification:
         data['q_name'] = teacher.qualification.QName
+    data['subjects'] = [{'SubID': s.SubID, 'SubName': s.SubName} for s in teacher.subjects]
     return api_response(True, "تم جلب بيانات المعلم", data)
 
 @api_bp.route("/teachers/<int:id>", methods=['PUT'])
@@ -384,8 +401,17 @@ def update_teacher(id):
                 photo.save(photo_path)
                 teacher.Image = 'uploads/teachers/' + photo_filename
                 
+        if 'subject_ids' in data or 'subject_ids' in request.form:
+            subject_ids = data.get('subject_ids') or request.form.getlist('subject_ids')
+            if isinstance(subject_ids, str):
+                subject_ids = [int(x) for x in subject_ids.split(',') if x.strip().isdigit()]
+            elif isinstance(subject_ids, list):
+                subject_ids = [int(x) for x in subject_ids if str(x).isdigit()]
+            teacher.subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all()
+
         db.session.commit()
         result = teacher_schema.dump(teacher)
+        result['subjects'] = [{'SubID': s.SubID, 'SubName': s.SubName} for s in teacher.subjects]
         return api_response(True, "تم تحديث بيانات المعلم بنجاح", result)
     except Exception as e:
         db.session.rollback()
