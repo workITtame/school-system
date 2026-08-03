@@ -29,8 +29,17 @@ function initHomeworkModule() {
     window.nextHomeworkWzStep = nextHomeworkWzStep;
     window.prevHomeworkWzStep = prevHomeworkWzStep;
     window.updateHomeworkWzSummary = updateHomeworkWzSummary;
+    window.viewHomeworkProfile = viewHomeworkProfile;
+    window.printHomeworkProfile = printHomeworkProfile;
 
     setupHomeworkEventListeners();
+
+    // Check URL parameter for ?homework_id=XX or ?hw_id=XX
+    const urlParams = new URLSearchParams(window.location.search);
+    const hwId = urlParams.get('homework_id') || urlParams.get('hw_id');
+    if (hwId) {
+        viewHomeworkProfile(hwId, `واجب أكاديمي #${hwId}`, 'مادة دراسية', 'الصف المستهدف', 'جميع الشعب', '', 'مكتمل', '');
+    }
 }
 
 function setupHomeworkEventListeners() {
@@ -307,4 +316,88 @@ function updateHomeworkWzSummary() {
     if (sumStatus && status) {
         sumStatus.textContent = status.value || 'معلق';
     }
+}
+
+/* ==========================================================================
+   HOMEWORK PROFILE MODAL CONTROLLER (10-SECTION ENTERPRISE PROFILE)
+   ========================================================================== */
+
+let hwpSubmissionChartInstance = null;
+
+function viewHomeworkProfile(id, title, subjectName, className, sectionName, dueDate, status, description) {
+    const modalEl = document.getElementById('viewHomeworkProfileModal');
+    if (!modalEl) return;
+
+    // Header & Badges
+    const headerBadge = document.getElementById('hwp-header-badge');
+    const headerTitle = document.getElementById('hwp-header-title');
+    const codeBadge = document.getElementById('hwp-code-badge');
+    const statusBadge = document.getElementById('hwp-status-badge');
+    const heroTitle = document.getElementById('hwp-hero-title');
+    const heroSubtitle = document.getElementById('hwp-hero-subtitle');
+
+    if (headerBadge) headerBadge.textContent = `HW-${id}`;
+    if (headerTitle) headerTitle.textContent = `الملف الشخصي للواجب | ${title || 'واجب دراسي'}`;
+    if (codeBadge) codeBadge.textContent = `HW-${id}`;
+    if (statusBadge) statusBadge.textContent = status || 'مكتمل';
+    if (heroTitle) heroTitle.textContent = title || 'عنوان الواجب الدراسـي';
+    if (heroSubtitle) heroSubtitle.textContent = `${subjectName} | ${className} (${sectionName}) | التسليم: ${dueDate || '—'}`;
+
+    // Basic Info Grid
+    const infoSubject = document.getElementById('hwp-info-subject');
+    const infoClass = document.getElementById('hwp-info-class');
+    const infoDueDate = document.getElementById('hwp-info-duedate');
+    const infoStatus = document.getElementById('hwp-info-status');
+    const infoDesc = document.getElementById('hwp-info-desc');
+
+    if (infoSubject) infoSubject.textContent = subjectName || 'مادة عامة';
+    if (infoClass) infoClass.textContent = `${className} (${sectionName})`;
+    if (infoDueDate) infoDueDate.textContent = dueDate || 'غير محدد';
+    if (infoStatus) infoStatus.textContent = status || 'مكتمل';
+    if (infoDesc) infoDesc.textContent = description || 'لا توجد ملاحظات أو تعليمات إضافية لهذا التكليف الدراسي.';
+
+    // Assigned Class Card
+    const assignCname = document.getElementById('hwp-assign-cname');
+    const assignSec = document.getElementById('hwp-assign-sec');
+    if (assignCname) assignCname.textContent = className || 'الصف المستهدف';
+    if (assignSec) assignSec.textContent = `الشعبة (${sectionName})`;
+
+    // Initialize Doughnut Chart
+    initHomeworkProfileChart();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initHomeworkProfileChart() {
+    const ctx = document.getElementById('hwpSubmissionChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (hwpSubmissionChartInstance) {
+        hwpSubmissionChartInstance.destroy();
+    }
+
+    hwpSubmissionChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['تم التسليم بنجاح', 'بانتظار التسليم', 'تسليم متأخر'],
+            datasets: [{
+                data: [30, 3, 2],
+                backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function printHomeworkProfile() {
+    window.print();
 }
