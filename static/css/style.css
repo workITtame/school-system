@@ -845,3 +845,64 @@ body {
 .shadow-2xl {
     box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
 }
+
+/* Subject Module Specific Styling */
+.subject-avatar-md {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+.bulk-action-floating-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    padding: 12px 24px;
+    border-radius: 99px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-width: 420px;
+}
+.bulk-action-floating-bar.active {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.chip-blue {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+    border-color: #bfdbfe !important;
+}
+.chip-purple {
+    background-color: #f3e8ff !important;
+    color: #7c3aed !important;
+    border-color: #e9d5ff !important;
+}
+.chip-orange {
+    background-color: #fff7ed !important;
+    color: #ea580c !important;
+    border-color: #ffedd5 !important;
+}
+.btn-students { color: #2563eb !important; }
+.btn-students:hover { background-color: #eff6ff !important; border-color: #2563eb !important; }
+
+.btn-teachers { color: #7c3aed !important; }
+.btn-teachers:hover { background-color: #f3e8ff !important; border-color: #7c3aed !important; }
+
+.btn-timetable { color: #0891b2 !important; }
+.btn-timetable:hover { background-color: #ecfeff !important; border-color: #0891b2 !important; }
+
+.btn-view { color: #475569 !important; }
+.btn-view:hover { background-color: #f1f5f9 !important; border-color: #475569 !important; }
+
+.btn-delete { color: #dc2626 !important; }
+.btn-delete:hover { background-color: #fef2f2 !important; border-color: #dc2626 !important; }

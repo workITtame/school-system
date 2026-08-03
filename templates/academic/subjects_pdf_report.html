@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير قائمة المواد الدراسية - منظومة المدارس</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #1e293b; padding: 2rem; }
+        .header-title { border-bottom: 3px solid #2563eb; padding-bottom: 1rem; margin-bottom: 2rem; }
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <a href="/academic/subjects" class="btn btn-secondary rounded-pill px-4 fw-bold">العودة لإدارة المواد الدراسية</a>
+        <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="fa-solid fa-print me-1"></i> طباعة / حفظ كـ PDF</button>
+    </div>
+
+    <div class="header-title d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">مدرسة المستقبل - تقرير المواد الدراسية والأكاديمية</h2>
+            <p class="text-muted mb-0">تاريخ التصدير: {{ generated_at }} | إجمالي المواد: {{ subjects|length }}</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill">التقرير الأكاديمي الرسمي</span>
+        </div>
+    </div>
+
+    <table class="table table-bordered align-middle text-center">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>كود المادة</th>
+                <th>اسم المادة</th>
+                <th>نوع المادة</th>
+                <th>القسم / المرحلة</th>
+                <th>الحصص الأسبوعية</th>
+                <th>الصفوف المرتبطة</th>
+                <th>عدد المعلمين</th>
+                <th>عدد الطلاب</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in subjects %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge bg-light text-dark border font-monospace">SUB-{{ s.SubID }}</span></td>
+                <td class="fw-bold text-start px-3">{{ s.SubName }}</td>
+                <td>
+                    {% if s.Type == 'اختيارية' %}
+                    <span class="badge bg-info-subtle text-info border">اختيارية</span>
+                    {% else %}
+                    <span class="badge bg-primary-subtle text-primary border">أساسية</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ s.Department or 'جميع المراحل' }}</span></td>
+                <td class="font-monospace fw-bold">{{ s.weekly_slots_count or s.WeeklyHours or 0 }} حصة</td>
+                <td>
+                    {% if s.linked_classes %}
+                        {% for cls in s.linked_classes %}
+                        <span class="badge bg-secondary-subtle text-dark border me-1">{{ cls.CName }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted small">جميع الصفوف</span>
+                    {% endif %}
+                </td>
+                <td class="font-monospace fw-bold">{{ s.teachers_count or 0 }} معلماً</td>
+                <td class="font-monospace text-primary fw-bold">{{ s.students_count or 0 }} طالباً</td>
+                <td>
+                    {% if s.Status == 'نشط' or not s.Status %}
+                    <span class="badge bg-success-subtle text-success border">نشط</span>
+                    {% else %}
+                    <span class="badge bg-danger-subtle text-danger border">غير نشط</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="mt-4 pt-3 border-top d-flex justify-content-between text-muted small">
+        <span>منظومة إدارة المدارس الرقمية - Enterprise SaaS</span>
+        <span>صفحة 1 من 1</span>
+    </div>
+</body>
+</html>

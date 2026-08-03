@@ -75,29 +75,62 @@ def subjects():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     class_id = request.args.get('class_id', type=int)
-    classes = Classes.query.all()
+    classes = Classes.query.filter_by(is_deleted=False).all()
     
+    query = Subject.query
+    if hasattr(Subject, 'is_deleted'):
+        query = query.filter_by(is_deleted=False)
+        
     if class_id:
         from models.academic import ClassSubject
-        subject_ids = [cs.SubjectID for cs in ClassSubject.query.filter_by(ClassID=class_id).all()]
-        subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all() if subject_ids else []
+        subject_ids = [cs[0] for cs in db.session.query(ClassSubject.c.SubID).filter(ClassSubject.c.CID == class_id).all()]
+        subjects_list = query.filter(Subject.SubID.in_(subject_ids)).order_by(Subject.SubID.asc()).all() if subject_ids else []
     else:
-        subjects = Subject.query.all()
+        subjects_list = query.order_by(Subject.SubID.asc()).all()
         
-    total_subjects = len(subjects)
-    optional = sum(1 for s in subjects if s.Type == 'اختيارية')
-    mandatory = sum(1 for s in subjects if s.Type == 'أساسية')
+    total_subjects = len(subjects_list)
+    active_subjects = sum(1 for s in subjects_list if getattr(s, 'Status', 'نشط') in ['نشط', None])
+    inactive_subjects = sum(1 for s in subjects_list if getattr(s, 'Status', 'نشط') == 'غير نشط')
     
+    from models import SchoolTable
+    from models.academic import ClassSubject, TeacherSubject
+    
+    total_classes = len(classes)
+    linked_classes_count = db.session.query(ClassSubject.c.CID).distinct().count()
+    assigned_teachers_count = db.session.query(TeacherSubject.c.TeacherID).distinct().count()
+    
+    total_links = db.session.query(ClassSubject).count()
+    avg_subjects_per_class = round(total_links / total_classes, 1) if total_classes > 0 else 0.0
+    
+    for s in subjects_list:
+        s.linked_classes = [c for c in s.classes if not getattr(c, 'is_deleted', False)]
+        s.linked_classes_count = len(s.linked_classes)
+        
+        t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID).filter(TeacherSubject.c.SubID == s.SubID).distinct().all() if t[0]]
+        t_ids_st = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).distinct().all() if t[0]]
+        s.assigned_teachers_count = len(set(t_ids_ts + t_ids_st))
+        
+        class_ids = [c.CID for c in s.linked_classes]
+        if class_ids:
+            s.students_count = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).count()
+        else:
+            s.students_count = 0
+            
+        s.weekly_slots_count = SchoolTable.query.filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).count()
+        
     selected_class = Classes.query.filter_by(CID=class_id).first() if class_id else None
     
     return render_template('academic/subjects.html', 
-                           subjects=subjects,
+                           subjects=subjects_list,
                            classes=classes,
                            selected_class_id=class_id,
                            selected_class=selected_class,
                            total_subjects=total_subjects,
-                           optional=optional,
-                           mandatory=mandatory)
+                           active_subjects=active_subjects,
+                           inactive_subjects=inactive_subjects,
+                           linked_classes_count=linked_classes_count,
+                           assigned_teachers_count=assigned_teachers_count,
+                           avg_subjects_per_class=avg_subjects_per_class)
 
 @academic_bp.route('/add_class', methods=['POST'])
 def add_class():
@@ -257,34 +290,7 @@ def delete_section(id):
     handle_delete(s)
     return redirect(url_for('academic.classes'))
 
-# Subjects
-@academic_bp.route('/edit_subject/<int:id>', methods=['POST'])
-def edit_subject(id):
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
-    s = Subject.query.get_or_404(id)
-    name = request.form.get('name')
-    sub_type = request.form.get('type')
-    dept = request.form.get('department')
-    status = request.form.get('status')
-    if name: s.SubName = name
-    if sub_type: s.Type = sub_type
-    if dept: s.Department = dept
-    if status: s.Status = status
-    db.session.commit()
-    flash('تم تعديل المادة الدراسية بنجاح', 'success')
-    return redirect(url_for('academic.subjects'))
-
-@academic_bp.route('/delete_subject/<int:id>', methods=['POST'])
-def delete_subject(id):
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
-    s = Subject.query.get_or_404(id)
-    timetable_count = SchoolTable.query.filter_by(SubID=id, is_deleted=False).count()
-    exam_count = ExamSchedule.query.filter_by(SubID=id, is_deleted=False).count()
-    if timetable_count > 0 or exam_count > 0:
-        flash('لا يمكن حذف المادة الدراسية لأنها مرتبطة بجدول الحصص أو امتحانات مبرمجة.', 'danger')
-        return redirect(url_for('academic.subjects'))
-    handle_delete(s)
-    return redirect(url_for('academic.subjects'))
+# Subjects (handled via enriched endpoints at end of module)
 
 # Days
 @academic_bp.route('/edit_day/<int:id>', methods=['POST'])
@@ -483,3 +489,214 @@ def bulk_status_classes():
             c.Status = new_status
     db.session.commit()
     return jsonify({'success': True, 'message': f'تم تحديث حالة {len(classes_list)} صفوف إلى "{new_status}" بنجاح', 'count': len(classes_list)})
+
+@academic_bp.route('/edit_subject/<int:id>', methods=['POST'])
+def edit_subject(id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    subject = Subject.query.get_or_404(id)
+    name = request.form.get('name')
+    sub_type = request.form.get('type')
+    department = request.form.get('department')
+    weekly_hours = request.form.get('weekly_hours', type=int) or 0
+    status = request.form.get('status', 'نشط')
+    color = request.form.get('color')
+    class_ids = request.form.getlist('class_ids')
+    
+    if name:
+        subject.SubName = name
+        subject.Type = sub_type
+        subject.Department = department
+        subject.WeeklyHours = weekly_hours
+        subject.Status = status
+        if color:
+            subject.Color = color
+            
+        if class_ids is not None:
+            subject.classes = []
+            if class_ids:
+                target_classes = Classes.query.filter(Classes.CID.in_([int(cid) for cid in class_ids])).all()
+                subject.classes.extend(target_classes)
+                
+        db.session.commit()
+        flash('تم تحديث بيانات المادة بنجاح', 'success')
+    return redirect(url_for('academic.subjects'))
+
+@academic_bp.route('/delete_subject/<int:id>', methods=['POST'])
+def delete_subject(id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    subject = Subject.query.get_or_404(id)
+    
+    from models import SchoolTable
+    slots_count = SchoolTable.query.filter_by(SubID=subject.SubID, is_deleted=False).count()
+    
+    if slots_count > 0:
+        flash(f'تعذر حذف المادة "{subject.SubName}" لارتباطها بـ {slots_count} حصص في الجدول الأسبوعي.', 'danger')
+        return redirect(url_for('academic.subjects'))
+        
+    if hasattr(subject, 'is_deleted'):
+        subject.is_deleted = True
+    else:
+        db.session.delete(subject)
+        
+    db.session.commit()
+    flash('تم حذف المادة بنجاح', 'success')
+    return redirect(url_for('academic.subjects'))
+
+@academic_bp.route('/subjects/export/excel')
+def export_subjects_excel():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    import io
+    from flask import send_file
+    from models import SchoolTable
+    from models.academic import TeacherSubject
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Subject.query
+    if hasattr(Subject, 'is_deleted'):
+        query = query.filter_by(is_deleted=False)
+        
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        subjects_list = query.filter(Subject.SubID.in_(id_list)).all()
+    else:
+        subjects_list = query.order_by(Subject.SubID.asc()).all()
+        
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "قائمة المواد الدراسية"
+    ws.sheet_view.rightToLeft = True
+    
+    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    
+    headers = ["كود المادة", "اسم المادة", "النوع", "القسم/المرحلة", "الحصص الأسبوعية", "الصفوف المرتبطة", "عدد المعلمين", "عدد الطلاب", "الحالة"]
+    ws.append(headers)
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        
+    for s in subjects_list:
+        linked_cls = [c for c in s.classes if not getattr(c, 'is_deleted', False)]
+        cls_names = ", ".join([c.CName for c in linked_cls]) or "جميع الصفوف"
+        
+        t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID).filter(TeacherSubject.c.SubID == s.SubID).distinct().all() if t[0]]
+        t_ids_st = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).distinct().all() if t[0]]
+        teachers_count = len(set(t_ids_ts + t_ids_st))
+        
+        class_ids = [c.CID for c in linked_cls]
+        st_count = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).count() if class_ids else 0
+        
+        row = [
+            f"SUB-{s.SubID}",
+            s.SubName,
+            s.Type or 'أساسية',
+            s.Department or 'جميع المراحل',
+            getattr(s, 'WeeklyHours', 0) or 0,
+            cls_names,
+            teachers_count,
+            st_count,
+            getattr(s, 'Status', 'نشط') or 'نشط'
+        ]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = align_center
+            
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+        ws.column_dimensions[col].width = 22
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name='subjects_export.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@academic_bp.route('/subjects/export/pdf')
+def export_subjects_pdf():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from datetime import datetime
+    from models import SchoolTable
+    from models.academic import TeacherSubject
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Subject.query
+    if hasattr(Subject, 'is_deleted'):
+        query = query.filter_by(is_deleted=False)
+        
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        subjects_list = query.filter(Subject.SubID.in_(id_list)).all()
+    else:
+        subjects_list = query.order_by(Subject.SubID.asc()).all()
+        
+    for s in subjects_list:
+        s.linked_classes = [c for c in s.classes if not getattr(c, 'is_deleted', False)]
+        t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID).filter(TeacherSubject.c.SubID == s.SubID).distinct().all() if t[0]]
+        t_ids_st = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).distinct().all() if t[0]]
+        s.teachers_count = len(set(t_ids_ts + t_ids_st))
+        class_ids = [c.CID for c in s.linked_classes]
+        s.students_count = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).count() if class_ids else 0
+        s.weekly_slots_count = SchoolTable.query.filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).count()
+        
+    return render_template('academic/subjects_pdf_report.html', subjects=subjects_list, generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
+
+@academic_bp.route('/subjects/bulk-status', methods=['POST'])
+def bulk_status_subjects():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    new_status = data.get('status', 'نشط')
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي مادة لتحديث الحالة'}), 400
+        
+    subjects_list = Subject.query.filter(Subject.SubID.in_(ids)).all()
+    for s in subjects_list:
+        if hasattr(s, 'Status'):
+            s.Status = new_status
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تحديث حالة {len(subjects_list)} مواد إلى "{new_status}" بنجاح', 'count': len(subjects_list)})
+
+@academic_bp.route('/subjects/bulk-delete', methods=['POST'])
+def bulk_delete_subjects():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي مادة للحذف'}), 400
+        
+    from models import SchoolTable
+    blocked_subjects = []
+    subjects_to_delete = []
+    
+    for sub_id in ids:
+        s = Subject.query.get(sub_id)
+        if s:
+            slots_count = SchoolTable.query.filter_by(SubID=s.SubID, is_deleted=False).count()
+            if slots_count > 0:
+                blocked_subjects.append(s.SubName)
+            else:
+                subjects_to_delete.append(s)
+                
+    if blocked_subjects:
+        msg = f"تعذر حذف المواد التالية لارتباطها بجدول الحصص الأسبوعي: ({', '.join(blocked_subjects)})."
+        return jsonify({'success': False, 'message': msg, 'blocked': True})
+        
+    for s in subjects_to_delete:
+        if hasattr(s, 'is_deleted'):
+            s.is_deleted = True
+        else:
+            db.session.delete(s)
+            
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم حذف {len(subjects_to_delete)} مواد بنجاح', 'count': len(subjects_to_delete)})
