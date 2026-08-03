@@ -87,6 +87,7 @@ function initFilters() {
             if (statusSelect) statusSelect.value = 'ALL';
             if (sortSelect) sortSelect.value = 'ID_ASC';
             applyFilters();
+            showToast('تمت إعادة ضبط جميع الفلاتر بنجاح', 'success');
         });
     }
 }
@@ -218,9 +219,17 @@ function exportClassesPDF() {
     window.open(url, '_blank');
 }
 
+function refreshClassesTable() {
+    const btnIcon = document.querySelector('button[onclick*="refreshClasses"] i');
+    if (btnIcon) btnIcon.classList.add('fa-spin');
+    showToast('جاري تحديث بيانات الصفوف والشعب...', 'info');
+    setTimeout(() => {
+        window.location.reload();
+    }, 400);
+}
+
 function refreshClasses() {
-    showToast('جاري تحديث البيانات...', 'info');
-    window.location.reload();
+    refreshClassesTable();
 }
 
 function bulkStatus() {
