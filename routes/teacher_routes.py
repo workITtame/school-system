@@ -189,10 +189,21 @@ def edit_teacher(id):
         teacher.Gender = request.form.get('gender', teacher.Gender)
         teacher.POB = request.form.get('pob', teacher.POB)
         
-        selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
-        teacher.subjects.clear()
-        if selected_subject_ids:
-            teacher.subjects = Subject.query.filter(Subject.SubID.in_(selected_subject_ids)).all()
+        selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if str(x).isdigit()]
+        current_sub_ids = {s.SubID for s in teacher.subjects}
+        target_sub_ids = set(selected_subject_ids)
+        
+        # 1. Remove subjects that are no longer selected
+        for sub in list(teacher.subjects):
+            if sub.SubID not in target_sub_ids:
+                teacher.subjects.remove(sub)
+                
+        # 2. Add newly selected subjects
+        to_add_ids = target_sub_ids - current_sub_ids
+        if to_add_ids:
+            new_subs = Subject.query.filter(Subject.SubID.in_(to_add_ids)).all()
+            for sub in new_subs:
+                teacher.subjects.append(sub)
         
         q_name = request.form.get('q_name')
         if q_name:
