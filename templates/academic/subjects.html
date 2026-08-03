@@ -517,7 +517,7 @@
 <!-- SECTION 6: Add Subject Enterprise Modal    -->
 <!-- ========================================== -->
 <div class="modal fade" id="addSubjectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
             <!-- Modal Hero Header -->
             <div class="modal-header bg-gradient-primary text-white p-4 border-0 position-relative" style="background: linear-gradient(135deg, #2563eb, #1e40af);">
@@ -526,104 +526,329 @@
                         <i class="fa-solid fa-book-medical fs-3 text-white"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-extrabold mb-1">إضافة مادة دراسية جديدة</h5>
-                        <p class="text-white-50 small mb-0">سجل بيانات المادة الأكاديمية وربطها بالصفوف والمراحل الدراسية</p>
+                        <h5 class="modal-title fw-extrabold mb-1">إضافة مادة دراسية جديدة | Enterprise Wizard</h5>
+                        <p class="text-white-50 small mb-0">معالج متعدد الخطوات لتهيئة المادة الدراسية، الصفوف، الكادر والجدول</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-4" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
+            <!-- Stepper Progress Bar -->
+            <div class="stepper-steps-bar px-4 pt-3 pb-2 border-bottom bg-white">
+                <div class="stepper-step-item active" data-step="1" id="add-step-item-1" onclick="goToSubjectWizardStep(1, 'add')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-circle-info"></i></div>
+                    <span class="stepper-step-title">1. المعلومات الأساسية</span>
+                </div>
+                <div class="stepper-step-item" data-step="2" id="add-step-item-2" onclick="goToSubjectWizardStep(2, 'add')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-school"></i></div>
+                    <span class="stepper-step-title">2. الصفوف والشعب</span>
+                </div>
+                <div class="stepper-step-item" data-step="3" id="add-step-item-3" onclick="goToSubjectWizardStep(3, 'add')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <span class="stepper-step-title">3. المعلمون المسندون</span>
+                </div>
+                <div class="stepper-step-item" data-step="4" id="add-step-item-4" onclick="goToSubjectWizardStep(4, 'add')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-calendar-days"></i></div>
+                    <span class="stepper-step-title">4. الجدول الدراسي</span>
+                </div>
+                <div class="stepper-step-item" data-step="5" id="add-step-item-5" onclick="goToSubjectWizardStep(5, 'add')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-check-double"></i></div>
+                    <span class="stepper-step-title">5. المراجعة والحفظ</span>
+                </div>
+            </div>
+
             <!-- Modal Form Body -->
-            <form action="{{ url_for('academic.add_subject') }}" method="POST">
+            <form action="{{ url_for('academic.add_subject') }}" method="POST" id="addSubjectForm">
                 <div class="modal-body p-4 bg-light-subtle">
-                    <div class="row g-3">
-                        <!-- Left Column: Inputs -->
-                        <div class="col-lg-7">
-                            <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">اسم المادة الدراسية <span class="text-danger">*</span></label>
-                                <input type="text" name="name" id="addSubjectNameInput" class="form-control form-control-modern" placeholder="مثال: الرياضيات العامة، الكيمياء..." required>
+                    
+                    <!-- STEP 1: Basic Information -->
+                    <div class="form-step-pane active" id="add-pane-1">
+                        <div class="row g-3">
+                            <div class="col-lg-7">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted fw-bold small">اسم المادة الدراسية <span class="text-danger">*</span></label>
+                                    <input type="text" name="name" id="addSubjectNameInput" class="form-control form-control-modern" placeholder="مثال: الرياضيات العامة، الكيمياء..." required onkeyup="updateWizardPreviews('add')">
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted fw-bold small">نوع المادة</label>
+                                        <select name="type" id="addSubjectTypeSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('add')">
+                                            <option value="أساسية">أساسية</option>
+                                            <option value="اختيارية">اختيارية</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted fw-bold small">القسم / المرحلة</label>
+                                        <select name="department" id="addSubjectDeptSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('add')">
+                                            <option value="جميع المراحل">جميع المراحل العامة</option>
+                                            <option value="الأساسية">المرحلة الأساسية</option>
+                                            <option value="المتوسطة">المرحلة المتوسطة</option>
+                                            <option value="الثانوية">المرحلة الثانوية</option>
+                                            <option value="علمي">قسم علمي</option>
+                                            <option value="أدبي">قسم أدبي</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">الحصص الأسبوعية</label>
+                                        <input type="number" name="weekly_hours" id="addSubjectHoursInput" class="form-control form-control-modern" value="4" min="1" max="20" onchange="updateWizardPreviews('add')">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">حالة المادة</label>
+                                        <select name="status" id="addSubjectStatusSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('add')">
+                                            <option value="نشط">نشط</option>
+                                            <option value="غير نشط">غير نشط</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">لون التمييز</label>
+                                        <input type="color" name="color" id="addSubjectColorInput" class="form-control form-control-color w-100 rounded-3 h-100" value="#2563eb" onchange="updateWizardPreviews('add')">
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label text-muted fw-bold small">الوصف الأكاديمي الشامل</label>
+                                    <textarea name="description" class="form-control form-control-modern" rows="2" placeholder="توصيف مختصر لمفردات المادة والنتاجات التعليمية..."></textarea>
+                                </div>
                             </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">نوع المادة</label>
-                                    <select name="type" id="addSubjectTypeSelect" class="form-select form-select-modern">
-                                        <option value="أساسية">أساسية</option>
-                                        <option value="اختيارية">اختيارية</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">القسم / المرحلة</label>
-                                    <select name="department" id="addSubjectDeptSelect" class="form-select form-select-modern">
-                                        <option value="جميع المراحل">جميع المراحل العامة</option>
-                                        <option value="الأساسية">المرحلة الأساسية</option>
-                                        <option value="المتوسطة">المرحلة المتوسطة</option>
-                                        <option value="الثانوية">المرحلة الثانوية</option>
-                                        <option value="علمي">قسم علمي</option>
-                                        <option value="أدبي">قسم أدبي</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">الحصص الأسبوعية</label>
-                                    <input type="number" name="weekly_hours" class="form-control form-control-modern" value="4" min="1" max="20">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">لون تمييز المادة في الجدول</label>
-                                    <input type="color" name="color" class="form-control form-control-color w-100 rounded-3 h-100" value="#2563eb">
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">الصفوف الدراسية المستهدفة (اختياري)</label>
-                                <select name="class_ids" class="form-select form-select-modern" multiple style="height: 110px;">
-                                    {% for c in classes %}
-                                    <option value="{{ c.CID }}">{{ c.CName }} ({{ c.Stage }})</option>
-                                    {% endfor %}
-                                </select>
-                                <small class="text-muted d-block mt-1">اضغط Ctrl لتحديد صفوف متعددة</small>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Live Preview Card -->
-                        <div class="col-lg-5">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-column justify-content-between">
-                                <div>
-                                    <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-1 rounded-pill">معاينة بطاقة المادة</span>
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="rounded-3 p-3 bg-primary text-white">
-                                            <i class="fa-solid fa-book fs-3"></i>
+                            <!-- Right Preview -->
+                            <div class="col-lg-5">
+                                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-1 rounded-pill">معاينة بطاقة المادة</span>
+                                        <div class="d-flex align-items-center gap-3 mb-3">
+                                            <div class="rounded-3 p-3 text-white" id="add-preview-avatar" style="background: #2563eb;">
+                                                <i class="fa-solid fa-book fs-3"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="fw-bold text-dark mb-0" id="add-preview-name">اسم المادة يظهر هنا</h5>
+                                                <small class="text-muted font-monospace" id="add-preview-dept">جميع المراحل العامة</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h5 class="fw-bold text-dark mb-0" id="previewSubjectName">اسم المادة يظهر هنا</h5>
-                                            <small class="text-muted font-monospace" id="previewSubjectDept">جميع المراحل</small>
+                                        <hr class="my-3 opacity-25">
+                                        <div class="d-flex justify-content-between small mb-2">
+                                            <span class="text-muted">النوع المقرر:</span>
+                                            <span class="fw-bold text-dark" id="add-preview-type">أساسية</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between small mb-2">
+                                            <span class="text-muted">الحصص الأسبوعية:</span>
+                                            <span class="fw-bold text-dark" id="add-preview-hours">4 حصص</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between small mb-2">
+                                            <span class="text-muted">الحالة المبدئية:</span>
+                                            <span class="badge bg-success-subtle text-success" id="add-preview-status">نشط</span>
                                         </div>
                                     </div>
-                                    <hr class="my-3 opacity-25">
-                                    <div class="d-flex justify-content-between small mb-2">
-                                        <span class="text-muted">النوع المقرر:</span>
-                                        <span class="fw-bold text-dark" id="previewSubjectType">أساسية</span>
+                                    <div class="p-3 bg-light rounded-3 text-muted small">
+                                        <i class="fa-solid fa-shield-halved text-primary me-1"></i> يتم ربط المادة تلقائياً بنظام الحصص والتوزيع الأكاديمي.
                                     </div>
-                                    <div class="d-flex justify-content-between small mb-2">
-                                        <span class="text-muted">الحالة المبدئية:</span>
-                                        <span class="badge bg-success-subtle text-success">نشط</span>
-                                    </div>
-                                </div>
-                                <div class="p-3 bg-light rounded-3 text-muted small">
-                                    <i class="fa-solid fa-shield-halved text-primary me-1"></i> يتم ربط المادة تلقائياً بنظام الحصص وجدول السجلات عند الحفظ.
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- STEP 2: Linked Classes & Sections -->
+                    <div class="form-step-pane" id="add-pane-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-school text-primary me-2"></i>تحديد الصفوف والشعب المشمولة</h6>
+                                <small class="text-muted">اختر الصفوف الدراسية التي تدرّس لها هذه المادة</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace" id="add-selected-classes-count">0 صفوف مختارة</span>
+                                <span class="badge bg-info rounded-pill px-3 py-2 fs-6 font-monospace" id="add-selected-sections-count">0 شعب مشمولة</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3" id="add-classes-grid">
+                            {% for c in classes %}
+                            <div class="col-md-6 col-lg-4">
+                                <label class="p-3 border rounded-4 bg-white d-block cursor-pointer hover-scale h-100 position-relative shadow-sm">
+                                    <input type="checkbox" name="class_ids" value="{{ c.CID }}" class="form-check-input position-absolute top-0 end-0 m-3 add-class-checkbox" onchange="updateWizardClassesPreview('add')">
+                                    <div class="pe-4">
+                                        <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-school text-primary me-1"></i> {{ c.CName }}</h6>
+                                        <span class="badge bg-secondary-subtle text-dark rounded-pill font-monospace small mb-2">{{ c.Stage or 'المرحلة العامة' }}</span>
+                                        <div class="d-flex justify-content-between text-muted small font-monospace">
+                                            <span>الشعب: {{ c.sections|length if c.sections else 1 }} شعب</span>
+                                            <span>الطلاب: {{ c.students_count or 0 }}</span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Assigned Teachers -->
+                    <div class="form-step-pane" id="add-pane-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div class="flex-grow-1 me-3">
+                                <input type="text" id="add-teacher-search" class="form-control form-control-modern rounded-pill ps-4" placeholder="بحث سريع عن معلم بالاسم أو التخصص..." onkeyup="filterWizardTeachers('add')">
+                            </div>
+                            <div>
+                                <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="add-selected-teachers-count" style="background:#7c3aed; color:#fff;">2 معلمين محددين</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3" id="add-teachers-grid">
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%85%D8%AD%D9%85%D9%88%D8%AF&background=2563eb&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0">أ. أحمد محمود علي</h6>
+                                            <small class="text-muted d-block font-monospace">معلم أول • تخصص رياضيات</small>
+                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;">متاح - 14/24 حصة</span>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" class="form-check-input fs-5" checked>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%B3%D8%A7%D8%B1%D8%A9+%D8%AE%D8%A7%D9%84%D8%AF&background=0284c7&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0">أ. سارة خالد العتيبي</h6>
+                                            <small class="text-muted d-block font-monospace">معلم مادة متقدم</small>
+                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;">متاح - 10/24 حصة</span>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" class="form-check-input fs-5" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Timetable Preview -->
+                    <div class="form-step-pane" id="add-pane-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-days text-info me-2"></i>معاينة توزيع الحصص الأسبوعية</h6>
+                                <small class="text-muted">الجدول المقترح لتوزيع المادة عبر الحصص المتاحة</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 font-monospace fw-bold">
+                                <i class="fa-solid fa-circle-check me-1"></i> لا توجد تعارضات في الجدول
+                            </span>
+                        </div>
+
+                        <div class="table-responsive bg-white rounded-4 border p-3 shadow-sm">
+                            <table class="table table-bordered text-center align-middle mb-0 font-monospace" style="font-size: 0.85rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>اليوم / الحصة</th>
+                                        <th>الحصة 1</th>
+                                        <th>الحصة 2</th>
+                                        <th>الحصة 3</th>
+                                        <th>الحصة 4</th>
+                                        <th>الحصة 5</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الأحد</td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الإثنين</td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الثلاثاء</td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الأربعاء</td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الخميس</td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- STEP 5: Review & Submit Summary -->
+                    <div class="form-step-pane" id="add-pane-5">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                            <div class="d-flex align-items-center gap-3 mb-4 border-bottom pb-3">
+                                <div class="p-3 rounded-4 bg-success text-white">
+                                    <i class="fa-solid fa-check-double fs-2"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-extrabold text-dark mb-1">المراجعة النهائية والاعتماد</h5>
+                                    <p class="text-muted small mb-0">راجع ملخص تهيئة المادة الأكاديمية قبل الحفظ النهائي في المنظومة</p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-circle-info me-1"></i> بيانات المادة الأساسية</h6>
+                                        <div class="small font-monospace text-muted">
+                                            <div class="d-flex justify-content-between mb-1"><span>اسم المادة:</span><strong class="text-dark" id="add-sum-name">-</strong></div>
+                                            <div class="d-flex justify-content-between mb-1"><span>نوع المادة:</span><strong class="text-dark" id="add-sum-type">أساسية</strong></div>
+                                            <div class="d-flex justify-content-between mb-1"><span>المرحلة/القسم:</span><strong class="text-dark" id="add-sum-dept">جميع المراحل</strong></div>
+                                            <div class="d-flex justify-content-between"><span>الحصص الأسبوعية:</span><strong class="text-dark" id="add-sum-hours">4 حصص</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-school me-1"></i> التغطية والكادر</h6>
+                                        <div class="small font-monospace text-muted">
+                                            <div class="d-flex justify-content-between mb-1"><span>الصفوف المرتبطة:</span><strong class="text-dark" id="add-sum-classes">جميع الصفوف</strong></div>
+                                            <div class="d-flex justify-content-between mb-1"><span>المعلمون المسندون:</span><strong class="text-dark" id="add-sum-teachers">أ. أحمد محمود علي، أ. سارة خالد</strong></div>
+                                            <div class="d-flex justify-content-between"><span>حالة المادة:</span><span class="badge bg-success-subtle text-success">جاهز للحفظ</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="modal-footer bg-white p-3 border-top d-flex justify-content-between">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
-                        <i class="fa-solid fa-check me-1"></i> حفظ المادة الدراسية
+                <!-- Footer Wizard Actions -->
+                <div class="modal-footer bg-white p-3 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" id="add-prev-btn" onclick="prevSubjectWizardStep('add')" style="display:none;">
+                        <i class="fa-solid fa-arrow-right me-1"></i> السابق
                     </button>
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="add-next-btn" onclick="nextSubjectWizardStep('add')">
+                            التالي <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm" id="add-submit-btn" style="display:none;">
+                            <i class="fa-solid fa-check me-1"></i> حفظ المادة الدراسية
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -634,7 +859,7 @@
 <!-- SECTION 7: Edit Subject Enterprise Modal   -->
 <!-- ========================================== -->
 <div class="modal fade" id="editSubjectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
             <!-- Modal Hero Header -->
             <div class="modal-header bg-gradient-info text-white p-4 border-0 position-relative" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
@@ -643,98 +868,291 @@
                         <i class="fa-solid fa-pen-to-square fs-3 text-white"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-extrabold mb-1">تعديل بيانات المادة الدراسية</h5>
+                        <h5 class="modal-title fw-extrabold mb-1">تعديل بيانات المادة الدراسية | Enterprise Wizard</h5>
                         <p class="text-white-50 small mb-0">تعديل التوزيع الأكاديمي، الكادر المسند والصفوف الدراسية المرتبطة</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-4" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
+            <!-- Stepper Progress Bar -->
+            <div class="stepper-steps-bar px-4 pt-3 pb-2 border-bottom bg-white">
+                <div class="stepper-step-item active" data-step="1" id="edit-step-item-1" onclick="goToSubjectWizardStep(1, 'edit')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-circle-info"></i></div>
+                    <span class="stepper-step-title">1. المعلومات الأساسية</span>
+                </div>
+                <div class="stepper-step-item" data-step="2" id="edit-step-item-2" onclick="goToSubjectWizardStep(2, 'edit')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-school"></i></div>
+                    <span class="stepper-step-title">2. الصفوف والشعب</span>
+                </div>
+                <div class="stepper-step-item" data-step="3" id="edit-step-item-3" onclick="goToSubjectWizardStep(3, 'edit')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <span class="stepper-step-title">3. المعلمون المسندون</span>
+                </div>
+                <div class="stepper-step-item" data-step="4" id="edit-step-item-4" onclick="goToSubjectWizardStep(4, 'edit')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-calendar-days"></i></div>
+                    <span class="stepper-step-title">4. الجدول الدراسي</span>
+                </div>
+                <div class="stepper-step-item" data-step="5" id="edit-step-item-5" onclick="goToSubjectWizardStep(5, 'edit')">
+                    <div class="stepper-icon-circle"><i class="fa-solid fa-check-double"></i></div>
+                    <span class="stepper-step-title">5. المراجعة والحفظ</span>
+                </div>
+            </div>
+
             <!-- Modal Form Body -->
-            <form action="" method="POST">
+            <form action="" method="POST" id="editSubjectForm">
                 <div class="modal-body p-4 bg-light-subtle">
-                    <div class="row g-3">
-                        <!-- Left Column: Inputs -->
-                        <div class="col-lg-7">
-                            <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">اسم المادة الدراسية <span class="text-danger">*</span></label>
-                                <input type="text" name="name" id="editSubjectNameInput" class="form-control form-control-modern" required>
+                    
+                    <!-- STEP 1: Basic Information -->
+                    <div class="form-step-pane active" id="edit-pane-1">
+                        <div class="row g-3">
+                            <div class="col-lg-7">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted fw-bold small">اسم المادة الدراسية <span class="text-danger">*</span></label>
+                                    <input type="text" name="name" id="editSubjectNameInput" class="form-control form-control-modern" required onkeyup="updateWizardPreviews('edit')">
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted fw-bold small">نوع المادة</label>
+                                        <select name="type" id="editSubjectTypeSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('edit')">
+                                            <option value="أساسية">أساسية</option>
+                                            <option value="اختيارية">اختيارية</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted fw-bold small">القسم / المرحلة</label>
+                                        <select name="department" id="editSubjectDeptSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('edit')">
+                                            <option value="جميع المراحل">جميع المراحل العامة</option>
+                                            <option value="الأساسية">المرحلة الأساسية</option>
+                                            <option value="المتوسطة">المرحلة المتوسطة</option>
+                                            <option value="الثانوية">المرحلة الثانوية</option>
+                                            <option value="علمي">قسم علمي</option>
+                                            <option value="أدبي">قسم أدبي</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">الحصص الأسبوعية</label>
+                                        <input type="number" name="weekly_hours" id="editSubjectHoursInput" class="form-control form-control-modern" min="1" max="20" onchange="updateWizardPreviews('edit')">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">حالة المادة</label>
+                                        <select name="status" id="editSubjectStatusSelect" class="form-select form-select-modern" onchange="updateWizardPreviews('edit')">
+                                            <option value="نشط">نشط</option>
+                                            <option value="غير نشط">غير نشط</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-muted fw-bold small">لون تمييز المادة</label>
+                                        <input type="color" name="color" id="editSubjectColorInput" class="form-control form-control-color w-100 rounded-3 h-100" onchange="updateWizardPreviews('edit')">
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label text-muted fw-bold small">الوصف الأكاديمي الشامل</label>
+                                    <textarea name="description" id="editSubjectDescInput" class="form-control form-control-modern" rows="2" placeholder="توصيف مختصر لمفردات المادة..."></textarea>
+                                </div>
                             </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">نوع المادة</label>
-                                    <select name="type" id="editSubjectTypeSelect" class="form-select form-select-modern">
-                                        <option value="أساسية">أساسية</option>
-                                        <option value="اختيارية">اختيارية</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold small">القسم / المرحلة</label>
-                                    <select name="department" id="editSubjectDeptSelect" class="form-select form-select-modern">
-                                        <option value="جميع المراحل">جميع المراحل العامة</option>
-                                        <option value="الأساسية">المرحلة الأساسية</option>
-                                        <option value="المتوسطة">المرحلة المتوسطة</option>
-                                        <option value="الثانوية">المرحلة الثانوية</option>
-                                        <option value="علمي">قسم علمي</option>
-                                        <option value="أدبي">قسم أدبي</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label text-muted fw-bold small">الحصص الأسبوعية</label>
-                                    <input type="number" name="weekly_hours" id="editSubjectHoursInput" class="form-control form-control-modern" min="1" max="20">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label text-muted fw-bold small">حالة المادة</label>
-                                    <select name="status" id="editSubjectStatusSelect" class="form-select form-select-modern">
-                                        <option value="نشط">نشط</option>
-                                        <option value="غير نشط">غير نشط</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label text-muted fw-bold small">لون تمييز المادة</label>
-                                    <input type="color" name="color" id="editSubjectColorInput" class="form-control form-control-color w-100 rounded-3 h-100">
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">الصفوف الدراسية المرتبطة</label>
-                                <select name="class_ids" id="editSubjectClassesSelect" class="form-select form-select-modern" multiple style="height: 110px;">
-                                    {% for c in classes %}
-                                    <option value="{{ c.CID }}">{{ c.CName }} ({{ c.Stage }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Live Preview Card -->
-                        <div class="col-lg-5">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-column justify-content-between">
-                                <div>
-                                    <span class="badge bg-info-subtle text-info mb-3 px-3 py-1 rounded-pill">تعديل حي للحسابات</span>
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="rounded-3 p-3 bg-info text-white">
-                                            <i class="fa-solid fa-book fs-3"></i>
+                            <!-- Right Preview -->
+                            <div class="col-lg-5">
+                                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <span class="badge bg-info-subtle text-info mb-3 px-3 py-1 rounded-pill">تعديل حي للحسابات</span>
+                                        <div class="d-flex align-items-center gap-3 mb-3">
+                                            <div class="rounded-3 p-3 text-white" id="edit-preview-avatar" style="background: #0284c7;">
+                                                <i class="fa-solid fa-book fs-3"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="fw-bold text-dark mb-0" id="edit-preview-name">اسم المادة</h5>
+                                                <small class="text-muted font-monospace" id="edit-preview-dept">جميع المراحل</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h5 class="fw-bold text-dark mb-0" id="editPreviewSubjectName">اسم المادة</h5>
-                                            <small class="text-muted font-monospace" id="editPreviewSubjectType">أساسية</small>
+                                        <hr class="my-3 opacity-25">
+                                        <div class="d-flex justify-content-between small mb-2">
+                                            <span class="text-muted">النوع المقرر:</span>
+                                            <span class="fw-bold text-dark" id="edit-preview-type">أساسية</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between small mb-2">
+                                            <span class="text-muted">الحصص الأسبوعية:</span>
+                                            <span class="fw-bold text-dark" id="edit-preview-hours">4 حصص</span>
                                         </div>
                                     </div>
-                                    <hr class="my-3 opacity-25">
-                                    <p class="text-muted small mb-0">تحديث تفاصيل المادة ينعكس مباشرة في تقارير الكادر والجدول المدرسي.</p>
-                                </div>
-                                <div class="p-3 bg-light rounded-3 text-muted small">
-                                    <i class="fa-solid fa-check-double text-success me-1"></i> يتم الحفظ المباشر بدون تعارض البيانات.
+                                    <div class="p-3 bg-light rounded-3 text-muted small">
+                                        <i class="fa-solid fa-check-double text-success me-1"></i> يتم الحفظ المباشر بدون تعارض البيانات.
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- STEP 2: Linked Classes & Sections -->
+                    <div class="form-step-pane" id="edit-pane-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-school text-info me-2"></i>تعديل الصفوف والشعب المشمولة</h6>
+                                <small class="text-muted">اختر الصفوف الدراسية المحددة لهذه المادة</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-info rounded-pill px-3 py-2 fs-6 font-monospace" id="edit-selected-classes-count">0 صفوف مختارة</span>
+                                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace" id="edit-selected-sections-count">0 شعب مشمولة</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3" id="edit-classes-grid">
+                            {% for c in classes %}
+                            <div class="col-md-6 col-lg-4">
+                                <label class="p-3 border rounded-4 bg-white d-block cursor-pointer hover-scale h-100 position-relative shadow-sm">
+                                    <input type="checkbox" name="class_ids" value="{{ c.CID }}" id="edit_class_cb_{{ c.CID }}" class="form-check-input position-absolute top-0 end-0 m-3 edit-class-checkbox" onchange="updateWizardClassesPreview('edit')">
+                                    <div class="pe-4">
+                                        <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-school text-info me-1"></i> {{ c.CName }}</h6>
+                                        <span class="badge bg-secondary-subtle text-dark rounded-pill font-monospace small mb-2">{{ c.Stage or 'المرحلة العامة' }}</span>
+                                        <div class="d-flex justify-content-between text-muted small font-monospace">
+                                            <span>الشعب: {{ c.sections|length if c.sections else 1 }} شعب</span>
+                                            <span>الطلاب: {{ c.students_count or 0 }}</span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Assigned Teachers -->
+                    <div class="form-step-pane" id="edit-pane-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div class="flex-grow-1 me-3">
+                                <input type="text" id="edit-teacher-search" class="form-control form-control-modern rounded-pill ps-4" placeholder="بحث سريع عن معلم..." onkeyup="filterWizardTeachers('edit')">
+                            </div>
+                            <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="edit-selected-teachers-count" style="background:#7c3aed; color:#fff;">2 معلمين محددين</span>
+                        </div>
+
+                        <div class="row g-3" id="edit-teachers-grid">
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%85%D8%AD%D9%85%D9%88%D8%AF&background=2563eb&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0">أ. أحمد محمود علي</h6>
+                                            <small class="text-muted d-block font-monospace">معلم أول قدير</small>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" class="form-check-input fs-5" checked>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%B3%D8%A7%D8%B1%D8%A9+%D8%AE%D8%A7%D9%84%D8%AF&background=0284c7&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0">أ. سارة خالد العتيبي</h6>
+                                            <small class="text-muted d-block font-monospace">معلم مادة متقدم</small>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" class="form-check-input fs-5" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Timetable Preview -->
+                    <div class="form-step-pane" id="edit-pane-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 border shadow-sm">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-days text-info me-2"></i>توزيع الحصص المحدث</h6>
+                                <small class="text-muted">تحديث الجدول الأسبوعي للمادة</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 font-monospace fw-bold">
+                                <i class="fa-solid fa-circle-check me-1"></i> لا توجد تعارضات
+                            </span>
+                        </div>
+
+                        <div class="table-responsive bg-white rounded-4 border p-3 shadow-sm">
+                            <table class="table table-bordered text-center align-middle mb-0 font-monospace" style="font-size: 0.85rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>اليوم / الحصة</th>
+                                        <th>الحصة 1</th>
+                                        <th>الحصة 2</th>
+                                        <th>الحصة 3</th>
+                                        <th>الحصة 4</th>
+                                        <th>الحصة 5</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold bg-light">الأحد</td>
+                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الأول الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الثاني الثانوي</span></td>
+                                        <td><span class="text-muted small">-</span></td>
+                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الثالث الثانوي</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- STEP 5: Review & Submit Summary -->
+                    <div class="form-step-pane" id="edit-pane-5">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                            <div class="d-flex align-items-center gap-3 mb-4 border-bottom pb-3">
+                                <div class="p-3 rounded-4 bg-info text-white">
+                                    <i class="fa-solid fa-check-double fs-2"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-extrabold text-dark mb-1">اعتماد التحديثات الأكاديمية</h5>
+                                    <p class="text-muted small mb-0">راجع ملخص التغيرات قبل الاعتماد النهائي والحفظ</p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-pen-to-square me-1"></i> البيانات المحدثة</h6>
+                                        <div class="small font-monospace text-muted">
+                                            <div class="d-flex justify-content-between mb-1"><span>اسم المادة:</span><strong class="text-dark" id="edit-sum-name">-</strong></div>
+                                            <div class="d-flex justify-content-between mb-1"><span>نوع المادة:</span><strong class="text-dark" id="edit-sum-type">أساسية</strong></div>
+                                            <div class="d-flex justify-content-between"><span>الحصص:</span><strong class="text-dark" id="edit-sum-hours">4 حصص</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-check-double me-1"></i> جاهزية الاعتماد</h6>
+                                        <div class="small font-monospace text-muted">
+                                            <div class="d-flex justify-content-between mb-1"><span>الصفوف المختارة:</span><strong class="text-dark" id="edit-sum-classes">صفوف مرتبطة</strong></div>
+                                            <div class="d-flex justify-content-between"><span>حالة التعديل:</span><span class="badge bg-success-subtle text-success">مكتمل ومفحوص</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
+                <!-- Footer Wizard Actions -->
+                <div class="modal-footer bg-white p-3 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" id="edit-prev-btn" onclick="prevSubjectWizardStep('edit')" style="display:none;">
+                        <i class="fa-solid fa-arrow-right me-1"></i> السابق
+                    </button>
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-info text-white rounded-pill px-4 fw-bold shadow-sm" id="edit-next-btn" onclick="nextSubjectWizardStep('edit')">
+                            التالي <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm" id="edit-submit-btn" style="display:none;">
+                            <i class="fa-solid fa-check me-1"></i> حفظ التعديلات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- ========================================== -->

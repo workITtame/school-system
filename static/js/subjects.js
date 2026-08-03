@@ -350,24 +350,175 @@ function openEditSubjectModal(id, name, type, dept, hours, status, color, classI
     if (statusSelect) statusSelect.value = status || 'نشط';
     if (colorInput) colorInput.value = color || '#3b82f6';
 
-    const editClassesSelect = document.getElementById('editSubjectClassesSelect');
-    if (editClassesSelect && classIdsJson) {
-        let classIds = [];
+    let classIds = [];
+    if (classIdsJson) {
         try {
             classIds = typeof classIdsJson === 'string' ? JSON.parse(classIdsJson) : classIdsJson;
         } catch(e) {}
-        Array.from(editClassesSelect.options).forEach(opt => {
-            opt.selected = classIds.includes(parseInt(opt.value));
-        });
     }
+    const editCheckboxes = document.querySelectorAll('.edit-class-checkbox');
+    editCheckboxes.forEach(cb => {
+        cb.checked = classIds.includes(parseInt(cb.value));
+    });
 
-    const editPreviewName = document.getElementById('editPreviewSubjectName');
-    const editPreviewType = document.getElementById('editPreviewSubjectType');
-    if (editPreviewName) editPreviewName.textContent = name;
-    if (editPreviewType) editPreviewType.textContent = type || 'أساسية';
-    
+    goToSubjectWizardStep(1, 'edit');
+
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
+}
+
+/* ==========================================================================
+   ENTERPRISE MULTI-STEP WIZARD CONTROLLER (5 STEPS)
+   ========================================================================== */
+
+let wizardState = {
+    add: { currentStep: 1 },
+    edit: { currentStep: 1 }
+};
+
+function goToSubjectWizardStep(step, wizardType = 'add') {
+    if (step > wizardState[wizardType].currentStep) {
+        if (!validateSubjectWizardStep(wizardState[wizardType].currentStep, wizardType)) {
+            return;
+        }
+    }
+
+    wizardState[wizardType].currentStep = step;
+
+    // Update Stepper Bar UI
+    for (let s = 1; s <= 5; s++) {
+        const item = document.getElementById(`${wizardType}-step-item-${s}`);
+        const pane = document.getElementById(`${wizardType}-pane-${s}`);
+
+        if (item) {
+            item.classList.remove('active', 'completed');
+            if (s === step) {
+                item.classList.add('active');
+            } else if (s < step) {
+                item.classList.add('completed');
+            }
+        }
+
+        if (pane) {
+            pane.classList.remove('active');
+            if (s === step) {
+                pane.classList.add('active');
+            }
+        }
+    }
+
+    // Update Action Buttons Visibility
+    const prevBtn = document.getElementById(`${wizardType}-prev-btn`);
+    const nextBtn = document.getElementById(`${wizardType}-next-btn`);
+    const submitBtn = document.getElementById(`${wizardType}-submit-btn`);
+
+    if (prevBtn) prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
+    if (nextBtn) nextBtn.style.display = step < 5 ? 'inline-block' : 'none';
+    if (submitBtn) submitBtn.style.display = step === 5 ? 'inline-block' : 'none';
+
+    updateWizardPreviews(wizardType);
+}
+
+function nextSubjectWizardStep(wizardType = 'add') {
+    const curr = wizardState[wizardType].currentStep;
+    if (curr < 5) {
+        goToSubjectWizardStep(curr + 1, wizardType);
+    }
+}
+
+function prevSubjectWizardStep(wizardType = 'add') {
+    const curr = wizardState[wizardType].currentStep;
+    if (curr > 1) {
+        goToSubjectWizardStep(curr - 1, wizardType);
+    }
+}
+
+function validateSubjectWizardStep(step, wizardType = 'add') {
+    if (step === 1) {
+        const nameInput = document.getElementById(`${wizardType}SubjectNameInput`);
+        if (nameInput && !nameInput.value.trim()) {
+            nameInput.classList.add('is-invalid');
+            showToast('يرجى إدخال اسم المادة الدراسية للمتابعة', 'warning');
+            return false;
+        } else if (nameInput) {
+            nameInput.classList.remove('is-invalid');
+        }
+    }
+    return true;
+}
+
+function updateWizardPreviews(wizardType = 'add') {
+    const nameInput = document.getElementById(`${wizardType}SubjectNameInput`);
+    const typeSelect = document.getElementById(`${wizardType}SubjectTypeSelect`);
+    const deptSelect = document.getElementById(`${wizardType}SubjectDeptSelect`);
+    const hoursInput = document.getElementById(`${wizardType}SubjectHoursInput`);
+    const statusSelect = document.getElementById(`${wizardType}SubjectStatusSelect`);
+    const colorInput = document.getElementById(`${wizardType}SubjectColorInput`);
+
+    const previewName = document.getElementById(`${wizardType}-preview-name`);
+    const previewDept = document.getElementById(`${wizardType}-preview-dept`);
+    const previewType = document.getElementById(`${wizardType}-preview-type`);
+    const previewHours = document.getElementById(`${wizardType}-preview-hours`);
+    const previewStatus = document.getElementById(`${wizardType}-preview-status`);
+    const previewAvatar = document.getElementById(`${wizardType}-preview-avatar`);
+
+    const nameVal = nameInput ? (nameInput.value || 'اسم المادة') : 'اسم المادة';
+    const typeVal = typeSelect ? typeSelect.value : 'أساسية';
+    const deptVal = deptSelect ? deptSelect.value : 'جميع المراحل العامة';
+    const hoursVal = hoursInput ? (hoursInput.value || 4) : 4;
+    const statusVal = statusSelect ? statusSelect.value : 'نشط';
+    const colorVal = colorInput ? colorInput.value : '#2563eb';
+
+    if (previewName) previewName.textContent = nameVal;
+    if (previewDept) previewDept.textContent = deptVal;
+    if (previewType) previewType.textContent = typeVal;
+    if (previewHours) previewHours.textContent = `${hoursVal} حصص`;
+    if (previewStatus) previewStatus.textContent = statusVal;
+    if (previewAvatar) previewAvatar.style.background = colorVal;
+
+    // Step 5 Summaries
+    const sumName = document.getElementById(`${wizardType}-sum-name`);
+    const sumType = document.getElementById(`${wizardType}-sum-type`);
+    const sumDept = document.getElementById(`${wizardType}-sum-dept`);
+    const sumHours = document.getElementById(`${wizardType}-sum-hours`);
+
+    if (sumName) sumName.textContent = nameVal;
+    if (sumType) sumType.textContent = typeVal;
+    if (sumDept) sumDept.textContent = deptVal;
+    if (sumHours) sumHours.textContent = `${hoursVal} حصص أسبوعية`;
+
+    updateWizardClassesPreview(wizardType);
+}
+
+function updateWizardClassesPreview(wizardType = 'add') {
+    const checkboxes = document.querySelectorAll(`.${wizardType}-class-checkbox:checked`);
+    const countBadge = document.getElementById(`${wizardType}-selected-classes-count`);
+    const sectionsBadge = document.getElementById(`${wizardType}-selected-sections-count`);
+    const sumClasses = document.getElementById(`${wizardType}-sum-classes`);
+
+    const selectedCount = checkboxes.length;
+    const estimatedSections = selectedCount * 2;
+
+    if (countBadge) countBadge.textContent = `${selectedCount} صفوف مختارة`;
+    if (sectionsBadge) sectionsBadge.textContent = `${estimatedSections} شعب مشمولة`;
+    if (sumClasses) sumClasses.textContent = selectedCount > 0 ? `${selectedCount} صفوف دراسية` : 'جميع الصفوف المشمولة';
+}
+
+function filterWizardTeachers(wizardType = 'add') {
+    const searchInput = document.getElementById(`${wizardType}-teacher-search`);
+    const grid = document.getElementById(`${wizardType}-teachers-grid`);
+    if (!searchInput || !grid) return;
+
+    const term = searchInput.value.toLowerCase();
+    const cards = grid.querySelectorAll('.col-md-6');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(term)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
 
 function confirmDeleteSubject(id, name, slotsCount) {
