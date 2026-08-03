@@ -25,8 +25,17 @@ function initExamsModule() {
     window.toggleSelectAllExams = toggleSelectAllExams;
     window.toggleExamSelection = toggleExamSelection;
     window.clearExamsBulkSelections = clearExamsBulkSelections;
+    window.viewExamProfile = viewExamProfile;
+    window.printExamProfile = printExamProfile;
 
     setupExamsEventListeners();
+
+    // Check URL parameter for ?exam_id=XX or ?schedule_id=XX
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('exam_id') || urlParams.get('schedule_id');
+    if (examId) {
+        setTimeout(() => viewExamProfile(examId, 'اختبار مجدول', 'مادة أكاديمية', 'الصف المستهدف', '2026-08-03', '08:00 ص', 'مجدول'), 200);
+    }
 }
 
 function setupExamsEventListeners() {
@@ -167,4 +176,91 @@ function showToast(message, icon) {
         });
         Toast.fire({ icon: icon, title: message });
     }
+}
+
+/* ==========================================================================
+   EXAM PROFILE MODAL CONTROLLER (10 SECTIONS)
+   ========================================================================== */
+
+let examPerfChartInstance = null;
+
+function viewExamProfile(id, name, subName, className, dateStr, timeStr, status, event) {
+    if (event) event.stopPropagation();
+
+    const modalEl = document.getElementById('viewExamProfileModal');
+    if (!modalEl) return;
+
+    // Header Badges & Titles
+    const headerBadge = document.getElementById('exp-header-badge');
+    const codeBadge = document.getElementById('exp-code-badge');
+    const statusBadge = document.getElementById('exp-status-badge');
+    const heroTitle = document.getElementById('exp-hero-title');
+    const heroSubtitle = document.getElementById('exp-hero-subtitle');
+
+    const codeStr = `EXAM-${id}`;
+    if (headerBadge) headerBadge.textContent = codeStr;
+    if (codeBadge) codeBadge.textContent = codeStr;
+    if (heroTitle) heroTitle.textContent = name || 'اختبار أكاديمي';
+    if (heroSubtitle) heroSubtitle.textContent = `المادة: ${subName || 'مادة عامة'} | الصف: ${className || 'الصف المستهدف'} | التاريخ: ${dateStr || '—'}`;
+
+    if (statusBadge) {
+        statusBadge.textContent = status || 'مجدول';
+        if (status === 'منتهي' || status === 'مكتمل') {
+            statusBadge.className = 'badge bg-primary rounded-pill px-3 py-1 font-monospace';
+        } else {
+            statusBadge.className = 'badge bg-success rounded-pill px-3 py-1 font-monospace';
+        }
+    }
+
+    // Basic Info
+    const infoType = document.getElementById('exp-info-type');
+    const infoDatetime = document.getElementById('exp-info-datetime');
+    const infoStatus = document.getElementById('exp-info-status');
+    const linkedClass = document.getElementById('exp-linked-class');
+    const assignedTeacher = document.getElementById('exp-assigned-teacher');
+
+    if (infoType) infoType.textContent = name || 'اختبار تقويمي';
+    if (infoDatetime) infoDatetime.textContent = `${dateStr || '—'} ${timeStr || ''}`;
+    if (infoStatus) infoStatus.textContent = status || 'مجدول ومفعل';
+    if (linkedClass) linkedClass.textContent = className || 'جميع الشعب المستهدفة';
+    if (assignedTeacher) assignedTeacher.textContent = `أ. المعلم المشرف على مادة ${subName || ''}`;
+
+    // Render Analytics Chart
+    initExamPerfChart();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initExamPerfChart() {
+    const ctx = document.getElementById('examPerfChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (examPerfChartInstance) {
+        examPerfChartInstance.destroy();
+    }
+
+    examPerfChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['ممتاز (90-100)', 'جيد جداً (80-89)', 'جيد (70-79)', 'مقبول (60-69)', 'راسب (<60)'],
+            datasets: [{
+                data: [18, 10, 5, 2, 0],
+                backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function printExamProfile() {
+    window.print();
 }
