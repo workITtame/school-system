@@ -32,6 +32,29 @@ function initTimetableModule() {
         'Authorization': 'Bearer ' + (jwtToken || '')
     };
 
+    // Attach global button handlers
+    window.exportTimetableExcel = exportTimetableExcel;
+    window.exportTimetablePDF = exportTimetablePDF;
+    window.fetchTimetableGridData = fetchTimetableGridData;
+    window.toggleSlotSelection = toggleSlotSelection;
+    window.clearSlotSelections = clearSlotSelections;
+    window.deleteBulkSlots = deleteBulkSlots;
+    window.openAddSlotModalWithCell = openAddSlotModalWithCell;
+    window.viewSlotDetail = viewSlotDetail;
+    window.deleteSlotConfirm = deleteSlotConfirm;
+    window.goToSlotWizardStep = goToSlotWizardStep;
+    window.nextSlotWizardStep = nextSlotWizardStep;
+    window.prevSlotWizardStep = prevSlotWizardStep;
+    window.updateSlotWizardSummary = updateSlotWizardSummary;
+    window.printSlotProfile = printSlotProfile;
+
+    const addModal = document.getElementById('addSlotModal');
+    if (addModal) {
+        addModal.addEventListener('show.bs.modal', function() {
+            goToSlotWizardStep(1);
+        });
+    }
+
     setupEventListeners();
     loadTimetableReferenceData();
 }
@@ -52,17 +75,20 @@ function loadTimetableReferenceData() {
                 populateModalDropdowns();
                 updateKPICards();
 
-                // Check URL parameters for class_id / section_id
+                // Check URL parameters for class_id / section_id or auto select first class
                 const urlParams = new URLSearchParams(window.location.search);
                 const classParam = urlParams.get('class_id');
                 const sectionParam = urlParams.get('section_id');
 
+                const classSelect = document.getElementById('filterClass');
                 if (classParam) {
-                    const classSelect = document.getElementById('filterClass');
                     if (classSelect) {
                         classSelect.value = classParam;
                         handleClassChange(classParam, sectionParam);
                     }
+                } else if (classSelect && classSelect.options.length > 1) {
+                    classSelect.selectedIndex = 1;
+                    handleClassChange(classSelect.value);
                 }
             } else {
                 showToast('خطأ في تحميل البيانات الأساسية للجدول', 'error');
@@ -359,8 +385,20 @@ function updateKPICards() {
     const totalSlots = entries.length;
     const activeSlots = entries.filter(e => !e.is_deleted).length;
 
-    const uniqueTeachers = new Set(entries.map(e => e.TeacherID)).size;
-    const uniqueSubjects = new Set(entries.map(e => e.SubID)).size;
+    let uniqueTeachers = new Set(entries.map(e => e.TeacherID)).size;
+    if (uniqueTeachers === 0 && ref && ref.teachers) {
+        uniqueTeachers = ref.teachers.length;
+    }
+
+    let uniqueSubjects = new Set(entries.map(e => e.SubID)).size;
+    if (uniqueSubjects === 0 && ref && ref.classes) {
+        const subSet = new Set();
+        ref.classes.forEach(c => {
+            if (c.subjects) c.subjects.forEach(s => subSet.add(s.SubID));
+        });
+        uniqueSubjects = subSet.size;
+    }
+
     const uniqueClasses = ref ? (ref.classes ? ref.classes.length : 0) : 0;
 
     const totalPossibleSlots = 25;
