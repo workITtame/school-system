@@ -224,3 +224,111 @@ def edit_teacher(id):
     qualifications = Qualifications.query.all()
     all_subjects = Subject.query.all()
     return render_template('teacher/edit.html', teacher=teacher, qualifications=qualifications, all_subjects=all_subjects)
+
+@teacher_bp.route('/export/excel')
+def export_teachers_excel():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from sqlalchemy.orm import joinedload
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    import io
+    from flask import send_file
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Teacher.query.options(joinedload(Teacher.qualification), joinedload(Teacher.subjects)).filter(Teacher.is_deleted == False)
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        teachers = query.filter(Teacher.TeacherID.in_(id_list)).all()
+    else:
+        teachers = query.order_by(Teacher.TeacherID.desc()).all()
+        
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "قائمة الكادر التعليمي"
+    ws.sheet_view.rightToLeft = True
+    
+    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    
+    headers = ["رقم الموظف", "اسم المعلم", "البريد الإلكتروني", "رقم الهاتف", "المؤهل العلمي", "المسمى الوظيفي", "الراتب", "العملة", "المواد المسندة", "الحالة"]
+    ws.append(headers)
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        
+    for t in teachers:
+        q_name = t.qualification.QName if t.qualification else 'جامعي'
+        subs = ", ".join([s.SubName for s in t.subjects]) if t.subjects else '-'
+        row = [
+            f"TID-{t.TeacherID}",
+            t.TeacherName,
+            t.Email or '-',
+            t.Phone or '-',
+            q_name,
+            t.TeacherTitle or '-',
+            float(t.Salary) if t.Salary else 0.0,
+            t.Currency or 'USD',
+            subs,
+            t.Status or 'نشط'
+        ]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = align_center
+            
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
+        ws.column_dimensions[col].width = 22
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name='teachers_export.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@teacher_bp.route('/export/pdf')
+def export_teachers_pdf():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    from sqlalchemy.orm import joinedload
+    from datetime import datetime
+    
+    ids_param = request.args.get('ids', '').strip()
+    query = Teacher.query.options(joinedload(Teacher.qualification), joinedload(Teacher.subjects)).filter(Teacher.is_deleted == False)
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        teachers = query.filter(Teacher.TeacherID.in_(id_list)).all()
+    else:
+        teachers = query.order_by(Teacher.TeacherID.desc()).all()
+        
+    return render_template('teacher/pdf_report.html', teachers=teachers, generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
+
+@teacher_bp.route('/bulk-delete', methods=['POST'])
+def bulk_delete_teachers():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from models import db, Teacher
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي معلم للحذف'}), 400
+        
+    Teacher.query.filter(Teacher.TeacherID.in_(ids)).update({Teacher.is_deleted: True}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم حذف {len(ids)} معلمين بنجاح', 'count': len(ids)})
+
+@teacher_bp.route('/bulk-status', methods=['POST'])
+def bulk_status_teachers():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
+    from models import db, Teacher
+    from flask import jsonify
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    new_status = data.get('status', 'نشط')
+    if not ids:
+        return jsonify({'success': False, 'message': 'لم يتم تحديد أي معلم لتحديث الحالة'}), 400
+        
+    Teacher.query.filter(Teacher.TeacherID.in_(ids)).update({Teacher.Status: new_status}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تحديث حالة {len(ids)} معلمين إلى "{new_status}" بنجاح', 'count': len(ids)})

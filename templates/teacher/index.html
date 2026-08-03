@@ -154,12 +154,12 @@
                 <a href="{{ url_for('teacher.add_teacher') }}" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm">
                     <i class="fa-solid fa-user-plus me-1"></i> إضافة معلم جديد
                 </a>
-                <a href="{{ url_for('students.export_students_excel') }}" class="btn btn-outline-success rounded-pill px-3 fw-bold">
+                <button type="button" class="btn btn-outline-success rounded-pill px-3 fw-bold" onclick="exportTeachersExcel()">
                     <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
-                </a>
-                <a href="{{ url_for('students.export_students_pdf') }}" target="_blank" class="btn btn-outline-danger rounded-pill px-3 fw-bold">
+                </button>
+                <button type="button" class="btn btn-outline-danger rounded-pill px-3 fw-bold" onclick="exportTeachersPDF()">
                     <i class="fa-solid fa-file-pdf me-1"></i> تصدير PDF
-                </a>
+                </button>
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-bold" onclick="fetchTeachers(currentPage)">
                     <i class="fa-solid fa-rotate me-1"></i> تحديث
                 </button>
@@ -671,19 +671,130 @@
         }
     }
 
+    function exportTeachersExcel() {
+        let ids = Array.from(selectedTeacherIds);
+        let url = "{{ url_for('teacher.export_teachers_excel') }}";
+        if (ids.length > 0) {
+            url += "?ids=" + ids.join(',');
+            showToast(`جاري تصدير ${ids.length} معلمين محددين كملف Excel...`, 'info');
+        } else {
+            showToast('جاري تصدير قائمة الكادر التعليمي كملف Excel...', 'info');
+        }
+        window.location.href = url;
+    }
+
+    function exportTeachersPDF() {
+        let ids = Array.from(selectedTeacherIds);
+        let url = "{{ url_for('teacher.export_teachers_pdf') }}";
+        if (ids.length > 0) {
+            url += "?ids=" + ids.join(',');
+            showToast(`جاري تحضير تقرير PDF لـ ${ids.length} معلمين محددين...`, 'info');
+        } else {
+            showToast('جاري تحضير تقرير PDF الشامل للمعلمين...', 'info');
+        }
+        window.open(url, '_blank');
+    }
+
     function bulkStatus() {
-        showToast('تم تحديث حالة المعلمين المحدد ين بنجاح', 'success');
+        if (selectedTeacherIds.size === 0) {
+            showToast('يرجى تحديد معلم واحد على الأقل', 'warning');
+            return;
+        }
+        
+        Swal.fire({
+            title: 'تغيير حالة المعلمين المحددين',
+            text: `أنت على وشك تغيير حالة ${selectedTeacherIds.size} معلمين محددين`,
+            icon: 'question',
+            input: 'select',
+            inputOptions: {
+                'نشط': 'نشط',
+                'غير نشط': 'غير نشط'
+            },
+            inputValue: 'نشط',
+            showCancelButton: true,
+            confirmButtonText: 'تحديث الحالة',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#2563eb'
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const newStatus = result.value;
+                fetch('/teacher/bulk-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ids: Array.from(selectedTeacherIds),
+                        status: newStatus
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        selectedTeacherIds.clear();
+                        updateBulkBar();
+                        fetchTeachers(currentPage);
+                    } else {
+                        showToast(data.message || 'حدث خطأ أثناء التحديث', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('حدث خطأ في الاتصال بالخادم', 'error');
+                });
+            }
+        });
     }
 
     function bulkMessage() {
-        window.location.href = "{{ url_for('messages.index') }}";
+        if (selectedTeacherIds.size === 0) {
+            showToast('يرجى تحديد معلم واحد على الأقل', 'warning');
+            return;
+        }
+        const idsStr = Array.from(selectedTeacherIds).join(',');
+        window.location.href = "{{ url_for('messages.index') }}?recipients=" + idsStr;
     }
 
     function bulkDelete() {
-        if(confirm('هل أنت تأكد من حذف المعلمين المحددين؟')) {
-            showToast('تم حذف المعلمين المحددين بنجاح', 'success');
-            fetchTeachers(currentPage);
+        if (selectedTeacherIds.size === 0) {
+            showToast('يرجى تحديد معلم واحد على الأقل للحذف', 'warning');
+            return;
         }
+        
+        Swal.fire({
+            title: 'تأكيد الحذف الجماعي',
+            text: `هل أنت متأكد من حذف ${selectedTeacherIds.size} معلمين محددين؟ لا يمكن التراجع عن هذا الإجراء.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، احذف الكل',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/teacher/bulk-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ids: Array.from(selectedTeacherIds)
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        selectedTeacherIds.clear();
+                        updateBulkBar();
+                        fetchTeachers(currentPage);
+                    } else {
+                        showToast(data.message || 'حدث خطأ أثناء الحذف', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('حدث خطأ في الاتصال بالخادم', 'error');
+                });
+            }
+        });
     }
 
     function renderPagination(meta) {
