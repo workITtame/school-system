@@ -198,12 +198,24 @@ def get_teachers():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     search_term = request.args.get('search', '', type=str)
+    qual_filter = request.args.get('qual', '', type=str)
+    status_filter = request.args.get('status', '', type=str)
+    gender_filter = request.args.get('gender', '', type=str)
     
     try:
         query = Teacher.query.filter_by(is_deleted=False)
         
         if search_term:
             query = query.filter(Teacher.TeacherName.like(f"%{search_term}%"))
+            
+        if qual_filter:
+            query = query.join(Teacher.qualification).filter(Qualifications.QName == qual_filter)
+            
+        if status_filter:
+            query = query.filter(Teacher.Status == status_filter)
+            
+        if gender_filter:
+            query = query.filter(Teacher.Gender == gender_filter)
             
         paginated = query.order_by(Teacher.TeacherID.desc()).paginate(page=page, per_page=limit, error_out=False)
         

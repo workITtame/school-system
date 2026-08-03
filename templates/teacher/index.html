@@ -540,7 +540,13 @@
         const tbody = document.getElementById('teachersTableBody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><br><span class="text-muted fw-bold mt-2 d-inline-block">جاري التحميل...</span></td></tr>';
         
-        fetch(`/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}`, { headers: apiHeadersJSON })
+        const qual = document.getElementById('filterQual')?.value || '';
+        const status = document.getElementById('filterStatus')?.value || '';
+        const gender = document.getElementById('filterGender')?.value || '';
+
+        const url = `/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}&qual=${encodeURIComponent(qual)}&status=${encodeURIComponent(status)}&gender=${encodeURIComponent(gender)}`;
+
+        fetch(url, { headers: apiHeadersJSON })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
