@@ -367,6 +367,235 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- SECTION 7: Timetable Session Profile Modal -->
+<!-- ========================================== -->
+<div class="modal fade" id="viewSlotProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <!-- Modal Header / Close bar -->
+            <div class="modal-header bg-dark text-white p-3 border-0 d-flex justify-content-between align-items-center no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace" id="tsp-header-badge">SLOT-101</span>
+                    <h6 class="modal-title fw-bold text-white mb-0" id="tsp-header-title">الملف الشخصي للحصة الدراسية | Enterprise SaaS</h6>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="printSlotProfile()">
+                        <i class="fa-solid fa-print me-1"></i> طباعة التقرير
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-0 bg-light-subtle">
+                <!-- Printable Container -->
+                <div id="slotProfilePrintableArea" class="p-4">
+                    
+                    <!-- HERO HEADER -->
+                    <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 text-white position-relative overflow-hidden" id="tsp-hero-card" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 position-relative z-1">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-4 p-3 bg-white bg-opacity-20 backdrop-blur border border-white border-opacity-25">
+                                    <i class="fa-solid fa-calendar-check fs-1 text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace" id="tsp-code-badge">SLOT-101</span>
+                                        <span class="badge bg-success rounded-pill px-3 py-1 font-monospace" id="tsp-status-badge">مكتمل ومفحوص</span>
+                                    </div>
+                                    <h3 class="fw-extrabold mb-1 text-white" id="tsp-hero-title">اسم المادة الدراسية</h3>
+                                    <p class="text-white-50 small mb-0 font-monospace" id="tsp-hero-subtitle">الصف والأستاذ والزمن الأسبوعي</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Action links -->
+                            <div class="d-flex flex-wrap gap-2 no-print">
+                                <a href="#" id="tsp-btn-teacher" data-turbo="false" class="btn btn-sm btn-light rounded-pill px-3 fw-bold">
+                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> ملف المعلم
+                                </a>
+                                <a href="#" id="tsp-btn-subject" data-turbo="false" class="btn btn-sm btn-light rounded-pill px-3 fw-bold">
+                                    <i class="fa-solid fa-book-open me-1 text-info"></i> ملف المادة
+                                </a>
+                                <a href="#" id="tsp-btn-students" data-turbo="false" class="btn btn-sm btn-light rounded-pill px-3 fw-bold">
+                                    <i class="fa-solid fa-users me-1 text-success"></i> الطلاب
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI CARDS (6 CARDS) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">الطلاب المشمولون</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-students">35</h4>
+                                <small class="text-success extra-small"><i class="fa-solid fa-check me-1"></i> مسجل في شعبة</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">نسبة الحضور</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-attendance">94.2%</h4>
+                                <small class="text-primary extra-small"><i class="fa-solid fa-chart-line me-1"></i> معدل ممتاز</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">عدد الواجبات</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-homework">8</h4>
+                                <small class="text-purple extra-small" style="color:#7c3aed;"><i class="fa-solid fa-book-bookmark me-1"></i> واجب مسند</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">عدد الاختبارات</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-exams">3</h4>
+                                <small class="text-warning extra-small"><i class="fa-solid fa-pen-ruler me-1"></i> تقييم دوري</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">متوسط الدرجات</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-avg-grade">88.5%</h4>
+                                <small class="text-success extra-small"><i class="fa-solid fa-arrow-up me-1"></i> أداء أكاديمي</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small font-monospace mb-1">آخر تحديث</div>
+                                <h6 class="fw-bold text-dark mb-0 font-monospace" id="tsp-kpi-updated">اليوم 08:30</h6>
+                                <small class="text-muted extra-small"><i class="fa-solid fa-clock me-1"></i> توثيق آلي</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MAIN CARDS GRID -->
+                    <div class="row g-3 mb-4">
+                        <!-- SESSION & TEACHER CARD -->
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chalkboard-user me-2"></i>معلومات الحصة والمعلم المسند</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 font-monospace small">
+                                            <div class="text-muted mb-1">اليوم والتوقيت:</div>
+                                            <div class="fw-bold text-dark" id="tsp-info-time">الأحد | الحصة الأولى (08:00 - 08:45)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 font-monospace small">
+                                            <div class="text-muted mb-1">الصف والشعبة:</div>
+                                            <div class="fw-bold text-dark" id="tsp-info-class">الصف الأول الثانوي (شعبة أ)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-3 opacity-25">
+
+                                <div class="d-flex align-items-center gap-3">
+                                    <img id="tsp-teacher-avatar" src="https://ui-avatars.com/api/?name=Teacher&background=2563eb&color=fff" class="rounded-circle border shadow-sm" style="width:60px; height:60px;">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1" id="tsp-teacher-name">أ. أحمد محمود علي</h6>
+                                        <small class="text-muted d-block font-monospace" id="tsp-teacher-email">ahmed.ali@school.edu</small>
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill mt-1 font-monospace" id="tsp-teacher-title">معلم أول قدير</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUBJECT & CLASS CARD -->
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-info mb-3"><i class="fa-solid fa-book-open me-2"></i>توصيف المادة والصف الدراسي</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 font-monospace small">
+                                            <div class="text-muted mb-1">المادة المقررة:</div>
+                                            <div class="fw-bold text-dark" id="tsp-subject-name">الرياضيات المتقدمة</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 font-monospace small">
+                                            <div class="text-muted mb-1">القسم / المرحلة:</div>
+                                            <div class="fw-bold text-dark" id="tsp-subject-dept">المرحلة الثانوية</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-3 opacity-25">
+
+                                <div class="p-3 bg-light rounded-3 font-monospace small">
+                                    <div class="d-flex justify-content-between mb-1"><span>طبيعة المقرر:</span><strong class="text-dark" id="tsp-subject-type">أساسية</strong></div>
+                                    <div class="d-flex justify-content-between mb-1"><span>النصاب الأسبوعي:</span><strong class="text-dark" id="tsp-subject-hours">4 حصص أسبوعية</strong></div>
+                                    <div class="d-flex justify-content-between"><span>نسبة إشغال الشعبة:</span><strong class="text-success" id="tsp-class-occupancy">87.5% (استيعاب ممتاز)</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALYTICS CHART & TIMELINE -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-8">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-column text-primary me-2"></i>تحليلات الأداء والالتزام بالحصة</h6>
+                                <div style="height: 250px;">
+                                    <canvas id="sessionPerfChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-timeline text-warning me-2"></i>سجل الأنشطة والتوثيق</h6>
+                                <ul class="list-unstyled font-monospace small mb-0">
+                                    <li class="mb-3 d-flex gap-2">
+                                        <i class="fa-solid fa-circle-check text-success mt-1"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">تسجيل الحضور الآلي</strong>
+                                            <small class="text-muted">تم توثيق حضور 33 طالب من أصل 35</small>
+                                        </div>
+                                    </li>
+                                    <li class="mb-3 d-flex gap-2">
+                                        <i class="fa-solid fa-book-bookmark text-primary mt-1"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">إسناد واجب جديد</strong>
+                                            <small class="text-muted">تم رفع تمارين الدرس الثاني</small>
+                                        </div>
+                                    </li>
+                                    <li class="d-flex gap-2">
+                                        <i class="fa-solid fa-bell text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">إشعار الجدول</strong>
+                                            <small class="text-muted">مفحوص وبدون أي تعارض كادري</small>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUICK ACTIONS -->
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white no-print">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i>الإجراءات السريعة للحصة</h6>
+                        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-2" id="session-quick-actions-container">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body * { visibility: hidden !important; }
+    #slotProfilePrintableArea, #slotProfilePrintableArea * { visibility: visible !important; }
+    #slotProfilePrintableArea { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print, .btn, button, .modal-header { display: none !important; }
+}
+</style>
+
 <!-- Load Timetable Module Script -->
 <script src="{{ url_for('static', filename='js/timetable.js') }}"></script>
 {% endblock %}
