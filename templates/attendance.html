@@ -1,271 +1,370 @@
 {% extends 'layout.html' %}
 
-{% block title %}الحضور والغياب{% endblock %}
+{% block title %}إدارة الحضور والغياب الأكاديمي | Enterprise SaaS Dashboard{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
-    <div>
-        <h3 class="fw-bold m-0 text-dark">الحضور والغياب</h3>
-        <p class="text-muted mb-0" style="font-size: 0.9rem;">الرئيسية / الحضور والغياب</p>
-    </div>
-</div>
+<div class="container-fluid py-4 px-md-4 font-monospace">
 
-<div class="card shadow-sm border-0 rounded-4 mb-4 fade-in">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <button class="btn btn-light border text-muted fw-bold px-4 rounded-pill" onclick="exportAttendanceReport()">
-                <i class="fa-solid fa-file-export me-2"></i> تصدير التقرير
+    <!-- ========================================== -->
+    <!-- SECTION 1: Hero Header & Control Actions  -->
+    <!-- ========================================== -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 fade-in">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted font-monospace">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                    <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">إدارة الحضور والغياب</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-user-check text-primary"></i> إدارة الحضور والغياب الأكاديمي
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise SaaS</span>
+            </h3>
+            <p class="text-muted small mb-0 font-monospace">تسجيل ومتابعة حضور وغياب الطلاب والكوادر الأكاديمية بنقاء وفعالية عالية</p>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#quickMarkModal">
+                <i class="fa-solid fa-plus-circle"></i> <span>تسجيل حضور</span>
             </button>
-            <div class="d-flex gap-3 align-items-center flex-grow-1 justify-content-end">
-                <div style="width: 200px;">
-                    <input type="date" class="form-control bg-light border-0" id="filterDate" value="{{ today }}">
-                </div>
-                <div style="width: 150px;">
-                    <select class="form-select bg-light border-0" id="filterClass">
-                        <option value="">الصف</option>
-                        {% for c in classes %}
-                        <option value="{{ c.CID }}">{{ c.CName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="width: 150px;">
-                    <select class="form-select bg-light border-0" id="filterSection">
-                        <option value="">الشعبة</option>
-                        {% for s in sections %}
-                        <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+            <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="bulkMarkAttendance('Present')">
+                <i class="fa-solid fa-users-check"></i> <span>تسجيل جماعي حاضر</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportAttendanceReport()">
+                <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> <span>طباعة / PDF</span>
+            </button>
+            <button type="button" class="btn btn-light border rounded-circle p-2 shadow-sm text-secondary hover-rotate" onclick="loadAttendanceData()" title="إعادة تحميل البيانات">
+                <i class="fa-solid fa-arrows-rotate fs-5"></i>
+            </button>
         </div>
     </div>
-</div>
 
-<!-- Stat Cards & Chart -->
-<div class="row g-4 mb-4 fade-in">
-    <!-- Chart -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100 rounded-4">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
-                <span class="fw-bold text-muted mb-3">نسبة الحضور</span>
-                <div class="position-relative d-inline-block">
-                    <svg viewBox="0 0 36 36" style="width: 100px; height: 100px;">
-                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"/>
-                        <path class="circle" id="attendanceCircle" stroke-dasharray="{{ attendance_rate }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--success)" stroke-width="3" style="transition: stroke-dasharray 0.5s ease;"/>
-                    </svg>
-                    <div class="position-absolute top-50 start-50 translate-middle">
-                        <span class="fw-bold fs-5 text-dark" id="statRate">{{ attendance_rate }}%</span>
+    <!-- ========================================== -->
+    <!-- SECTION 2: Enterprise KPI Glass Cards      -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 fade-in">
+        <!-- Card 1: Total Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">إجمالي الطلاب</span>
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-users fs-5"></i>
                     </div>
                 </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiTotalStudents">{{ total_students }}</h3>
+                <small class="text-primary font-monospace extra-small"><i class="fa-solid fa-school me-1"></i> طلاب مفعالين</small>
             </div>
         </div>
-    </div>
-    
-    <!-- Stats -->
-    <div class="col-md-9">
-        <div class="row g-4 h-100">
-            <div class="col-md-3">
-                <div class="stat-card-flat h-100">
-                    <div class="stat-content">
-                        <span class="stat-label">حاضر</span>
-                        <span class="stat-value text-success" id="statPresent">{{ present if present else 0 }}</span>
-                    </div>
-                    <div class="stat-icon-wrapper bg-icon-green">
-                        <i class="fa-solid fa-user-check"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card-flat h-100">
-                    <div class="stat-content">
-                        <span class="stat-label">متأخر</span>
-                        <span class="stat-value text-warning" id="statLate">{{ late }}</span>
-                    </div>
-                    <div class="stat-icon-wrapper bg-icon-orange">
-                        <i class="fa-solid fa-clock"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card-flat h-100">
-                    <div class="stat-content">
-                        <span class="stat-label">غائب</span>
-                        <span class="stat-value text-danger" id="statAbsent">{{ absent }}</span>
-                    </div>
-                    <div class="stat-icon-wrapper bg-icon-purple" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">
-                        <i class="fa-solid fa-user-xmark"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card-flat h-100">
-                    <div class="stat-content">
-                        <span class="stat-label">إجمالي الطلاب</span>
-                        <span class="stat-value" id="statTotal">{{ total_students }}</span>
-                    </div>
-                    <div class="stat-icon-wrapper bg-icon-blue">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="card shadow-sm border-0 rounded-4 fade-in">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle text-center mb-0">
+        <!-- Card 2: Present Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">الحاضرون اليوم</span>
+                    <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-user-check fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiPresent">{{ present }}</h3>
+                <small class="text-success font-monospace extra-small"><i class="fa-solid fa-check me-1"></i> توثيق مكتمل</small>
+            </div>
+        </div>
+
+        <!-- Card 3: Late Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">المتأخرون</span>
+                    <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-clock fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiLate">{{ late }}</h3>
+                <small class="text-warning font-monospace extra-small"><i class="fa-solid fa-exclamation-triangle me-1"></i> رصد التأخير</small>
+            </div>
+        </div>
+
+        <!-- Card 4: Absent Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">الغائبون</span>
+                    <div class="p-2 rounded-3 bg-danger bg-opacity-10 text-danger">
+                        <i class="fa-solid fa-user-xmark fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiAbsent">{{ absent }}</h3>
+                <small class="text-danger font-monospace extra-small"><i class="fa-solid fa-circle-exclamation me-1"></i> غياب بدون عذر</small>
+            </div>
+        </div>
+
+        <!-- Card 5: Attendance Rate -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">نسبة الحضور</span>
+                    <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-chart-line fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiAttendanceRate">{{ attendance_rate }}%</h3>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" id="kpiAttendanceProgress" style="width: {{ attendance_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 6: Absence Rate -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">نسبة الغياب</span>
+                    <div class="p-2 rounded-3 bg-secondary bg-opacity-10 text-secondary">
+                        <i class="fa-solid fa-percent fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiAbsenceRate">0%</h3>
+                <small class="text-muted font-monospace extra-small"><i class="fa-solid fa-chart-pie me-1"></i> معدل الفقد</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: Advanced Search & Filters Bar   -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm mb-4 fade-in">
+        <div class="row g-2 align-items-center">
+            <!-- Search input -->
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="input-group input-group-modern rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 text-muted pe-2"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" id="filterSearch" class="form-control border-0 ps-1 font-monospace extra-small" placeholder="بحث باسم الطالب أو الرقم..." aria-label="بحث بالاسم أو الرقم">
+                </div>
+            </div>
+
+            <!-- Date Select -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <input type="date" id="filterDate" class="form-control form-select-modern rounded-pill font-monospace extra-small" value="{{ today }}">
+            </div>
+
+            <!-- Class Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <select id="filterClass" class="form-select form-select-modern rounded-pill font-monospace extra-small" aria-label="الصف">
+                    <option value="">جميع الصفوف</option>
+                    {% for c in classes %}
+                    <option value="{{ c.CID }}">{{ c.CName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Section Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <select id="filterSection" class="form-select form-select-modern rounded-pill font-monospace extra-small" aria-label="الشعبة">
+                    <option value="">جميع الشعب</option>
+                    {% for s in sections %}
+                    <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <select id="filterStatus" class="form-select form-select-modern rounded-pill font-monospace extra-small" aria-label="الحالة">
+                    <option value="">جميع الحالات</option>
+                    <option value="Present">حاضر</option>
+                    <option value="Absent">غائب</option>
+                    <option value="Late">متأخر</option>
+                    <option value="غير مسجل">غير مسجل</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="col-12 col-md-2 col-lg-1 text-end">
+                <button type="button" id="resetFiltersBtn" class="btn btn-outline-secondary rounded-pill w-100 font-monospace extra-small py-2">
+                    <i class="fa-solid fa-rotate-left me-1"></i> ضبط
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: Enterprise Data Grid Table      -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card fade-in overflow-hidden position-relative p-0 shadow-sm mb-4" id="attendanceGridPanel">
+        
+        <!-- Loading Spinner Overlay -->
+        <div id="attendanceLoadingSpinner" class="position-absolute w-100 h-100 d-none justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 100; top: 0; left: 0;">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                <p class="fw-bold text-dark font-monospace mt-3">جاري تحميل بيانات الحضور والغياب...</p>
+            </div>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="attendanceEmptyState" class="text-center py-5 px-4">
+            <div class="py-5">
+                <div class="p-4 rounded-circle bg-light d-inline-block mb-3 shadow-sm">
+                    <i class="fa-solid fa-users-slash text-muted" style="font-size: 3.5rem;"></i>
+                </div>
+                <h5 class="fw-extrabold text-dark mb-2 font-monospace" id="emptyStateTitle">الرجاء تحديد الصف والشعبة لعرض كشف الحضور</h5>
+                <p class="text-muted small mb-4 mx-auto font-monospace" style="max-width: 480px;" id="emptyStateMessage">
+                    اختر الصف الدراسي والشعبة التابعة له من شريط الفلاتر أعلى الصفحة لجلب واستعراض كشف الطلاب وتسجيل الحضور.
+                </p>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive d-none" id="attendanceTableContainer">
+            <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table table-sticky-header table-zebra-striped" id="attendanceTable" role="grid">
                 <thead class="bg-light">
                     <tr>
-                        <th class="py-3 text-muted">#</th>
-                        <th class="py-3 text-muted">اسم الطالب</th>
-                        <th class="py-3 text-muted">الرقم الجامعي/الأكاديمي</th>
-                        <th class="py-3 text-muted">الحالة</th>
-                        <th class="py-3 text-muted">وقت الحضور</th>
-                        <th class="py-3 text-muted">ملاحظات</th>
-                        <th class="py-3 text-muted">الإجراءات</th>
+                        <th class="py-3 font-monospace border-0" style="width: 40px;">
+                            <input type="checkbox" class="form-check-input rounded-2" id="selectAllAttendance" onclick="toggleSelectAllAttendance(this)">
+                        </th>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 60px;">#</th>
+                        <th class="py-3 font-monospace text-primary border-0 text-start">اسم الطالب والتأكيد</th>
+                        <th class="py-3 font-monospace text-primary border-0">الرقم الأكاديمي</th>
+                        <th class="py-3 font-monospace text-primary border-0">حالة الحضور</th>
+                        <th class="py-3 font-monospace text-primary border-0">وقت التوثيق</th>
+                        <th class="py-3 font-monospace text-primary border-0">الملاحظات</th>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 120px;">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="attendanceTableBody">
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-users fs-1 mb-3"></i>
-                            <h5 class="fw-bold">الرجاء اختيار الصف والشعبة لعرض الطلاب</h5>
-                        </td>
-                    </tr>
+                    <!-- Dynamic Attendance Rows -->
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: Floating Bulk Actions Bar       -->
+    <!-- ========================================== -->
+    <div id="attendanceBulkBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 bg-dark text-white rounded-pill px-4 py-3 shadow-lg fade-in no-print d-none" style="z-index: 1050; min-width: 450px;">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2 font-monospace" id="bulkSelectedCount">0 محدد</span>
+                <span class="small font-monospace text-white-50">إجراءات الحضور الجماعية:</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" onclick="bulkMarkAttendance('Present')">
+                    <i class="fa-solid fa-user-check me-1"></i> تسجيل حاضر
+                </button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" onclick="bulkMarkAttendance('Absent')">
+                    <i class="fa-solid fa-user-xmark me-1"></i> تسجيل غائب
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="clearBulkSelections()">
+                    إلغاء التحديد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 7 & 8: Analytics & Quick Actions   -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4">
+        <!-- Analytics Chart -->
+        <div class="col-lg-7">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i>تحليلات نسب الحضور والغياب اليومية</h6>
+                <div style="height: 250px;">
+                    <canvas id="attendanceStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="col-lg-5">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i>الإجراءات والخدمات السريعة</h6>
+                <div class="row row-cols-2 g-2">
+                    <div class="col">
+                        <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" data-bs-toggle="modal" data-bs-target="#quickMarkModal">
+                            <i class="fa-solid fa-user-pen fs-3 text-primary mb-2 d-block mx-auto"></i>
+                            <h6 class="fw-bold text-dark mb-0 small">تسجيل سريع</h6>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="exportAttendanceReport()">
+                            <i class="fa-solid fa-file-excel fs-3 text-success mb-2 d-block mx-auto"></i>
+                            <h6 class="fw-bold text-dark mb-0 small">تصدير Excel</h6>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="window.print()">
+                            <i class="fa-solid fa-print fs-3 text-secondary mb-2 d-block mx-auto"></i>
+                            <h6 class="fw-bold text-dark mb-0 small">طباعة الكشف</h6>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <a href="{{ url_for('timetable.index') }}" data-turbo="false" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4 d-block text-decoration-none">
+                            <i class="fa-solid fa-calendar-days fs-3 text-info mb-2 d-block mx-auto"></i>
+                            <h6 class="fw-bold text-dark mb-0 small">عرض الجدول</h6>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<script>
-    document.addEventListener("turbo:load", function() {
-        const filterDate = document.getElementById('filterDate');
-        const filterClass = document.getElementById('filterClass');
-        const filterSection = document.getElementById('filterSection');
-        const tbody = document.getElementById('attendanceTableBody');
-
-        function loadStudents() {
-            const classId = filterClass.value;
-            const sectionId = filterSection.value;
-            const date = filterDate.value;
-
-            if (!classId || !sectionId) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">
-                    <i class="fa-solid fa-users fs-1 mb-3"></i>
-                    <h5 class="fw-bold">الرجاء اختيار الصف والشعبة لعرض الطلاب</h5>
-                </td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>';
-
-            fetch(`/attendance/api/students?class_id=${classId}&section_id=${sectionId}&date=${date}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        renderTable(data.data);
-                        updateLocalStats(data.data);
-                    } else {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message}</td></tr>`;
-                    }
-                });
-        }
-
-        function renderTable(students) {
-            tbody.innerHTML = '';
-            if (students.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">لا يوجد طلاب في هذه الشعبة</td></tr>`;
-                return;
-            }
-
-            students.forEach((student, index) => {
-                const tr = document.createElement('tr');
-                
-                // Status Dropdown
-                const statusOptions = `
-                    <select class="form-select form-select-sm border-0 fw-bold status-select ${getStatusColorClass(student.Status)}" onchange="updateAttendance(${student.SID}, this.value)" style="width: 120px; margin: 0 auto; cursor: pointer;">
-                        <option value="Present" ${student.Status === 'Present' || student.Status === 'حاضر' ? 'selected' : ''}>حاضر</option>
-                        <option value="Absent" ${student.Status === 'Absent' || student.Status === 'غائب' ? 'selected' : ''}>غائب</option>
-                        <option value="Late" ${student.Status === 'Late' || student.Status === 'متأخر' ? 'selected' : ''}>متأخر</option>
-                        <option value="غير مسجل" ${student.Status === 'غير مسجل' ? 'selected' : ''}>-- تسجيل --</option>
+<!-- ========================================== -->
+<!-- QUICK MARK ATTENDANCE MODAL                -->
+<!-- ========================================== -->
+<div class="modal fade" id="quickMarkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-primary text-white p-4 border-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-3">
+                        <i class="fa-solid fa-user-pen fs-3 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-extrabold mb-1">تسجيل حضور طالب مباشر</h5>
+                        <p class="text-white-50 small mb-0 font-monospace">تحديث حالة حضور طالب محدد بالتاريخ الحالي</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body p-4 font-monospace">
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">الرقم الأكاديمي للطالب (SID) <span class="text-danger">*</span></label>
+                    <input type="number" id="quickMarkSID" class="form-control form-select-modern" placeholder="مثال: 32" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold small">حالة الحضور <span class="text-danger">*</span></label>
+                    <select id="quickMarkStatus" class="form-select form-select-modern" required>
+                        <option value="Present">حاضر</option>
+                        <option value="Absent">غائب</option>
+                        <option value="Late">متأخر</option>
                     </select>
-                `;
+                </div>
+            </div>
+            <div class="modal-footer bg-white p-3 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="submitQuickMark()">
+                    <i class="fa-solid fa-check me-1"></i> حفظ وتوثيق
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                tr.innerHTML = `
-                    <td class="text-muted fw-bold">${index + 1}</td>
-                    <td class="fw-bold" style="color: var(--text-main);">${student.SName}</td>
-                    <td class="text-muted">${student.SID}</td>
-                    <td>${statusOptions}</td>
-                    <td class="text-muted" style="font-size: 0.85rem;">${student.Time ? new Date(student.Time).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
-                    <td class="text-muted" style="font-size: 0.85rem;">${student.Note || '-'}</td>
-                    <td>
-                        <a href="/students/view/${student.SID}" class="action-btn action-btn-view" title="عرض الملف">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
-                        </a>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+<style>
+@media print {
+    body * { visibility: hidden !important; }
+    #attendanceGridPanel, #attendanceGridPanel * { visibility: visible !important; }
+    #attendanceGridPanel { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print, .btn, button, #attendanceBulkBar { display: none !important; }
+}
+</style>
 
-        function getStatusColorClass(status) {
-            if (status === 'Present' || status === 'حاضر') return 'text-success bg-success bg-opacity-10';
-            if (status === 'Absent' || status === 'غائب') return 'text-danger bg-danger bg-opacity-10';
-            if (status === 'Late' || status === 'متأخر') return 'text-warning bg-warning bg-opacity-10';
-            return 'text-secondary bg-light';
-        }
-
-        function updateLocalStats(students) {
-            let present = 0;
-            let absent = 0;
-            let late = 0;
-            
-            students.forEach(s => {
-                if (s.Status === 'Present' || s.Status === 'حاضر') present++;
-                if (s.Status === 'Absent' || s.Status === 'غائب') absent++;
-                if (s.Status === 'Late' || s.Status === 'متأخر') late++;
-            });
-
-            document.getElementById('statTotal').innerText = students.length;
-            document.getElementById('statPresent').innerText = present;
-            document.getElementById('statAbsent').innerText = absent;
-            document.getElementById('statLate').innerText = late;
-            
-            let rate = students.length > 0 ? ((present / students.length) * 100).toFixed(1) : 0;
-            document.getElementById('statRate').innerText = rate + '%';
-            document.getElementById('attendanceCircle').style.strokeDasharray = rate + ', 100';
-        }
-
-        window.updateAttendance = function(sid, status) {
-            const date = filterDate.value;
-            fetch('/attendance/api/mark', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sid, date, status })
-            }).then(res => res.json()).then(data => {
-                if(data.success) {
-                    Swal.fire({
-                        toast: true, position: 'top-end', icon: 'success',
-                        title: 'تم تحديث حالة الحضور', showConfirmButton: false, timer: 1500
-                    });
-                    loadStudents(); // reload to update stats
-                }
-            });
-        };
-
-        window.exportAttendanceReport = function() {
-            const classId = filterClass.value;
-            const sectionId = filterSection.value;
-            const date = filterDate.value;
-            window.location.href = `/attendance/export?class_id=${classId}&section_id=${sectionId}&date=${date}`;
-        };
-
-        filterDate.addEventListener('change', loadStudents);
-        filterClass.addEventListener('change', loadStudents);
-        filterSection.addEventListener('change', loadStudents);
-    });
-</script>
+<!-- Load Attendance Module Script -->
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
 {% endblock %}
