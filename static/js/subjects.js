@@ -531,6 +531,7 @@ function loadSubjectProfile(data) {
     }
 
     if (editBtn) {
+        const classIds = (data.linkedClasses && data.linkedClasses.length > 0) ? data.linkedClasses.map(c => c.id) : [];
         editBtn.onclick = function () {
             const modalEl = document.getElementById('viewSubjectProfileModal');
             if (modalEl) {
@@ -538,7 +539,7 @@ function loadSubjectProfile(data) {
                 if (bsModal) bsModal.hide();
             }
             setTimeout(() => {
-                openEditSubjectModal(data.id, data.name, data.type, data.department, data.weeklyHours, data.status, data.color, []);
+                openEditSubjectModal(data.id, data.name, data.type, data.department, data.weeklyHours, data.status, data.color, classIds);
             }, 300);
         };
     }
@@ -579,6 +580,20 @@ function loadSubjectProfile(data) {
     }, 200);
 }
 
+function triggerEditFromProfile(subId) {
+    const data = getSubjectDataById(subId);
+    if (!data) return;
+    const modalEl = document.getElementById('viewSubjectProfileModal');
+    if (modalEl) {
+        const bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+    }
+    const classIds = (data.linkedClasses && data.linkedClasses.length > 0) ? data.linkedClasses.map(c => c.id) : [];
+    setTimeout(() => {
+        openEditSubjectModal(data.id, data.name, data.type, data.department, data.weeklyHours, data.status, data.color, classIds);
+    }, 300);
+}
+
 function renderSubjectKPIs(data) {
     const kpiStudents = document.getElementById('sp-kpi-students');
     const kpiTeachers = document.getElementById('sp-kpi-teachers');
@@ -617,19 +632,24 @@ function renderClasses(classes) {
         const colorClass = occ < 70 ? 'bg-success' : (occ <= 90 ? 'bg-warning' : 'bg-danger');
         return `
             <div class="col-md-6">
-                <div class="p-3 border rounded-4 bg-light hover-scale">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-school text-primary me-1"></i> ${c.name}</h6>
-                        <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace small">${c.stage}</span>
+                <div class="p-3 border rounded-4 bg-light hover-scale d-flex flex-column justify-content-between h-100">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-school text-primary me-1"></i> ${c.name}</h6>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace small">${c.stage}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small font-monospace mb-2">
+                            <span>الشعب: ${c.sectionsCount} شعب</span>
+                            <span>الطلاب: ${c.studentsCount} / ${c.maxStudents}</span>
+                        </div>
+                        <div class="progress rounded-pill mb-1" style="height: 6px;">
+                            <div class="progress-bar ${colorClass}" style="width: ${occ}%;"></div>
+                        </div>
+                        <small class="text-muted font-monospace d-block" style="font-size: 0.75rem;">نسبة إشغال القاعات: ${occ}%</small>
                     </div>
-                    <div class="d-flex justify-content-between text-muted small font-monospace mb-2">
-                        <span>الشعب: ${c.sectionsCount} شعب</span>
-                        <span>الطلاب: ${c.studentsCount} / ${c.maxStudents}</span>
-                    </div>
-                    <div class="progress rounded-pill mb-1" style="height: 6px;">
-                        <div class="progress-bar ${colorClass}" style="width: ${occ}%;"></div>
-                    </div>
-                    <small class="text-muted font-monospace" style="font-size: 0.75rem;">نسبة إشغال القاعات: ${occ}%</small>
+                    <a href="/students?class_id=${c.id}" class="btn btn-sm btn-outline-primary rounded-pill w-100 mt-2 font-monospace fw-bold" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-user-graduate me-1"></i> عرض طلاب ${c.name}
+                    </a>
                 </div>
             </div>
         `;
@@ -652,15 +672,20 @@ function renderTeachers(teachers) {
         const avatarSrc = t.image ? `/static/${t.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=2563eb&color=fff`;
         return `
             <div class="col">
-                <div class="p-3 border rounded-4 bg-light d-flex align-items-center gap-3">
-                    <img src="${avatarSrc}" class="rounded-circle border shadow-sm" style="width: 54px; height: 54px; object-fit: cover;" alt="${t.name}">
-                    <div class="overflow-hidden">
-                        <h6 class="fw-bold text-dark mb-0 text-truncate">${t.name}</h6>
-                        <small class="text-muted d-block small mb-1">${t.title || 'معلم قدير'}</small>
-                        <div class="d-flex align-items-center gap-2 font-monospace text-muted" style="font-size: 0.75rem;">
-                            <span><i class="fa-solid fa-envelope me-1"></i>${t.email}</span>
+                <div class="p-3 border rounded-4 bg-light d-flex align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3 overflow-hidden">
+                        <img src="${avatarSrc}" class="rounded-circle border shadow-sm flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover;" alt="${t.name}">
+                        <div class="overflow-hidden">
+                            <a href="/teacher/${t.id}" class="fw-bold text-dark mb-0 text-truncate d-block text-decoration-none text-primary-hover">${t.name}</a>
+                            <small class="text-muted d-block small mb-1">${t.title || 'معلم قدير'}</small>
+                            <div class="d-flex align-items-center gap-2 font-monospace text-muted" style="font-size: 0.75rem;">
+                                <span><i class="fa-solid fa-envelope me-1"></i>${t.email}</span>
+                            </div>
                         </div>
                     </div>
+                    <a href="/messages" class="btn btn-sm btn-light border rounded-circle p-2 text-primary flex-shrink-0" title="إرسال رسالة للمعلم">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </a>
                 </div>
             </div>
         `;
@@ -765,38 +790,38 @@ function renderQuickActions(data) {
 
     container.innerHTML = `
         <div class="col">
-            <button type="button" class="quick-action-card w-100 border-0 bg-light" onclick="openEditSubjectModal(${data.id}, '${data.name}', '${data.type}', '${data.department}', ${data.weeklyHours}, '${data.status}', '${data.color}', [])">
-                <i class="fa-solid fa-pen-to-square fs-2 text-warning mb-2"></i>
+            <button type="button" class="quick-action-card w-100 border-0 bg-light text-center" onclick="triggerEditFromProfile(${data.id})">
+                <i class="fa-solid fa-pen-to-square fs-2 text-warning mb-2 d-block mx-auto"></i>
                 <h6 class="fw-bold text-dark mb-0 small">تعديل المادة</h6>
             </button>
         </div>
         <div class="col">
             <a href="/timetable" class="quick-action-card">
-                <i class="fa-solid fa-calendar-days fs-2 text-primary mb-2"></i>
+                <i class="fa-solid fa-calendar-days fs-2 text-primary mb-2 d-block mx-auto"></i>
                 <h6 class="fw-bold text-dark mb-0 small">إدارة الجدول</h6>
             </a>
         </div>
         <div class="col">
             <a href="/students" class="quick-action-card">
-                <i class="fa-solid fa-users fs-2 text-info mb-2"></i>
+                <i class="fa-solid fa-users fs-2 text-info mb-2 d-block mx-auto"></i>
                 <h6 class="fw-bold text-dark mb-0 small">عرض الطلاب</h6>
             </a>
         </div>
         <div class="col">
             <a href="/messages" class="quick-action-card">
-                <i class="fa-solid fa-paper-plane fs-2 text-purple mb-2" style="color:#7c3aed;"></i>
+                <i class="fa-solid fa-paper-plane fs-2 text-purple mb-2 d-block mx-auto" style="color:#7c3aed;"></i>
                 <h6 class="fw-bold text-dark mb-0 small">مراسلة المعلمين</h6>
             </a>
         </div>
         <div class="col">
             <a href="/homework" class="quick-action-card">
-                <i class="fa-solid fa-book-bookmark fs-2 text-success mb-2"></i>
+                <i class="fa-solid fa-book-bookmark fs-2 text-success mb-2 d-block mx-auto"></i>
                 <h6 class="fw-bold text-dark mb-0 small">إنشاء واجب</h6>
             </a>
         </div>
         <div class="col">
-            <button type="button" class="quick-action-card w-100 border-0 bg-light" onclick="printSubjectProfile()">
-                <i class="fa-solid fa-print fs-2 text-secondary mb-2"></i>
+            <button type="button" class="quick-action-card w-100 border-0 bg-light text-center" onclick="printSubjectProfile()">
+                <i class="fa-solid fa-print fs-2 text-secondary mb-2 d-block mx-auto"></i>
                 <h6 class="fw-bold text-dark mb-0 small">طباعة التقرير</h6>
             </button>
         </div>
