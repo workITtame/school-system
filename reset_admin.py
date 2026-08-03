@@ -9,12 +9,14 @@ app = create_app()
 with app.app_context():
     # Force table creation if not exists
     from sqlalchemy import text
-    try:
-        db.session.execute(text("DROP DATABASE school_system_db;"))
-    except:
-        pass
-    db.session.execute(text("CREATE DATABASE school_system_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"))
-    db.session.execute(text("USE school_system_db;"))
+    is_mysql = db.engine.name == 'mysql'
+    if is_mysql:
+        try:
+            db.session.execute(text("DROP DATABASE school_system_db;"))
+        except:
+            pass
+        db.session.execute(text("CREATE DATABASE IF NOT EXISTS school_system_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"))
+        db.session.execute(text("USE school_system_db;"))
     db.create_all()
     
     admin = User.query.filter_by(username='admin').first()
@@ -64,34 +66,35 @@ with app.app_context():
         for e in exams:
             db.session.add(TypeExams(ExamName=e))
 
-    # Create Audit Logs table and Triggers
-    try:
-        db.session.execute(text('''
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                student_id INT,
-                subject_id INT,
-                old_score DECIMAL(5,2),
-                new_score DECIMAL(5,2),
-                action_time DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-        '''))
-        
-        db.session.execute(text("DROP TRIGGER IF EXISTS trg_marks_update;"))
-        db.session.execute(text('''
-            CREATE TRIGGER trg_marks_update
-            AFTER UPDATE ON Marks
-            FOR EACH ROW
-            BEGIN
-                IF OLD.Score != NEW.Score THEN
-                    INSERT INTO audit_logs (student_id, subject_id, old_score, new_score)
-                    VALUES (OLD.SID, OLD.SubID, OLD.Score, NEW.Score);
-                END IF;
-            END;
-        '''))
-        print("Created audit_logs table and trg_marks_update Trigger.")
-    except Exception as e:
-        print("Failed to create audit trigger:", e)
+    # Create Audit Logs table and Triggers if MySQL
+    if is_mysql:
+        try:
+            db.session.execute(text('''
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    student_id INT,
+                    subject_id INT,
+                    old_score DECIMAL(5,2),
+                    new_score DECIMAL(5,2),
+                    action_time DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            '''))
+            
+            db.session.execute(text("DROP TRIGGER IF EXISTS trg_marks_update;"))
+            db.session.execute(text('''
+                CREATE TRIGGER trg_marks_update
+                AFTER UPDATE ON Marks
+                FOR EACH ROW
+                BEGIN
+                    IF OLD.Score != NEW.Score THEN
+                        INSERT INTO audit_logs (student_id, subject_id, old_score, new_score)
+                        VALUES (OLD.SID, OLD.SubID, OLD.Score, NEW.Score);
+                    END IF;
+                END;
+            '''))
+            print("Created audit_logs table and trg_marks_update Trigger.")
+        except Exception as e:
+            print("Failed to create audit trigger:", e)
 
     db.session.commit()
     
@@ -120,30 +123,31 @@ with app.app_context():
     except Exception as e:
         print("Failed to create view:", e)
 
-    # Create Stored Procedure for Adding Grade securely
-    try:
-        db.session.execute(text("DROP PROCEDURE IF EXISTS sp_add_grade;"))
-        db.session.execute(text('''
-            CREATE PROCEDURE sp_add_grade(
-                IN p_sid INT,
-                IN p_subid INT,
-                IN p_examid INT,
-                IN p_teacherid INT,
-                IN p_score DECIMAL(5,2),
-                IN p_tid INT
-            )
-            BEGIN
-                IF p_score >= 0 AND p_score <= 100 THEN
-                    INSERT INTO Marks (SID, SubID, ExamID, TeacherID, Score, T_ID, created_at, updated_at, is_deleted)
-                    VALUES (p_sid, p_subid, p_examid, p_teacherid, p_score, p_tid, NOW(), NOW(), False);
-                ELSE
-                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Score must be between 0 and 100';
-                END IF;
-            END;
-        '''))
-        print("Created sp_add_grade Stored Procedure.")
-    except Exception as e:
-        print("Failed to create procedure:", e)
+    # Create Stored Procedure for Adding Grade securely (MySQL only)
+    if is_mysql:
+        try:
+            db.session.execute(text("DROP PROCEDURE IF EXISTS sp_add_grade;"))
+            db.session.execute(text('''
+                CREATE PROCEDURE sp_add_grade(
+                    IN p_sid INT,
+                    IN p_subid INT,
+                    IN p_examid INT,
+                    IN p_teacherid INT,
+                    IN p_score DECIMAL(5,2),
+                    IN p_tid INT
+                )
+                BEGIN
+                    IF p_score >= 0 AND p_score <= 100 THEN
+                        INSERT INTO Marks (SID, SubID, ExamID, TeacherID, Score, T_ID, created_at, updated_at, is_deleted)
+                        VALUES (p_sid, p_subid, p_examid, p_teacherid, p_score, p_tid, NOW(), NOW(), False);
+                    ELSE
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Score must be between 0 and 100';
+                    END IF;
+                END;
+            '''))
+            print("Created sp_add_grade Stored Procedure.")
+        except Exception as e:
+            print("Failed to create procedure:", e)
 
     db.session.commit()
     print("Database seeded and Admin password has been reset to '123456' successfully!")
