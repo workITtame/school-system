@@ -25,6 +25,10 @@ function initHomeworkModule() {
     window.toggleSelectAllHomework = toggleSelectAllHomework;
     window.toggleHomeworkSelection = toggleHomeworkSelection;
     window.clearHomeworkBulkSelections = clearHomeworkBulkSelections;
+    window.goToHomeworkWzStep = goToHomeworkWzStep;
+    window.nextHomeworkWzStep = nextHomeworkWzStep;
+    window.prevHomeworkWzStep = prevHomeworkWzStep;
+    window.updateHomeworkWzSummary = updateHomeworkWzSummary;
 
     setupHomeworkEventListeners();
 }
@@ -166,5 +170,141 @@ function showToast(message, icon) {
             timerProgressBar: true
         });
         Toast.fire({ icon: icon, title: message });
+    }
+}
+
+/* ==========================================================================
+   ADD HOMEWORK 5-STEP ENTERPRISE WIZARD CONTROLLER
+   ========================================================================== */
+
+let currentHomeworkWzStep = 1;
+
+function goToHomeworkWzStep(step) {
+    if (step < 1 || step > 5) return;
+
+    if (step > currentHomeworkWzStep) {
+        if (!validateHomeworkWzStep(currentHomeworkWzStep)) return;
+    }
+
+    currentHomeworkWzStep = step;
+    updateHomeworkWzStepUI();
+}
+
+function nextHomeworkWzStep() {
+    if (currentHomeworkWzStep === 5) {
+        const form = document.getElementById('addHomeworkWizardForm');
+        if (form) form.submit();
+        return;
+    }
+
+    if (!validateHomeworkWzStep(currentHomeworkWzStep)) return;
+
+    currentHomeworkWzStep++;
+    updateHomeworkWzStepUI();
+}
+
+function prevHomeworkWzStep() {
+    if (currentHomeworkWzStep > 1) {
+        currentHomeworkWzStep--;
+        updateHomeworkWzStepUI();
+    }
+}
+
+function validateHomeworkWzStep(step) {
+    if (step === 1) {
+        const title = document.getElementById('hw-wz-title');
+        const sub = document.getElementById('hw-wz-sub');
+        const cls = document.getElementById('hw-wz-class');
+
+        if (!title || !title.value.trim()) {
+            showToast('الرجاء كتابة عنوان الواجب قبل الانتقال للخطوة التالية', 'warning');
+            if (title) title.focus();
+            return false;
+        }
+        if (!sub || !sub.value) {
+            showToast('الرجاء اختيار المادة الدراسية', 'warning');
+            if (sub) sub.focus();
+            return false;
+        }
+        if (!cls || !cls.value) {
+            showToast('الرجاء اختيار الصف الدراسي', 'warning');
+            if (cls) cls.focus();
+            return false;
+        }
+    } else if (step === 3) {
+        const dateEl = document.getElementById('hw-wz-date');
+        if (!dateEl || !dateEl.value) {
+            showToast('الرجاء تحديد تاريخ التسليم النهائي للواجب', 'warning');
+            if (dateEl) dateEl.focus();
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateHomeworkWzStepUI() {
+    for (let i = 1; i <= 5; i++) {
+        const pane = document.getElementById(`hw-wz-step-${i}`);
+        const btn = document.getElementById(`hw-wz-step-btn-${i}`);
+
+        if (pane) {
+            if (i === currentHomeworkWzStep) pane.classList.remove('d-none');
+            else pane.classList.add('d-none');
+        }
+
+        if (btn) {
+            if (i === currentHomeworkWzStep) {
+                btn.className = 'hw-wz-step-item text-center active';
+            } else if (i < currentHomeworkWzStep) {
+                btn.className = 'hw-wz-step-item text-center completed';
+            } else {
+                btn.className = 'hw-wz-step-item text-center';
+            }
+        }
+    }
+
+    const btnPrev = document.getElementById('hw-wz-btn-prev');
+    const btnNext = document.getElementById('hw-wz-btn-next');
+
+    if (btnPrev) btnPrev.disabled = (currentHomeworkWzStep === 1);
+
+    if (btnNext) {
+        if (currentHomeworkWzStep === 5) {
+            btnNext.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> حفظ وتوثيق الواجب النهائي';
+            btnNext.className = 'btn btn-success rounded-pill px-5 fw-bold shadow-sm';
+        } else {
+            btnNext.innerHTML = 'التالي <i class="fa-solid fa-arrow-left ms-1"></i>';
+            btnNext.className = 'btn btn-primary rounded-pill px-5 fw-bold shadow-sm';
+        }
+    }
+
+    updateHomeworkWzSummary();
+}
+
+function updateHomeworkWzSummary() {
+    const title = document.getElementById('hw-wz-title');
+    const sub = document.getElementById('hw-wz-sub');
+    const cls = document.getElementById('hw-wz-class');
+    const dateEl = document.getElementById('hw-wz-date');
+    const status = document.getElementById('hw-wz-status');
+
+    const sumTitle = document.getElementById('hw-sum-title');
+    const sumSub = document.getElementById('hw-sum-sub');
+    const sumDate = document.getElementById('hw-sum-date');
+    const sumStatus = document.getElementById('hw-sum-status');
+
+    if (sumTitle && title) {
+        sumTitle.textContent = title.value || 'لم يتحدد بعد';
+    }
+    if (sumSub && sub && cls) {
+        const subTxt = sub.options[sub.selectedIndex]?.text || 'المادة';
+        const clsTxt = cls.options[cls.selectedIndex]?.text || 'الصف';
+        sumSub.textContent = `${subTxt} - ${clsTxt}`;
+    }
+    if (sumDate && dateEl) {
+        sumDate.textContent = dateEl.value || new Date().toISOString().split('T')[0];
+    }
+    if (sumStatus && status) {
+        sumStatus.textContent = status.value || 'معلق';
     }
 }

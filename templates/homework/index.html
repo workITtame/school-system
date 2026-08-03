@@ -302,78 +302,228 @@
 </div>
 
 <!-- ========================================== -->
-<!-- ADD HOMEWORK MODAL                         -->
+<!-- ADD HOMEWORK 5-STEP ENTERPRISE WIZARD MODAL-->
 <!-- ========================================== -->
 <div class="modal fade" id="addHomeworkModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered font-monospace">
+    <div class="modal-dialog modal-lg modal-dialog-centered font-monospace">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            
+            <!-- Wizard Header -->
             <div class="modal-header bg-primary text-white p-4 border-0">
                 <div class="d-flex align-items-center gap-3">
                     <div class="bg-white bg-opacity-20 p-3 rounded-3 text-white">
                         <i class="fa-solid fa-plus-circle fs-3"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-extrabold text-white mb-0">إضافة واجب دراسي جديد</h5>
-                        <p class="text-white-50 small mb-0">تحديد العنوان والمادة والصف وتاريخ التسليم</p>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace">Enterprise 5-Step Wizard</span>
+                        </div>
+                        <h5 class="modal-title fw-extrabold text-white mb-0">معالج إسناد وإضافة واجب دراسي جديد</h5>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 bg-light-subtle">
-                <form action="{{ url_for('homework.add_homework') }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold small">عنوان الواجب <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control form-select-modern" required placeholder="مثال: حل تمارين درس الرياضيات الصفحة 45">
+
+            <!-- Progress Stepper Bar -->
+            <div class="bg-light p-3 border-bottom no-print">
+                <div class="d-flex justify-content-between align-items-center position-relative px-3">
+                    <div class="hw-wz-step-item text-center active" id="hw-wz-step-btn-1" onclick="goToHomeworkWzStep(1)">
+                        <div class="hw-wz-step-circle mx-auto mb-1">1</div>
+                        <span class="extra-small fw-bold">الأساسية</span>
                     </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">المادة الدراسية <span class="text-danger">*</span></label>
-                            <select name="sub_id" class="form-select form-select-modern" required>
-                                <option value="">-- اختر المادة --</option>
-                                {% for s in subjects %}
-                                <option value="{{ s.SubID }}">{{ s.SubName }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">الصف الدراسي <span class="text-danger">*</span></label>
-                            <select name="class_id" class="form-select form-select-modern" required>
-                                <option value="">-- اختر الصف --</option>
-                                {% for c in classes %}
-                                <option value="{{ c.CID }}">{{ c.CName }}</option>
-                                {% endfor %}
-                            </select>
+                    <div class="hw-wz-step-item text-center" id="hw-wz-step-btn-2" onclick="goToHomeworkWzStep(2)">
+                        <div class="hw-wz-step-circle mx-auto mb-1">2</div>
+                        <span class="extra-small fw-bold">التفاصيل</span>
+                    </div>
+                    <div class="hw-wz-step-item text-center" id="hw-wz-step-btn-3" onclick="goToHomeworkWzStep(3)">
+                        <div class="hw-wz-step-circle mx-auto mb-1">3</div>
+                        <span class="extra-small fw-bold">الموعد والتسليم</span>
+                    </div>
+                    <div class="hw-wz-step-item text-center" id="hw-wz-step-btn-4" onclick="goToHomeworkWzStep(4)">
+                        <div class="hw-wz-step-circle mx-auto mb-1">4</div>
+                        <span class="extra-small fw-bold">المرفقات</span>
+                    </div>
+                    <div class="hw-wz-step-item text-center" id="hw-wz-step-btn-5" onclick="goToHomeworkWzStep(5)">
+                        <div class="hw-wz-step-circle mx-auto mb-1">5</div>
+                        <span class="extra-small fw-bold">المراجعة</span>
+                    </div>
+                </div>
+            </div>
+
+            <form action="{{ url_for('homework.add_homework') }}" method="POST" id="addHomeworkWizardForm">
+                <div class="modal-body p-4 bg-light-subtle">
+                    
+                    <!-- ① STEP 1: BASIC INFO -->
+                    <div class="hw-wz-step-pane" id="hw-wz-step-1">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-graduation-cap me-2"></i>① المعلومات والأطر الأكاديمية الأساسية</h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-muted fw-bold small">عنوان الواجب <span class="text-danger">*</span></label>
+                                <input type="text" name="title" id="hw-wz-title" class="form-control form-select-modern" required placeholder="مثال: حل تمارين درس الرياضيات الصفحة 45" onchange="updateHomeworkWzSummary()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">المادة الدراسية <span class="text-danger">*</span></label>
+                                <select name="sub_id" id="hw-wz-sub" class="form-select form-select-modern" required onchange="updateHomeworkWzSummary()">
+                                    <option value="">-- اختر المادة --</option>
+                                    {% for s in subjects %}
+                                    <option value="{{ s.SubID }}">{{ s.SubName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الصف الدراسي <span class="text-danger">*</span></label>
+                                <select name="class_id" id="hw-wz-class" class="form-select form-select-modern" required onchange="updateHomeworkWzSummary()">
+                                    <option value="">-- اختر الصف --</option>
+                                    {% for c in classes %}
+                                    <option value="{{ c.CID }}">{{ c.CName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الشعبة الدراسية</label>
+                                <select name="section_id" id="hw-wz-section" class="form-select form-select-modern" onchange="updateHomeworkWzSummary()">
+                                    <option value="">جميع الشعب</option>
+                                    {% for sec in sections %}
+                                    <option value="{{ sec.SectionID }}">{{ sec.SectionName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الفصل والسنوات الدراسية</label>
+                                <input type="text" class="form-control form-select-modern" value="2025 - 2026 (الفصل الأول)" readonly>
+                            </div>
                         </div>
                     </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">تاريخ التسليم <span class="text-danger">*</span></label>
-                            <input type="date" name="due_date" class="form-control form-select-modern" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted fw-bold small">الحالة</label>
-                            <select name="status" class="form-select form-select-modern">
-                                <option value="معلق">معلق</option>
-                                <option value="مكتمل">مكتمل</option>
-                                <option value="متأخر">متأخر</option>
-                            </select>
+
+                    <!-- ② STEP 2: DETAILS & INSTRUCTIONS -->
+                    <div class="hw-wz-step-pane d-none" id="hw-wz-step-2">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-file-pen me-2"></i>② تفاصيل وتعليمات التكليف الأكاديمي</h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-muted fw-bold small">الوصف والتعليمات التفصيلية</label>
+                                <textarea name="description" id="hw-wz-desc" class="form-control form-select-modern" rows="4" placeholder="اكتب ملاحظات وإرشادات التكليف التي تظهر للطلاب..." onchange="updateHomeworkWzSummary()"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">الدرجة المعيارية للواجب</label>
+                                <input type="number" class="form-control form-select-modern" value="100" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">نوع التسليم المطلوب</label>
+                                <input type="text" class="form-control form-select-modern" value="تسليم إلكتروني / ورقي" readonly>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label text-muted fw-bold small">تفاصيل وملاحظات الواجب</label>
-                        <textarea name="description" class="form-control form-select-modern" rows="3" placeholder="ملاحظات وتوجيهات إضافية للطلاب..."></textarea>
+
+                    <!-- ③ STEP 3: SCHEDULE & STATUS -->
+                    <div class="hw-wz-step-pane d-none" id="hw-wz-step-3">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-clock me-2"></i>③ الموعد النهائي وحالة التكليف</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">تاريخ التسليم النهائي <span class="text-danger">*</span></label>
+                                <input type="date" name="due_date" id="hw-wz-date" class="form-control form-select-modern" required onchange="updateHomeworkWzSummary()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">حالة التكليف المفعلة</label>
+                                <select name="status" id="hw-wz-status" class="form-select form-select-modern" onchange="updateHomeworkWzSummary()">
+                                    <option value="معلق">معلق</option>
+                                    <option value="مكتمل">مكتمل</option>
+                                    <option value="متأخر">متأخر</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">وقت التسليم المحدد</label>
+                                <input type="time" class="form-control form-select-modern" value="23:59" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted fw-bold small">سياسة التكليف</label>
+                                <input type="text" class="form-control form-select-modern" value="قبول التسليمات حتى تاريخ الاستحقاق" readonly>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
-                            <i class="fa-solid fa-check me-1"></i> حفظ وتوثيق الواجب
+
+                    <!-- ④ STEP 4: ATTACHMENTS & ASSETS -->
+                    <div class="hw-wz-step-pane d-none" id="hw-wz-step-4">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-paperclip me-2"></i>④ المرفقات والمستندات التعليمية</h6>
+                        <div class="p-4 border rounded-4 bg-white text-center">
+                            <i class="fa-solid fa-cloud-arrow-up fs-1 text-primary mb-2 opacity-50"></i>
+                            <h6 class="fw-bold text-dark mb-1">المستندات والملفات المرفقة</h6>
+                            <p class="text-muted extra-small mb-3">يمكنك إرفاق ملفات PDF، أوراق عمل، أو صور توضيحية للواجب الدراسي</p>
+                            <input type="file" class="form-control font-monospace extra-small mx-auto" style="max-width: 350px;">
+                        </div>
+                    </div>
+
+                    <!-- ⑤ STEP 5: FINAL REVIEW -->
+                    <div class="hw-wz-step-pane d-none" id="hw-wz-step-5">
+                        <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-check-double me-2"></i>⑤ المراجعة والاعتماد النهائي للواجب</h6>
+                        <div class="p-3 bg-white rounded-4 border mb-3">
+                            <div class="row g-3 small">
+                                <div class="col-md-6">
+                                    <div class="text-muted">عنوان الواجب:</div>
+                                    <strong class="text-dark font-monospace" id="hw-sum-title">لم يتحدد بعد</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">المادة والصف:</div>
+                                    <strong class="text-dark font-monospace" id="hw-sum-sub">لم تتحدد بعد</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">تاريخ التسليم:</div>
+                                    <strong class="text-primary font-monospace" id="hw-sum-date">2026-08-03</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">حالة الواجب:</div>
+                                    <strong class="text-success font-monospace" id="hw-sum-status">معلق</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Wizard Footer Buttons -->
+                <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between align-items-center" id="hw-wz-footer">
+                    <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" id="hw-wz-btn-prev" onclick="prevHomeworkWzStep()" disabled>
+                        <i class="fa-solid fa-arrow-right me-1"></i> السابق
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="hw-wz-btn-next" onclick="nextHomeworkWzStep()">
+                            التالي <i class="fa-solid fa-arrow-left ms-1"></i>
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
+
         </div>
     </div>
 </div>
+
+<style>
+.hw-wz-step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+.hw-wz-step-item {
+    cursor: pointer;
+    z-index: 2;
+}
+.hw-wz-step-item.active .hw-wz-step-circle {
+    background-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(37,99,235,0.4);
+}
+.hw-wz-step-item.completed .hw-wz-step-circle {
+    background-color: #22c55e;
+    color: #ffffff;
+}
+</style>
 
 <style>
 @media print {
