@@ -407,7 +407,9 @@ def update_teacher(id):
                 subject_ids = [int(x) for x in subject_ids.split(',') if x.strip().isdigit()]
             elif isinstance(subject_ids, list):
                 subject_ids = [int(x) for x in subject_ids if str(x).isdigit()]
-            teacher.subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all()
+            teacher.subjects.clear()
+            if subject_ids:
+                teacher.subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all()
 
         db.session.commit()
         result = teacher_schema.dump(teacher)

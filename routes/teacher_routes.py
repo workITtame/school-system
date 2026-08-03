@@ -190,6 +190,7 @@ def edit_teacher(id):
         teacher.POB = request.form.get('pob', teacher.POB)
         
         selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
+        teacher.subjects.clear()
         if selected_subject_ids:
             teacher.subjects = Subject.query.filter(Subject.SubID.in_(selected_subject_ids)).all()
         
