@@ -31,6 +31,8 @@ function initHomeworkModule() {
     window.updateHomeworkWzSummary = updateHomeworkWzSummary;
     window.viewHomeworkProfile = viewHomeworkProfile;
     window.printHomeworkProfile = printHomeworkProfile;
+    window.openHomeworkAnalyticsModal = openHomeworkAnalyticsModal;
+    window.printHomeworkAnalytics = printHomeworkAnalytics;
 
     setupHomeworkEventListeners();
 
@@ -399,5 +401,74 @@ function initHomeworkProfileChart() {
 }
 
 function printHomeworkProfile() {
+    window.print();
+}
+
+/* ==========================================================================
+   HOMEWORK ANALYTICS & REPORTS CONTROLLER (POWER BI & CANVAS INSIGHTS)
+   ========================================================================== */
+
+let homeworkSubjectChartInstance = null;
+let homeworkStatusChartInstance = null;
+
+function openHomeworkAnalyticsModal() {
+    const modalEl = document.getElementById('homeworkAnalyticsModal');
+    if (!modalEl) return;
+
+    initHomeworkAnalyticsCharts();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initHomeworkAnalyticsCharts() {
+    // 1. Subject Comparison Bar Chart
+    const ctx1 = document.getElementById('anHomeworkSubjectChart');
+    if (ctx1 && typeof Chart !== 'undefined') {
+        if (homeworkSubjectChartInstance) homeworkSubjectChartInstance.destroy();
+        homeworkSubjectChartInstance = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['اللغة العربية', 'الرياضيات', 'العلوم العامة', 'اللغة الإنجليزية', 'الدراسات الاجتماعية'],
+                datasets: [{
+                    label: 'نسبة التسليم %',
+                    data: [98.5, 92.5, 96.0, 88.0, 94.5],
+                    backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308', '#8b5cf6'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+
+    // 2. Status Breakdown Doughnut Chart
+    const ctx2 = document.getElementById('anHomeworkStatusChart');
+    if (ctx2 && typeof Chart !== 'undefined') {
+        if (homeworkStatusChartInstance) homeworkStatusChartInstance.destroy();
+        homeworkStatusChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['واجبات مكتملة', 'واجبات معلقة', 'واجبات متأخرة'],
+                datasets: [{
+                    data: [75, 18, 7],
+                    backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+}
+
+function printHomeworkAnalytics() {
     window.print();
 }

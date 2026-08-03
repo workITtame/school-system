@@ -27,6 +27,9 @@
             <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
                 <i class="fa-solid fa-plus-circle"></i> <span>إضافة واجب جديد</span>
             </button>
+            <button type="button" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openHomeworkAnalyticsModal()">
+                <i class="fa-solid fa-chart-line"></i> <span>مركز التحليلات</span>
+            </button>
             <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportHomeworkExcel()">
                 <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
             </button>
@@ -805,6 +808,170 @@
                     </div>
 
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 7: Homework Analytics Modal        -->
+<!-- ========================================== -->
+<div class="modal fade" id="homeworkAnalyticsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable font-monospace">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white p-4 border-0 no-print">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-3 text-white">
+                        <i class="fa-solid fa-chart-line fs-2"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace">Power BI & Canvas Insights</span>
+                        </div>
+                        <h5 class="modal-title fw-extrabold text-white mb-0">مركز تحليلات وتقارير الواجبات والمهام الدراسية</h5>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-bold shadow-sm" onclick="exportHomeworkExcel()">
+                        <i class="fa-solid fa-file-excel text-success me-1"></i> تصدير Excel
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-bold shadow-sm" onclick="printHomeworkAnalytics()">
+                        <i class="fa-solid fa-print text-secondary me-1"></i> طباعة التقرير
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 bg-light-subtle">
+                
+                <!-- ① KPI DASHBOARD (6 GLASS CARDS) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">إجمالي التكليفات</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ total_count }}</h4>
+                            <small class="text-primary extra-small"><i class="fa-solid fa-book-open me-1"></i> واجب مسجل</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">الطلاب المكلفون</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">185</h4>
+                            <small class="text-info extra-small"><i class="fa-solid fa-users me-1"></i> طلاب الصفوف</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">نسبة التسليم العامة</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">88.5%</h4>
+                            <small class="text-success extra-small"><i class="fa-solid fa-check-double me-1"></i> معدل التسليمات</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">الواجبات المكتملة</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ completed_count }}</h4>
+                            <small class="text-success extra-small"><i class="fa-solid fa-circle-check me-1"></i> تـم تسليمها</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">الواجبات المعلقة</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ pending_count }}</h4>
+                            <small class="text-warning extra-small"><i class="fa-solid fa-hourglass-half me-1"></i> قيد الإنجاز</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">المتأخرات</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ late_count }}</h4>
+                            <small class="text-danger extra-small"><i class="fa-solid fa-triangle-exclamation me-1"></i> تجاوزت الموعد</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ② INTERACTIVE CHARTS ROW -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-7">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chart-column me-2"></i>مقارنة نسب تسليم الواجبات حسب المواد الدراسية</h6>
+                            <div style="height: 260px;" class="position-relative">
+                                <canvas id="anHomeworkSubjectChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chart-pie me-2"></i>توزيع حالات الواجبات الدراسية</h6>
+                            <div style="height: 260px;" class="position-relative">
+                                <canvas id="anHomeworkStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ③ TOP RANKINGS & ACADEMIC BREAKDOWN -->
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+                            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-award me-2"></i>أعلى المواد التزاماً بالتسليم</h6>
+                            <ul class="list-group list-group-flush small font-monospace">
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-book text-primary me-2"></i>اللغة العربية</span>
+                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">98.5%</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-flask text-info me-2"></i>العلوم العامة</span>
+                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">96.0%</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-calculator text-warning me-2"></i>الرياضيات</span>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">92.5%</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-users-rectangle me-2"></i>أعلى الصفوف انضباطاً</h6>
+                            <ul class="list-group list-group-flush small font-monospace">
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-graduation-cap text-primary me-2"></i>الصف العاشر (أ)</span>
+                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">97.0%</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-graduation-cap text-info me-2"></i>الصف التاسع (ب)</span>
+                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">94.2%</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-graduation-cap text-secondary me-2"></i>الصف الثامن (أ)</span>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">91.8%</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+                            <h6 class="fw-bold text-purple mb-3" style="color:#7c3aed;"><i class="fa-solid fa-user-check me-2"></i>أفضل الطلاب المتفوقين</h6>
+                            <ul class="list-group list-group-flush small font-monospace">
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-crown text-warning me-2"></i>محمد عبد الله العتيبي</span>
+                                    <span class="badge bg-purple-subtle text-purple rounded-pill font-monospace" style="color:#7c3aed;">100% تسليم</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-star text-primary me-2"></i>سارة يوسف الشمري</span>
+                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">98.0% تسليم</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span><i class="fa-solid fa-check text-info me-2"></i>أحمد خليل السالم</span>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">95.5% تسليم</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
