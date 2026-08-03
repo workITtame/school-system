@@ -372,26 +372,26 @@
                         <!-- Quick Actions Suite -->
                         <td>
                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="عرض التفاصيل" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
-                                    <i class="fa-solid fa-eye"></i>
+                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="عرض التفاصيل" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                    <i class="fa-solid fa-eye bi bi-eye text-primary"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
-                                    <i class="fa-solid fa-pen"></i>
+                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                    <i class="fa-solid fa-pen bi bi-pencil-square text-warning"></i>
                                 </button>
-                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="قائمة الطلاب">
-                                    <i class="fa-solid fa-users"></i>
+                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="saas-action-btn" data-bs-toggle="tooltip" title="قائمة الطلاب">
+                                    <i class="fa-solid fa-users bi bi-people text-info"></i>
                                 </a>
-                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="الكادر التعليمي">
-                                    <i class="fa-solid fa-chalkboard-user"></i>
+                                <a href="{{ url_for('teacher.index') }}" class="saas-action-btn" data-bs-toggle="tooltip" title="الكادر التعليمي">
+                                    <i class="fa-solid fa-chalkboard-user bi bi-person-badge text-purple"></i>
                                 </a>
-                                <a href="{{ url_for('academic.subjects') }}" class="btn btn-sm btn-light border text-success rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="المواد الدراسية">
-                                    <i class="fa-solid fa-book"></i>
+                                <a href="{{ url_for('academic.subjects') }}" class="saas-action-btn" data-bs-toggle="tooltip" title="المواد الدراسية">
+                                    <i class="fa-solid fa-book bi bi-journal-bookmark text-success"></i>
                                 </a>
-                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="جدول الحصص">
-                                    <i class="fa-solid fa-calendar-days"></i>
+                                <a href="{{ url_for('timetable.index') }}" class="saas-action-btn" data-bs-toggle="tooltip" title="جدول الحصص">
+                                    <i class="fa-solid fa-calendar-days bi bi-calendar-week text-secondary"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
-                                    <i class="fa-solid fa-trash-can"></i>
+                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
+                                    <i class="fa-solid fa-trash-can bi bi-trash text-danger"></i>
                                 </button>
                             </div>
                         </td>
