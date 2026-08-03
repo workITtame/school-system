@@ -1,120 +1,272 @@
 {% extends 'layout.html' %}
 
-{% block title %}إدارة الدرجات{% endblock %}
+{% block title %}نظام إدارة ورصد درجات الطلاب | Enterprise SaaS Dashboard{% endblock %}
 
 {% block content %}
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
-    <h3 class="text-primary fw-bold"><i class="fa-solid fa-star me-2 text-warning"></i> نظام الامتحانات والدرجات</h3>
-</div>
+<div class="container-fluid py-4 px-md-4 font-monospace">
 
-<div class="row fade-in">
-    <!-- Filter Panel -->
-    <div class="col-lg-12 mb-4">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-header bg-gradient-primary py-3 rounded-top-4 border-0 text-white">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-filter me-2"></i> تصفية لإدخال الدرجات (جماعي)</h5>
+    <!-- ========================================== -->
+    <!-- SECTION 1: Hero Header & Control Actions  -->
+    <!-- ========================================== -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 fade-in">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted font-monospace">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                    <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">إدارة ورصد الدرجات</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-award text-warning"></i> نظام إدارة ورصد درجات الطلاب
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise SaaS</span>
+            </h3>
+            <p class="text-muted small mb-0 font-monospace">إدخال ورصد درجات الاختبارات وحساب التقديرات والمعدلات الأكاديمية آلياً</p>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" id="btnSaveBulk" onclick="submitBulkGrades()">
+                <i class="fa-solid fa-floppy-disk"></i> <span>حفظ واعتماد جماعي</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportGradesExcel()">
+                <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
+            </button>
+            <a href="{{ url_for('grades.student_report_page') }}" data-turbo="false" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+                <i class="fa-solid fa-file-pdf text-danger"></i> <span>طباعة الكشوفات</span>
+            </a>
+            <button type="button" class="btn btn-light border rounded-circle p-2 shadow-sm text-secondary hover-rotate" onclick="loadReferenceData()" title="إعادة تحميل البيانات">
+                <i class="fa-solid fa-arrows-rotate fs-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: Enterprise KPI Glass Cards      -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 fade-in">
+        <!-- Card 1: Total Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">طلاب الكشف</span>
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-users fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiTotalStudents">0</h3>
+                <small class="text-primary font-monospace extra-small"><i class="fa-solid fa-user-graduate me-1"></i> الكشف الحالي</small>
             </div>
-            <div class="card-body p-4">
-                <form id="filterForm" class="row g-3">
-                    <div class="col-md-2">
-                        <label class="form-label text-muted fw-bold">الترم الدراسي</label>
-                        <select id="filterTerm" name="term_id" class="form-select bg-light" required>
-                            <option value="">جاري التحميل...</option>
-                        </select>
+        </div>
+
+        <!-- Card 2: Entered Grades -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">الدرجات المدخلة</span>
+                    <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-circle-check fs-5"></i>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted fw-bold">نوع الامتحان</label>
-                        <select id="filterExam" name="exam_id" class="form-select bg-light" required>
-                            <option value="">جاري التحميل...</option>
-                        </select>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiEnteredGrades">0</h3>
+                <small class="text-success font-monospace extra-small"><i class="fa-solid fa-check me-1"></i> رصد مرصود</small>
+            </div>
+        </div>
+
+        <!-- Card 3: Missing Grades -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">الدرجات الناقصة</span>
+                    <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-triangle-exclamation fs-5"></i>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-muted fw-bold">الصف</label>
-                        <select id="filterClass" name="class_id" class="form-select bg-light" required>
-                            <option value="">جاري التحميل...</option>
-                        </select>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiMissingGrades">0</h3>
+                <small class="text-warning font-monospace extra-small"><i class="fa-solid fa-clock me-1"></i> بانتظار الرصد</small>
+            </div>
+        </div>
+
+        <!-- Card 4: Average Score -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">متوسط الدرجات</span>
+                    <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-chart-line fs-5"></i>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted fw-bold">الشعبة</label>
-                        <select id="filterSection" name="section_id" class="form-select bg-light" required disabled>
-                            <option value="">اختر الصف أولاً</option>
-                        </select>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiAverageScore">0.0%</h3>
+                <small class="text-info font-monospace extra-small"><i class="fa-solid fa-award me-1"></i> الأداء العام</small>
+            </div>
+        </div>
+
+        <!-- Card 5: Pass Rate -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">نسبة النجاح</span>
+                    <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-percent fs-5"></i>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-muted fw-bold">المادة</label>
-                        <select id="filterSubject" name="subject_id" class="form-select bg-light" required disabled>
-                            <option value="">اختر الصف أولاً</option>
-                        </select>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace" id="kpiPassRate">0.0%</h3>
+                <small class="text-success font-monospace extra-small"><i class="fa-solid fa-trophy me-1"></i> اجتياز المادة</small>
+            </div>
+        </div>
+
+        <!-- Card 6: Academic Status -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted font-monospace small">حالة الرصد</span>
+                    <div class="p-2 rounded-3 bg-purple bg-opacity-10 text-purple" style="color:#7c3aed;">
+                        <i class="fa-solid fa-shield-halved fs-5"></i>
                     </div>
-                    <div class="col-12 mt-4 text-center">
-                        <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold shadow-sm" id="btnLoadStudents" disabled>
-                            <i class="fa-solid fa-users-viewfinder me-2"></i> عرض الطلاب لإدخال الدرجات
-                        </button>
-                    </div>
-                </form>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-0 font-monospace">مفعل</h3>
+                <small class="text-purple font-monospace extra-small" style="color:#7c3aed;"><i class="fa-solid fa-lock me-1"></i> اعتماد مباشر</small>
             </div>
         </div>
     </div>
 
-    <!-- Loading State -->
-    <div id="loadingState" class="col-12 text-center py-5 d-none">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted fw-bold">جاري تحميل البيانات...</p>
+    <!-- ========================================== -->
+    <!-- SECTION 3: Unified Filter Controls Bar     -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm mb-4 fade-in">
+        <form id="filterForm" class="row g-2 align-items-center">
+            <!-- Term Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label text-muted fw-bold extra-small mb-1">الترم الدراسي</label>
+                <select id="filterTerm" name="term_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required>
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+
+            <!-- Exam Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label text-muted fw-bold extra-small mb-1">نوع الامتحان</label>
+                <select id="filterExam" name="exam_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required>
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+
+            <!-- Class Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label text-muted fw-bold extra-small mb-1">الصف الدراسي</label>
+                <select id="filterClass" name="class_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required>
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+
+            <!-- Section Filter -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label text-muted fw-bold extra-small mb-1">الشعبة</label>
+                <select id="filterSection" name="section_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required disabled>
+                    <option value="">اختر الصف أولاً</option>
+                </select>
+            </div>
+
+            <!-- Subject Filter -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <label class="form-label text-muted fw-bold extra-small mb-1">المادة الدراسية</label>
+                <select id="filterSubject" name="subject_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required disabled>
+                    <option value="">اختر الصف أولاً</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-12 col-md-4 col-lg-2 text-end d-flex gap-2 align-self-end mt-2 mt-md-0">
+                <button type="button" id="resetFiltersBtn" class="btn btn-outline-secondary rounded-pill font-monospace extra-small py-2 px-3">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button type="submit" class="btn btn-primary rounded-pill w-100 font-monospace extra-small py-2 fw-bold shadow-sm" id="btnLoadStudents" disabled>
+                    <i class="fa-solid fa-users-viewfinder me-1"></i> عرض الطلاب
+                </button>
+            </div>
+        </form>
     </div>
 
-    <!-- Main Workspace (Grid + Chart) -->
-    <div id="workspaceContainer" class="col-lg-12 d-none">
-        <div class="row">
+    <!-- Loading Skeleton State -->
+    <div id="loadingState" class="col-12 text-center py-5 d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <p class="mt-3 text-muted fw-bold font-monospace">جاري جلب طلاب الصف وكشف الدرجات...</p>
+    </div>
+
+    <!-- Initial Empty State -->
+    <div id="gradesEmptyState" class="glass-panel-card p-5 text-center rounded-4 shadow-sm fade-in mb-4">
+        <i class="fa-solid fa-clipboard-list fs-1 text-primary opacity-50 mb-3"></i>
+        <h4 class="fw-bold font-monospace text-dark mb-2">إدارة ورصد درجات الصف والطلاب</h4>
+        <p class="text-muted small mb-3">اختر الترم، الامتحان، الصف، الشعبة، والمادة من شريط الفلاتر العلوي لعرض كشف الطلاب وإدخال الدرجات.</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4 & 8: Main Workspace (Grid + Chart) -->
+    <!-- ========================================== -->
+    <div id="workspaceContainer" class="fade-in d-none mb-4">
+        <div class="row g-4">
             
-            <!-- Students Grid -->
-            <div class="col-lg-8 mb-4">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 text-primary fw-bold"><i class="fa-solid fa-clipboard-list me-2"></i> قائمة الطلاب (إدخال جماعي)</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                            <table class="table table-hover align-middle text-center m-0" id="studentsTable">
-                                <thead class="bg-light sticky-top">
-                                    <tr>
-                                        <th class="py-3 border-0">#</th>
-                                        <th class="py-3 border-0 text-start">اسم الطالب</th>
-                                        <th class="py-3 border-0" style="width: 200px;">الدرجة (0 - 100)</th>
-                                        <th class="py-3 border-0">التقدير</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="studentsBody">
-                                    <!-- Dynamic Rows -->
-                                </tbody>
-                            </table>
+            <!-- Students Enterprise Grade Grid -->
+            <div class="col-lg-8">
+                <div class="glass-panel-card p-0 rounded-4 shadow-sm overflow-hidden" id="gradesGridPanel">
+                    
+                    <!-- Search inside grid -->
+                    <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+                        <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-list-check text-primary me-2"></i>كشف إدخال الدرجات الجماعي</h6>
+                        <div class="input-group input-group-modern rounded-pill overflow-hidden border" style="width: 250px;">
+                            <span class="input-group-text bg-white border-0 text-muted pe-2"><i class="fa-solid fa-search"></i></span>
+                            <input type="text" id="filterSearch" class="form-control border-0 ps-1 font-monospace extra-small" placeholder="تصفية باسم الطالب..." aria-label="تصفية الطلاب">
                         </div>
                     </div>
-                    <div class="card-footer bg-light py-3 border-0 text-end rounded-bottom-4">
-                        <button id="btnSaveBulk" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                            <i class="fa-solid fa-floppy-disk me-2"></i> حفظ واعتماد الدرجات
+
+                    <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                        <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table table-sticky-header table-zebra-striped" id="studentsTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="py-3 font-monospace border-0" style="width: 40px;">
+                                        <input type="checkbox" class="form-check-input rounded-2" id="selectAllGrades" onclick="toggleSelectAllGrades(this)">
+                                    </th>
+                                    <th class="py-3 font-monospace text-primary border-0" style="width: 50px;">#</th>
+                                    <th class="py-3 font-monospace text-primary border-0 text-start">اسم الطالب والرقم الأكاديمي</th>
+                                    <th class="py-3 font-monospace text-primary border-0" style="width: 170px;">الدرجة (0 - 100)</th>
+                                    <th class="py-3 font-monospace text-primary border-0" style="width: 90px;">التقدير</th>
+                                    <th class="py-3 font-monospace text-primary border-0" style="width: 90px;">النسبة</th>
+                                    <th class="py-3 font-monospace text-primary border-0">الحالة</th>
+                                    <th class="py-3 font-monospace text-primary border-0">التحديث</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsBody">
+                                <!-- Dynamic JS Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center no-print">
+                        <small class="text-muted font-monospace"><i class="fa-solid fa-keyboard me-1"></i> يمكنك التنقل بين حقول الدرجات باستخدام زر Enter أو الأسهم</small>
+                        <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="submitBulkGrades()">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> حفظ واعتماد الكشف
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Performance Analytics -->
-            <div class="col-lg-4 mb-4">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-header bg-gradient-info py-3 rounded-top-4 border-0 text-white">
-                        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chart-pie me-2"></i> تحليل الأداء</h5>
-                    </div>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
-                        <canvas id="performanceChart" width="100" height="100"></canvas>
-                        <div id="chartEmptyState" class="text-muted text-center mt-3">
-                            <i class="fa-solid fa-chart-simple fs-2 opacity-50 mb-2"></i>
-                            <p class="mb-0">أدخل الدرجات لرؤية التوزيع</p>
+            <!-- Grade Performance Analytics Chart -->
+            <div class="col-lg-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm h-100 bg-white d-flex flex-column justify-content-between">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-pie text-info me-2"></i>تحليل توزيع التقديرات والدرجات</h6>
+                        <div class="position-relative d-flex align-items-center justify-content-center" style="height: 250px;">
+                            <canvas id="performanceChart"></canvas>
+                            <div id="chartEmptyState" class="text-muted text-center position-absolute">
+                                <i class="fa-solid fa-chart-simple fs-2 opacity-50 mb-2"></i>
+                                <p class="mb-0 extra-small">أدخل درجات الطلاب لرؤية التحليل المباشر</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-footer bg-white py-3 border-0 text-center rounded-bottom-4">
-                        <a href="{{ url_for('grades.student_report_page') }}" class="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm w-100">
+
+                    <div class="mt-4 pt-3 border-top no-print">
+                        <a href="{{ url_for('grades.student_report_page') }}" data-turbo="false" class="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm w-100 font-monospace">
                             <i class="fa-solid fa-file-pdf me-2"></i> طباعة كشوفات الـ PDF
                         </a>
                     </div>
@@ -123,306 +275,33 @@
 
         </div>
     </div>
+
+    <!-- Floating Bulk Actions Bar -->
+    <div id="gradesBulkBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 bg-dark text-white rounded-pill px-4 py-3 shadow-lg fade-in no-print d-none" style="z-index: 1050; min-width: 400px;">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2 font-monospace" id="bulkSelectedGradesCount">0 محدد</span>
+                <span class="small font-monospace text-white-50">إجراءات الطلاب المحددينة:</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="clearGradesBulkSelections()">
+                    إلغاء التحديد
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<script>
-document.addEventListener('turbo:load', function() {
-    const jwtToken = document.querySelector('meta[name="jwt-token"]')?.getAttribute('content');
-    const apiHeadersJSON = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (jwtToken || '')
-    };
-    
-    // UI Elements
-    const filterTerm = document.getElementById('filterTerm');
-    const filterExam = document.getElementById('filterExam');
-    const filterClass = document.getElementById('filterClass');
-    const filterSection = document.getElementById('filterSection');
-    const filterSubject = document.getElementById('filterSubject');
-    const btnLoadStudents = document.getElementById('btnLoadStudents');
-    const filterForm = document.getElementById('filterForm');
-    
-    const loadingState = document.getElementById('loadingState');
-    const workspaceContainer = document.getElementById('workspaceContainer');
-    const studentsBody = document.getElementById('studentsBody');
-    const btnSaveBulk = document.getElementById('btnSaveBulk');
-    const chartEmptyState = document.getElementById('chartEmptyState');
-    
-    let referenceData = null;
-    let studentsData = [];
-    let performanceChartInstance = null;
-
-    // Toast Setup
-    const Toast = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
-    });
-    function showToast(msg, icon) { Toast.fire({ icon: icon, title: msg }); }
-
-    // 1. Load Reference Data
-    function loadReferenceData() {
-        fetch('/api/v1/grades/reference', { headers: apiHeadersJSON })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    referenceData = data.data;
-                    populateFilters();
-                    btnLoadStudents.disabled = false;
-                } else {
-                    showToast('خطأ في تحميل المراجع', 'error');
-                }
-            })
-            .catch(err => showToast('فشل الاتصال', 'error'));
-    }
-
-    function populateFilters() {
-        filterTerm.innerHTML = '';
-        referenceData.terms.forEach(t => filterTerm.innerHTML += `<option value="${t.T_ID}">${t.T_Name}</option>`);
-        
-        filterExam.innerHTML = '<option value="">اختر الامتحان</option>';
-        referenceData.exams.forEach(e => filterExam.innerHTML += `<option value="${e.ExamID}">${e.ExamName}</option>`);
-
-        filterClass.innerHTML = '<option value="">اختر الصف</option>';
-        referenceData.classes.forEach(c => filterClass.innerHTML += `<option value="${c.CID}">${c.CName}</option>`);
-    }
-
-    // Cascading filters
-    filterClass.addEventListener('change', function() {
-        const cid = parseInt(this.value);
-        filterSection.innerHTML = '<option value="">اختر الشعبة</option>';
-        filterSubject.innerHTML = '<option value="">اختر المادة</option>';
-        
-        if(!cid) {
-            filterSection.disabled = true;
-            filterSubject.disabled = true;
-            return;
-        }
-        
-        const selectedClass = referenceData.classes.find(c => c.CID === cid);
-        if(selectedClass) {
-            selectedClass.sections.forEach(s => filterSection.innerHTML += `<option value="${s.SectionID}">${s.SectionName}</option>`);
-            selectedClass.subjects.forEach(sub => filterSubject.innerHTML += `<option value="${sub.SubID}">${sub.SubName}</option>`);
-            filterSection.disabled = false;
-            filterSubject.disabled = false;
-        }
-    });
-
-    // 2. Load Students Grid
-    filterForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const term_id = filterTerm.value;
-        const exam_id = filterExam.value;
-        const class_id = filterClass.value;
-        const section_id = filterSection.value;
-        const subject_id = filterSubject.value;
-        
-        if(!term_id || !exam_id || !class_id || !section_id || !subject_id) return;
-        
-        loadingState.classList.remove('d-none');
-        workspaceContainer.classList.add('d-none');
-        
-        const url = `/api/v1/grades/class?term_id=${term_id}&exam_id=${exam_id}&class_id=${class_id}&section_id=${section_id}&subject_id=${subject_id}`;
-        
-        fetch(url, { headers: apiHeadersJSON })
-            .then(res => res.json())
-            .then(data => {
-                loadingState.classList.add('d-none');
-                if(data.success) {
-                    studentsData = data.data;
-                    renderStudentsGrid();
-                    workspaceContainer.classList.remove('d-none');
-                    updateChart(); // Initial chart draw
-                } else {
-                    showToast(data.message, 'error');
-                }
-            })
-            .catch(err => {
-                loadingState.classList.add('d-none');
-                showToast('فشل جلب الطلاب', 'error');
-            });
-    });
-
-    function getGradeLetterColor(letter) {
-        switch(letter) {
-            case 'A': return 'bg-success';
-            case 'B': return 'bg-primary';
-            case 'C': return 'bg-warning text-dark';
-            case 'D': return 'bg-orange text-white';
-            case 'F': return 'bg-danger';
-            default: return 'bg-secondary';
-        }
-    }
-
-    function calculateLetter(score) {
-        if(score === null || score === '' || isNaN(score)) return '-';
-        const s = parseFloat(score);
-        if(s >= 90) return 'A';
-        if(s >= 80) return 'B';
-        if(s >= 70) return 'C';
-        if(s >= 60) return 'D';
-        return 'F';
-    }
-
-    function renderStudentsGrid() {
-        studentsBody.innerHTML = '';
-        if(studentsData.length === 0) {
-            studentsBody.innerHTML = `<tr><td colspan="4" class="py-5 text-muted"><i class="fa-solid fa-user-slash fs-2 mb-2"></i><br>لا يوجد طلاب</td></tr>`;
-            return;
-        }
-        
-        studentsData.forEach((st, index) => {
-            const letter = calculateLetter(st.Score);
-            const badgeClass = letter !== '-' ? getGradeLetterColor(letter) : 'bg-light text-muted';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-muted fw-bold">${index + 1}</td>
-                <td class="fw-bold text-start">${st.StudentName}</td>
-                <td>
-                    <div class="input-group mx-auto" style="width: 150px;">
-                        <input type="number" step="0.01" min="0" max="100" class="form-control text-center score-input fw-bold" 
-                               data-sid="${st.SID}" value="${st.Score !== null ? st.Score : ''}" placeholder="0.00" style="border: 2px solid var(--primary-color);">
-                        <span class="input-group-text bg-light border-0 text-muted">/100</span>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge rounded-pill ${badgeClass} fs-6 grade-badge" id="badge_${st.SID}" style="width: 40px;">${letter}</span>
-                </td>
-            `;
-            studentsBody.appendChild(tr);
-        });
-
-        // Add live event listeners
-        document.querySelectorAll('.score-input').forEach(input => {
-            input.addEventListener('input', function() {
-                const val = this.value;
-                if(val < 0) this.value = 0;
-                if(val > 100) this.value = 100;
-                
-                const sid = this.getAttribute('data-sid');
-                const badge = document.getElementById(`badge_${sid}`);
-                const letter = calculateLetter(this.value);
-                
-                // Update local array for chart
-                const st = studentsData.find(s => s.SID == sid);
-                if(st) st.Score = this.value !== '' ? parseFloat(this.value) : null;
-                
-                badge.className = `badge rounded-pill ${getGradeLetterColor(letter)} fs-6 grade-badge`;
-                badge.innerText = letter;
-                
-                updateChart(); // Live update chart!
-            });
-        });
-    }
-
-    // 3. Performance Chart
-    function updateChart() {
-        const counts = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
-        let hasData = false;
-        
-        studentsData.forEach(st => {
-            if(st.Score !== null && st.Score !== '') {
-                counts[calculateLetter(st.Score)]++;
-                hasData = true;
-            }
-        });
-        
-        if(!hasData) {
-            chartEmptyState.classList.remove('d-none');
-            if(performanceChartInstance) performanceChartInstance.destroy();
-            return;
-        }
-        
-        chartEmptyState.classList.add('d-none');
-        const ctx = document.getElementById('performanceChart').getContext('2d');
-        
-        if(performanceChartInstance) {
-            performanceChartInstance.data.datasets[0].data = [counts.A, counts.B, counts.C, counts.D, counts.F];
-            performanceChartInstance.update();
-        } else {
-            performanceChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['ممتاز (A)', 'جيد جدا (B)', 'جيد (C)', 'مقبول (D)', 'راسب (F)'],
-                    datasets: [{
-                        data: [counts.A, counts.B, counts.C, counts.D, counts.F],
-                        backgroundColor: ['#198754', '#0d6efd', '#ffc107', '#fd7e14', '#dc3545'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    cutout: '70%'
-                }
-            });
-        }
-    }
-
-    // 4. Save Bulk
-    btnSaveBulk.addEventListener('click', function() {
-        const payload = {
-            term_id: filterTerm.value,
-            exam_id: filterExam.value,
-            subject_id: filterSubject.value,
-            grades: []
-        };
-        
-        document.querySelectorAll('.score-input').forEach(input => {
-            if(input.value.trim() !== '') {
-                payload.grades.push({
-                    sid: input.getAttribute('data-sid'),
-                    score: parseFloat(input.value)
-                });
-            }
-        });
-        
-        if(payload.grades.length === 0) {
-            showToast('لا توجد درجات للحفظ', 'warning');
-            return;
-        }
-        
-        const originalBtnText = btnSaveBulk.innerHTML;
-        btnSaveBulk.disabled = true;
-        btnSaveBulk.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
-        
-        fetch('/api/v1/grades/bulk', {
-            method: 'POST',
-            headers: apiHeadersJSON,
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(data => {
-            btnSaveBulk.disabled = false;
-            btnSaveBulk.innerHTML = originalBtnText;
-            if(data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'عمل رائع!',
-                    text: 'تم حفظ درجات الصف بنجاح وتم رصدها في النظام.',
-                    confirmButtonText: 'حسناً',
-                    confirmButtonColor: '#6366f1'
-                });
-            } else {
-                showToast(data.message, 'error');
-            }
-        })
-        .catch(err => {
-            btnSaveBulk.disabled = false;
-            btnSaveBulk.innerHTML = originalBtnText;
-            showToast('فشل في الاتصال أثناء الحفظ', 'error');
-        });
-    });
-
-    // Initialize
-    loadReferenceData();
-});
-</script>
-
 <style>
-.bg-orange { background-color: #fd7e14 !important; }
+@media print {
+    body * { visibility: hidden !important; }
+    #workspaceContainer, #workspaceContainer * { visibility: visible !important; }
+    #workspaceContainer { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print, .btn, button, #gradesBulkBar { display: none !important; }
+}
 </style>
+
+<!-- Load Grades Module Controller Script -->
+<script src="{{ url_for('static', filename='js/grades.js') }}"></script>
 {% endblock %}
