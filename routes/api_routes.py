@@ -204,11 +204,11 @@ def get_teachers():
     class_id = request.args.get('class_id', type=int)
     
     try:
+        from models import SchoolTable
+        from models.academic import ClassSubject, TeacherSubject
         query = Teacher.query.filter_by(is_deleted=False)
         
         if class_id:
-            from models import SchoolTable
-            from models.academic import ClassSubject, TeacherSubject
             t_ids = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.CID == class_id, SchoolTable.is_deleted == False).distinct().all() if t[0]]
             s_ids = [s[0] for s in db.session.query(ClassSubject.SubjectID).filter(ClassSubject.ClassID == class_id).all() if s[0]]
             if s_ids:
