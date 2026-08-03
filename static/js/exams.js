@@ -25,6 +25,8 @@ function initExamsModule() {
     window.toggleSelectAllExams = toggleSelectAllExams;
     window.toggleExamSelection = toggleExamSelection;
     window.clearExamsBulkSelections = clearExamsBulkSelections;
+    window.openExamsAnalyticsModal = openExamsAnalyticsModal;
+    window.printExamsAnalytics = printExamsAnalytics;
     window.viewExamProfile = viewExamProfile;
     window.printExamProfile = printExamProfile;
 
@@ -262,5 +264,74 @@ function initExamPerfChart() {
 }
 
 function printExamProfile() {
+    window.print();
+}
+
+/* ==========================================================================
+   EXAMS ANALYTICS & REPORTS CONTROLLER (POWER BI & CANVAS INSIGHTS)
+   ========================================================================== */
+
+let examsSubjectChartInstance = null;
+let examsGradeBreakdownChartInstance = null;
+
+function openExamsAnalyticsModal() {
+    const modalEl = document.getElementById('examsAnalyticsModal');
+    if (!modalEl) return;
+
+    initExamsAnalyticsCharts();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initExamsAnalyticsCharts() {
+    // 1. Subject Comparison Bar Chart
+    const ctx1 = document.getElementById('anExamsSubjectChart');
+    if (ctx1 && typeof Chart !== 'undefined') {
+        if (examsSubjectChartInstance) examsSubjectChartInstance.destroy();
+        examsSubjectChartInstance = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['اللغة العربية', 'الرياضيات', 'العلوم العامة', 'اللغة الإنجليزية', 'الدراسات'],
+                datasets: [{
+                    label: 'متوسط الدرجات %',
+                    data: [98.5, 92.0, 96.4, 88.0, 94.5],
+                    backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308', '#8b5cf6'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+
+    // 2. Grade Breakdown Doughnut Chart
+    const ctx2 = document.getElementById('anExamsGradeBreakdownChart');
+    if (ctx2 && typeof Chart !== 'undefined') {
+        if (examsGradeBreakdownChartInstance) examsGradeBreakdownChartInstance.destroy();
+        examsGradeBreakdownChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['ممتاز (A)', 'جيد جداً (B)', 'جيد (C)', 'مقبول (D)', 'راسب (F)'],
+                datasets: [{
+                    data: [65, 30, 15, 8, 2],
+                    backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308', '#ef4444'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+}
+
+function printExamsAnalytics() {
     window.print();
 }

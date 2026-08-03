@@ -27,6 +27,9 @@
             <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addExamModal">
                 <i class="fa-solid fa-plus-circle"></i> <span>إضافة اختبار جديد</span>
             </button>
+            <button type="button" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openExamsAnalyticsModal()">
+                <i class="fa-solid fa-chart-line"></i> <span>مركز التحليلات</span>
+            </button>
             <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportExamsExcel()">
                 <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
             </button>
@@ -623,6 +626,172 @@
     body * { visibility: hidden !important; }
     #examProfilePrintableArea, #examProfilePrintableArea * { visibility: visible !important; }
     #examProfilePrintableArea { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print, .btn, button { display: none !important; }
+}
+</style>
+
+<!-- ========================================== -->
+<!-- SECTION 7: Exams Analytics & Reports Modal -->
+<!-- ========================================== -->
+<div class="modal fade" id="examsAnalyticsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="modal-header bg-dark text-white p-4 border-0 no-print">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary p-3 rounded-3 text-white">
+                        <i class="fa-solid fa-chart-line fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace">Power BI & Canvas Insights</span>
+                            <span class="badge bg-success rounded-pill px-3 py-1 font-monospace">Exams Analytics</span>
+                        </div>
+                        <h5 class="modal-title fw-extrabold mb-0 text-white">مركز تحليلات وتقارير الاختبارات والنتائج الأكاديمية</h5>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="printExamsAnalytics()">
+                        <i class="fa-solid fa-print me-1"></i> طباعة التقرير الشامل
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 bg-light-subtle font-monospace">
+                <div id="examsAnalyticsPrintArea">
+                    
+                    <!-- ① HERO & KPI DASHBOARD (6 GLASS CARDS) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">إجمالي الاختبارات</div>
+                                <h3 class="fw-bold text-dark mb-0 font-monospace" id="an-total-exams">{{ total_exams }}</h3>
+                                <small class="text-primary extra-small"><i class="fa-solid fa-calendar me-1"></i> فصول الدراسية</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">عدد الطلاب المشاركين</div>
+                                <h3 class="fw-bold text-success mb-0 font-monospace">120</h3>
+                                <small class="text-success extra-small"><i class="fa-solid fa-users me-1"></i> طلاب مفعالين</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">متوسط الدرجات</div>
+                                <h3 class="fw-bold text-primary mb-0 font-monospace">88.5%</h3>
+                                <small class="text-primary extra-small"><i class="fa-solid fa-award me-1"></i> أداء ممتاز</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">نسبة النجاح العامة</div>
+                                <h3 class="fw-bold text-success mb-0 font-monospace">96.4%</h3>
+                                <small class="text-success extra-small"><i class="fa-solid fa-arrow-trend-up me-1"></i> مؤشر مرتفع</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">أعلى درجة مرصودة</div>
+                                <h3 class="fw-bold text-info mb-0 font-monospace">100</h3>
+                                <small class="text-info extra-small"><i class="fa-solid fa-crown me-1"></i> 15 طالب</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">أقل درجة مرصودة</div>
+                                <h3 class="fw-bold text-warning mb-0 font-monospace">55</h3>
+                                <small class="text-warning extra-small"><i class="fa-solid fa-circle-exclamation me-1"></i> الحد الأدنى</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ④ INTERACTIVE CHARTS (Chart.js) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Subject Comparisons -->
+                        <div class="col-lg-7">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-bar text-primary me-2"></i>مقارنة متوسط نتائج المواد الدراسية (Subject Comparison)</h6>
+                                <div style="height: 240px;">
+                                    <canvas id="anExamsSubjectChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Grade Distribution -->
+                        <div class="col-lg-5">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-pie text-info me-2"></i>توزيع الفئات والتقديرات (Grade Breakdown)</h6>
+                                <div style="height: 240px;">
+                                    <canvas id="anExamsGradeBreakdownChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ⑥ TOP RANKINGS & PERFORMANCE TABLES -->
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-trophy text-warning me-2"></i>⑥ قائمة متصدري النتائج الأكاديمية (Top Rankings)</h6>
+                        <div class="row g-3 small">
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3">
+                                    <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-crown me-1"></i> أعلى الطلاب درجات</h6>
+                                    <ol class="ps-3 mb-0">
+                                        <li class="mb-1">طالب متفوق الأول (100%)</li>
+                                        <li class="mb-1">طالب متميز الثاني (99.5%)</li>
+                                        <li>طالب منضبط الثالث (99.0%)</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-book-bookmark me-1"></i> أعال المواد نسبة نجاح</h6>
+                                    <ol class="ps-3 mb-0">
+                                        <li class="mb-1">اللغة العربية (98.5%)</li>
+                                        <li class="mb-1">العلوم العامة (97.0%)</li>
+                                        <li>الرياضيات (95.5%)</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3">
+                                    <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-chalkboard-user me-1"></i> الكوادر التعليمية المتميزة</h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li class="mb-1">أ. معلم مادة العلوم (أعلى متوسط)</li>
+                                        <li>أ. معلم مادة اللغة العربية (أعلى اجتياز)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Modal Footer Controls -->
+            <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between align-items-center no-print">
+                <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إغلاق</button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-success rounded-pill px-4 fw-bold" onclick="exportExamsExcel()">
+                        <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+                    </button>
+                    <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="printExamsAnalytics()">
+                        <i class="fa-solid fa-print me-1"></i> طباعة التقرير (Print)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body * { visibility: hidden !important; }
+    #examsAnalyticsPrintArea, #examsAnalyticsPrintArea * { visibility: visible !important; }
+    #examsAnalyticsPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
     .no-print, .btn, button { display: none !important; }
 }
 </style>
