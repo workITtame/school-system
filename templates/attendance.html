@@ -27,8 +27,8 @@
             <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#quickMarkModal">
                 <i class="fa-solid fa-plus-circle"></i> <span>تسجيل حضور</span>
             </button>
-            <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="bulkMarkAttendance('Present')">
-                <i class="fa-solid fa-users-check"></i> <span>تسجيل جماعي حاضر</span>
+            <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openBulkAttendanceWizardModal()">
+                <i class="fa-solid fa-users-gear"></i> <span>تسجيل جماعي (Wizard)</span>
             </button>
             <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportAttendanceReport()">
                 <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
@@ -640,6 +640,264 @@
 
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 7: Bulk Attendance Enterprise Wizard Modal -->
+<!-- ========================================== -->
+<div class="modal fade" id="bulkAttendanceWizardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            
+            <!-- Wizard Header -->
+            <div class="modal-header bg-primary text-white p-4 border-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-3">
+                        <i class="fa-solid fa-users-gear fs-3 text-white"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace">Enterprise Bulk Wizard</span>
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace" id="att-wizard-step-badge">الخطوة 1 من 5</span>
+                        </div>
+                        <h5 class="modal-title fw-extrabold mb-0">معالج التسجيل الجماعي للحضور والغياب</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Stepper Progress Header -->
+            <div class="bg-light border-bottom px-4 py-3 font-monospace no-print">
+                <div class="d-flex justify-content-between align-items-center position-relative">
+                    <div class="progress position-absolute top-50 start-0 end-0 translate-middle-y" style="height: 3px; z-index: 1;">
+                        <div class="progress-bar bg-primary transition-all" id="att-wizard-progress" style="width: 20%;"></div>
+                    </div>
+
+                    <!-- Step Indicators -->
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold position-relative z-2 btn-primary" id="att-step-dot-1" onclick="goToAttWizardStep(1)">1</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold position-relative z-2 btn-light border" id="att-step-dot-2" onclick="goToAttWizardStep(2)">2</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold position-relative z-2 btn-light border" id="att-step-dot-3" onclick="goToAttWizardStep(3)">3</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold position-relative z-2 btn-light border" id="att-step-dot-4" onclick="goToAttWizardStep(4)">4</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold position-relative z-2 btn-light border" id="att-step-dot-5" onclick="goToAttWizardStep(5)">5</button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 font-monospace">
+                <form id="bulkAttendanceWizardForm" onsubmit="event.preventDefault();">
+                    
+                    <!-- STEP 1: Select Class & Section -->
+                    <div class="att-wizard-pane" id="att-pane-1">
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold text-dark mb-1">الخطوة 1: اختيار الصف والشعبة الدراسية</h5>
+                            <p class="text-muted small">حدد الصف والمجموعة المستهدفة لرصد الحضور الجماعي</p>
+                        </div>
+                        <div class="row g-3 max-w-700 mx-auto">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">الصف الدراسي <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-modern rounded-pill" id="wzClass" required>
+                                    <option value="">-- اختر الصف --</option>
+                                    {% for c in classes %}
+                                    <option value="{{ c.CID }}">{{ c.CName }} ({{ c.Stage }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">الشعبة الدراسية <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-modern rounded-pill" id="wzSection" required>
+                                    <option value="">-- اختر الشعبة --</option>
+                                    {% for s in sections %}
+                                    <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Select Date & Reference Info -->
+                    <div class="att-wizard-pane d-none" id="att-pane-2">
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold text-dark mb-1">الخطوة 2: تحديد تاريخ التسجيل والحصة</h5>
+                            <p class="text-muted small">اختر تاريخ اليوم وملاحظات التوثيق العامة</p>
+                        </div>
+                        <div class="row g-3 max-w-700 mx-auto">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">تاريخ التوثيق <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-select-modern rounded-pill" id="wzDate" value="{{ today }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">التسجيل المبدئي الافتراضي</label>
+                                <select class="form-select form-select-modern rounded-pill" id="wzDefaultStatus">
+                                    <option value="Present">تعيين جميع الطلاب كـ "حاضر"</option>
+                                    <option value="Absent">تعيين جميع الطلاب كـ "غائب"</option>
+                                    <option value="Unmarked">ترك الحقول فارغة للتسجيل اليدوي</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Smart Attendance Grid & Bulk Live Controls -->
+                    <div class="att-wizard-pane d-none" id="att-pane-3">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">الخطوة 3: كشف التوثيق الجماعي السريع (Smart Grid)</h6>
+                                <small class="text-muted">اضغط شارات الحالة للتعيين السريع بنقرة واحدة</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold" onclick="setAllWzStatus('Present')">
+                                    <i class="fa-solid fa-check me-1"></i> الكل حاضر
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="setAllWzStatus('Absent')">
+                                    <i class="fa-solid fa-xmark me-1"></i> الكل غائب
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" onclick="setAllWzStatus('Late')">
+                                    <i class="fa-solid fa-clock me-1"></i> الكل متأخر
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Live Summary Counters Bar -->
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <div class="p-2 bg-light rounded-3 text-center border">
+                                    <span class="text-muted extra-small d-block">إجمالي الطلاب</span>
+                                    <strong class="text-dark font-monospace" id="wzCountTotal">0</strong>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="p-2 bg-success bg-opacity-10 rounded-3 text-center border border-success border-opacity-25">
+                                    <span class="text-success extra-small d-block">حاضر</span>
+                                    <strong class="text-success font-monospace" id="wzCountPresent">0</strong>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="p-2 bg-warning bg-opacity-10 rounded-3 text-center border border-warning border-opacity-25">
+                                    <span class="text-warning extra-small d-block">متأخر</span>
+                                    <strong class="text-warning font-monospace" id="wzCountLate">0</strong>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="p-2 bg-danger bg-opacity-10 rounded-3 text-center border border-danger border-opacity-25">
+                                    <span class="text-danger extra-small d-block">غائب</span>
+                                    <strong class="text-danger font-monospace" id="wzCountAbsent">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wizard Table -->
+                        <div class="table-responsive border rounded-4 max-h-350 overflow-y-auto">
+                            <table class="table table-hover align-middle text-center mb-0 custom-enterprise-table">
+                                <thead class="bg-light sticky-top">
+                                    <tr>
+                                        <th class="py-2">#</th>
+                                        <th class="py-2 text-start">اسم الطالب</th>
+                                        <th class="py-2">الرقم الأكاديمي</th>
+                                        <th class="py-2">حالة الحضور</th>
+                                        <th class="py-2">ملاحظة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wzStudentsTableBody">
+                                    <!-- Dynamic rows populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Review Screen -->
+                    <div class="att-wizard-pane d-none" id="att-pane-4">
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold text-dark mb-1">الخطوة 4: مراجعة كشف الحضور قبل الاعتماد النهائي</h5>
+                            <p class="text-muted small">تأكد من صحة إعدادات الحضور والغياب قبل الحفظ في قواعد البيانات</p>
+                        </div>
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light max-w-700 mx-auto">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">التاريخ المحدد:</span>
+                                <strong class="text-dark" id="wzRevDate">-</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">الصف والشعبة:</span>
+                                <strong class="text-dark" id="wzRevClassSec">-</strong>
+                            </div>
+                            <hr>
+                            <div class="row text-center g-2 mb-3">
+                                <div class="col-4">
+                                    <div class="p-2 bg-success text-white rounded-3">
+                                        <div class="small">حاضر</div>
+                                        <h4 class="fw-bold mb-0 font-monospace" id="wzRevPresent">0</h4>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 bg-warning text-dark rounded-3">
+                                        <div class="small">متأخر</div>
+                                        <h4 class="fw-bold mb-0 font-monospace" id="wzRevLate">0</h4>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 bg-danger text-white rounded-3">
+                                        <div class="small">غائب</div>
+                                        <h4 class="fw-bold mb-0 font-monospace" id="wzRevAbsent">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info rounded-3 mb-0 small">
+                                <i class="fa-solid fa-circle-info me-1"></i> سيتم توثيق الكشف فوراً وإرسال البيانات للنظام بدون أي تأخير.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 5: Success Report -->
+                    <div class="att-wizard-pane d-none" id="att-pane-5">
+                        <div class="text-center py-4">
+                            <div class="p-4 rounded-circle bg-success bg-opacity-10 text-success d-inline-block mb-3 shadow-sm">
+                                <i class="fa-solid fa-circle-check" style="font-size: 4rem;"></i>
+                            </div>
+                            <h4 class="fw-extrabold text-dark mb-2">تم توثيق وحفظ كشف الحضور الجماعي بنجاح!</h4>
+                            <p class="text-muted small max-w-500 mx-auto mb-4">تم تحديث سجلات جميع الطلاب المستهدفين في قواعد البيانات وتحديث المؤشرات العامة فوراً.</p>
+
+                            <div class="row g-3 max-w-600 mx-auto text-center mb-4">
+                                <div class="col-4">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <span class="text-muted extra-small d-block">إجمالي السجلات</span>
+                                        <h3 class="fw-bold text-dark mb-0 font-monospace" id="wzSucTotal">0</h3>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <span class="text-success extra-small d-block">تم التحديث</span>
+                                        <h3 class="fw-bold text-success mb-0 font-monospace" id="wzSucUpdated">0</h3>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 bg-light rounded-4 border">
+                                        <span class="text-info extra-small d-block">نسبة الإنجاز</span>
+                                        <h3 class="fw-bold text-info mb-0 font-monospace">100%</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" data-bs-dismiss="modal" onclick="loadAttendanceData()">
+                                <i class="fa-solid fa-check me-1"></i> إغلاق ومتابعة الكشف الرئيسي
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Wizard Footer Controls -->
+            <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between align-items-center no-print" id="att-wizard-footer">
+                <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" id="att-btn-prev" onclick="prevAttWizardStep()" disabled>
+                    <i class="fa-solid fa-arrow-right me-1"></i> السابق
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="att-btn-next" onclick="nextAttWizardStep()">
+                        التالي <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

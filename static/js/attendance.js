@@ -33,6 +33,13 @@ function initAttendanceModule() {
     window.submitQuickMark = submitQuickMark;
     window.viewAttendanceProfile = viewAttendanceProfile;
     window.printAttendanceProfile = printAttendanceProfile;
+    window.openBulkAttendanceWizardModal = openBulkAttendanceWizardModal;
+    window.goToAttWizardStep = goToAttWizardStep;
+    window.nextAttWizardStep = nextAttWizardStep;
+    window.prevAttWizardStep = prevAttWizardStep;
+    window.setAllWzStatus = setAllWzStatus;
+    window.updateWzStudentStatus = updateWzStudentStatus;
+    window.updateWzStudentNote = updateWzStudentNote;
 
     setupAttendanceEventListeners();
 
@@ -571,4 +578,287 @@ function initProfilePerfChart() {
 
 function printAttendanceProfile() {
     window.print();
+}
+
+/* ==========================================================================
+   ENTERPRISE BULK ATTENDANCE WIZARD CONTROLLER (5-STEP WIZARD)
+   ========================================================================== */
+
+let attWizardState = {
+    currentStep: 1,
+    classId: '',
+    sectionId: '',
+    date: '',
+    defaultStatus: 'Present',
+    students: []
+};
+
+function openBulkAttendanceWizardModal() {
+    attWizardState.currentStep = 1;
+    
+    // Sync class and section from filters if available
+    const fClass = document.getElementById('filterClass');
+    const fSec = document.getElementById('filterSection');
+    const fDate = document.getElementById('filterDate');
+
+    const wzClass = document.getElementById('wzClass');
+    const wzSec = document.getElementById('wzSection');
+    const wzDate = document.getElementById('wzDate');
+
+    if (wzClass && fClass && fClass.value) wzClass.value = fClass.value;
+    if (wzSec && fSec && fSec.value) wzSec.value = fSec.value;
+    if (wzDate && fDate && fDate.value) wzDate.value = fDate.value;
+
+    updateAttWizardUI();
+
+    const modalEl = document.getElementById('bulkAttendanceWizardModal');
+    if (modalEl) {
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+}
+
+function goToAttWizardStep(step) {
+    if (step > attWizardState.currentStep && !validateAttWizardStep(attWizardState.currentStep)) {
+        return;
+    }
+    attWizardState.currentStep = step;
+    updateAttWizardUI();
+}
+
+function nextAttWizardStep() {
+    if (!validateAttWizardStep(attWizardState.currentStep)) return;
+
+    if (attWizardState.currentStep === 3) {
+        // Moving to step 4: populate review screen
+        populateAttWizardReview();
+        attWizardState.currentStep = 4;
+        updateAttWizardUI();
+    } else if (attWizardState.currentStep === 4) {
+        // Step 4 -> 5: Save data
+        saveBulkAttWizardData();
+    } else {
+        attWizardState.currentStep++;
+        updateAttWizardUI();
+    }
+}
+
+function prevAttWizardStep() {
+    if (attWizardState.currentStep > 1) {
+        attWizardState.currentStep--;
+        updateAttWizardUI();
+    }
+}
+
+function validateAttWizardStep(step) {
+    if (step === 1) {
+        const cVal = document.getElementById('wzClass')?.value;
+        const sVal = document.getElementById('wzSection')?.value;
+        if (!cVal || !sVal) {
+            showToast('يرجى اختيار الصف والشعبة للمتابعة', 'warning');
+            return false;
+        }
+        attWizardState.classId = cVal;
+        attWizardState.sectionId = sVal;
+    } else if (step === 2) {
+        const dVal = document.getElementById('wzDate')?.value;
+        if (!dVal) {
+            showToast('يرجى تحديد تاريخ التوثيق للمتابعة', 'warning');
+            return false;
+        }
+        attWizardState.date = dVal;
+        attWizardState.defaultStatus = document.getElementById('wzDefaultStatus')?.value || 'Present';
+        loadAttWizardStudents();
+    }
+    return true;
+}
+
+function loadAttWizardStudents() {
+    fetch(`/attendance/api/students?class_id=${attWizardState.classId}&section_id=${attWizardState.sectionId}&date=${attWizardState.date}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                attWizardState.students = (data.data || []).map(s => {
+                    let status = s.Status;
+                    if (!status || status === 'غير مسجل') {
+                        if (attWizardState.defaultStatus === 'Present') status = 'Present';
+                        else if (attWizardState.defaultStatus === 'Absent') status = 'Absent';
+                    }
+                    return { ...s, Status: status, Note: s.Note || '' };
+                });
+                renderAttWizardTable();
+            }
+        });
+}
+
+function renderAttWizardTable() {
+    const tbody = document.getElementById('wzStudentsTableBody');
+    if (!tbody) return;
+
+    let html = '';
+    let present = 0, absent = 0, late = 0;
+
+    attWizardState.students.forEach((s, idx) => {
+        if (s.Status === 'Present' || s.Status === 'حاضر') present++;
+        else if (s.Status === 'Absent' || s.Status === 'غائب') absent++;
+        else if (s.Status === 'Late' || s.Status === 'متأخر') late++;
+
+        html += `
+            <tr class="align-middle">
+                <td class="fw-bold text-muted">${idx + 1}</td>
+                <td class="text-start font-monospace fw-bold text-dark">${s.SName}</td>
+                <td class="font-monospace text-primary fw-bold">${s.SID}</td>
+                <td>
+                    <select class="form-select form-select-sm rounded-pill fw-bold font-monospace text-center mx-auto" style="width:130px;" onchange="updateWzStudentStatus(${s.SID}, this.value)">
+                        <option value="Present" ${s.Status === 'Present' || s.Status === 'حاضر' ? 'selected' : ''}>حاضر</option>
+                        <option value="Absent" ${s.Status === 'Absent' || s.Status === 'غائب' ? 'selected' : ''}>غائب</option>
+                        <option value="Late" ${s.Status === 'Late' || s.Status === 'متأخر' ? 'selected' : ''}>متأخر</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm rounded-pill font-monospace" placeholder="ملاحظة..." value="${s.Note || ''}" onchange="updateWzStudentNote(${s.SID}, this.value)">
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    const elTotal = document.getElementById('wzCountTotal');
+    const elPres = document.getElementById('wzCountPresent');
+    const elLate = document.getElementById('wzCountLate');
+    const elAbs = document.getElementById('wzCountAbsent');
+
+    if (elTotal) elTotal.textContent = attWizardState.students.length;
+    if (elPres) elPres.textContent = present;
+    if (elLate) elLate.textContent = late;
+    if (elAbs) elAbs.textContent = absent;
+}
+
+function updateWzStudentStatus(sid, status) {
+    const student = attWizardState.students.find(s => s.SID === sid);
+    if (student) {
+        student.Status = status;
+        renderAttWizardTable();
+    }
+}
+
+function updateWzStudentNote(sid, note) {
+    const student = attWizardState.students.find(s => s.SID === sid);
+    if (student) {
+        student.Note = note;
+    }
+}
+
+function setAllWzStatus(status) {
+    attWizardState.students.forEach(s => s.Status = status);
+    renderAttWizardTable();
+}
+
+function populateAttWizardReview() {
+    const wzRevDate = document.getElementById('wzRevDate');
+    const wzRevClassSec = document.getElementById('wzRevClassSec');
+    const wzRevPresent = document.getElementById('wzRevPresent');
+    const wzRevLate = document.getElementById('wzRevLate');
+    const wzRevAbsent = document.getElementById('wzRevAbsent');
+
+    if (wzRevDate) wzRevDate.textContent = attWizardState.date;
+    
+    const cEl = document.getElementById('wzClass');
+    const sEl = document.getElementById('wzSection');
+    const cText = cEl ? cEl.options[cEl.selectedIndex]?.text : '';
+    const sText = sEl ? sEl.options[sEl.selectedIndex]?.text : '';
+    if (wzRevClassSec) wzRevClassSec.textContent = `${cText} - ${sText}`;
+
+    let present = 0, absent = 0, late = 0;
+    attWizardState.students.forEach(s => {
+        if (s.Status === 'Present' || s.Status === 'حاضر') present++;
+        else if (s.Status === 'Absent' || s.Status === 'غائب') absent++;
+        else if (s.Status === 'Late' || s.Status === 'متأخر') late++;
+    });
+
+    if (wzRevPresent) wzRevPresent.textContent = present;
+    if (wzRevLate) wzRevLate.textContent = late;
+    if (wzRevAbsent) wzRevAbsent.textContent = absent;
+}
+
+function saveBulkAttWizardData() {
+    const dateVal = attWizardState.date;
+    const students = attWizardState.students;
+
+    let completed = 0;
+    students.forEach(s => {
+        fetch('/attendance/api/mark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sid: s.SID, date: dateVal, status: s.Status })
+        })
+        .then(res => res.json())
+        .then(() => {
+            completed++;
+            if (completed === students.length) {
+                // Show success report step 5
+                attWizardState.currentStep = 5;
+                updateAttWizardUI();
+
+                const elSucTotal = document.getElementById('wzSucTotal');
+                const elSucUpdated = document.getElementById('wzSucUpdated');
+                if (elSucTotal) elSucTotal.textContent = students.length;
+                if (elSucUpdated) elSucUpdated.textContent = students.length;
+            }
+        });
+    });
+}
+
+function updateAttWizardUI() {
+    const step = attWizardState.currentStep;
+
+    // Toggle panes
+    for (let i = 1; i <= 5; i++) {
+        const pane = document.getElementById(`att-pane-${i}`);
+        const dot = document.getElementById(`att-step-dot-${i}`);
+
+        if (pane) {
+            if (i === step) pane.classList.remove('d-none');
+            else pane.classList.add('d-none');
+        }
+
+        if (dot) {
+            if (i < step) {
+                dot.className = 'btn btn-sm rounded-circle fw-bold position-relative z-2 btn-success';
+            } else if (i === step) {
+                dot.className = 'btn btn-sm rounded-circle fw-bold position-relative z-2 btn-primary';
+            } else {
+                dot.className = 'btn btn-sm rounded-circle fw-bold position-relative z-2 btn-light border';
+            }
+        }
+    }
+
+    // Step badge & progress bar
+    const stepBadge = document.getElementById('att-wizard-step-badge');
+    const progressBar = document.getElementById('att-wizard-progress');
+    if (stepBadge) stepBadge.textContent = `الخطوة ${step} من 5`;
+    if (progressBar) progressBar.style.width = `${step * 20}%`;
+
+    // Footer buttons
+    const btnPrev = document.getElementById('att-btn-prev');
+    const btnNext = document.getElementById('att-btn-next');
+    const footer = document.getElementById('att-wizard-footer');
+
+    if (btnPrev) btnPrev.disabled = (step === 1 || step === 5);
+
+    if (step === 5) {
+        if (footer) footer.classList.add('d-none');
+    } else {
+        if (footer) footer.classList.remove('d-none');
+        if (btnNext) {
+            if (step === 4) {
+                btnNext.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> حفظ وتأثير الكشف النهائي';
+                btnNext.className = 'btn btn-success rounded-pill px-5 fw-bold shadow-sm';
+            } else {
+                btnNext.innerHTML = 'التالي <i class="fa-solid fa-arrow-left ms-1"></i>';
+                btnNext.className = 'btn btn-primary rounded-pill px-5 fw-bold shadow-sm';
+            }
+        }
+    }
 }
