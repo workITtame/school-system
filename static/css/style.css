@@ -756,8 +756,21 @@ body {
     padding: 1rem 0.75rem;
 }
 .custom-enterprise-table tbody tr {
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.15s ease;
 }
 .custom-enterprise-table tbody tr:hover {
     background-color: rgba(239, 246, 255, 0.6) !important;
+}
+
+.action-btn-hover {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.action-btn-hover:hover {
+    transform: translateY(-2px) scale(1.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
 }

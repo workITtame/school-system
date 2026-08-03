@@ -288,13 +288,13 @@
                             {% if c.linked_sections %}
                                 <div class="d-flex flex-wrap gap-1 justify-content-center">
                                     {% for sec in c.linked_sections %}
-                                    <span class="badge bg-secondary-subtle text-dark border px-2 py-1" style="font-size: 0.78rem;">
+                                    <span class="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-1 rounded-pill" style="font-size: 0.78rem;">
                                         {{ sec.SectionName }}
                                     </span>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <span class="text-muted small">— لا توجد شعب —</span>
+                                <span class="badge bg-light text-muted border px-2 py-1 font-monospace">لا يوجد</span>
                             {% endif %}
                         </td>
 
@@ -305,34 +305,49 @@
                                 {% if c.MaxStudents %}
                                     {{ c.MaxStudents }}
                                 {% else %}
-                                    <span class="text-muted fw-normal" style="font-size: 0.82rem;">غير محددة</span>
+                                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.78rem;">غير محددة</span>
                                 {% endif %}
                             </div>
                         </td>
 
                         <!-- Teachers Count -->
                         <td>
-                            <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i> {{ c.teachers_count }}</span>
+                            {% if c.teachers_count > 0 %}
+                                <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i> {{ c.teachers_count }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border font-monospace"><i class="fa-solid fa-chalkboard-user me-1"></i> غير مسند</span>
+                            {% endif %}
                         </td>
 
                         <!-- Subjects Count -->
                         <td>
-                            <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-book text-warning me-1"></i> {{ c.subjects_count }}</span>
+                            {% if c.subjects_count > 0 %}
+                                <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-book text-warning me-1"></i> {{ c.subjects_count }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border font-monospace"><i class="fa-solid fa-book me-1"></i> غير مسند</span>
+                            {% endif %}
                         </td>
 
-                        <!-- Occupancy Progress Bar -->
+                        <!-- Occupancy Progress Bar & Level Badge -->
                         <td>
                             {% if c.occupancy_percentage is not none %}
-                                <div class="d-flex align-items-center gap-2 justify-content-center">
-                                    <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                                <div class="d-flex align-items-center gap-2 justify-content-center" data-bs-toggle="tooltip" title="نسبة استيعاب الطلاب بالصف: {{ c.occupancy_percentage }}%">
+                                    <div class="progress flex-grow-1" style="height: 8px; min-width: 60px; border-radius: 99px;">
                                         <div class="progress-bar bg-{{ c.occupancy_color }}" style="width: {{ c.occupancy_percentage }}%;"></div>
                                     </div>
-                                    <span class="badge bg-{{ c.occupancy_color }}-subtle text-{{ c.occupancy_color }} border border-{{ c.occupancy_color }}-subtle font-monospace" style="font-size: 0.78rem;">
+                                    <span class="badge bg-{{ c.occupancy_color }}-subtle text-{{ c.occupancy_color }} border border-{{ c.occupancy_color }}-subtle rounded-pill font-monospace" style="font-size: 0.78rem;">
                                         {{ c.occupancy_percentage }}%
+                                        {% if c.occupancy_percentage < 70 %}
+                                            (منخفض)
+                                        {% elif c.occupancy_percentage <= 90 %}
+                                            (متوسط)
+                                        {% else %}
+                                            (مرتفع)
+                                        {% endif %}
                                     </span>
                                 </div>
                             {% else %}
-                                <span class="text-muted small font-monospace">غير محددة</span>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 font-monospace">غير محددة</span>
                             {% endif %}
                         </td>
 
@@ -343,25 +358,28 @@
                             </span>
                         </td>
 
-                        <!-- Action Buttons -->
+                        <!-- Quick Actions -->
                         <td>
                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle" data-bs-toggle="tooltip" title="عرض الشعب" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="عرض التفاصيل" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle" data-bs-toggle="tooltip" title="عرض الطلاب">
+                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="قائمة الطلاب">
                                     <i class="fa-solid fa-users"></i>
                                 </a>
-                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle" data-bs-toggle="tooltip" title="المعلمون">
+                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="الكادر التعليمي">
                                     <i class="fa-solid fa-chalkboard-user"></i>
                                 </a>
-                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle" data-bs-toggle="tooltip" title="الجدول">
+                                <a href="{{ url_for('academic.subjects') }}" class="btn btn-sm btn-light border text-success rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="المواد الدراسية">
+                                    <i class="fa-solid fa-book"></i>
+                                </a>
+                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="جدول الحصص">
                                     <i class="fa-solid fa-calendar-days"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
+                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
