@@ -822,12 +822,22 @@
         }
     }
 
+    function initClassFilterFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const classIdParam = urlParams.get('class_id');
+        if (classIdParam && document.getElementById('filterClass')) {
+            document.getElementById('filterClass').value = classIdParam;
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        initClassFilterFromURL();
         fetchStudents(1);
     });
     document.addEventListener("turbo:load", () => {
         deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        initClassFilterFromURL();
         fetchStudents(1);
     });
 </script>

@@ -544,7 +544,10 @@
         const status = document.getElementById('filterStatus')?.value || '';
         const gender = document.getElementById('filterGender')?.value || '';
 
-        const url = `/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}&qual=${encodeURIComponent(qual)}&status=${encodeURIComponent(status)}&gender=${encodeURIComponent(gender)}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('class_id') || '';
+
+        const url = `/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}&qual=${encodeURIComponent(qual)}&status=${encodeURIComponent(status)}&gender=${encodeURIComponent(gender)}&class_id=${encodeURIComponent(classId)}`;
 
         fetch(url, { headers: apiHeadersJSON })
         .then(res => res.json())

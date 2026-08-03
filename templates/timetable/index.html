@@ -265,6 +265,14 @@ document.addEventListener('turbo:load', function() {
         referenceData.lessons.forEach(l => {
             addLesson.innerHTML += `<option value="${l.LessonID}">${l.LessonName}</option>`;
         });
+
+        // Auto select class from URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const classIdParam = urlParams.get('class_id');
+        if (classIdParam && filterClass) {
+            filterClass.value = classIdParam;
+            filterClass.dispatchEvent(new Event('change'));
+        }
     }
 
     // 3. Cascaded Filtering Logic

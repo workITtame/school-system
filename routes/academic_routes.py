@@ -73,14 +73,28 @@ def classes():
 @academic_bp.route('/subjects')
 def subjects():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    subjects = Subject.query.all()
     
+    class_id = request.args.get('class_id', type=int)
+    classes = Classes.query.all()
+    
+    if class_id:
+        from models.academic import ClassSubject
+        subject_ids = [cs.SubjectID for cs in ClassSubject.query.filter_by(ClassID=class_id).all()]
+        subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all() if subject_ids else []
+    else:
+        subjects = Subject.query.all()
+        
     total_subjects = len(subjects)
     optional = sum(1 for s in subjects if s.Type == 'اختيارية')
     mandatory = sum(1 for s in subjects if s.Type == 'أساسية')
     
+    selected_class = Classes.query.filter_by(CID=class_id).first() if class_id else None
+    
     return render_template('academic/subjects.html', 
                            subjects=subjects,
+                           classes=classes,
+                           selected_class_id=class_id,
+                           selected_class=selected_class,
                            total_subjects=total_subjects,
                            optional=optional,
                            mandatory=mandatory)
