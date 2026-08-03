@@ -544,6 +544,13 @@ function loadSubjectProfile(data) {
         };
     }
 
+    // Dynamic Students Link in Hero Header
+    const heroStudentsBtn = document.getElementById('sp-btn-students');
+    if (heroStudentsBtn) {
+        const classIdParam = (data.linkedClasses && data.linkedClasses.length > 0) ? `?class_id=${data.linkedClasses[0].id}` : '';
+        heroStudentsBtn.href = `/students${classIdParam}`;
+    }
+
     // Lead Teacher
     const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers[0].name : 'أ. أحمد محمود علي';
     if (heroTeacher) heroTeacher.textContent = mainTeacherName;
@@ -647,7 +654,7 @@ function renderClasses(classes) {
                         </div>
                         <small class="text-muted font-monospace d-block" style="font-size: 0.75rem;">نسبة إشغال القاعات: ${occ}%</small>
                     </div>
-                    <a href="/students?class_id=${c.id}" class="btn btn-sm btn-outline-primary rounded-pill w-100 mt-2 font-monospace fw-bold" style="font-size: 0.8rem;">
+                    <a href="/students?class_id=${c.id}" data-turbo="false" class="btn btn-sm btn-outline-primary rounded-pill w-100 mt-2 font-monospace fw-bold" style="font-size: 0.8rem;">
                         <i class="fa-solid fa-user-graduate me-1"></i> عرض طلاب ${c.name}
                     </a>
                 </div>
@@ -676,16 +683,21 @@ function renderTeachers(teachers) {
                     <div class="d-flex align-items-center gap-3 overflow-hidden">
                         <img src="${avatarSrc}" class="rounded-circle border shadow-sm flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover;" alt="${t.name}">
                         <div class="overflow-hidden">
-                            <a href="/teacher/${t.id}" class="fw-bold text-dark mb-0 text-truncate d-block text-decoration-none text-primary-hover">${t.name}</a>
+                            <a href="/teacher/view/${t.id}" data-turbo="false" class="fw-bold text-dark mb-0 text-truncate d-block text-decoration-none text-primary-hover">${t.name}</a>
                             <small class="text-muted d-block small mb-1">${t.title || 'معلم قدير'}</small>
                             <div class="d-flex align-items-center gap-2 font-monospace text-muted" style="font-size: 0.75rem;">
                                 <span><i class="fa-solid fa-envelope me-1"></i>${t.email}</span>
                             </div>
                         </div>
                     </div>
-                    <a href="/messages" class="btn btn-sm btn-light border rounded-circle p-2 text-primary flex-shrink-0" title="إرسال رسالة للمعلم">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </a>
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                        <a href="/teacher/view/${t.id}" data-turbo="false" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace fw-bold" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-user-tie me-1"></i> الملف
+                        </a>
+                        <a href="/messages" data-turbo="false" class="btn btn-sm btn-light border rounded-circle p-2 text-primary" title="إرسال رسالة للمعلم">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         `;
