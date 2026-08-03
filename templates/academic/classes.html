@@ -286,15 +286,23 @@
                             {% endif %}
                         </td>
 
-                        <!-- Linked Sections (Glass Chips) -->
-                        <td>
+                        <!-- Linked Sections (Glass Chips with Smart Truncation) -->
+                        <td style="max-width: 220px;">
                             {% if c.linked_sections %}
-                                <div class="d-flex flex-wrap gap-1 justify-content-center">
-                                    {% for sec in c.linked_sections %}
+                                <div class="d-flex flex-wrap gap-1 justify-content-center align-items-center">
+                                    {% for sec in c.linked_sections[:3] %}
                                     <span class="badge bg-white text-dark border border-slate-200 shadow-xs px-2.5 py-1 rounded-pill glass-chip" style="font-size: 0.78rem;">
                                         <i class="fa-solid fa-users-rectangle text-muted me-1" style="font-size: 0.7rem;"></i>{{ sec.SectionName }}
                                     </span>
                                     {% endfor %}
+                                    {% if c.linked_sections|length > 3 %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill font-monospace" 
+                                          style="font-size: 0.78rem; cursor: pointer;" 
+                                          data-bs-toggle="tooltip" 
+                                          title="جميع الشعب المسندة ({{ c.linked_sections|length }}): {% for sec in c.linked_sections %}{{ sec.SectionName }}{% if not loop.last %}، {% endif %}{% endfor %}">
+                                        +{{ c.linked_sections|length - 3 }} أخرى
+                                    </span>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace" style="font-size: 0.78rem;"><i class="fa-solid fa-ban me-1"></i> غير مسند</span>

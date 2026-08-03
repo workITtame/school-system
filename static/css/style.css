@@ -760,6 +760,7 @@ body {
 .custom-enterprise-table tbody td {
     padding: 0.95rem 0.85rem;
     border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    vertical-align: middle !important;
 }
 .custom-enterprise-table tbody tr {
     transition: background-color 0.2s ease, transform 0.15s ease;
