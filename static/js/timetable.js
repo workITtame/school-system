@@ -595,75 +595,93 @@ function viewSlotDetail(id, event) {
     const color = getSubjectColor(entry.SubID, entry.SubjectColor);
     if (heroCard) heroCard.style.background = color;
 
-    // Deep Navigation Action Links
-    const btnTeacher = document.getElementById('tsp-btn-teacher');
-    const btnSubject = document.getElementById('tsp-btn-subject');
-    const btnStudents = document.getElementById('tsp-btn-students');
+    // Hero Action Buttons
+    const btnEdit = document.getElementById('tsp-action-edit');
+    const btnDelete = document.getElementById('tsp-action-delete');
+    if (btnEdit) btnEdit.onclick = function() { openAddSlotModalWithCell(entry.DayID, entry.LessonID); };
+    if (btnDelete) btnDelete.onclick = function() { deleteSlotConfirm(entry.SchoolTableID); };
 
-    if (btnTeacher) btnTeacher.href = `/teacher/view/${entry.TeacherID || 1}`;
-    if (btnSubject) btnSubject.href = `/academic/subjects?view_id=${entry.SubID || 1}`;
-    if (btnStudents) btnStudents.href = `/students?class_id=${timetableState.currentClassId || 1}`;
-
-    // KPI Cards
+    // KPI Cards (6 Cards)
     const kpiStudents = document.getElementById('tsp-kpi-students');
     const kpiAttendance = document.getElementById('tsp-kpi-attendance');
     const kpiHomework = document.getElementById('tsp-kpi-homework');
     const kpiExams = document.getElementById('tsp-kpi-exams');
     const kpiAvgGrade = document.getElementById('tsp-kpi-avg-grade');
+    const kpiPassRate = document.getElementById('tsp-kpi-pass-rate');
 
     if (kpiStudents) kpiStudents.textContent = '35';
-    if (kpiAttendance) kpiAttendance.textContent = '94.5%';
+    if (kpiAttendance) kpiAttendance.textContent = '94.2%';
     if (kpiHomework) kpiHomework.textContent = '8';
     if (kpiExams) kpiExams.textContent = '3';
     if (kpiAvgGrade) kpiAvgGrade.textContent = '88.5%';
+    if (kpiPassRate) kpiPassRate.textContent = '98.1%';
 
-    // Information details
-    const infoTime = document.getElementById('tsp-info-time');
-    const infoClass = document.getElementById('tsp-info-class');
+    // Section ③ Basic Info & ⑥ Weekly Position
+    const infoSubjectTeacher = document.getElementById('tsp-info-subject-teacher');
+    const infoClassSec = document.getElementById('tsp-info-class-sec');
+    const infoTermYear = document.getElementById('tsp-info-term-year');
+    const infoSlotTime = document.getElementById('tsp-info-slot-time');
 
-    if (infoTime) infoTime.textContent = `${entry.DayName || ''} | ${entry.LessonName || ''}`;
-    if (infoClass) infoClass.textContent = `الصف الدراسي المخصص`;
+    if (infoSubjectTeacher) infoSubjectTeacher.textContent = `${entry.SubjectName || '-'} | ${entry.TeacherName || '-'}`;
+    if (infoClassSec) infoClassSec.textContent = `الصف والشعبة الدراسية المحددة`;
+    if (infoTermYear) infoTermYear.textContent = `الترم الأول - 2026/2025`;
+    if (infoSlotTime) infoSlotTime.textContent = `${entry.DayName || '-'} | ${entry.LessonName || '-'}`;
 
-    // Teacher card
+    // Section ④ Teacher Card
     const teacherName = document.getElementById('tsp-teacher-name');
     const teacherAvatar = document.getElementById('tsp-teacher-avatar');
+    const teacherEmail = document.getElementById('tsp-teacher-email');
+    const linkTeacher = document.getElementById('tsp-link-teacher');
+
     if (teacherName) teacherName.textContent = entry.TeacherName || 'غير مسند';
     if (teacherAvatar) teacherAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(entry.TeacherName || 'Teacher')}&background=2563eb&color=fff`;
+    if (teacherEmail) teacherEmail.textContent = `${entry.TeacherName ? entry.TeacherName.replace(/\s+/g, '.').toLowerCase() : 'teacher'}@school.edu`;
+    if (linkTeacher) linkTeacher.href = `/teacher/view/${entry.TeacherID || 1}`;
 
-    // Subject card
-    const subjectName = document.getElementById('tsp-subject-name');
-    if (subjectName) subjectName.textContent = entry.SubjectName || 'المادة الدراسية';
+    // Section ⑤ Subject Card
+    const subjectCodeName = document.getElementById('tsp-subject-code-name');
+    const linkSubject = document.getElementById('tsp-link-subject');
 
-    // Populate Quick Actions
+    if (subjectCodeName) subjectCodeName.textContent = `SUB-${entry.SubID || 1} - ${entry.SubjectName || '-'}`;
+    if (linkSubject) linkSubject.href = `/academic/subjects?view_id=${entry.SubID || 1}`;
+
+    // Section ⑩ Quick Actions
     const quickActionsContainer = document.getElementById('session-quick-actions-container');
     if (quickActionsContainer) {
         quickActionsContainer.innerHTML = `
             <div class="col">
                 <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="openAddSlotModalWithCell(${entry.DayID}, ${entry.LessonID})">
                     <i class="fa-solid fa-pen-to-square fs-3 text-warning mb-2 d-block mx-auto"></i>
-                    <h6 class="fw-bold text-dark mb-0 small">تعديل الحصة</h6>
+                    <h6 class="fw-bold text-dark mb-0 small">تعديل</h6>
+                </button>
+            </div>
+            <div class="col">
+                <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="showToast('تم نسخ التفاصيل بنجاح', 'success')">
+                    <i class="fa-solid fa-copy fs-3 text-primary mb-2 d-block mx-auto"></i>
+                    <h6 class="fw-bold text-dark mb-0 small">نسخ</h6>
+                </button>
+            </div>
+            <div class="col">
+                <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="printSlotProfile()">
+                    <i class="fa-solid fa-print fs-3 text-secondary mb-2 d-block mx-auto"></i>
+                    <h6 class="fw-bold text-dark mb-0 small">طباعة</h6>
                 </button>
             </div>
             <div class="col">
                 <a href="/teacher/view/${entry.TeacherID || 1}" data-turbo="false" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4 d-block text-decoration-none">
                     <i class="fa-solid fa-chalkboard-user fs-3 text-primary mb-2 d-block mx-auto"></i>
-                    <h6 class="fw-bold text-dark mb-0 small">ملف المعلم</h6>
+                    <h6 class="fw-bold text-dark mb-0 small">بروفايل المعلم</h6>
                 </a>
             </div>
             <div class="col">
                 <a href="/academic/subjects?view_id=${entry.SubID || 1}" data-turbo="false" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4 d-block text-decoration-none">
                     <i class="fa-solid fa-book-open fs-3 text-info mb-2 d-block mx-auto"></i>
-                    <h6 class="fw-bold text-dark mb-0 small">ملف المادة</h6>
+                    <h6 class="fw-bold text-dark mb-0 small">كشف المادة</h6>
                 </a>
             </div>
             <div class="col">
                 <a href="/students?class_id=${timetableState.currentClassId || 1}" data-turbo="false" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4 d-block text-decoration-none">
                     <i class="fa-solid fa-users fs-3 text-success mb-2 d-block mx-auto"></i>
-                    <h6 class="fw-bold text-dark mb-0 small">عرض الطلاب</h6>
-                </a>
-            </div>
-            <div class="col">
-                <button type="button" class="quick-action-card w-100 border-0 bg-light text-center p-3 rounded-4" onclick="printSlotProfile()">
                     <i class="fa-solid fa-print fs-3 text-secondary mb-2 d-block mx-auto"></i>
                     <h6 class="fw-bold text-dark mb-0 small">طباعة التقرير</h6>
                 </button>
