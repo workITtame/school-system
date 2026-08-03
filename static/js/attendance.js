@@ -31,6 +31,8 @@ function initAttendanceModule() {
     window.toggleStudentSelection = toggleStudentSelection;
     window.clearBulkSelections = clearBulkSelections;
     window.submitQuickMark = submitQuickMark;
+    window.viewAttendanceProfile = viewAttendanceProfile;
+    window.printAttendanceProfile = printAttendanceProfile;
 
     setupAttendanceEventListeners();
 
@@ -96,6 +98,17 @@ function loadAttendanceData() {
             if (data.success) {
                 attendanceState.students = data.data || [];
                 applyAttendanceFilters();
+
+                // Check URL parameter for ?attendance_id=XX or ?sid=XX
+                const urlParams = new URLSearchParams(window.location.search);
+                const attId = urlParams.get('attendance_id') || urlParams.get('sid');
+                if (attId) {
+                    const targetSid = parseInt(attId);
+                    const targetStudent = attendanceState.students.find(s => s.SID === targetSid);
+                    if (targetStudent) {
+                        setTimeout(() => viewAttendanceProfile(targetSid), 200);
+                    }
+                }
             } else {
                 showToast(data.message || 'تعذر جلب بيانات الحضور', 'error');
                 showEmptyAttendanceState(true);
@@ -162,7 +175,7 @@ function renderAttendanceTable() {
         const timeStr = s.Time ? new Date(s.Time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '—';
 
         html += `
-            <tr class="align-middle">
+            <tr class="align-middle cursor-pointer" onclick="viewAttendanceProfile(${s.SID}, event)">
                 <td>
                     <input type="checkbox" class="form-check-input rounded-2" ${isSelected ? 'checked' : ''} onclick="toggleStudentSelection(${s.SID}, event)">
                 </td>
@@ -180,6 +193,7 @@ function renderAttendanceTable() {
                 <td>
                     <select class="form-select form-select-sm rounded-pill fw-bold border-0 font-monospace text-center mx-auto ${statusBadgeClass}" 
                             style="width: 130px; cursor: pointer;" 
+                            onclick="event.stopPropagation();"
                             onchange="updateAttendance(${s.SID}, this.value)">
                         <option value="Present" ${s.Status === 'Present' || s.Status === 'حاضر' ? 'selected' : ''}>حاضر</option>
                         <option value="Absent" ${s.Status === 'Absent' || s.Status === 'غائب' ? 'selected' : ''}>غائب</option>
@@ -190,9 +204,9 @@ function renderAttendanceTable() {
                 <td class="font-monospace text-muted small">${timeStr}</td>
                 <td class="font-monospace text-muted small">${s.Note || '—'}</td>
                 <td>
-                    <a href="/students/view/${s.SID}" data-turbo="false" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold font-monospace" title="عرض ملف الطالب">
+                    <button type="button" onclick="viewAttendanceProfile(${s.SID}, event)" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold font-monospace" title="عرض الملف الشخصي للسجل">
                         <i class="fa-solid fa-eye text-primary me-1"></i> عرض
-                    </a>
+                    </button>
                 </td>
             </tr>
         `;
@@ -446,4 +460,115 @@ function showToast(message, icon) {
         });
         Toast.fire({ icon: icon, title: message });
     }
+}
+
+/* ==========================================================================
+   ATTENDANCE RECORD PROFILE MODAL CONTROLLER (10 SECTIONS)
+   ========================================================================== */
+
+let profilePerfChartInstance = null;
+
+function viewAttendanceProfile(sid, event) {
+    if (event) event.stopPropagation();
+    const student = attendanceState.students.find(s => s.SID === sid);
+    if (!student) return;
+
+    const modalEl = document.getElementById('viewAttendanceProfileModal');
+    if (!modalEl) return;
+
+    // Header Badges & Titles
+    const headerBadge = document.getElementById('atp-header-badge');
+    const sidBadge = document.getElementById('atp-sid-badge');
+    const statusBadge = document.getElementById('atp-status-badge');
+    const heroTitle = document.getElementById('atp-hero-title');
+    const heroSubtitle = document.getElementById('atp-hero-subtitle');
+    const heroAvatar = document.getElementById('atp-student-avatar');
+    const btnStudent = document.getElementById('atp-btn-student');
+
+    const codeStr = `ATT-${student.SID}`;
+    if (headerBadge) headerBadge.textContent = codeStr;
+    if (sidBadge) sidBadge.textContent = `SID-${student.SID}`;
+    if (heroTitle) heroTitle.textContent = student.SName || 'طالب مقيد';
+    
+    const filterDate = document.getElementById('filterDate');
+    const dateVal = filterDate ? filterDate.value : '2026-08-03';
+    if (heroSubtitle) heroSubtitle.textContent = `السجل بتاريخ ${dateVal} | توثيق المنظومة الأكاديمية`;
+    if (heroAvatar) heroAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.SName || 'Student')}&background=fff&color=2563eb`;
+
+    if (btnStudent) btnStudent.href = `/students/view/${student.SID}`;
+
+    const qaStudent = document.getElementById('atp-qa-student');
+    if (qaStudent) qaStudent.href = `/students/view/${student.SID}`;
+
+    // Status Badge
+    if (statusBadge) {
+        statusBadge.textContent = student.Status || 'حاضر';
+        if (student.Status === 'Absent' || student.Status === 'غائب') {
+            statusBadge.className = 'badge bg-danger rounded-pill px-3 py-1 font-monospace';
+        } else if (student.Status === 'Late' || student.Status === 'متأخر') {
+            statusBadge.className = 'badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace';
+        } else {
+            statusBadge.className = 'badge bg-success rounded-pill px-3 py-1 font-monospace';
+        }
+    }
+
+    // Student Card Details
+    const cardAvatar = document.getElementById('atp-card-student-avatar');
+    const cardName = document.getElementById('atp-card-student-name');
+    const cardSid = document.getElementById('atp-card-student-sid');
+
+    if (cardAvatar) cardAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.SName || 'Student')}&background=2563eb&color=fff`;
+    if (cardName) cardName.textContent = student.SName || 'اسم الطالب';
+    if (cardSid) cardSid.textContent = `الرقم الأكاديمي: SID-${student.SID}`;
+
+    // Attendance Info
+    const infoDateDay = document.getElementById('atp-info-date-day');
+    const infoStatus = document.getElementById('atp-info-status');
+    const infoTime = document.getElementById('atp-info-time');
+    const infoNote = document.getElementById('atp-info-note');
+
+    if (infoDateDay) infoDateDay.textContent = `تاريخ التوثيق: ${dateVal}`;
+    if (infoStatus) infoStatus.textContent = student.Status || 'حاضر';
+    if (infoTime) infoTime.textContent = student.Time ? new Date(student.Time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '08:00 ص';
+    if (infoNote) infoNote.textContent = student.Note || 'لا توجد ملاحظات';
+
+    // Render Analytics Chart
+    initProfilePerfChart();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initProfilePerfChart() {
+    const ctx = document.getElementById('attendancePerfChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (profilePerfChartInstance) {
+        profilePerfChartInstance.destroy();
+    }
+
+    profilePerfChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['الأسبوع 1', 'الأسبوع 2', 'الأسبوع 3', 'الأسبوع 4'],
+            datasets: [{
+                label: 'نسبة الحضور الأسبوعية %',
+                data: [100, 95, 98, 100],
+                backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                borderColor: '#22c55e',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function printAttendanceProfile() {
+    window.print();
 }
