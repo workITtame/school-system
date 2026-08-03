@@ -419,9 +419,21 @@ def update_teacher(id):
                 subject_ids = [int(x) for x in subject_ids.split(',') if x.strip().isdigit()]
             elif isinstance(subject_ids, list):
                 subject_ids = [int(x) for x in subject_ids if str(x).isdigit()]
-            teacher.subjects.clear()
-            if subject_ids:
-                teacher.subjects = Subject.query.filter(Subject.SubID.in_(subject_ids)).all()
+            
+            current_sub_ids = {s.SubID for s in teacher.subjects}
+            target_sub_ids = set(subject_ids)
+            
+            # Remove unselected subjects
+            for sub in list(teacher.subjects):
+                if sub.SubID not in target_sub_ids:
+                    teacher.subjects.remove(sub)
+                    
+            # Add newly selected subjects
+            to_add_ids = target_sub_ids - current_sub_ids
+            if to_add_ids:
+                new_subs = Subject.query.filter(Subject.SubID.in_(to_add_ids)).all()
+                for sub in new_subs:
+                    teacher.subjects.append(sub)
 
         db.session.commit()
         result = teacher_schema.dump(teacher)
