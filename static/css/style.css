@@ -749,28 +749,62 @@ body {
 }
 
 .custom-enterprise-table thead th {
-    background-color: #f8fafc !important;
+    background-color: rgba(248, 250, 252, 0.95) !important;
+    backdrop-filter: blur(8px);
     color: #475569;
     font-weight: 700;
     border-bottom: 2px solid #e2e8f0;
-    padding: 1rem 0.75rem;
+    padding: 1.1rem 0.85rem;
+    font-size: 0.85rem;
+}
+.custom-enterprise-table tbody td {
+    padding: 0.95rem 0.85rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 .custom-enterprise-table tbody tr {
     transition: background-color 0.2s ease, transform 0.15s ease;
 }
 .custom-enterprise-table tbody tr:hover {
-    background-color: rgba(239, 246, 255, 0.6) !important;
+    background-color: rgba(239, 246, 255, 0.7) !important;
 }
 
-.action-btn-hover {
-    width: 32px;
-    height: 32px;
+.statistic-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+.statistic-chip:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.glass-chip {
+    transition: all 0.2s ease;
+}
+.glass-chip:hover {
+    transform: translateY(-1px);
+    border-color: #94a3b8 !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.saas-action-btn {
+    width: 33px;
+    height: 33px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    border-color: #e2e8f0 !important;
 }
-.action-btn-hover:hover {
-    transform: translateY(-2px) scale(1.08);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
+.saas-action-btn:hover {
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12) !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
 }

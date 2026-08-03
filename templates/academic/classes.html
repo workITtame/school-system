@@ -253,78 +253,89 @@
                             <span class="badge bg-light text-dark border font-monospace px-2 py-1">CLS-{{ c.CID }}</span>
                         </td>
 
-                        <!-- Class Name -->
+                        <!-- Class Name & Info -->
                         <td class="text-start">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="avatar-circle bg-primary-subtle text-primary fw-bold" style="width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-circle-gradient shadow-sm" style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
                                     <i class="fa-solid fa-graduation-cap"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold text-dark fs-6">{{ c.CName }}</div>
-                                    <span class="text-muted small font-monospace">كود التخصص: #{{ c.CID }}</span>
+                                    <div class="fw-extrabold text-dark fs-6 mb-0">{{ c.CName }}</div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="badge bg-light text-dark border font-monospace px-2 py-0" style="font-size: 0.75rem;">CLS-{{ c.CID }}</span>
+                                        <span class="text-muted small" style="font-size: 0.78rem;">{{ c.Stage or 'المرحلة العامة' }} ({{ c.linked_sections|length }} شعب)</span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- Stage -->
+                        <!-- Stage Gradient Badge -->
                         <td>
                             {% if c.Stage == 'الثانوية' %}
-                                <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-3 py-1 rounded-pill" style="color: #7c3aed; background: #f3e8ff;">
+                                <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-3 py-1.5 rounded-pill shadow-xs" style="color: #7c3aed; background: #f3e8ff;">
                                     <i class="fa-solid fa-award me-1"></i> الثانوية
                                 </span>
                             {% elif c.Stage == 'المتوسطة' %}
-                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1 rounded-pill">
+                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1.5 rounded-pill shadow-xs">
                                     <i class="fa-solid fa-book-open me-1"></i> المتوسطة
                                 </span>
                             {% else %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill shadow-xs">
                                     <i class="fa-solid fa-shapes me-1"></i> {{ c.Stage or 'الأساسية' }}
                                 </span>
                             {% endif %}
                         </td>
 
-                        <!-- Linked Sections -->
+                        <!-- Linked Sections (Glass Chips) -->
                         <td>
                             {% if c.linked_sections %}
                                 <div class="d-flex flex-wrap gap-1 justify-content-center">
                                     {% for sec in c.linked_sections %}
-                                    <span class="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-1 rounded-pill" style="font-size: 0.78rem;">
-                                        {{ sec.SectionName }}
+                                    <span class="badge bg-white text-dark border border-slate-200 shadow-xs px-2.5 py-1 rounded-pill glass-chip" style="font-size: 0.78rem;">
+                                        <i class="fa-solid fa-users-rectangle text-muted me-1" style="font-size: 0.7rem;"></i>{{ sec.SectionName }}
                                     </span>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <span class="badge bg-light text-muted border px-2 py-1 font-monospace">لا يوجد</span>
+                                <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace" style="font-size: 0.78rem;"><i class="fa-solid fa-ban me-1"></i> غير مسند</span>
                             {% endif %}
                         </td>
 
-                        <!-- Students / Max Capacity -->
+                        <!-- Students / Max Capacity Statistic Chip -->
                         <td>
-                            <div class="font-monospace fw-bold text-dark">
-                                {{ c.students_count }} / 
+                            <div class="statistic-chip">
+                                <i class="fa-solid fa-user-graduate text-primary me-1"></i>
+                                <span class="font-monospace fw-bold text-dark">{{ c.students_count }}</span>
+                                <span class="text-muted mx-1">/</span>
                                 {% if c.MaxStudents %}
-                                    {{ c.MaxStudents }}
+                                    <span class="font-monospace text-muted">{{ c.MaxStudents }}</span>
                                 {% else %}
-                                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.78rem;">غير محددة</span>
+                                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.75rem;">غير محددة</span>
                                 {% endif %}
                             </div>
                         </td>
 
-                        <!-- Teachers Count -->
+                        <!-- Teachers Count Statistic Chip -->
                         <td>
                             {% if c.teachers_count > 0 %}
-                                <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i> {{ c.teachers_count }}</span>
+                                <div class="statistic-chip">
+                                    <i class="fa-solid fa-chalkboard-user text-primary me-1"></i>
+                                    <span class="font-monospace fw-bold text-dark">{{ c.teachers_count }} معلم</span>
+                                </div>
                             {% else %}
-                                <span class="badge bg-light text-muted border font-monospace"><i class="fa-solid fa-chalkboard-user me-1"></i> غير مسند</span>
+                                <span class="badge bg-light text-muted border font-monospace px-2.5 py-1" style="font-size: 0.78rem;"><i class="fa-solid fa-chalkboard-user me-1"></i> غير مسند</span>
                             {% endif %}
                         </td>
 
-                        <!-- Subjects Count -->
+                        <!-- Subjects Count Statistic Chip -->
                         <td>
                             {% if c.subjects_count > 0 %}
-                                <span class="badge bg-light text-dark border font-monospace"><i class="fa-solid fa-book text-warning me-1"></i> {{ c.subjects_count }}</span>
+                                <div class="statistic-chip">
+                                    <i class="fa-solid fa-book text-warning me-1"></i>
+                                    <span class="font-monospace fw-bold text-dark">{{ c.subjects_count }} مادة</span>
+                                </div>
                             {% else %}
-                                <span class="badge bg-light text-muted border font-monospace"><i class="fa-solid fa-book me-1"></i> غير مسند</span>
+                                <span class="badge bg-light text-muted border font-monospace px-2.5 py-1" style="font-size: 0.78rem;"><i class="fa-solid fa-book me-1"></i> غير مسند</span>
                             {% endif %}
                         </td>
 
@@ -347,7 +358,7 @@
                                     </span>
                                 </div>
                             {% else %}
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 font-monospace">غير محددة</span>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 font-monospace" style="font-size: 0.78rem;">غير محددة</span>
                             {% endif %}
                         </td>
 
@@ -358,28 +369,28 @@
                             </span>
                         </td>
 
-                        <!-- Quick Actions -->
+                        <!-- Quick Actions Suite -->
                         <td>
                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="عرض التفاصيل" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="عرض التفاصيل" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                <button type="button" class="btn btn-sm btn-light border text-warning rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="تعديل الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="قائمة الطلاب">
+                                <a href="{{ url_for('students.home') }}?class_id={{ c.CID }}" class="btn btn-sm btn-light border text-info rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="قائمة الطلاب">
                                     <i class="fa-solid fa-users"></i>
                                 </a>
-                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="الكادر التعليمي">
+                                <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border text-purple rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="الكادر التعليمي">
                                     <i class="fa-solid fa-chalkboard-user"></i>
                                 </a>
-                                <a href="{{ url_for('academic.subjects') }}" class="btn btn-sm btn-light border text-success rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="المواد الدراسية">
+                                <a href="{{ url_for('academic.subjects') }}" class="btn btn-sm btn-light border text-success rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="المواد الدراسية">
                                     <i class="fa-solid fa-book"></i>
                                 </a>
-                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="جدول الحصص">
+                                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-secondary rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="جدول الحصص">
                                     <i class="fa-solid fa-calendar-days"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle action-btn-hover" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
+                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle saas-action-btn" data-bs-toggle="tooltip" title="حذف الصف" onclick="confirmDeleteClass({{ c.CID }}, '{{ c.CName }}', {{ c.students_count }})">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
