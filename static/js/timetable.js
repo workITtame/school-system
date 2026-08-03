@@ -889,3 +889,129 @@ function showToast(message, icon) {
         Toast.fire({ icon: icon, title: message });
     }
 }
+
+/* ==========================================================================
+   ENTERPRISE MULTI-STEP TIMETABLE SLOT WIZARD CONTROLLER (5 STEPS)
+   ========================================================================== */
+
+let slotWizardState = { currentStep: 1 };
+
+function goToSlotWizardStep(step) {
+    if (step > slotWizardState.currentStep) {
+        if (!validateSlotWizardStep(slotWizardState.currentStep)) {
+            return;
+        }
+    }
+
+    slotWizardState.currentStep = step;
+
+    // Update Stepper Bar Items
+    for (let s = 1; s <= 5; s++) {
+        const item = document.getElementById(`slot-step-item-${s}`);
+        const pane = document.getElementById(`slot-pane-${s}`);
+
+        if (item) {
+            item.classList.remove('active', 'completed');
+            if (s === step) {
+                item.classList.add('active');
+            } else if (s < step) {
+                item.classList.add('completed');
+            }
+        }
+
+        if (pane) {
+            pane.classList.remove('active');
+            if (s === step) {
+                pane.classList.add('active');
+            }
+        }
+    }
+
+    // Action Buttons Visibility
+    const prevBtn = document.getElementById('slot-prev-btn');
+    const nextBtn = document.getElementById('slot-next-btn');
+    const submitBtn = document.getElementById('slot-submit-btn');
+
+    if (prevBtn) prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
+    if (nextBtn) nextBtn.style.display = step < 5 ? 'inline-block' : 'none';
+    if (submitBtn) submitBtn.style.display = step === 5 ? 'inline-block' : 'none';
+
+    updateSlotWizardSummary();
+}
+
+function nextSlotWizardStep() {
+    if (slotWizardState.currentStep < 5) {
+        goToSlotWizardStep(slotWizardState.currentStep + 1);
+    }
+}
+
+function prevSlotWizardStep() {
+    if (slotWizardState.currentStep > 1) {
+        goToSlotWizardStep(slotWizardState.currentStep - 1);
+    }
+}
+
+function validateSlotWizardStep(step) {
+    if (step === 1) {
+        const classSelect = document.getElementById('addSlotClassSelect');
+        const sectionSelect = document.getElementById('addSlotSectionSelect');
+
+        if (classSelect && !classSelect.value) {
+            showToast('يرجى اختيار الصف الدراسي للمتابعة', 'warning');
+            return false;
+        }
+        if (sectionSelect && !sectionSelect.value) {
+            showToast('يرجى اختيار الشعبة الدراسية للمتابعة', 'warning');
+            return false;
+        }
+    } else if (step === 2) {
+        const subjectSelect = document.getElementById('addSlotSubjectSelect');
+        const teacherSelect = document.getElementById('addSlotTeacherSelect');
+
+        if (subjectSelect && !subjectSelect.value) {
+            showToast('يرجى اختيار المادة الدراسية للمتابعة', 'warning');
+            return false;
+        }
+        if (teacherSelect && !teacherSelect.value) {
+            showToast('يرجى اختيار المعلم المسند للمتابعة', 'warning');
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateSlotWizardSummary() {
+    const termSelect = document.getElementById('addSlotTermSelect');
+    const classSelect = document.getElementById('addSlotClassSelect');
+    const sectionSelect = document.getElementById('addSlotSectionSelect');
+    const subjectSelect = document.getElementById('addSlotSubjectSelect');
+    const teacherSelect = document.getElementById('addSlotTeacherSelect');
+    const daySelect = document.getElementById('addSlotDaySelect');
+    const lessonSelect = document.getElementById('addSlotLessonSelect');
+
+    const prevSubName = document.getElementById('slot-preview-subject-name');
+    const prevTeacherName = document.getElementById('slot-preview-teacher-name');
+
+    const sumTerm = document.getElementById('slot-sum-term');
+    const sumClass = document.getElementById('slot-sum-class');
+    const sumTime = document.getElementById('slot-sum-time');
+    const sumSubject = document.getElementById('slot-sum-subject');
+    const sumTeacher = document.getElementById('slot-sum-teacher');
+
+    const subText = subjectSelect && subjectSelect.selectedIndex >= 0 ? subjectSelect.options[subjectSelect.selectedIndex].text : 'لم يتم تحديد مادة';
+    const teacherText = teacherSelect && teacherSelect.selectedIndex >= 0 ? teacherSelect.options[teacherSelect.selectedIndex].text : 'لم يتم تحديد معلم';
+    const termText = termSelect && termSelect.selectedIndex >= 0 ? termSelect.options[termSelect.selectedIndex].text : '-';
+    const classText = classSelect && classSelect.selectedIndex >= 0 ? classSelect.options[classSelect.selectedIndex].text : '-';
+    const sectionText = sectionSelect && sectionSelect.selectedIndex >= 0 ? sectionSelect.options[sectionSelect.selectedIndex].text : '-';
+    const dayText = daySelect && daySelect.selectedIndex >= 0 ? daySelect.options[daySelect.selectedIndex].text : '-';
+    const lessonText = lessonSelect && lessonSelect.selectedIndex >= 0 ? lessonSelect.options[lessonSelect.selectedIndex].text : '-';
+
+    if (prevSubName) prevSubName.textContent = subText;
+    if (prevTeacherName) prevTeacherName.textContent = teacherText;
+
+    if (sumTerm) sumTerm.textContent = termText;
+    if (sumClass) sumClass.textContent = `${classText} (${sectionText})`;
+    if (sumTime) sumTime.textContent = `${dayText} - ${lessonText}`;
+    if (sumSubject) sumSubject.textContent = subText;
+    if (sumTeacher) sumTeacher.textContent = teacherText;
+}
