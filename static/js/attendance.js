@@ -39,7 +39,8 @@ function initAttendanceModule() {
     window.prevAttWizardStep = prevAttWizardStep;
     window.setAllWzStatus = setAllWzStatus;
     window.updateWzStudentStatus = updateWzStudentStatus;
-    window.updateWzStudentNote = updateWzStudentNote;
+    window.openAttendanceAnalyticsModal = openAttendanceAnalyticsModal;
+    window.printAttendanceAnalytics = printAttendanceAnalytics;
 
     setupAttendanceEventListeners();
 
@@ -861,4 +862,67 @@ function updateAttWizardUI() {
             }
         }
     }
+}
+
+/* ==========================================================================
+   ATTENDANCE ANALYTICS & REPORTS CONTROLLER (POWER BI & M365 INSIGHTS)
+   ========================================================================== */
+
+let analyticsTrendChartInstance = null;
+
+function openAttendanceAnalyticsModal() {
+    const modalEl = document.getElementById('attendanceAnalyticsModal');
+    if (!modalEl) return;
+
+    initAttendanceAnalyticsChart();
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function initAttendanceAnalyticsChart() {
+    const ctx = document.getElementById('anAttTrendChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (analyticsTrendChartInstance) {
+        analyticsTrendChartInstance.destroy();
+    }
+
+    analyticsTrendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
+            datasets: [
+                {
+                    label: 'نسبة الحضور %',
+                    data: [99.1, 98.5, 97.8, 95.2, 92.4],
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'نسبة الغياب %',
+                    data: [0.9, 1.5, 2.2, 4.8, 7.6],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+}
+
+function printAttendanceAnalytics() {
+    window.print();
 }
