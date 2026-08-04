@@ -319,36 +319,57 @@
                     <span class="badge bg-primary rounded-pill px-3 font-monospace" id="repProfileHeroCode">REP-01</span>
                     <h5 class="modal-title fw-bold text-white mb-0" id="repProfileHeroTitle">ملف التقرير الشامل</h5>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-circle" onclick="location.reload()" title="تحديث"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
 
             <div class="modal-body p-4 bg-light-subtle">
                 
-                <!-- Section 2: KPI Dashboard -->
+                <!-- Section 2: 6 KPI Cards Dashboard -->
                 <div class="row g-2 mb-3">
-                    <div class="col-4">
-                        <div class="p-2 bg-white rounded-3 border text-center">
-                            <small class="text-muted extra-small d-block">الحالة النظامية</small>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">عدد السجلات</small>
+                            <strong class="text-primary extra-small">نشطة حياً</strong>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">آخر تحديث</small>
+                            <strong class="text-success extra-small">لحظي</strong>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">متوسط الأداء</small>
+                            <strong class="text-warning extra-small">100%</strong>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">حالة التقرير</small>
                             <strong class="text-success extra-small">متاح وموثق</strong>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="p-2 bg-white rounded-3 border text-center">
-                            <small class="text-muted extra-small d-block">مصدر البيانات</small>
-                            <strong class="text-primary extra-small">قاعدة البيانات الحية</strong>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">سرعة الاستخراج</small>
+                            <strong class="text-info extra-small">فورية</strong>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="p-2 bg-white rounded-3 border text-center">
-                            <small class="text-muted extra-small d-block">جاهزية التصدير</small>
-                            <strong class="text-warning extra-small">100% PDF & Excel</strong>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 bg-white rounded-3 border text-center shadow-sm">
+                            <small class="text-muted extra-small d-block">نوع البيانات</small>
+                            <strong class="text-primary extra-small">داتابيز حية</strong>
                         </div>
                     </div>
                 </div>
 
                 <!-- Section 3: Basic Information -->
-                <div class="p-3 bg-white border rounded-4 mb-3">
-                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-circle-info text-primary me-2"></i> البيانات والمعلومات الأساسية:</h6>
+                <div class="p-3 bg-white border rounded-4 mb-3 shadow-sm">
+                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-circle-info text-primary me-2"></i> 3. البيانات والمعلومات الأساسية:</h6>
                     <div class="row g-2 extra-small">
                         <div class="col-6"><strong>اسم التقرير:</strong> <span id="repProfileName" class="text-muted">—</span></div>
                         <div class="col-6"><strong>الفئة الأكاديمية:</strong> <span id="repProfileCategory" class="text-muted">—</span></div>
@@ -356,19 +377,19 @@
                     </div>
                 </div>
 
-                <!-- Section 4 & 5: Related Database Tables & Linked Modules -->
+                <!-- Section 4 & 5: Database Information & Related Modules -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <div class="p-3 bg-white border rounded-4 h-100">
-                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-database text-info me-2"></i> الجداول المرتبطة بالـ DB (Single Source):</h6>
+                        <div class="p-3 bg-white border rounded-4 h-100 shadow-sm">
+                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-database text-info me-2"></i> 4. الجداول المستخدمة بالـ DB (Single Source):</h6>
                             <div id="repProfileTables" class="d-flex flex-wrap gap-1">
                                 <!-- Populated dynamically -->
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="p-3 bg-white border rounded-4 h-100">
-                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-cubes text-success me-2"></i> الموديولات المرتبطة بالنظام:</h6>
+                        <div class="p-3 bg-white border rounded-4 h-100 shadow-sm">
+                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-cubes text-success me-2"></i> 5. الموديولات المرتبطة بالنظام:</h6>
                             <div id="repProfileModules" class="d-flex flex-wrap gap-1">
                                 <!-- Populated dynamically -->
                             </div>
@@ -376,29 +397,45 @@
                     </div>
                 </div>
 
-                <!-- Section 6 & 7: Route Information & Export Capabilities -->
-                <div class="p-3 bg-white border rounded-4 mb-3">
-                    <div class="row g-2 extra-small">
-                        <div class="col-md-7">
-                            <strong><i class="fa-solid fa-link text-warning me-1"></i> المسار الداخلي بالنظام (RoutePath):</strong>
-                            <code id="repProfileRoutePath" class="d-block p-2 bg-light rounded-3 text-primary mt-1">/reports</code>
+                <!-- Section 6: Analytics Chart.js -->
+                <div class="p-3 bg-white border rounded-4 mb-3 shadow-sm">
+                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-chart-column text-primary me-2"></i> 6. التحليل التفاعلي واستخراج المؤشرات:</h6>
+                    <div style="height: 140px; position: relative;">
+                        <canvas id="repProfileAnalyticsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Section 7 & 8: Timeline & Export Options -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-white border rounded-4 h-100 shadow-sm extra-small">
+                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> 7. سجل الأحداث والخط الزمني (Timeline):</h6>
+                            <ul class="list-unstyled mb-0 opacity-75">
+                                <li><i class="fa-solid fa-check text-success me-1"></i> آخر تحديث للبيانات: <strong>لحظي المباشر</strong></li>
+                                <li><i class="fa-solid fa-check text-success me-1"></i> آخر تشغيل للتقرير: <strong>نشط الآن</strong></li>
+                            </ul>
                         </div>
-                        <div class="col-md-5">
-                            <strong><i class="fa-solid fa-file-export text-danger me-1"></i> صيغ التصدير المتاحة:</strong>
-                            <div class="mt-1">
-                                <span class="badge bg-danger-subtle text-danger border rounded-pill me-1">PDF</span>
-                                <span class="badge bg-success-subtle text-success border rounded-pill me-1">Excel</span>
-                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill">Print</span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-white border rounded-4 h-100 shadow-sm extra-small">
+                            <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-file-export text-danger me-2"></i> 8. خيارات وحالة التصدير المتاحة:</h6>
+                            <div class="d-flex gap-1 mt-2">
+                                <span class="badge bg-danger-subtle text-danger border rounded-pill px-3 py-1">PDF</span>
+                                <span class="badge bg-success-subtle text-success border rounded-pill px-3 py-1">Excel</span>
+                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1">Print</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 8 & 9: Timeline & Analytics -->
-                <div class="p-3 bg-white border rounded-4 mb-3">
-                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-chart-column text-primary me-2"></i> تحليلات وجاهزية استخراج التقرير:</h6>
-                    <div style="height: 140px; position: relative;">
-                        <canvas id="repProfileAnalyticsChart"></canvas>
+                <!-- Section 9: Related Reports -->
+                <div class="p-3 bg-white border rounded-4 mb-3 shadow-sm extra-small">
+                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-link text-info me-2"></i> 9. التقارير المرتبطة ذات الصلة:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-light text-dark border rounded-pill px-2 py-1">كشف الدرجات</span>
+                        <span class="badge bg-light text-dark border rounded-pill px-2 py-1">تحليل الأداء</span>
+                        <span class="badge bg-light text-dark border rounded-pill px-2 py-1">تقرير الحضور</span>
+                        <span class="badge bg-light text-dark border rounded-pill px-2 py-1">تقرير الاختبارات</span>
                     </div>
                 </div>
 
@@ -415,7 +452,7 @@
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold font-monospace extra-small" data-bs-dismiss="modal">إغلاق</button>
                         <a id="repProfileRunBtn" href="/reports" class="btn btn-primary rounded-pill px-4 fw-bold font-monospace extra-small">
-                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> تشغيل التقرير المباشر
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> فتح التقرير المباشر
                         </a>
                     </div>
                 </div>
