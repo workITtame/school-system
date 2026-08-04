@@ -29,13 +29,7 @@
                         <div class="col-6">
                             <a href="{{ url_for('students.home') }}" class="btn btn-outline-primary w-100 p-3 rounded-3 text-decoration-none">
                                 <i class="fa-solid fa-user-plus fs-4 d-block mb-2"></i>
-                                <span class="extra-small font-monospace fw-bold">إضافة طالب</span>
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ url_for('teacher.index') }}" class="btn btn-outline-success w-100 p-3 rounded-3 text-decoration-none">
-                                <i class="fa-solid fa-user-tie fs-4 d-block mb-2"></i>
-                                <span class="extra-small font-monospace fw-bold">إضافة معلم</span>
+                                <span class="extra-small font-monospace fw-bold">قائمة الطلاب</span>
                             </a>
                         </div>
                         <div class="col-6">
@@ -45,9 +39,15 @@
                             </a>
                         </div>
                         <div class="col-6">
+                            <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-success w-100 p-3 rounded-3 text-decoration-none">
+                                <i class="fa-solid fa-clipboard-user fs-4 d-block mb-2"></i>
+                                <span class="extra-small font-monospace fw-bold">رصد الحضور</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
                             <a href="{{ url_for('exams.index') }}" class="btn btn-outline-danger w-100 p-3 rounded-3 text-decoration-none">
                                 <i class="fa-solid fa-file-signature fs-4 d-block mb-2"></i>
-                                <span class="extra-small font-monospace fw-bold">جدول اختبار</span>
+                                <span class="extra-small font-monospace fw-bold">جدول الاختبارات</span>
                             </a>
                         </div>
                     </div>
@@ -64,61 +64,88 @@
             </div>
             <div class="sidebar-logo-text">
                 <h5>مدرسة المستقبل</h5>
-                <small>نظام إدارة المدارس</small>
+                <small>{% if session.get('user_role') == 'admin' %}لوحة الإدارة التنفيذية{% else %}مساحة عمل المعلم{% endif %}</small>
             </div>
         </div>
         
         <ul class="list-unstyled components">
 
-            
-            <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house"></i> لوحة التحكم</a>
-            </li>
-            
             {% if session.get('user_role') == 'admin' %}
-            <li class="{% if request.blueprint == 'students' %}active{% endif %}">
-                <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate"></i> الطلاب</a>
-            </li>
-            <li class="{% if request.blueprint == 'teacher' %}active{% endif %}">
-                <a href="{{ url_for('teacher.index') }}"><i class="fa-solid fa-chalkboard-user"></i> المعلمون</a>
-            </li>
-            <li class="{% if request.blueprint == 'academic' and 'classes' in request.path %}active{% endif %}">
-                <a href="{{ url_for('academic.classes') }}"><i class="fa-solid fa-layer-group"></i> الصفوف والشعب</a>
-            </li>
-            <li class="{% if request.blueprint == 'academic' and 'subjects' in request.path %}active{% endif %}">
-                <a href="{{ url_for('academic.subjects') }}"><i class="fa-solid fa-book-open"></i> المواد الدراسية</a>
-            </li>
-            <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
-                <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> الجداول الدراسية</a>
-            </li>
-            <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
-                <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user"></i> الحضور والغياب</a>
-            </li>
-            <li class="{% if request.blueprint in ['exams', 'grades'] %}active{% endif %}">
-                <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature"></i> الاختبارات والدرجات</a>
-            </li>
-            <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
-                <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark"></i> الواجبات الدراسية</a>
-            </li>
-            <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
-                <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope"></i> الرسائل</a>
-            </li>
-            <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
-                <a href="{{ url_for('reports.student_report') }}"><i class="fa-solid fa-chart-column"></i> التقارير</a>
-            </li>
-            <li class="{% if request.endpoint == 'dashboard.finance' %}active{% endif %}">
-                <a href="{{ url_for('dashboard.finance') }}"><i class="fa-solid fa-file-invoice-dollar"></i> الشؤون المالية</a>
-            </li>
-            <li class="{% if request.endpoint in ['auth.profile', 'dashboard.settings'] %}active{% endif %}">
-                <a href="{{ url_for('dashboard.settings') }}"><i class="fa-solid fa-gear"></i> الإعدادات</a>
-            </li>
+
+                <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house"></i> لوحة التحكم</a>
+                </li>
+                <li class="{% if request.blueprint == 'students' %}active{% endif %}">
+                    <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate"></i> الطلاب</a>
+                </li>
+                <li class="{% if request.blueprint == 'teacher' %}active{% endif %}">
+                    <a href="{{ url_for('teacher.index') }}"><i class="fa-solid fa-chalkboard-user"></i> المعلمون</a>
+                </li>
+                <li class="{% if request.blueprint == 'academic' and 'classes' in request.path %}active{% endif %}">
+                    <a href="{{ url_for('academic.classes') }}"><i class="fa-solid fa-layer-group"></i> الصفوف والشعب</a>
+                </li>
+                <li class="{% if request.blueprint == 'academic' and 'subjects' in request.path %}active{% endif %}">
+                    <a href="{{ url_for('academic.subjects') }}"><i class="fa-solid fa-book-open"></i> المواد الدراسية</a>
+                </li>
+                <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                    <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> الجداول الدراسية</a>
+                </li>
+                <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
+                    <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user"></i> الحضور والغياب</a>
+                </li>
+                <li class="{% if request.blueprint in ['exams', 'grades'] %}active{% endif %}">
+                    <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature"></i> الاختبارات والدرجات</a>
+                </li>
+                <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
+                    <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark"></i> الواجبات الدراسية</a>
+                </li>
+                <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
+                    <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope"></i> الرسائل</a>
+                </li>
+                <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
+                    <a href="{{ url_for('reports.student_report') }}"><i class="fa-solid fa-chart-column"></i> التقارير</a>
+                </li>
+                <li class="{% if request.endpoint == 'dashboard.finance' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.finance') }}"><i class="fa-solid fa-file-invoice-dollar"></i> الشؤون المالية</a>
+                </li>
+                <li class="{% if request.endpoint in ['auth.profile', 'dashboard.settings'] %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.settings') }}"><i class="fa-solid fa-gear"></i> الإعدادات</a>
+                </li>
+
             {% else %}
-            <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
-                <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> جدولي الدراسي</a>
-            </li>
-            <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
-                <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star"></i> إدخال الدرجات</a>
-            </li>
+
+                <!-- TEACHER SIDEBAR NAVIGATION (ENTERPRISE WORKSPACE ORDER) -->
+                <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house text-primary me-2"></i> <span>لوحة التحكم</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                    <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days text-info me-2"></i> <span>جدولي الدراسي</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'students' %}active{% endif %}">
+                    <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate text-success me-2"></i> <span>طلابي</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
+                    <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user text-warning me-2"></i> <span>الحضور والغياب</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
+                    <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark text-primary me-2"></i> <span>الواجبات</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'exams' %}active{% endif %}">
+                    <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature text-danger me-2"></i> <span>الاختبارات</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
+                    <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>الدرجات</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
+                    <a href="{{ url_for('reports.student_report') }}"><i class="fa-solid fa-chart-column text-info me-2"></i> <span>التقارير</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
+                    <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope text-primary me-2"></i> <span>الرسائل</span></a>
+                </li>
+                <li class="{% if request.blueprint == 'notifications' %}active{% endif %}">
+                    <a href="{{ url_for('notifications.index') }}"><i class="fa-regular fa-bell text-danger me-2"></i> <span>الإشعارات</span></a>
+                </li>
+
             {% endif %}
 
             <li class="mt-4 border-top pt-2">

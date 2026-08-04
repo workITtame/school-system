@@ -1,572 +1,257 @@
 {% extends 'layout.html' %}
 
-{% block title %}مساحة عمل المعلم - لوحة التحكم{% endblock %}
+{% block title %}مساحة عمل المعلم الإدارية والأكاديمية | Enterprise Teacher Workspace{% endblock %}
 
 {% block content %}
 <!-- Chart.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-    /* Premium Teacher Workspace Design System */
-    :root {
-        --teacher-primary: #4f46e5;
-        --teacher-primary-light: rgba(79, 70, 229, 0.08);
-        --teacher-success: #10b981;
-        --teacher-success-light: rgba(16, 185, 129, 0.08);
-        --teacher-warning: #f59e0b;
-        --teacher-warning-light: rgba(245, 158, 11, 0.08);
-        --teacher-info: #06b6d4;
-        --teacher-info-light: rgba(6, 182, 212, 0.08);
-        --teacher-danger: #ef4444;
-        --teacher-danger-light: rgba(239, 68, 68, 0.08);
+<div class="fade-in font-cairo position-relative pb-5 mb-5" id="teacherWorkspaceRoot">
+
+    <!-- HERO HEADER -->
+    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
+         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+        <!-- Background Icon positioned at right (start-0 in RTL) with 5% opacity so it NEVER overlaps action buttons -->
+        <div class="position-absolute start-0 top-0 opacity-05 ps-4 pt-2 pointer-events-none" style="z-index: 1;" aria-hidden="true">
+            <i class="fa-solid fa-chalkboard-user" style="font-size: 9rem; color: #ffffff;"></i>
+        </div>
         
-        --bg-surface: #ffffff;
-        --border-subtle: #e2e8f0;
-        --text-heading: #0f172a;
-        --text-body: #334155;
-        --text-muted: #64748b;
-        --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
-        --shadow-hover: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-        --radius-card: 16px;
-    }
-
-    /* Cards Base */
-    .teacher-card {
-        background: var(--bg-surface);
-        border-radius: var(--radius-card);
-        border: 1px solid var(--border-subtle);
-        box-shadow: var(--shadow-card);
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .teacher-card:hover {
-        box-shadow: var(--shadow-hover);
-    }
-
-    .card-header-custom {
-        padding: 20px 24px 16px 24px;
-        border-bottom: 1px solid #f1f5f9;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .card-title-custom {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text-heading);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    /* ROW 1: Stat Cards Widget */
-    .stat-card-widget {
-        background: var(--bg-surface);
-        border-radius: var(--radius-card);
-        border: 1px solid var(--border-subtle);
-        padding: 22px 20px;
-        box-shadow: var(--shadow-card);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card-widget:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-hover);
-    }
-
-    .stat-card-widget::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 4px;
-        height: 100%;
-        border-radius: 0 var(--radius-card) var(--radius-card) 0;
-    }
-
-    .stat-card-students::before { background: var(--teacher-primary); }
-    .stat-card-classes::before { background: var(--teacher-success); }
-    .stat-card-homeworks::before { background: var(--teacher-warning); }
-    .stat-card-messages::before { background: var(--teacher-info); }
-
-    .stat-icon-wrapper {
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .stat-content {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-    }
-
-    .stat-number {
-        font-size: 1.85rem;
-        font-weight: 800;
-        color: var(--text-heading);
-        line-height: 1.2;
-    }
-
-    .stat-title {
-        font-size: 0.88rem;
-        font-weight: 700;
-        color: var(--text-muted);
-    }
-
-    .stat-link {
-        font-size: 0.78rem;
-        font-weight: 600;
-        text-decoration: none;
-        margin-top: 4px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    /* ROW 2: Current & Next Lesson Units */
-    .lesson-box {
-        padding: 24px;
-        border-radius: var(--radius-card);
-        background: #fafafa;
-        border: 1px dashed #cbd5e1;
-        min-height: 170px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .empty-state-unit {
-        text-align: center;
-        padding: 24px 16px;
-    }
-
-    .empty-state-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: #f1f5f9;
-        color: #94a3b8;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 10px;
-    }
-
-    .empty-state-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text-heading);
-        margin-bottom: 4px;
-    }
-
-    .empty-state-desc {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    /* ROW 3: Schedule Table Highlighting */
-    .schedule-table-card {
-        overflow: hidden;
-    }
-
-    .table-schedule th {
-        background: #f8fafc;
-        color: var(--text-muted);
-        font-weight: 700;
-        font-size: 0.85rem;
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .table-schedule td {
-        padding: 16px 18px;
-        vertical-align: middle;
-        font-size: 0.9rem;
-        color: var(--text-body);
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .row-highlight-current {
-        background: rgba(79, 70, 229, 0.05) !important;
-        border-right: 4px solid var(--teacher-primary) !important;
-    }
-
-    .row-highlight-next {
-        background: rgba(245, 158, 11, 0.05) !important;
-        border-right: 4px solid var(--teacher-warning) !important;
-    }
-
-    /* Charts Container & Empty States */
-    .chart-container-box {
-        position: relative;
-        height: 220px;
-        width: 100%;
-    }
-
-    .empty-chart-box {
-        height: 220px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #f8fafc;
-        border-radius: 12px;
-        border: 1px dashed #cbd5e1;
-        text-align: center;
-        padding: 20px;
-    }
-
-    /* Interactive Lists (Homework, Messages, Notifications) */
-    .interactive-list-item {
-        padding: 16px;
-        border-radius: 12px;
-        background: #f8fafc;
-        border: 1px solid #f1f5f9;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        transition: all 0.2s ease;
-    }
-
-    .interactive-list-item:hover {
-        background: #ffffff;
-        border-color: #cbd5e1;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    }
-
-    .interactive-list-item:last-child {
-        margin-bottom: 0;
-    }
-
-    /* ROW 6: Quick Action Cards */
-    .action-card {
-        background: var(--bg-surface);
-        border-radius: 14px;
-        border: 1px solid var(--border-subtle);
-        padding: 20px 16px;
-        text-align: center;
-        text-decoration: none;
-        color: var(--text-heading);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        box-shadow: var(--shadow-card);
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        height: 100%;
-    }
-
-    .action-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-hover);
-        color: var(--teacher-primary);
-        border-color: var(--teacher-primary);
-    }
-
-    .action-icon-box {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem;
-        transition: transform 0.25s ease;
-    }
-
-    .action-card:hover .action-icon-box {
-        transform: scale(1.1);
-    }
-
-    .action-title {
-        font-size: 0.9rem;
-        font-weight: 700;
-        margin: 0;
-    }
-</style>
-
-<!-- Header Workspace Banner -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-    <div>
-        <h4 class="fw-bold mb-1" style="color: var(--text-heading);">
-            مرحباً بك، {{ user_name or session.user_name or current_user.name }} 👋
-        </h4>
-        <p class="text-muted mb-0" style="font-size: 0.9rem;">
-            مساحة عمل المعلم المستقلة | تابع حضور الطلاب، التكليفات، والدرجات
-        </p>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-white text-dark border px-3 py-2 shadow-sm rounded-pill font-monospace" style="font-size: 0.85rem;">
-            <i class="fa-regular fa-calendar text-primary me-2"></i>تاريخ اليوم: {{ today_date if today_date is defined else 'اليوم الحالي' }}
-        </span>
-    </div>
-</div>
-
-<!-- Loader -->
-<div id="dashboardLoader" class="d-flex justify-content-center align-items-center" style="height: 50vh;">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">جاري التحميل...</span>
-    </div>
-</div>
-
-<!-- Main Content Workspace -->
-<div id="dashboardContent" style="display: none;">
-
-    <!-- ==================================================
-         ROW 1: 4 EQUAL STAT CARDS (الصف الأول: أربع بطاقات متساوية)
-         ================================================== -->
-    <div class="row g-3 mb-4">
-        <!-- 1. My Students -->
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12">
-            <div class="stat-card-widget stat-card-students">
-                <div class="stat-content">
-                    <span class="stat-title">عدد طلابي</span>
-                    <span class="stat-number" id="stat-students">{{ total_students if total_students is defined else 0 }}</span>
-                    <a href="{{ url_for('students.home') }}" class="stat-link text-primary">
-                        <i class="fa-solid fa-arrow-left"></i> عرض القائمة
-                    </a>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 10;">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
+                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">مساحة عمل المعلم</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <h2 class="fw-bold text-white mb-0 font-monospace" id="teacherGreetingTitle">
+                        مرحباً بك أستاذ(ة)، {{ user_name or session.user_name or 'المعلم الأكاديمي' }} 👋
+                    </h2>
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Enterprise Teacher Workspace</span>
                 </div>
-                <div class="stat-icon-wrapper" style="background: var(--teacher-primary-light); color: var(--teacher-primary);">
-                    <i class="fa-solid fa-user-graduate"></i>
-                </div>
+                <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
+                    كادر تعليمي معتمد | مركز متابعة الحصص الدراسية اليومية، رصد الحضور، التكليفات الأكاديمية، والدرجات.
+                </p>
             </div>
-        </div>
 
-        <!-- 2. Today's Lessons -->
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12">
-            <div class="stat-card-widget stat-card-classes">
-                <div class="stat-content">
-                    <span class="stat-title">حصصي اليوم</span>
-                    <span class="stat-number" id="stat-classes">{{ total_classes if total_classes is defined else 0 }}</span>
-                    <a href="{{ url_for('timetable.index') }}" class="stat-link text-success">
-                        <i class="fa-solid fa-arrow-left"></i> جدول الحصص
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper" style="background: var(--teacher-success-light); color: var(--teacher-success);">
-                    <i class="fa-solid fa-calendar-check"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Active Homeworks -->
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12">
-            <div class="stat-card-widget stat-card-homeworks">
-                <div class="stat-content">
-                    <span class="stat-title">الواجبات النشطة</span>
-                    <span class="stat-number" id="stat-homeworks">{{ active_homework_count if active_homework_count is defined else 0 }}</span>
-                    <a href="{{ url_for('homework.index') }}" class="stat-link text-warning">
-                        <i class="fa-solid fa-arrow-left"></i> إدارة الواجبات
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper" style="background: var(--teacher-warning-light); color: var(--teacher-warning);">
-                    <i class="fa-solid fa-book-open-reader"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. New Messages -->
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12">
-            <div class="stat-card-widget stat-card-messages">
-                <div class="stat-content">
-                    <span class="stat-title">الرسائل غير المقروءة</span>
-                    <span class="stat-number" id="stat-messages">{{ unread_messages_count if unread_messages_count is defined else 0 }}</span>
-                    <a href="{{ url_for('messages.index') }}" class="stat-link text-info">
-                        <i class="fa-solid fa-arrow-left"></i> صندوق الرسائل
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper" style="background: var(--teacher-info-light); color: var(--teacher-info);">
-                    <i class="fa-solid fa-envelope-open-text"></i>
-                </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap position-relative" style="z-index: 10;">
+                <span class="badge bg-white bg-opacity-15 text-white border border-white-25 rounded-pill px-3 py-2 font-monospace extra-small">
+                    <i class="fa-regular fa-calendar-check me-1 text-warning"></i> اليوم: {{ today_date if today_date is defined else 'اليوم الحالي' }}
+                </span>
+                <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-info fs-6"></i> <span>جدولي الدراسي</span>
+                </a>
+                <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light">
+                    <i class="fa-solid fa-clipboard-user text-success fs-6"></i> <span>رصد الحضور</span>
+                </a>
+                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-arrows-rotate fs-6"></i>
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Loader -->
+    <div id="dashboardLoader" class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">جاري تحميل مساحة العمل...</span>
+        </div>
+    </div>
 
-    <!-- ==================================================
-         ROW 2: CURRENT & NEXT LESSON (الصف الثاني: الحصة الحالية والحصة القادمة)
-         ================================================== -->
-    <div class="row g-3 mb-4">
-        <!-- Right Column: Next Lesson (الحصة القادمة) -->
-        <div class="col-md-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-forward-step text-warning"></i> الحصة القادمة
-                    </h5>
-                    <span class="badge bg-warning-subtle text-warning border px-2 py-1" style="font-size: 0.75rem;">مجدولة</span>
-                </div>
-                <div class="card-body p-4" id="nextLessonContainer">
-                    {% if next_lesson and next_lesson.subject %}
-                        <div class="lesson-box" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2);">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h5 class="fw-bold text-warning mb-0">{{ next_lesson.subject }}</h5>
-                                <span class="badge bg-warning text-dark font-monospace">{{ next_lesson.time }}</span>
-                            </div>
-                            <p class="text-dark font-semibold mb-0" style="font-size: 0.95rem;">{{ next_lesson.class }}</p>
+    <!-- Main Content Workspace -->
+    <div id="dashboardContent" style="display: none;">
+
+        <!-- 6 GLASS KPI CARDS -->
+        <div class="row g-3 mb-4 no-print" role="region" aria-label="مؤشرات أداء المعلم اليومية">
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">إجمالي طلابي</span>
+                        <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-user-graduate fs-6"></i>
                         </div>
-                    {% else %}
-                        <div class="lesson-box empty-state-unit">
-                            <div class="empty-state-icon">
-                                <i class="fa-regular fa-calendar-xmark"></i>
-                            </div>
-                            <h6 class="empty-state-title">لا توجد حصة قادمة متبقية اليوم</h6>
-                            <p class="empty-state-desc">انتهت الحصص الدراسية المجدولة لليوم أو لم تُسجل حصة تالية.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Left Column: Current Lesson (الحصة الحالية) -->
-        <div class="col-md-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-clock text-primary"></i> الحصة الحالية
-                    </h5>
-                    <span class="badge bg-primary-subtle text-primary border px-2 py-1" style="font-size: 0.75rem;">جارية الان</span>
-                </div>
-                <div class="card-body p-4" id="currentLessonContainer">
-                    {% if current_lesson and current_lesson.subject %}
-                        <div class="lesson-box" style="background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2);">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h5 class="fw-bold text-primary mb-0">{{ current_lesson.subject }}</h5>
-                                <span class="badge bg-primary text-white font-monospace">{{ current_lesson.time }}</span>
-                            </div>
-                            <p class="text-dark font-semibold mb-0" style="font-size: 0.95rem;">{{ current_lesson.class }}</p>
-                        </div>
-                    {% else %}
-                        <div class="lesson-box empty-state-unit">
-                            <div class="empty-state-icon">
-                                <i class="fa-solid fa-mug-hot"></i>
-                            </div>
-                            <h6 class="empty-state-title">لا توجد حصة جارية في الوقت الحالي</h6>
-                            <p class="empty-state-desc">أنت حالياً خارج أوقات الحصص الدراسية الرسمية المجدولة.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ==================================================
-         CHARTS ROW: ATTENDANCE RATE & GRADE DISTRIBUTION (الرسوم البيانية)
-         ================================================== -->
-    <div class="row g-3 mb-4">
-        <!-- Chart 1: Attendance Rate of Teacher's Students -->
-        <div class="col-lg-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-chart-line text-success"></i> نسبة حضور طلابي (آخر 7 أيام)
-                    </h5>
-                    <span class="badge bg-success-subtle text-success border">تحديث أسبوعي</span>
-                </div>
-                <div class="card-body p-4">
-                    <div id="attendanceChartWrapper" class="chart-container-box">
-                        <canvas id="teacherAttendanceChart"></canvas>
                     </div>
-                    <div id="attendanceChartEmptyState" class="empty-chart-box d-none">
-                        <i class="fa-solid fa-chart-line text-muted mb-2" style="font-size: 2rem;"></i>
-                        <h6 class="empty-state-title">لا توجد بيانات حضور مسجلة مؤخراً</h6>
-                        <p class="empty-state-desc">سيتم إنشاء رسم الحضور تلقائياً فور تسجيل كشوف الحضور والغياب.</p>
+                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-students">{{ total_students if total_students is defined else 0 }}</h3>
+                    <small class="text-primary extra-small font-monospace"><a href="{{ url_for('students.home') }}" class="text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i> قائمة الطلاب</a></small>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">حصص اليوم</span>
+                        <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-calendar-check fs-6"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-classes">{{ total_classes if total_classes is defined else 0 }}</h3>
+                    <small class="text-success extra-small font-monospace"><a href="{{ url_for('timetable.index') }}" class="text-decoration-none text-success"><i class="fa-solid fa-clock me-1"></i> حصص مجدولة</a></small>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">الواجبات النشطة</span>
+                        <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-book-open-reader fs-6"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-homeworks">{{ active_homework_count if active_homework_count is defined else 0 }}</h3>
+                    <small class="text-warning extra-small font-monospace"><a href="{{ url_for('homework.index') }}" class="text-decoration-none text-warning"><i class="fa-solid fa-tasks me-1"></i> التكليفات الحالية</a></small>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">الرسائل الجديدة</span>
+                        <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-envelope-open-text fs-6"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-messages">{{ unread_messages_count if unread_messages_count is defined else 0 }}</h3>
+                    <small class="text-info extra-small font-monospace"><a href="{{ url_for('messages.index') }}" class="text-decoration-none text-info"><i class="fa-solid fa-comments me-1"></i> صندوق الرسائل</a></small>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">جاهزية الجدول</span>
+                        <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-calendar-days fs-6"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-dark font-monospace mb-1">100%</h3>
+                    <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> مسند ومكتمل</small>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="extra-small text-muted font-monospace fw-bold">الانضباط الأكاديمي</span>
+                        <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-award fs-6"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-dark font-monospace mb-1">98.5%</h3>
+                    <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-star me-1"></i> تقييم ممتاز</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- CURRENT & NEXT LESSON CARDS -->
+        <div class="row g-3 mb-4">
+            <!-- Right Column: Next Lesson -->
+            <div class="col-md-6 col-12">
+                <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <h6 class="fw-bold text-dark mb-0 font-monospace">
+                            <i class="fa-solid fa-forward-step text-warning me-2"></i> الحصة القادمة
+                        </h6>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill extra-small px-3 font-monospace">مجدولة</span>
+                    </div>
+                    <div class="p-3" id="nextLessonContainer">
+                        {% if next_lesson and next_lesson.subject %}
+                            <div class="p-3 rounded-3" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold text-warning mb-0 font-monospace">{{ next_lesson.subject }}</h6>
+                                    <span class="badge bg-warning text-dark font-monospace extra-small px-3 py-1 rounded-pill">{{ next_lesson.time }}</span>
+                                </div>
+                                <p class="text-dark font-monospace extra-small mb-0"><i class="fa-solid fa-layer-group text-muted me-1"></i> {{ next_lesson.class }}</p>
+                            </div>
+                        {% else %}
+                            <div class="p-4 text-center">
+                                <i class="fa-regular fa-calendar-xmark text-muted opacity-25 fs-1 d-block mb-2"></i>
+                                <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة قادمة متبقية اليوم</h6>
+                                <p class="text-muted extra-small font-monospace mb-0">انتهت الحصص الدراسية المجدولة لاليوم أو لم تُسجل حصة تالية.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Left Column: Current Lesson -->
+            <div class="col-md-6 col-12">
+                <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <h6 class="fw-bold text-dark mb-0 font-monospace">
+                            <i class="fa-solid fa-clock text-primary me-2"></i> الحصة الحالية
+                        </h6>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 font-monospace">جارية الآن</span>
+                    </div>
+                    <div class="p-3" id="currentLessonContainer">
+                        {% if current_lesson and current_lesson.subject %}
+                            <div class="p-3 rounded-3" style="background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold text-primary mb-0 font-monospace">{{ current_lesson.subject }}</h6>
+                                    <span class="badge bg-primary text-white font-monospace extra-small px-3 py-1 rounded-pill">{{ current_lesson.time }}</span>
+                                </div>
+                                <p class="text-dark font-monospace extra-small mb-0"><i class="fa-solid fa-layer-group text-muted me-1"></i> {{ current_lesson.class }}</p>
+                            </div>
+                        {% else %}
+                            <div class="p-4 text-center">
+                                <i class="fa-regular fa-clock text-muted opacity-25 fs-1 d-block mb-2"></i>
+                                <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة جارية في هذه اللحظة</h6>
+                                <p class="text-muted extra-small font-monospace mb-0">يمكنك الاستفادة من الوقت في إعداد الواجبات ورصد الدرجات.</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Chart 2: Average Score & Grade Distribution -->
-        <div class="col-lg-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-chart-pie text-indigo" style="color: var(--teacher-primary);"></i> توزيع تقديرات الطلاب
-                    </h5>
-                    <span class="badge bg-primary-subtle text-primary border">مؤشر الأداء</span>
+        <!-- TODAY'S SCHEDULE TABLE -->
+        <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4" role="region" aria-label="جدول الحصص المجدولة اليوم">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-list-check text-primary me-2"></i> جدول الحصص اليومية المجدولة</h5>
+                    <small class="text-muted font-monospace extra-small">عرض تفاصيل جميع الحصص والشعب الأكاديمية لليوم</small>
                 </div>
-                <div class="card-body p-4">
-                    <div id="gradeChartWrapper" class="chart-container-box">
-                        <canvas id="teacherGradeChart"></canvas>
-                    </div>
-                    <div id="gradeChartEmptyState" class="empty-chart-box d-none">
-                        <i class="fa-solid fa-chart-pie text-muted mb-2" style="font-size: 2rem;"></i>
-                        <h6 class="empty-state-title">لا توجد درجات مقيدة لطلابك حالياً</h6>
-                        <p class="empty-state-desc">سيتم تحليل توزيع التقديرات فور رصد وتثبيت نتائج الاختبارات.</p>
-                    </div>
-                </div>
+                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace extra-small fw-bold">
+                    <i class="fa-solid fa-calendar-days me-1"></i> الجدول الكامل
+                </a>
             </div>
-        </div>
-    </div>
 
-
-    <!-- ==================================================
-         ROW 3: TODAY'S SCHEDULE (الصف الثالث: جدول اليوم مع التمييز)
-         ================================================== -->
-    <div class="teacher-card mb-4 schedule-table-card">
-        <div class="card-header-custom">
-            <h5 class="card-title-custom">
-                <i class="fa-solid fa-calendar-days text-indigo" style="color: var(--teacher-primary);"></i> جدول اليوم الدراسي
-            </h5>
-            <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                <i class="fa-solid fa-arrow-left me-1"></i> عرض الجدول الكامل
-            </a>
-        </div>
-        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-schedule align-middle mb-0">
-                    <thead>
+                <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table" aria-label="جدول الحصص اليومي للمعلم">
+                    <thead class="bg-light sticky-top">
                         <tr>
-                            <th class="text-center" style="width: 80px;">الحصة</th>
-                            <th style="width: 150px;">التوقيت</th>
-                            <th>المادة التعليمية</th>
-                            <th>الصف والشعبة</th>
-                            <th class="text-center" style="width: 140px;">الحالة والتمييز</th>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 120px;">الوقت</th>
+                            <th class="py-3 font-monospace text-primary border-0 text-start">المادة الدراسية</th>
+                            <th class="py-3 font-monospace text-primary border-0 text-start">الصف والشعبة</th>
+                            <th class="py-3 font-monospace text-primary border-0">الحالة التشغيلية</th>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 140px;">الإجراء السريع</th>
                         </tr>
                     </thead>
-                    <tbody id="todayScheduleTable">
+                    <tbody id="todayEventsTableBody">
                         {% if today_events and today_events|length > 0 %}
-                            {% for e in today_events %}
-                            <tr class="{% if e.is_current %}row-highlight-current{% elif e.is_next %}row-highlight-next{% endif %}">
-                                <td class="text-center fw-bold">{{ loop.index }}</td>
-                                <td class="font-monospace"><i class="fa-regular fa-clock me-1 text-muted"></i> {{ e.time }}</td>
-                                <td class="fw-bold text-dark">{{ e.subject_name or e.text }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ e.class_name or 'شعبة معتمدة' }}</span></td>
-                                <td class="text-center">
-                                    {% if e.is_current %}
-                                        <span class="badge bg-primary text-white shadow-sm"><i class="fa-solid fa-play me-1"></i> الحصة الحالية</span>
-                                    {% elif e.is_next %}
-                                        <span class="badge bg-warning text-dark shadow-sm"><i class="fa-solid fa-forward me-1"></i> الحصة القادمة</span>
-                                    {% else %}
-                                        <span class="badge bg-{{ e.color or 'secondary' }}-subtle text-{{ e.color or 'secondary' }} border">{{ e.status or 'مجدولة' }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
+                            {% for ev in today_events %}
+                                <tr class="align-middle {% if ev.is_current %}table-primary{% elif ev.is_next %}table-warning{% endif %}">
+                                    <td class="font-monospace extra-small fw-bold">{{ ev.time }}</td>
+                                    <td class="text-start font-monospace extra-small fw-bold text-dark">{{ ev.subject_name }}</td>
+                                    <td class="text-start font-monospace extra-small text-muted">{{ ev.class_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ ev.color }}-subtle text-{{ ev.color }} border border-{{ ev.color }}-subtle rounded-pill extra-small px-3 py-1 font-monospace">
+                                            {{ ev.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 extra-small font-monospace fw-bold">
+                                            رصد الحضور
+                                        </a>
+                                    </td>
+                                </tr>
                             {% endfor %}
                         {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    <i class="fa-regular fa-calendar-xmark me-2" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
-                                    لا توجد حصص مجدولة لهذا اليوم.
+                            <tr id="emptyScheduleRow">
+                                <td colspan="5" class="py-5 text-center">
+                                    <i class="fa-solid fa-calendar-xmark text-muted opacity-25 fs-1 d-block mb-3"></i>
+                                    <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد حصص مجدولة لليوم</h6>
+                                    <p class="text-muted extra-small font-monospace mb-0">جدولك اليومي خالي من الحصص الدراسية المجدولة.</p>
                                 </td>
                             </tr>
                         {% endif %}
@@ -574,476 +259,85 @@
                 </table>
             </div>
         </div>
-    </div>
 
-
-    <!-- ==================================================
-         ROW 4: RECENT HOMEWORKS (الصف الرابع: آخر الواجبات وبادجات الحالات)
-         ================================================== -->
-    <div class="teacher-card mb-4">
-        <div class="card-header-custom">
-            <h5 class="card-title-custom">
-                <i class="fa-solid fa-book-bookmark text-warning"></i> آخر الواجبات المنزلية
-            </h5>
-            <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3">
-                <i class="fa-solid fa-list-check me-1"></i> إدارة كافة الواجبات
-            </a>
-        </div>
-        <div class="card-body p-4" id="homeworksListContainer">
-            {% if recent_activities and recent_activities|length > 0 %}
-                {% for hw in recent_activities %}
-                <div class="interactive-list-item">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; background: rgba(var(--bs-{{ hw.color or 'warning' }}-rgb, 245, 158, 11), 0.1); color: var(--bs-{{ hw.color or 'warning' }}); font-size: 1.2rem;">
-                            <i class="fa-solid {{ hw.icon or 'fa-book-open' }}"></i>
+        <!-- QUICK ACTIONS GRID -->
+        <div class="glass-panel-card p-4 rounded-4 shadow-sm mb-4 bg-white border-0" role="region" aria-label="الإجراءات السريعة للمعلم">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-bolt text-warning me-2"></i> الإجراءات والمهام السريعة</h5>
+                <span class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small">وصول مباشر</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('attendance.index') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
+                        <div class="rounded-circle bg-warning-subtle text-warning mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fa-solid fa-clipboard-user fs-4"></i>
                         </div>
-                        <div>
-                            <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.92rem;">{{ hw.text }}</h6>
-                            <span class="text-muted" style="font-size: 0.8rem;">{{ hw.class_name }} | التسليم: {{ hw.time }}</span>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge {% if hw.status == 'منتهي' %}bg-success-subtle text-success{% elif hw.status == 'متأخر' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} border px-3 py-2" style="font-size: 0.78rem;">{{ hw.status or 'نشط' }}</span>
-                        <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-light border"><i class="fa-solid fa-chevron-left"></i></a>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="text-center text-muted py-4">
-                    <i class="fa-solid fa-book-open text-muted me-2 mb-2" style="font-size: 1.8rem; display: block;"></i>
-                    <h6>لا توجد واجبات منزلية مسجلة حالياً</h6>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-
-    <!-- ==================================================
-         ROW 5: MESSAGES & NOTIFICATIONS (الصف الخامس: قسم الرسائل والإشعارات)
-         ================================================== -->
-    <div class="row g-3 mb-4">
-        <!-- Messages Section -->
-        <div class="col-md-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-comments text-info"></i> الرسائل والمراسلات
-                    </h5>
-                    <a href="{{ url_for('messages.index') }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
-                        <i class="fa-solid fa-paper-plane me-1"></i> فتح صندوق الرسائل
+                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">رصد الحضور والغياب</h6>
+                        <small class="text-muted font-monospace extra-small">تسجيل الحضور اليومي</small>
                     </a>
                 </div>
-                <div class="card-body p-4" id="messagesListContainer">
-                    {% if recent_messages and recent_messages|length > 0 %}
-                        {% for m in recent_messages %}
-                        <div class="interactive-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(6, 182, 212, 0.1); color: var(--teacher-info); font-size: 1.1rem;">
-                                    <i class="fa-solid fa-envelope"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.88rem;">{{ m.sender_name }}</h6>
-                                    <p class="mb-0 text-muted" style="font-size: 0.8rem;">{{ m.content }}</p>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge {% if m.is_read %}bg-light text-muted border{% else %}bg-primary-subtle text-primary border{% endif %} mb-1" style="font-size: 0.7rem;">{{ m.status_label or ('مقروءة' if m.is_read else 'غير مقروءة') }}</span>
-                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">{{ m.time }}</div>
-                            </div>
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('homework.index') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
+                        <div class="rounded-circle bg-primary-subtle text-primary mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fa-solid fa-book-bookmark fs-4"></i>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="fa-solid fa-comments text-muted me-2 mb-2" style="font-size: 1.8rem; display: block;"></i>
-                            <h6>لا توجد رسائل في صندوق الوارد حالياً</h6>
+                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">إضافة واجب دراسي</h6>
+                        <small class="text-muted font-monospace extra-small">إنشاء تكليف للطلاب</small>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('grades.manage_grades') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
+                        <div class="rounded-circle bg-success-subtle text-success mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fa-solid fa-star fs-4"></i>
                         </div>
-                    {% endif %}
+                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">إدخال درجات الطلاب</h6>
+                        <small class="text-muted font-monospace extra-small">رصد نتائج الاختبارات</small>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('reports.student_report') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
+                        <div class="rounded-circle bg-info-subtle text-info mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fa-solid fa-chart-column fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">استخراج التقارير</h6>
+                        <small class="text-muted font-monospace extra-small">كشوفات الأداء الأكاديمي</small>
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Notifications Section (Chronological order) -->
-        <div class="col-md-6 col-12">
-            <div class="teacher-card h-100">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
-                        <i class="fa-solid fa-bell text-danger"></i> الإشعارات والتنبيهات
-                    </h5>
-                    <span class="badge bg-danger-subtle text-danger border px-2 py-1" style="font-size: 0.75rem;">ترتيب زمني</span>
-                </div>
-                <div class="card-body p-4" id="notificationsContainer">
-                    {% if notifications and notifications|length > 0 %}
-                        {% for n in notifications %}
-                        <div class="interactive-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.1); color: var(--teacher-danger); font-size: 1.1rem;">
-                                    <i class="fa-solid fa-bullhorn"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.88rem;">{{ n.message }}</h6>
-                                    <p class="mb-0 text-muted" style="font-size: 0.8rem;">{{ n.time }}</p>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge {% if n.is_read %}bg-light text-muted border{% else %}bg-danger-subtle text-danger border{% endif %}" style="font-size: 0.7rem;">{% if not n.is_read %}<i class="fa-solid fa-circle text-danger me-1" style="font-size: 5px;"></i> غير مقروء{% else %}مقروء{% endif %}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="fa-regular fa-bell-slash text-muted me-2 mb-2" style="font-size: 1.8rem; display: block;"></i>
-                            <h6>لا توجد إشعارات جديدة حالياً</h6>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ==================================================
-         ROW 6: QUICK ACTIONS (الصف السادس: الإجراءات السريعة كبطاقات احترافية)
-         ================================================== -->
-    <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="fw-bold mb-0" style="color: var(--text-heading); font-size: 1.1rem;">
-                <i class="fa-solid fa-bolt text-warning me-2"></i> الإجراءات السريعة
-            </h5>
-            <span class="text-muted" style="font-size: 0.85rem;">وصول سريع لأهم المهام والأدوات</span>
-        </div>
-
-        <div class="row g-3">
-            <!-- Action 1: Attendance -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('attendance.index') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                        <i class="fa-solid fa-clipboard-user"></i>
-                    </div>
-                    <h6 class="action-title">تسجيل حضور</h6>
-                </a>
-            </div>
-
-            <!-- Action 2: Add Homework -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('homework.index') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                        <i class="fa-solid fa-file-circle-plus"></i>
-                    </div>
-                    <h6 class="action-title">إضافة واجب</h6>
-                </a>
-            </div>
-
-            <!-- Action 3: Add Exam -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('exams.index') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                        <i class="fa-solid fa-square-plus"></i>
-                    </div>
-                    <h6 class="action-title">إضافة اختبار</h6>
-                </a>
-            </div>
-
-            <!-- Action 4: Enter Grades -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('grades.manage_grades') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
-                        <i class="fa-solid fa-spell-check"></i>
-                    </div>
-                    <h6 class="action-title">إدخال درجات</h6>
-                </a>
-            </div>
-
-            <!-- Action 5: View Students -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('students.home') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">
-                        <i class="fa-solid fa-users-between-lines"></i>
-                    </div>
-                    <h6 class="action-title">عرض الطلاب</h6>
-                </a>
-            </div>
-
-            <!-- Action 6: Send Message -->
-            <div class="col-xl-2 col-md-4 col-6">
-                <a href="{{ url_for('messages.index') }}" class="action-card">
-                    <div class="action-icon-box" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </div>
-                    <h6 class="action-title">إرسال رسالة</h6>
-                </a>
-            </div>
-        </div>
     </div>
 
 </div>
 
-<!-- Data Binding JavaScript Engine & Charts Renderer -->
 <script>
-let attChartInstance = null;
-let gradeChartInstance = null;
-
 function loadTeacherDashboardData() {
-    fetch('/api/dashboard/stats')
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                const loader = document.getElementById('dashboardLoader');
-                const content = document.getElementById('dashboardContent');
-                if(loader) {
-                    loader.classList.remove('d-flex');
-                    loader.style.display = 'none';
-                }
-                if(content) content.style.display = 'block';
-
-                // 1. Stat Cards Binding
-                if(data.stats) {
-                    if(document.getElementById('stat-students')) document.getElementById('stat-students').innerText = data.stats.students || 0;
-                    if(document.getElementById('stat-classes')) document.getElementById('stat-classes').innerText = data.stats.classes || 0;
-                    if(document.getElementById('stat-homeworks')) document.getElementById('stat-homeworks').innerText = data.stats.active_homework || 0;
-                    if(document.getElementById('stat-messages')) document.getElementById('stat-messages').innerText = data.stats.unread_messages || 0;
-                }
-
-                // 2. Current & Next Lesson Units
-                if(data.current_lesson && data.current_lesson.subject) {
-                    const cBox = document.getElementById('currentLessonContainer');
-                    if(cBox) {
-                        cBox.innerHTML = `
-                            <div class="lesson-box" style="background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h5 class="fw-bold text-primary mb-0">${data.current_lesson.subject}</h5>
-                                    <span class="badge bg-primary text-white font-monospace">${data.current_lesson.time}</span>
-                                </div>
-                                <p class="text-dark font-semibold mb-0" style="font-size: 0.95rem;">${data.current_lesson.class}</p>
-                            </div>
-                        `;
-                    }
-                }
-
-                if(data.next_lesson && data.next_lesson.subject) {
-                    const nBox = document.getElementById('nextLessonContainer');
-                    if(nBox) {
-                        nBox.innerHTML = `
-                            <div class="lesson-box" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h5 class="fw-bold text-warning mb-0">${data.next_lesson.subject}</h5>
-                                    <span class="badge bg-warning text-dark font-monospace">${data.next_lesson.time}</span>
-                                </div>
-                                <p class="text-dark font-semibold mb-0" style="font-size: 0.95rem;">${data.next_lesson.class}</p>
-                            </div>
-                        `;
-                    }
-                }
-
-                // 3. Schedule Table Binding with Highlighting
-                if(data.today_events && data.today_events.length > 0) {
-                    const scheduleTable = document.getElementById('todayScheduleTable');
-                    if(scheduleTable) {
-                        scheduleTable.innerHTML = data.today_events.map((e, idx) => {
-                            let rowClass = '';
-                            let badgeStyle = `<span class="badge bg-${e.color || 'secondary'}-subtle text-${e.color || 'secondary'} border">${e.status || 'مجدولة'}</span>`;
-                            
-                            if (e.is_current) {
-                                rowClass = 'row-highlight-current';
-                                badgeStyle = `<span class="badge bg-primary text-white shadow-sm"><i class="fa-solid fa-play me-1"></i> الحصة الحالية</span>`;
-                            } else if (e.is_next) {
-                                rowClass = 'row-highlight-next';
-                                badgeStyle = `<span class="badge bg-warning text-dark shadow-sm"><i class="fa-solid fa-forward me-1"></i> الحصة القادمة</span>`;
-                            }
-
-                            return `
-                                <tr class="${rowClass}">
-                                    <td class="text-center fw-bold">${idx + 1}</td>
-                                    <td class="font-monospace"><i class="fa-regular fa-clock me-1 text-muted"></i> ${e.time || '08:00 - 08:45'}</td>
-                                    <td class="fw-bold text-dark">${e.subject_name || e.text}</td>
-                                    <td><span class="badge bg-light text-dark border">${e.class_name || 'شعبة معتمدة'}</span></td>
-                                    <td class="text-center">${badgeStyle}</td>
-                                </tr>
-                            `;
-                        }).join('');
-                    }
-                }
-
-                // 4. Homework List Binding with Status Badges (نشط / منتهي / متأخر)
-                if(data.recent_activities && data.recent_activities.length > 0) {
-                    const hwCont = document.getElementById('homeworksListContainer');
-                    if(hwCont) {
-                        hwCont.innerHTML = data.recent_activities.map(hw => {
-                            let badgeClass = 'bg-warning-subtle text-warning';
-                            if (hw.status === 'منتهي') badgeClass = 'bg-success-subtle text-success';
-                            if (hw.status === 'متأخر') badgeClass = 'bg-danger-subtle text-danger';
-
-                            return `
-                                <div class="interactive-list-item">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; background: rgba(var(--bs-${hw.color || 'warning'}-rgb, 245, 158, 11), 0.1); color: var(--bs-${hw.color || 'warning'}); font-size: 1.2rem;">
-                                            <i class="fa-solid ${hw.icon || 'fa-book-open'}"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.92rem;">${hw.text}</h6>
-                                            <span class="text-muted" style="font-size: 0.8rem;">${hw.class_name || ''} | التسليم: ${hw.time || ''}</span>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge ${badgeClass} border px-3 py-2" style="font-size: 0.78rem;">${hw.status || 'نشط'}</span>
-                                        <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-light border"><i class="fa-solid fa-chevron-left"></i></a>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('');
-                    }
-                }
-
-                // 5. Messages Binding (Time, Last Message, Read/Unread)
-                if(data.recent_messages && data.recent_messages.length > 0) {
-                    const msgCont = document.getElementById('messagesListContainer');
-                    if(msgCont) {
-                        msgCont.innerHTML = data.recent_messages.map(m => `
-                            <div class="interactive-list-item">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(6, 182, 212, 0.1); color: var(--teacher-info); font-size: 1.1rem;">
-                                        <i class="fa-solid fa-envelope"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.88rem;">${m.sender_name}</h6>
-                                        <p class="mb-0 text-muted" style="font-size: 0.8rem;">${m.content}</p>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge ${m.is_read ? 'bg-light text-muted border' : 'bg-primary-subtle text-primary border'} mb-1" style="font-size: 0.7rem;">${m.status_label || (m.is_read ? 'مقروءة' : 'غير مقروءة')}</span>
-                                    <div class="text-muted font-monospace" style="font-size: 0.72rem;">${m.time}</div>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-
-                // 6. Notifications Binding (Chronological Order)
-                if(data.notifications && data.notifications.length > 0) {
-                    const notifCont = document.getElementById('notificationsContainer');
-                    if(notifCont) {
-                        notifCont.innerHTML = data.notifications.map(n => `
-                            <div class="interactive-list-item">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.1); color: var(--teacher-danger); font-size: 1.1rem;">
-                                        <i class="fa-solid fa-bell"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.88rem;">${n.message}</h6>
-                                        <p class="mb-0 text-muted" style="font-size: 0.8rem;">${n.time || ''}</p>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge ${n.is_read ? 'bg-light text-muted border' : 'bg-danger-subtle text-danger border'}" style="font-size: 0.7rem;">${n.is_read ? 'مقروء' : '<i class="fa-solid fa-circle text-danger me-1" style="font-size: 5px;"></i> غير مقروء'}</span>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-
-                // 7. Render Charts & Handle Empty States
-                renderTeacherCharts(data);
-            }
+    fetch('/api/teacher/dashboard')
+        .then(response => {
+            if(!response.ok) throw new Error('Network error');
+            return response.json();
         })
-        .catch(err => {
-            console.error("Teacher Dashboard Data Loading Error:", err);
+        .then(data => {
+            // Update KPIs
+            if(data.students !== undefined) document.getElementById('stat-students').innerText = data.students;
+            if(data.classes !== undefined) document.getElementById('stat-classes').innerText = data.classes;
+            if(data.active_homework !== undefined) document.getElementById('stat-homeworks').innerText = data.active_homework;
+            if(data.unread_messages !== undefined) document.getElementById('stat-messages').innerText = data.unread_messages;
+
             const loader = document.getElementById('dashboardLoader');
             const content = document.getElementById('dashboardContent');
-            if(loader) {
-                loader.classList.remove('d-flex');
-                loader.style.display = 'none';
-            }
+            if(loader) loader.style.display = 'none';
+            if(content) content.style.display = 'block';
+        })
+        .catch(err => {
+            console.log('Using template initial data rendering fallback');
+            const loader = document.getElementById('dashboardLoader');
+            const content = document.getElementById('dashboardContent');
+            if(loader) loader.style.display = 'none';
             if(content) content.style.display = 'block';
         });
 }
 
-function renderTeacherCharts(data) {
-    if(typeof Chart === 'undefined') return;
-
-    // 1. Attendance Chart Render or Empty State
-    const attCanvas = document.getElementById('teacherAttendanceChart');
-    const attWrap = document.getElementById('attendanceChartWrapper');
-    const attEmpty = document.getElementById('attendanceChartEmptyState');
-
-    if(attCanvas && data.attendance_chart && data.attendance_chart.data) {
-        const hasAttData = data.attendance_chart.data.some(val => val > 0);
-        if(!hasAttData) {
-            if(attWrap) attWrap.classList.add('d-none');
-            if(attEmpty) attEmpty.classList.remove('d-none');
-        } else {
-            if(attWrap) attWrap.classList.remove('d-none');
-            if(attEmpty) attEmpty.classList.add('d-none');
-            
-            if(attChartInstance) attChartInstance.destroy();
-            attChartInstance = new Chart(attCanvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: data.attendance_chart.labels,
-                    datasets: [{
-                        label: 'نسبة الحضور %',
-                        data: data.attendance_chart.data,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#10b981',
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { min: 0, max: 100, grid: { color: '#f1f5f9' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        }
-    }
-
-    // 2. Grade Chart Render or Empty State
-    const gradeCanvas = document.getElementById('teacherGradeChart');
-    const gradeWrap = document.getElementById('gradeChartWrapper');
-    const gradeEmpty = document.getElementById('gradeChartEmptyState');
-
-    if(gradeCanvas && data.performance) {
-        const p = data.performance;
-        const hasGradeData = (p.passed_count > 0 || p.excellent_count > 0 || p.avg_score > 0);
-        if(!hasGradeData) {
-            if(gradeWrap) gradeWrap.classList.add('d-none');
-            if(gradeEmpty) gradeEmpty.classList.remove('d-none');
-        } else {
-            if(gradeWrap) gradeWrap.classList.remove('d-none');
-            if(gradeEmpty) gradeEmpty.classList.add('d-none');
-
-            if(gradeChartInstance) gradeChartInstance.destroy();
-            gradeChartInstance = new Chart(gradeCanvas.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['ممتاز (90%+)', 'ناجح (60%+)', 'راسب (<60%)'],
-                    datasets: [{
-                        data: [p.excellent_count || 0, p.passed_count || 0, p.failed_count || 0],
-                        backgroundColor: ['#22c55e', '#3b82f6', '#ef4444'],
-                        borderWidth: 0,
-                        cutout: '70%'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-        }
-    }
-}
-
-// Initial Call
 document.addEventListener('DOMContentLoaded', loadTeacherDashboardData);
-if (document.readyState === "interactive" || document.readyState === "complete") {
-    loadTeacherDashboardData();
-}
 </script>
 {% endblock %}
