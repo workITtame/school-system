@@ -147,11 +147,71 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
             'status_color': st_status_color
         })
 
+    # Dynamic Most Absent
     most_absent = []
-    for st in students[:3]:
-        most_absent.append({
-            'SName': st.SName,
-            'days': f"{min(5, (st.SID % 4) + 1)} أيام"
+    for st in students:
+        st_abs_cnt = db.session.query(db.func.count(Attendance.id)).filter(Attendance.SID == st.SID, Attendance.Status.in_(['Absent', 'غائب'])).scalar() or 0
+        if st_abs_cnt > 0 or att_dict.get(st.SID) in ['Absent', 'غائب']:
+            effective_cnt = max(st_abs_cnt, 1 if att_dict.get(st.SID) in ['Absent', 'غائب'] else 0)
+            most_absent.append({
+                'SName': st.SName,
+                'days': f"{effective_cnt} أيام",
+                'count': effective_cnt
+            })
+    most_absent = sorted(most_absent, key=lambda x: x['count'], reverse=True)[:3]
+
+    # Dynamic Attendance Alerts
+    alerts = []
+    if student_ids:
+        absent_counts = db.session.query(
+            Attendance.SID, db.func.count(Attendance.id)
+        ).filter(
+            Attendance.SID.in_(student_ids),
+            Attendance.Status.in_(['Absent', 'غائب'])
+        ).group_by(Attendance.SID).all()
+        
+        absent_sid_map = {sid: count for sid, count in absent_counts}
+        for st in students:
+            if absent_sid_map.get(st.SID, 0) >= 3 or att_dict.get(st.SID) in ['Absent', 'غائب']:
+                cls_n = st.school_class.CName if st.school_class else cur_cls
+                sec_n = st.section.SectionName if st.section else cur_sec
+                alerts.append({
+                    'type': 'danger',
+                    'title': 'طالب تجاوز حد الغياب المسموح',
+                    'subtitle': f"{st.SName} - {sec_n} ({cls_n})"
+                })
+                break
+
+        late_counts = db.session.query(
+            Attendance.SID, db.func.count(Attendance.id)
+        ).filter(
+            Attendance.SID.in_(student_ids),
+            Attendance.Status.in_(['Late', 'متأخر', 'تأخر'])
+        ).group_by(Attendance.SID).all()
+        
+        late_sid_map = {sid: count for sid, count in late_counts}
+        for st in students:
+            if late_sid_map.get(st.SID, 0) >= 2 or att_dict.get(st.SID) in ['Late', 'متأخر', 'تأخر']:
+                cls_n = st.school_class.CName if st.school_class else cur_cls
+                sec_n = st.section.SectionName if st.section else cur_sec
+                alerts.append({
+                    'type': 'warning',
+                    'title': 'تكرر التأخير هذا الأسبوع',
+                    'subtitle': f"{st.SName} - {sec_n} ({cls_n})"
+                })
+                break
+
+    if len(att_records) == 0:
+        alerts.append({
+            'type': 'info',
+            'title': 'شعبة لم يتم تسجيل حضورها اليوم',
+            'subtitle': f"{cur_sec} - {cur_cls}"
+        })
+    else:
+        alerts.append({
+            'type': 'success',
+            'title': 'تم تسجيل حضور هذه الشعبة اليوم',
+            'subtitle': f"عدد المسجلين: {len(att_records)} من إجمالي {total_st} طالب"
         })
 
     kpi = {
@@ -188,6 +248,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'kpi': kpi,
         'attendance_cards': attendance_cards,
         'most_absent': most_absent,
+        'alerts': alerts,
         'selected_cid': selected_cid,
         'selected_secid': selected_secid
     }
@@ -215,6 +276,7 @@ def index():
                            kpi=data['kpi'],
                            attendance_cards=data['attendance_cards'],
                            most_absent=data['most_absent'],
+                           alerts=data['alerts'],
                            total_students=data['kpi']['total_students'],
                            present=data['kpi']['present_count'],
                            absent=data['kpi']['absent_count'],

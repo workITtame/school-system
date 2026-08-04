@@ -387,22 +387,23 @@
                 </div>
             </div>
 
-            <!-- 3. Attendance Alerts Widget -->
+            <!-- 3. Dynamic Attendance Alerts Widget -->
             <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0" role="region" aria-label="تنبيهات الحضور">
                 <h6 class="fw-bold text-dark font-monospace mb-3"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> تنبيهات الحضور</h6>
-                <div class="d-flex flex-column gap-2 font-monospace extra-small">
-                    <div class="p-2 rounded-3 bg-danger-subtle border border-danger-subtle text-danger">
-                        <strong class="d-block mb-1"><i class="fa-solid fa-circle-exclamation me-1"></i> طالب تجاوز حد الغياب المسموح</strong>
-                        <small class="d-block text-muted">ماجد علي حسين - شعبة أ</small>
-                    </div>
-                    <div class="p-2 rounded-3 bg-warning-subtle border border-warning-subtle text-warning-emphasis">
-                        <strong class="d-block mb-1"><i class="fa-solid fa-clock me-1"></i> تكرر التأخير 3 مرات هذا الأسبوع</strong>
-                        <small class="d-block text-muted">يوسف لؤي صالح - شعبة أ</small>
-                    </div>
-                    <div class="p-2 rounded-3 bg-info-subtle border border-info-subtle text-info-emphasis">
-                        <strong class="d-block mb-1"><i class="fa-solid fa-bell me-1"></i> شعبة لم يتم تسجيل حضورها اليوم</strong>
-                        <small class="d-block text-muted">شعبة ب - الصف الثاني الثانوي</small>
-                    </div>
+                <div class="d-flex flex-column gap-2 font-monospace extra-small" id="attendanceAlertsContainer">
+                    {% if alerts and alerts|length > 0 %}
+                        {% for al in alerts %}
+                            <div class="p-2 rounded-3 bg-{{ al.type }}-subtle border border-{{ al.type }}-subtle text-{{ al.type }}">
+                                <strong class="d-block mb-1"><i class="fa-solid fa-circle-exclamation me-1"></i> {{ al.title }}</strong>
+                                <small class="d-block text-muted">{{ al.subtitle }}</small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-2 rounded-3 bg-success-subtle border border-success-subtle text-success">
+                            <strong class="d-block mb-1"><i class="fa-solid fa-circle-check me-1"></i> جميع الشعب منتظمة اليوم</strong>
+                            <small class="d-block text-muted">لا توجد تنبيهات غياب حرجة في الكشف الحالي.</small>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -521,6 +522,45 @@ function updateLiveAttendanceAnalytics() {
         } else {
             mostAbsentContainer.innerHTML = '<div class="py-3 text-center text-muted">لا يوجد طلاب غائبون حالياً في هذا الكشف.</div>';
         }
+    }
+    
+    // Update Sidebar Widget "تنبيهات الحضور"
+    const alertsContainer = document.getElementById('attendanceAlertsContainer');
+    if (alertsContainer) {
+        let alertHtml = '';
+        const absentNames = Object.keys(absentStudentsMap);
+        if (absentNames.length > 0) {
+            alertHtml += `
+                <div class="p-2 rounded-3 bg-danger-subtle border border-danger-subtle text-danger">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-circle-exclamation me-1"></i> طالب تجاوز حد الغياب المسموح</strong>
+                    <small class="d-block text-muted">${absentNames[0]} - الشعبة الحالية</small>
+                </div>
+            `;
+        }
+        if (late > 0) {
+            alertHtml += `
+                <div class="p-2 rounded-3 bg-warning-subtle border border-warning-subtle text-warning-emphasis">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-clock me-1"></i> تكرر التأخير هذا الأسبوع</strong>
+                    <small class="d-block text-muted">تم تسجيل ${late} طالب متأخر في الحصة الحالية</small>
+                </div>
+            `;
+        }
+        if (present + absent + late + excused === total) {
+            alertHtml += `
+                <div class="p-2 rounded-3 bg-success-subtle border border-success-subtle text-success">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-circle-check me-1"></i> اكتمل تسجيل كشف الحضور</strong>
+                    <small class="d-block text-muted">تم رصد حضور جميع طلاب الشعبة (${total} طالب)</small>
+                </div>
+            `;
+        } else {
+            alertHtml += `
+                <div class="p-2 rounded-3 bg-info-subtle border border-info-subtle text-info-emphasis">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-bell me-1"></i> شعبة قيد التسجيل اليوم</strong>
+                    <small class="d-block text-muted">مسجل ${present + absent + late + excused} من أصل ${total} طالب</small>
+                </div>
+            `;
+        }
+        alertsContainer.innerHTML = alertHtml;
     }
 }
 
