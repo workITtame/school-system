@@ -127,7 +127,8 @@
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small">طالب منتظم</span>
                     </div>
                     <p class="text-muted extra-small font-monospace mt-1 mb-0">
-                        <i class="fa-solid fa-school text-muted me-1"></i> {{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }} — 
+                        <i class="fa-solid fa-id-card text-muted me-1"></i> الرقم الأكاديمي: #{{ selected_student.SID }} | 
+                        <i class="fa-solid fa-school text-muted ms-2 me-1"></i> {{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }} — 
                         <i class="fa-solid fa-layer-group text-muted ms-2 me-1"></i> الشعبة: {{ selected_student.section.SectionName if selected_student.section else 'غير محدد' }} |
                         <i class="fa-solid fa-user text-muted ms-2 me-1"></i> ولي الأمر: {{ selected_student.Parent_Name or 'غير محدد' }}
                     </p>
@@ -144,15 +145,15 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SECTION 4: GLASS KPI CARDS (5 CARDS)       -->
+    <!-- SECTION 4: 6 GLASS KPI CARDS DASHBOARD     -->
     <!-- ========================================== -->
     <div class="row g-3 mb-4 no-print">
         
         <!-- KPI 1: Overall Average -->
-        <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="col-6 col-md-4 col-lg-2">
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="extra-small text-muted font-monospace fw-bold">المعدل الأكاديمي العام</span>
+                    <span class="extra-small text-muted font-monospace fw-bold">المعدل العام</span>
                     <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-chart-line fs-6"></i>
                     </div>
@@ -163,10 +164,10 @@
         </div>
 
         <!-- KPI 2: Total Exams Evaluated -->
-        <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="col-6 col-md-4 col-lg-2">
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="extra-small text-muted font-monospace fw-bold">الامتحانات المسجلة</span>
+                    <span class="extra-small text-muted font-monospace fw-bold">عدد الامتحانات</span>
                     <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-file-pen fs-6"></i>
                     </div>
@@ -177,7 +178,7 @@
         </div>
 
         <!-- KPI 3: General Rating -->
-        <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="col-6 col-md-4 col-lg-2">
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">التقدير الأكاديمي</span>
@@ -198,10 +199,10 @@
         </div>
 
         <!-- KPI 4: Academic Status -->
-        <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="col-6 col-md-4 col-lg-2">
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="extra-small text-muted font-monospace fw-bold">حالة النتيجة</span>
+                    <span class="extra-small text-muted font-monospace fw-bold">نسبة النجاح</span>
                     <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-circle-check fs-6"></i>
                     </div>
@@ -216,7 +217,7 @@
         </div>
 
         <!-- KPI 5: Digital Readiness -->
-        <div class="col-6 col-md-4 col-xl-2-4">
+        <div class="col-6 col-md-4 col-lg-2">
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">جاهزية الشهادة</span>
@@ -229,10 +230,38 @@
             </div>
         </div>
 
+        <!-- KPI 6: Last Updated -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">آخر تحديث للدرجات</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-clock-rotate-left fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">لحظي</h3>
+                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-sync me-1"></i> بيانات حية</small>
+            </div>
+        </div>
+
     </div>
 
     <!-- ========================================== -->
-    <!-- SECTION 5: ENTERPRISE DATA GRID & TABLES  -->
+    <!-- SECTION 5: CHART.JS VISUALIZATION CARD    -->
+    <!-- ========================================== -->
+    {% if report_data %}
+    <div class="glass-panel-card p-4 rounded-4 shadow-sm mb-4 bg-white border-0 no-print">
+        <h6 class="fw-bold text-dark mb-3 font-monospace">
+            <i class="fa-solid fa-chart-bar text-primary me-2"></i> التحليل البياني وتوزيع درجات الطالب حسب المواد
+        </h6>
+        <div style="height: 240px; position: relative;">
+            <canvas id="studentGradeDistributionChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: ENTERPRISE DATA GRID & TABLES  -->
     <!-- ========================================== -->
     {% if report_data %}
         {% for exam_name, grades in report_data.items() %}
@@ -296,7 +325,7 @@
     {% endif %}
 
     <!-- ========================================== -->
-    <!-- SECTION 6: PRINTABLE CERTIFICATE TEMPLATE  -->
+    <!-- SECTION 7: PRINTABLE CERTIFICATE TEMPLATE  -->
     <!-- ========================================== -->
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4" id="printable-report">
         <div class="card-body p-5">
@@ -368,7 +397,7 @@
 
     {% else %}
     <!-- ========================================== -->
-    <!-- SECTION 7: ENTERPRISE EMPTY STATE          -->
+    <!-- SECTION 8: ENTERPRISE EMPTY STATE          -->
     <!-- ========================================== -->
     <div class="glass-panel-card p-5 text-center bg-white rounded-4 shadow-sm border-0 my-4">
         <div class="rounded-circle bg-primary-subtle text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
@@ -383,22 +412,45 @@
 
 </div>
 
-<style>
-.col-xl-2-4 {
-    flex: 0 0 auto;
-    width: 20%;
-}
-@media (max-width: 1200px) {
-    .col-xl-2-4 {
-        width: 33.3333%;
-    }
-}
-@media (max-width: 768px) {
-    .col-xl-2-4 {
-        width: 50%;
-    }
-}
+{% if report_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('studentGradeDistributionChart');
+    if (canvas) {
+        const labels = [];
+        const scores = [];
+        {% for exam_name, grades in report_data.items() %}
+            {% for grade in grades %}
+                labels.push({{ grade.subject_name|tojson }});
+                scores.push({{ grade.score }});
+            {% endfor %}
+        {% endfor %}
 
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'درجة المادة %',
+                    data: scores,
+                    backgroundColor: scores.map(s => s >= 80 ? '#10b981' : (s >= 60 ? '#f59e0b' : '#ef4444')),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+
+<style>
 @media print {
     @page { margin: 1cm; }
     body { background-color: white !important; }
