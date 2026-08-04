@@ -70,7 +70,8 @@ def get_teacher_students_data(user_id):
             
     marks_by_student = {}
     for m in all_marks:
-        marks_by_student.setdefault(m.SID, []).append(m.Score)
+        if m.Score is not None:
+            marks_by_student.setdefault(m.SID, []).append(float(m.Score))
         
     all_attendance = []
     if student_ids:
@@ -92,7 +93,7 @@ def get_teacher_students_data(user_id):
     
     for idx, st in enumerate(students, start=1):
         st_scores = marks_by_student.get(st.SID, [])
-        st_avg_score = round(sum(st_scores) / len(st_scores), 1) if st_scores else 84.0
+        st_avg_score = float(round(sum(st_scores) / len(st_scores), 1)) if st_scores else 84.0
         all_student_scores.append(st_avg_score)
         
         if st_avg_score >= 90:
