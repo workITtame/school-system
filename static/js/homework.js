@@ -168,7 +168,100 @@ function updateHomeworkBulkBar() {
 }
 
 function exportHomeworkExcel() {
-    window.location.href = '/reports/excel?type=homework';
+    const rows = document.querySelectorAll('#homeworkTableBody tr.homework-row');
+    if (!rows || rows.length === 0) {
+        showToast('لا توجد بيانات واجبات لتصديرها', 'warning');
+        return;
+    }
+
+    let excelHTML = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+        <style>
+            table { border-collapse: collapse; width: 100%; direction: rtl; }
+            th { background-color: #1e40af; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #cbd5e1; font-family: Cairo, Arial; }
+            td { text-align: center; padding: 8px; border: 1px solid #cbd5e1; font-family: Cairo, Arial; font-size: 13px; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            .title-cell { text-align: right; font-weight: bold; }
+        </style>
+    </head>
+    <body dir="rtl">
+        <h2 style="text-align: center; font-family: Cairo, Arial; color: #1e40af;">تقرير إدارة الواجبات والمهام الأكاديمية</h2>
+        <p style="text-align: center; font-family: Cairo, Arial; color: #64748b;">تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>عنوان الواجب</th>
+                    <th>الملاحظات والتفاصيل</th>
+                    <th>المادة الدراسية</th>
+                    <th>الصف الدراسي</th>
+                    <th>الشعبة</th>
+                    <th>تاريخ التسليم</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    let count = 0;
+    rows.forEach((row) => {
+        if (row.classList.contains('d-none')) return;
+        count++;
+
+        const titleEl = row.querySelector('strong.text-dark');
+        const descEl  = row.querySelector('small.text-muted');
+        const subEl   = row.querySelector('td:nth-child(4) .badge');
+        const classTd = row.querySelector('td:nth-child(5)');
+        const dueTd   = row.querySelector('td:nth-child(6)');
+        const statusEl= row.querySelector('td:nth-child(7) .badge');
+
+        const title = titleEl ? titleEl.textContent.trim() : '';
+        const desc  = descEl  ? descEl.textContent.trim()  : '';
+        const sub   = subEl   ? subEl.textContent.trim()   : '';
+
+        let className = '';
+        let secName   = '';
+        if (classTd) {
+            const secBadge = classTd.querySelector('.badge');
+            secName = secBadge ? secBadge.textContent.trim() : 'جميع الشعب';
+            className = classTd.childNodes[0] ? classTd.childNodes[0].textContent.trim() : classTd.textContent.trim();
+            className = className.replace(secName, '').trim();
+        }
+
+        const due = dueTd ? dueTd.textContent.trim() : '';
+        const status = statusEl ? statusEl.textContent.trim() : '';
+
+        excelHTML += `
+            <tr>
+                <td>${count}</td>
+                <td class="title-cell">${title}</td>
+                <td style="text-align: right;">${desc}</td>
+                <td>${sub}</td>
+                <td>${className}</td>
+                <td>${secName}</td>
+                <td>${due}</td>
+                <td>${status}</td>
+            </tr>`;
+    });
+
+    excelHTML += `
+            </tbody>
+        </table>
+    </body>
+    </html>`;
+
+    const blob = new Blob(['\ufeff' + excelHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `جدول_الواجبات_الدراسية_${new Date().toISOString().split('T')[0]}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('تم تصدير ملف Excel للواجبات بنجاح', 'success');
 }
 
 function showToast(message, icon) {
@@ -331,38 +424,56 @@ function viewHomeworkProfile(id, title, subjectName, className, sectionName, due
     if (!modalEl) return;
 
     // Header & Badges
-    const headerBadge = document.getElementById('hwp-header-badge');
-    const headerTitle = document.getElementById('hwp-header-title');
-    const codeBadge = document.getElementById('hwp-code-badge');
-    const statusBadge = document.getElementById('hwp-status-badge');
-    const heroTitle = document.getElementById('hwp-hero-title');
+    const headerBadge  = document.getElementById('hwp-header-badge');
+    const headerTitle  = document.getElementById('hwp-header-title');
+    const codeBadge    = document.getElementById('hwp-code-badge');
+    const statusBadge  = document.getElementById('hwp-status-badge');
+    const heroTitle    = document.getElementById('hwp-hero-title');
     const heroSubtitle = document.getElementById('hwp-hero-subtitle');
 
-    if (headerBadge) headerBadge.textContent = `HW-${id}`;
-    if (headerTitle) headerTitle.textContent = `الملف الشخصي للواجب | ${title || 'واجب دراسي'}`;
-    if (codeBadge) codeBadge.textContent = `HW-${id}`;
-    if (statusBadge) statusBadge.textContent = status || 'مكتمل';
-    if (heroTitle) heroTitle.textContent = title || 'عنوان الواجب الدراسـي';
+    if (headerBadge)  headerBadge.textContent  = `HW-${id}`;
+    if (headerTitle)  headerTitle.textContent  = `الملف الشخصي للواجب | ${title || 'واجب دراسي'}`;
+    if (codeBadge)    codeBadge.textContent    = `HW-${id}`;
+    if (statusBadge)  statusBadge.textContent  = status || 'مكتمل';
+    if (heroTitle)    heroTitle.textContent    = title || 'عنوان الواجب الدراسـي';
     if (heroSubtitle) heroSubtitle.textContent = `${subjectName} | ${className} (${sectionName}) | التسليم: ${dueDate || '—'}`;
+
+    // Status badge color
+    if (statusBadge) {
+        statusBadge.className = 'badge rounded-pill px-3 py-1 font-monospace';
+        if (status === 'مكتمل')   statusBadge.classList.add('bg-success');
+        else if (status === 'معلق') statusBadge.classList.add('bg-warning', 'text-dark');
+        else                          statusBadge.classList.add('bg-danger');
+    }
 
     // Basic Info Grid
     const infoSubject = document.getElementById('hwp-info-subject');
-    const infoClass = document.getElementById('hwp-info-class');
+    const infoClass   = document.getElementById('hwp-info-class');
     const infoDueDate = document.getElementById('hwp-info-duedate');
-    const infoStatus = document.getElementById('hwp-info-status');
-    const infoDesc = document.getElementById('hwp-info-desc');
+    const infoStatus  = document.getElementById('hwp-info-status');
+    const infoDesc    = document.getElementById('hwp-info-desc');
 
     if (infoSubject) infoSubject.textContent = subjectName || 'مادة عامة';
-    if (infoClass) infoClass.textContent = `${className} (${sectionName})`;
-    if (infoDueDate) infoDueDate.textContent = dueDate || 'غير محدد';
-    if (infoStatus) infoStatus.textContent = status || 'مكتمل';
-    if (infoDesc) infoDesc.textContent = description || 'لا توجد ملاحظات أو تعليمات إضافية لهذا التكليف الدراسي.';
+    if (infoClass)   infoClass.textContent   = `${className} (${sectionName})`;
+    if (infoDueDate) infoDueDate.textContent  = dueDate || 'غير محدد';
+    if (infoStatus)  infoStatus.textContent  = status || 'مكتمل';
+    if (infoDesc)    infoDesc.textContent    = description || 'لا توجد ملاحظات أو تعليمات إضافية لهذا التكليف الدراسي.';
 
     // Assigned Class Card
     const assignCname = document.getElementById('hwp-assign-cname');
-    const assignSec = document.getElementById('hwp-assign-sec');
+    const assignSec   = document.getElementById('hwp-assign-sec');
     if (assignCname) assignCname.textContent = className || 'الصف المستهدف';
-    if (assignSec) assignSec.textContent = `الشعبة (${sectionName})`;
+    if (assignSec)   assignSec.textContent   = `الشعبة (${sectionName})`;
+
+    // Timeline — real DB fields: show due date only (no submission table exists)
+    const timelineCreated = document.getElementById('hwp-timeline-created');
+    const timelineDue     = document.getElementById('hwp-timeline-due');
+    if (timelineCreated) timelineCreated.textContent = 'تاريخ الإنشاء غير متاح هنا';
+    if (timelineDue)     timelineDue.textContent     = dueDate || 'غير محدد';
+
+    // Profile status KPI
+    const kpiStatusText = document.getElementById('hwp-kpi-status-text');
+    if (kpiStatusText) kpiStatusText.textContent = status || '—';
 
     // Initialize Doughnut Chart
     initHomeworkProfileChart();
@@ -372,6 +483,8 @@ function viewHomeworkProfile(id, title, subjectName, className, sectionName, due
 }
 
 function initHomeworkProfileChart() {
+    // Profile chart is a simple status overview using page-level Jinja data (not hardcoded)
+    // The actual chart is decorative — status totals come from the page KPI counts
     const ctx = document.getElementById('hwpSubmissionChart');
     if (!ctx || typeof Chart === 'undefined') return;
 
@@ -379,12 +492,21 @@ function initHomeworkProfileChart() {
         hwpSubmissionChartInstance.destroy();
     }
 
+    // Read real counts from the page DOM (populated by Jinja2, not hardcoded)
+    const completedEl = document.querySelector('[id="kpiCompletedHomework"]');
+    const pendingEl   = document.querySelector('[id="kpiPendingHomework"]');
+    const lateEl      = document.querySelector('[id="kpiLateHomework"]');
+
+    const completed = parseInt(completedEl?.textContent || '0', 10) || 0;
+    const pending   = parseInt(pendingEl?.textContent   || '0', 10) || 0;
+    const late      = parseInt(lateEl?.textContent      || '0', 10) || 0;
+
     hwpSubmissionChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['تم التسليم بنجاح', 'بانتظار التسليم', 'تسليم متأخر'],
+            labels: ['واجبات مكتملة', 'واجبات معلقة', 'واجبات متأخرة'],
             datasets: [{
-                data: [30, 3, 2],
+                data: [completed, pending, late],
                 backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
                 borderWidth: 2,
                 borderColor: '#ffffff'
@@ -393,9 +515,8 @@ function initHomeworkProfileChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
+            cutout: '60%',
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
         }
     });
 }
@@ -404,71 +525,48 @@ function printHomeworkProfile() {
     window.print();
 }
 
-/* ==========================================================================
-   HOMEWORK ANALYTICS & REPORTS CONTROLLER (POWER BI & CANVAS INSIGHTS)
-   ========================================================================== */
+/*
+ * initHomeworkModalCharts — initializes charts in the analytics modal
+ * using data-attributes populated by Jinja2 from real DB data.
+ * No hardcoded arrays.
+ */
+let homeworkModalSubjectChartInstance = null;
+let homeworkModalStatusChartInstance  = null;
 
-let homeworkSubjectChartInstance = null;
-let homeworkStatusChartInstance = null;
-
-function openHomeworkAnalyticsModal() {
-    const modalEl = document.getElementById('homeworkAnalyticsModal');
-    if (!modalEl) return;
-
-    initHomeworkAnalyticsCharts();
-
-    const bsModal = new bootstrap.Modal(modalEl);
-    bsModal.show();
-}
-
-function initHomeworkAnalyticsCharts() {
-    // 1. Subject Comparison Bar Chart
-    const ctx1 = document.getElementById('anHomeworkSubjectChart');
-    if (ctx1 && typeof Chart !== 'undefined') {
-        if (homeworkSubjectChartInstance) homeworkSubjectChartInstance.destroy();
-        homeworkSubjectChartInstance = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['اللغة العربية', 'الرياضيات', 'العلوم العامة', 'اللغة الإنجليزية', 'الدراسات الاجتماعية'],
-                datasets: [{
-                    label: 'نسبة التسليم %',
-                    data: [98.5, 92.5, 96.0, 88.0, 94.5],
-                    backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308', '#8b5cf6'],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, max: 100 } }
-            }
-        });
-    }
-
-    // 2. Status Breakdown Doughnut Chart
+function initHomeworkModalCharts() {
+    // Status chart — reads data-attributes from canvas (set by Jinja2)
     const ctx2 = document.getElementById('anHomeworkStatusChart');
     if (ctx2 && typeof Chart !== 'undefined') {
-        if (homeworkStatusChartInstance) homeworkStatusChartInstance.destroy();
-        homeworkStatusChartInstance = new Chart(ctx2, {
+        if (homeworkModalStatusChartInstance) homeworkModalStatusChartInstance.destroy();
+
+        const completed = parseInt(ctx2.dataset.completed || '0', 10);
+        const pending   = parseInt(ctx2.dataset.pending   || '0', 10);
+        const late      = parseInt(ctx2.dataset.late      || '0', 10);
+
+        homeworkModalStatusChartInstance = new Chart(ctx2, {
             type: 'doughnut',
             data: {
                 labels: ['واجبات مكتملة', 'واجبات معلقة', 'واجبات متأخرة'],
                 datasets: [{
-                    data: [75, 18, 7],
+                    data: [completed, pending, late],
                     backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
                     borderWidth: 2
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
+                responsive: true, maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
             }
         });
     }
 }
 
+/* Keep openHomeworkAnalyticsModal as a redirect for backward compat */
+function openHomeworkAnalyticsModal() {
+    window.location.href = '/homework/analytics';
+}
+
 function printHomeworkAnalytics() {
-    window.print();
+    window.location.href = '/homework/analytics';
 }

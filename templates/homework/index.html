@@ -27,9 +27,9 @@
             <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
                 <i class="fa-solid fa-plus-circle"></i> <span>إضافة واجب جديد</span>
             </button>
-            <button type="button" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openHomeworkAnalyticsModal()">
+            <a href="{{ url_for('homework.analytics') }}" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
                 <i class="fa-solid fa-chart-line"></i> <span>مركز التحليلات</span>
-            </button>
+            </a>
             <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportHomeworkExcel()">
                 <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
             </button>
@@ -406,14 +406,7 @@
                                 <label class="form-label text-muted fw-bold small">الوصف والتعليمات التفصيلية</label>
                                 <textarea name="description" id="hw-wz-desc" class="form-control form-select-modern" rows="4" placeholder="اكتب ملاحظات وإرشادات التكليف التي تظهر للطلاب..." onchange="updateHomeworkWzSummary()"></textarea>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted fw-bold small">الدرجة المعيارية للواجب</label>
-                                <input type="number" class="form-control form-select-modern" value="100" readonly>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted fw-bold small">نوع التسليم المطلوب</label>
-                                <input type="text" class="form-control form-select-modern" value="تسليم إلكتروني / ورقي" readonly>
-                            </div>
+
                         </div>
                     </div>
 
@@ -433,14 +426,7 @@
                                     <option value="متأخر">متأخر</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted fw-bold small">وقت التسليم المحدد</label>
-                                <input type="time" class="form-control form-select-modern" value="23:59" readonly>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted fw-bold small">سياسة التكليف</label>
-                                <input type="text" class="form-control form-select-modern" value="قبول التسليمات حتى تاريخ الاستحقاق" readonly>
-                            </div>
+
                         </div>
                     </div>
 
@@ -587,48 +573,49 @@
                         </div>
                     </div>
 
-                    <!-- ② KPI CARDS (6 GLASS CARDS) -->
+                    <!-- ② HOMEWORK STATUS (Real DB Data) -->
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-md-4 col-xl-2">
                             <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                                <div class="text-muted small mb-1">عدد الطلاب</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-students">35</h4>
-                                <small class="text-primary extra-small"><i class="fa-solid fa-users me-1"></i> طلاب الصف</small>
+                                <div class="text-muted small mb-1">حالة الواجب</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-status-text">—</h4>
+                                <small class="text-primary extra-small"><i class="fa-solid fa-circle-info me-1"></i> الحالة الحالية</small>
                             </div>
                         </div>
                         <div class="col-6 col-md-4 col-xl-2">
                             <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                                <div class="text-muted small mb-1">عدد التسليمات</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-submissions">30</h4>
-                                <small class="text-success extra-small"><i class="fa-solid fa-circle-check me-1"></i> تم التسليم</small>
+                                <div class="text-muted small mb-1">الواجبات المكتملة</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace">{{ completed_count }}</h4>
+                                <small class="text-success extra-small"><i class="fa-solid fa-check me-1"></i> من إجمالي {{ total_count }}</small>
                             </div>
                         </div>
                         <div class="col-6 col-md-4 col-xl-2">
                             <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                                <div class="text-muted small mb-1">غير المسلمين</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-pending">3</h4>
-                                <small class="text-warning extra-small"><i class="fa-solid fa-clock me-1"></i> بانتظار التسليم</small>
+                                <div class="text-muted small mb-1">الواجبات المعلقة</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace">{{ pending_count }}</h4>
+                                <small class="text-warning extra-small"><i class="fa-solid fa-clock me-1"></i> قيد الإنجاز</small>
                             </div>
                         </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                                <div class="text-muted small mb-1">الواجبات المتأخرة</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace">{{ late_count }}</h4>
+                                <small class="text-danger extra-small"><i class="fa-solid fa-triangle-exclamation me-1"></i> تجاوزت الموعد</small>
+                            </div>
+                        </div>
+                        {% set comp_rate = ((completed_count / total_count * 100)|round(1)) if total_count > 0 else 0 %}
                         <div class="col-6 col-md-4 col-xl-2">
                             <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
                                 <div class="text-muted small mb-1">نسبة الإنجاز</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-rate">85.7%</h4>
-                                <small class="text-purple extra-small" style="color:#7c3aed;"><i class="fa-solid fa-chart-line me-1"></i> أداء ممتاز</small>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace">{{ comp_rate }}%</h4>
+                                <div class="progress mt-1" style="height:4px;"><div class="progress-bar bg-success" style="width:{{ comp_rate }}%;"></div></div>
                             </div>
                         </div>
                         <div class="col-6 col-md-4 col-xl-2">
                             <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                                <div class="text-muted small mb-1">عدد المتأخرين</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-late">2</h4>
-                                <small class="text-danger extra-small"><i class="fa-solid fa-triangle-exclamation me-1"></i> تجاوز الموعد</small>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4 col-xl-2">
-                            <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                                <div class="text-muted small mb-1">متوسط التقييم</div>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="hwp-kpi-score">92.0%</h4>
-                                <small class="text-info extra-small"><i class="fa-solid fa-award me-1"></i> معدل التقييمات</small>
+                                <div class="text-muted small mb-1">إجمالي الواجبات</div>
+                                <h4 class="fw-bold text-dark mb-0 font-monospace">{{ total_count }}</h4>
+                                <small class="text-primary extra-small"><i class="fa-solid fa-book-open me-1"></i> جميع التكاليف</small>
                             </div>
                         </div>
                     </div>
@@ -687,56 +674,22 @@
                                                 <span class="badge bg-primary rounded-pill px-3 py-1" id="hwp-assign-sec">الشعبة (أ)</span>
                                             </div>
                                             <div class="d-flex justify-content-between small text-muted font-monospace">
-                                                <span>إجمالي الطلاب: <strong>35</strong></span>
-                                                <span class="text-success">المسلمين: <strong>30</strong></span>
+                                                <span class="text-muted extra-small">الصف والشعبة المسندة لهذا الواجب</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- ⑤ STUDENT SUBMISSIONS DATA GRID -->
+                            <!-- ⑤ HOMEWORK INFO NOTE (No HomeworkSubmission table in DB) -->
                             <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white">
-                                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-user-check me-2"></i>⑤ جدول تسليمات الطلاب والتكليفات</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered align-middle text-center font-monospace">
-                                        <thead class="bg-light">
-                                            <tr>
-                                                <th>#</th>
-                                                <th class="text-start pe-3">اسم الطالب</th>
-                                                <th>الرقم الأكاديمي</th>
-                                                <th>وقت التسليم</th>
-                                                <th>الحالة</th>
-                                                <th>الدرجة</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="text-muted fw-bold">1</td>
-                                                <td class="text-start pe-3 fw-bold text-dark">محمد عبد الله العتيبي</td>
-                                                <td><span class="badge bg-light text-dark border">STD-1001</span></td>
-                                                <td class="small text-muted">2026-08-03 14:30</td>
-                                                <td><span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">تم التسليم</span></td>
-                                                <td class="fw-bold text-primary">95/100</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted fw-bold">2</td>
-                                                <td class="text-start pe-3 fw-bold text-dark">أحمد خليل السالم</td>
-                                                <td><span class="badge bg-light text-dark border">STD-1002</span></td>
-                                                <td class="small text-muted">2026-08-03 16:15</td>
-                                                <td><span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">تم التسليم</span></td>
-                                                <td class="fw-bold text-primary">88/100</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted fw-bold">3</td>
-                                                <td class="text-start pe-3 fw-bold text-dark">سارة يوسف الشمري</td>
-                                                <td><span class="badge bg-light text-dark border">STD-1003</span></td>
-                                                <td class="small text-muted">—</td>
-                                                <td><span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1">قيد الانتظار</span></td>
-                                                <td class="fw-bold text-muted">—</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-circle-info me-2"></i>⑤ ملاحظة حول هذا الواجب</h6>
+                                <div class="p-3 bg-light rounded-3 text-center">
+                                    <i class="fa-solid fa-book-open text-primary fs-3 mb-2 d-block opacity-50"></i>
+                                    <p class="text-muted small font-monospace mb-2">لمتابعة تحليلات أداء الواجبات بشكل تفصيلي حسب المواد والصفوف والشعب</p>
+                                    <a href="{{ url_for('homework.analytics') }}" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">
+                                        <i class="fa-solid fa-chart-line me-1"></i> فتح لوحة التحليلات
+                                    </a>
                                 </div>
                             </div>
 
@@ -753,42 +706,24 @@
                                 </div>
                             </div>
 
-                            <!-- ⑦ TIMELINE -->
+                            <!-- ⑦ TIMELINE (Real DB data: created_at + due_date only) -->
                             <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white">
                                 <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-timeline me-2"></i>⑦ السجل الزمني للأحداث</h6>
                                 <div class="timeline-widget small font-monospace">
                                     <div class="border-start border-2 border-primary ps-3 pb-3 position-relative">
                                         <div class="position-absolute top-0 start-0 translate-middle bg-primary rounded-circle" style="width: 10px; height: 10px;"></div>
                                         <strong class="d-block text-dark">إسناد الواجب الدراسي</strong>
-                                        <span class="text-muted extra-small">2026-08-01 09:00 AM</span>
-                                    </div>
-                                    <div class="border-start border-2 border-success ps-3 pb-3 position-relative">
-                                        <div class="position-absolute top-0 start-0 translate-middle bg-success rounded-circle" style="width: 10px; height: 10px;"></div>
-                                        <strong class="d-block text-dark">أول تسليم ممتـاز</strong>
-                                        <span class="text-muted extra-small">2026-08-02 11:30 AM</span>
+                                        <span class="text-muted extra-small" id="hwp-timeline-created">—</span>
                                     </div>
                                     <div class="border-start border-2 border-info ps-3 position-relative">
                                         <div class="position-absolute top-0 start-0 translate-middle bg-info rounded-circle" style="width: 10px; height: 10px;"></div>
                                         <strong class="d-block text-dark">موعد التسليم النهائي</strong>
-                                        <span class="text-muted extra-small">2026-08-10 11:59 PM</span>
+                                        <span class="text-muted extra-small" id="hwp-timeline-due">—</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- ⑧ FILES & ATTACHMENTS -->
-                            <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white">
-                                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-file-pdf me-2"></i>⑧ المستندات والمرفقات</h6>
-                                <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between mb-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fa-solid fa-file-pdf text-danger fs-4"></i>
-                                        <div>
-                                            <strong class="d-block small text-dark">دليل إرشادات الواجب.pdf</strong>
-                                            <small class="text-muted extra-small">1.4 MB</small>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-light border rounded-circle p-2" title="تحميل"><i class="fa-solid fa-download"></i></button>
-                                </div>
-                            </div>
+
 
                             <!-- ⑩ QUICK ACTIONS -->
                             <div class="card border-0 rounded-4 shadow-sm p-4 bg-white no-print">
@@ -845,7 +780,7 @@
 
             <div class="modal-body p-4 bg-light-subtle">
                 
-                <!-- ① KPI DASHBOARD (6 GLASS CARDS) -->
+                <!-- ① KPI DASHBOARD (Real DB Data Only) -->
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-md-4 col-xl-2">
                         <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
@@ -856,23 +791,9 @@
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
                         <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                            <div class="text-muted small mb-1">الطلاب المكلفون</div>
-                            <h4 class="fw-bold text-dark mb-0 font-monospace">185</h4>
-                            <small class="text-info extra-small"><i class="fa-solid fa-users me-1"></i> طلاب الصفوف</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
-                            <div class="text-muted small mb-1">نسبة التسليم العامة</div>
-                            <h4 class="fw-bold text-dark mb-0 font-monospace">88.5%</h4>
-                            <small class="text-success extra-small"><i class="fa-solid fa-check-double me-1"></i> معدل التسليمات</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
                             <div class="text-muted small mb-1">الواجبات المكتملة</div>
                             <h4 class="fw-bold text-dark mb-0 font-monospace">{{ completed_count }}</h4>
-                            <small class="text-success extra-small"><i class="fa-solid fa-circle-check me-1"></i> تـم تسليمها</small>
+                            <small class="text-success extra-small"><i class="fa-solid fa-circle-check me-1"></i> تم الإنجاز</small>
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
@@ -889,15 +810,33 @@
                             <small class="text-danger extra-small"><i class="fa-solid fa-triangle-exclamation me-1"></i> تجاوزت الموعد</small>
                         </div>
                     </div>
+                    {% set comp_rate_modal = ((completed_count / total_count * 100)|round(1)) if total_count > 0 else 0 %}
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">نسبة الإنجاز</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ comp_rate_modal }}%</h4>
+                            <div class="progress mt-1" style="height:4px;"><div class="progress-bar bg-success" style="width:{{ comp_rate_modal }}%;"></div></div>
+                        </div>
+                    </div>
+                    {% set late_rate_modal = ((late_count / total_count * 100)|round(1)) if total_count > 0 else 0 %}
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="p-3 bg-white rounded-4 border shadow-sm h-100">
+                            <div class="text-muted small mb-1">نسبة التأخير</div>
+                            <h4 class="fw-bold text-dark mb-0 font-monospace">{{ late_rate_modal }}%</h4>
+                            <div class="progress mt-1" style="height:4px;"><div class="progress-bar bg-danger" style="width:{{ late_rate_modal }}%;"></div></div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- ② INTERACTIVE CHARTS ROW -->
+                <!-- ② CHARTS (Status Distribution from real DB data) -->
                 <div class="row g-4 mb-4">
                     <div class="col-lg-7">
                         <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
-                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chart-column me-2"></i>مقارنة نسب تسليم الواجبات حسب المواد الدراسية</h6>
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chart-column me-2"></i>توزيع الواجبات حسب المواد الدراسية</h6>
                             <div style="height: 260px;" class="position-relative">
-                                <canvas id="anHomeworkSubjectChart"></canvas>
+                                <canvas id="anHomeworkSubjectChart"
+                                    data-labels='{{ homework_list | map(attribute='subject') | map(attribute='SubName') | list | unique | list | tojson }}'
+                                ></canvas>
                             </div>
                         </div>
                     </div>
@@ -905,69 +844,74 @@
                         <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
                             <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-chart-pie me-2"></i>توزيع حالات الواجبات الدراسية</h6>
                             <div style="height: 260px;" class="position-relative">
-                                <canvas id="anHomeworkStatusChart"></canvas>
+                                <canvas id="anHomeworkStatusChart"
+                                    data-completed="{{ completed_count }}"
+                                    data-pending="{{ pending_count }}"
+                                    data-late="{{ late_count }}"
+                                ></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ③ TOP RANKINGS & ACADEMIC BREAKDOWN -->
+                <!-- ③ BREAKDOWN BY SUBJECT & CLASS (Real DB Data) -->
                 <div class="row g-4">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
-                            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-award me-2"></i>أعلى المواد التزاماً بالتسليم</h6>
+                            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-award me-2"></i>الواجبات حسب المادة الدراسية</h6>
+                            {% set subject_hw = {} %}
+                            {% for hw in homework_list %}
+                                {% if hw.subject %}
+                                    {% set sname = hw.subject.SubName %}
+                                    {% if sname not in subject_hw %}
+                                        {% set _ = subject_hw.update({sname: {'total': 0, 'completed': 0}}) %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
                             <ul class="list-group list-group-flush small font-monospace">
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-book text-primary me-2"></i>اللغة العربية</span>
-                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">98.5%</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-flask text-info me-2"></i>العلوم العامة</span>
-                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">96.0%</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-calculator text-warning me-2"></i>الرياضيات</span>
-                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">92.5%</span>
-                                </li>
+                                {% set subjects_seen = [] %}
+                                {% for hw in homework_list %}
+                                  {% if hw.subject and hw.subject.SubName not in subjects_seen %}
+                                    {% set _ = subjects_seen.append(hw.subject.SubName) %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-1">
+                                      <span><i class="fa-solid fa-book text-primary me-2"></i>{{ hw.subject.SubName }}</span>
+                                      <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">
+                                        {{ homework_list | selectattr('sub_id', 'equalto', hw.sub_id) | list | length }} واجب
+                                      </span>
+                                    </li>
+                                  {% endif %}
+                                {% endfor %}
+                                {% if not subjects_seen %}
+                                <li class="list-group-item bg-transparent px-0 text-muted">لا توجد بيانات</li>
+                                {% endif %}
                             </ul>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
-                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-users-rectangle me-2"></i>أعلى الصفوف انضباطاً</h6>
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-users-rectangle me-2"></i>الواجبات حسب الصف الدراسي</h6>
                             <ul class="list-group list-group-flush small font-monospace">
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-graduation-cap text-primary me-2"></i>الصف العاشر (أ)</span>
-                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">97.0%</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-graduation-cap text-info me-2"></i>الصف التاسع (ب)</span>
-                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">94.2%</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-graduation-cap text-secondary me-2"></i>الصف الثامن (أ)</span>
-                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">91.8%</span>
-                                </li>
+                                {% set classes_seen = [] %}
+                                {% for hw in homework_list %}
+                                  {% if hw.school_class and hw.school_class.CName not in classes_seen %}
+                                    {% set _ = classes_seen.append(hw.school_class.CName) %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-1">
+                                      <span><i class="fa-solid fa-graduation-cap text-primary me-2"></i>{{ hw.school_class.CName }}</span>
+                                      <span class="badge bg-success-subtle text-success rounded-pill font-monospace">
+                                        {{ homework_list | selectattr('class_id', 'equalto', hw.class_id) | list | length }} واجب
+                                      </span>
+                                    </li>
+                                  {% endif %}
+                                {% endfor %}
+                                {% if not classes_seen %}
+                                <li class="list-group-item bg-transparent px-0 text-muted">لا توجد بيانات</li>
+                                {% endif %}
                             </ul>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
-                            <h6 class="fw-bold text-purple mb-3" style="color:#7c3aed;"><i class="fa-solid fa-user-check me-2"></i>أفضل الطلاب المتفوقين</h6>
-                            <ul class="list-group list-group-flush small font-monospace">
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-crown text-warning me-2"></i>محمد عبد الله العتيبي</span>
-                                    <span class="badge bg-purple-subtle text-purple rounded-pill font-monospace" style="color:#7c3aed;">100% تسليم</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-star text-primary me-2"></i>سارة يوسف الشمري</span>
-                                    <span class="badge bg-success-subtle text-success rounded-pill font-monospace">98.0% تسليم</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
-                                    <span><i class="fa-solid fa-check text-info me-2"></i>أحمد خليل السالم</span>
-                                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace">95.5% تسليم</span>
-                                </li>
-                            </ul>
+                            <div class="mt-3 text-center">
+                                <a href="{{ url_for('homework.analytics') }}" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold">
+                                    <i class="fa-solid fa-chart-line me-1"></i> عرض التحليلات الكاملة
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
