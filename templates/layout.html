@@ -124,11 +124,11 @@
                 </div>
 
                 <div class="top-navbar-actions">
-                    <a href="javascript:void(0)" onclick="Swal.fire('الرسائل', 'لديك 3 رسائل جديدة', 'info')" class="icon-btn position-relative">
+                    <a href="{{ url_for('messages.index') }}" class="icon-btn position-relative" title="مركز الرسائل والمحادثات">
                         <i class="fa-regular fa-envelope"></i>
                         <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">3</span>
                     </a>
-                    <a href="javascript:void(0)" onclick="Swal.fire('التنبيهات', 'لديك تنبيه جديد من الإدارة', 'warning')" class="icon-btn position-relative">
+                    <a href="{{ url_for('notifications.index') }}" class="icon-btn position-relative" {% if request.blueprint == 'messages' %}data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas"{% endif %} title="مركز الإشعارات والتنبيهات">
                         <i class="fa-regular fa-bell"></i>
                         <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">1</span>
                     </a>
