@@ -1,89 +1,522 @@
 {% extends 'layout.html' %}
 
-{% block title %}إعدادات النظام - مدرسة المستقبل{% endblock %}
-{% block page_title %}إعدادات النظام{% endblock %}
-{% block page_subtitle %}الرئيسية / إعدادات النظام الإداري{% endblock %}
+{% block title %}مركز إعدادات النظام الإداري | Enterprise SaaS Settings Center{% endblock %}
+{% block page_title %}إعدادات النظام الإدارية والأكاديمية{% endblock %}
+{% block page_subtitle %}الرئيسية / إعدادات النظام الشاملة{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-body py-2 px-3">
-            <ul class="nav nav-pills nav-fill gap-2" id="settingsTabs">
-                <li class="nav-item"><button class="nav-link active fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabGeneral">الإعدادات العامة</button></li>
-                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabSystem">إعدادات النظام</button></li>
-                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabNotif">إعدادات الإشعارات</button></li>
-                <li class="nav-item"><button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tabBackup">النسخ الاحتياطي</button></li>
-            </ul>
+<div class="fade-in font-cairo" id="settingsModuleRoot">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: HERO HEADER                     -->
+    <!-- ========================================== -->
+    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
+         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+        <div class="position-absolute end-0 top-0 opacity-10 pe-4 pt-3 pointer-events-none">
+            <i class="fa-solid fa-sliders" style="font-size: 11rem; color: #ffffff;"></i>
+        </div>
+        
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 2;">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
+                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">مركز إعدادات النظام</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-3">
+                    <h2 class="fw-bold text-white mb-0 font-monospace">مركز إعدادات النظام والتهيئة الشاملة</h2>
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Enterprise Settings Center</span>
+                </div>
+                <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
+                    إدارة بيانات المدرسة، تفاصيل الخادم وقاعدة البيانات، خيارات الأمان وحظر المحاولات الخاطئة، وحفظ النسخ الاحتياطي.
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
+                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light" onclick="exportSettingsMasterExcel()">
+                    <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير الكتالوج Excel</span>
+                </button>
+                <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> <span>طباعة / PDF</span>
+                </button>
+                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-arrows-rotate fs-6"></i>
+                </button>
+            </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div class="tab-content">
-                <!-- Tab 1: General -->
-                <div class="tab-pane fade show active" id="tabGeneral">
-                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-sliders me-2"></i> بيانات المدرسة والنظام</h5>
+    <!-- ========================================== -->
+    <!-- SECTION 2: EXECUTIVE 6 GLASS KPI CARDS     -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 no-print">
+        
+        <!-- KPI 1: Total Defined Settings -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">إجمالي الإعدادات</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-gears fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">10</h3>
+                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> إعدادات معرفة</small>
+            </div>
+        </div>
+
+        <!-- KPI 2: School Info Status -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">إعدادات المدرسة</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-school fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">مكتملة</h3>
+                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-building-columns me-1"></i> مدرسة المستقبل</small>
+            </div>
+        </div>
+
+        <!-- KPI 3: System Environment -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">بيئة الخادم والـ DB</span>
+                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-server fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">MySQL</h3>
+                <small class="text-info extra-small font-monospace"><i class="fa-solid fa-code-branch me-1"></i> Python 3.12 / Flask</small>
+            </div>
+        </div>
+
+        <!-- KPI 4: Security Shield Status -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">أمان وحماية الحسابات</span>
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-shield-halved fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">مفعلة</h3>
+                <small class="text-warning extra-small font-monospace"><i class="fa-solid fa-lock me-1"></i> JWT & Brute-force</small>
+            </div>
+        </div>
+
+        <!-- KPI 5: Notifications Integration -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">تنبيهات الإشعارات</span>
+                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-bell fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">نشطة</h3>
+                <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-paper-plane me-1"></i> متابعة غياب وحضور</small>
+            </div>
+        </div>
+
+        <!-- KPI 6: Backup Readiness -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">جاهزية النسخ الاحتياطي</span>
+                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-database fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">100%</h3>
+                <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-download me-1"></i> تصدير SQL فورية</small>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: SEARCH & FILTERS BAR            -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm mb-4 bg-white border-0 no-print">
+        <div class="row g-2 align-items-center">
+            
+            <!-- Direct Search Input -->
+            <div class="col-12 col-md-6 col-lg-6">
+                <div class="input-group input-group-modern rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="settingsFilterSearch" class="form-control border-0 font-monospace extra-small ps-1" placeholder="ابحث باسم الإعداد، الفئة الإدارية، أو حالة النظام...">
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-6 col-md-4 col-lg-4">
+                <select id="settingsFilterCategory" class="form-select form-select-modern rounded-pill font-monospace extra-small">
+                    <option value="">جميع فئات الإعدادات</option>
+                    <option value="المدرسة">إعدادات المدرسة والتواصل</option>
+                    <option value="النظام">إعدادات الخادم وقاعدة البيانات</option>
+                    <option value="الأمان">إعدادات الأمان والتشفير</option>
+                    <option value="الإشعارات">إعدادات تنبيهات الإشعارات</option>
+                    <option value="النسخ الاحتياطي">النسخ الاحتياطي للداتابيز</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="col-6 col-md-2 col-lg-2 text-end">
+                <button type="button" id="settingsResetFiltersBtn" class="btn btn-outline-secondary rounded-pill px-3 w-100 font-monospace extra-small py-2 fw-bold">
+                    <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
+                </button>
+            </div>
+
+        </div>
+
+        <div id="settingsActiveFiltersBadge" class="mt-2 d-none">
+            <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 font-monospace extra-small border border-warning-subtle">
+                <i class="fa-solid fa-filter-circle-xmark me-1"></i> الفلاتر نشطة
+            </span>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: 5 DYNAMIC CATEGORIES CARDS GRID -->
+    <!-- ========================================== -->
+    <div class="mb-4 no-print">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-cubes text-primary me-2"></i> أقسام وفئات الإعدادات المعتمدة بالنظام</h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">5 فئات رئيسية</span>
+        </div>
+
+        <div class="row g-3" id="settingsCategoryCardsContainer">
+            
+            <!-- Category Card 1: School Data -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden settings-category-card"
+                     data-title="إعدادات المدرسة والتواصل" data-category="المدرسة">
+                    <div class="rounded-circle bg-primary-subtle text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-school fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1 font-monospace extra-small">إعدادات المدرسة</h6>
+                    <p class="text-muted extra-small font-monospace mb-3">الاسم الرسمي، الهاتف، البريد الإلكتروني والعنوان.</p>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold font-monospace extra-small w-100"
+                            onclick="document.getElementById('pills-general-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                        فتح التبويب <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Card 2: Server & System -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden settings-category-card"
+                     data-title="إعدادات الخادم وقاعدة البيانات" data-category="النظام">
+                    <div class="rounded-circle bg-info-subtle text-info mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-server fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1 font-monospace extra-small">تفاصيل الخادم والـ DB</h6>
+                    <p class="text-muted extra-small font-monospace mb-3">بيئة تشغيل Python/Flask وقاعدة بيانات MySQL.</p>
+                    <button class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold font-monospace extra-small w-100"
+                            onclick="document.getElementById('pills-system-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                        فتح التبويب <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Card 3: Security & Protection -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden settings-category-card"
+                     data-title="إعدادات الأمان والحماية" data-category="الأمان">
+                    <div class="rounded-circle bg-warning-subtle text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-shield-halved fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1 font-monospace extra-small">الأمان والحماية</h6>
+                    <p class="text-muted extra-small font-monospace mb-3">حظر المحاولات الخاطئة وتشفير الجلسات JWT.</p>
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold font-monospace extra-small w-100"
+                            onclick="document.getElementById('pills-general-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                        فتح التبويب <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Card 4: Notifications Settings -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden settings-category-card"
+                     data-title="إعدادات تنبيهات الإشعارات" data-category="الإشعارات">
+                    <div class="rounded-circle bg-danger-subtle text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-bell fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1 font-monospace extra-small">تخصيص الإشعارات</h6>
+                    <p class="text-muted extra-small font-monospace mb-3">إرسال تنبيهات البريد عند غياب وتأخر الطلاب.</p>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold font-monospace extra-small w-100"
+                            onclick="document.getElementById('pills-notif-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                        فتح التبويب <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Card 5: Database Backup -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2-4">
+                <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden settings-category-card"
+                     data-title="النسخ الاحتياطي لقاعدة البيانات" data-category="النسخ الاحتياطي">
+                    <div class="rounded-circle bg-success-subtle text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-database fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1 font-monospace extra-small">النسخ الاحتياطي</h6>
+                    <p class="text-muted extra-small font-monospace mb-3">توليد وتحميل النسخة الاحتياطية SQL فورياً.</p>
+                    <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold font-monospace extra-small w-100"
+                            onclick="document.getElementById('pills-backup-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                        فتح التبويب <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Empty State for Cards -->
+        <div id="settingsCardsEmptyState" class="glass-panel-card p-5 text-center bg-white rounded-4 shadow-sm border-0 mt-3 d-none">
+            <i class="fa-solid fa-inbox text-muted opacity-25 fs-1 d-block mb-3"></i>
+            <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد أقسام إعدادات مطابقة لبحثك</h6>
+            <p class="text-muted extra-small font-monospace mb-3">يرجى تعديل مصطلح البحث لفلترة أقسام النظام.</p>
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold font-monospace extra-small" onclick="resetSettingsFilters()">إعادة ضبط الفلاتر</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: ENTERPRISE SETTINGS DATA GRID  -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4 no-print">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-table-list text-primary me-2"></i> كتالوج وتفاصيل الإعدادات المعتمدة</h5>
+                <small class="text-muted font-monospace extra-small">سجل جميع الإعدادات وخيارات التهيئة المعرفة بالنظام</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 font-monospace extra-small fw-bold" onclick="exportSettingsMasterExcel()">
+                <i class="fa-solid fa-file-excel me-1"></i> تصدير الكتالوج Excel
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table">
+                <thead class="bg-light sticky-top">
+                    <tr>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 50px;">#</th>
+                        <th class="py-3 font-monospace text-primary border-0 text-start" style="width: 120px;">كود الإعداد</th>
+                        <th class="py-3 font-monospace text-primary border-0 text-start">اسم الإعداد الشامل</th>
+                        <th class="py-3 font-monospace text-primary border-0">الفئة النظامية</th>
+                        <th class="py-3 font-monospace text-primary border-0">الحالة التشغيلية</th>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 180px;">الإجراء السريع</th>
+                    </tr>
+                </thead>
+                <tbody id="settingsMasterTableBody">
+                    <tr class="align-middle settings-table-row" data-category="المدرسة">
+                        <td class="font-monospace fw-bold text-primary">1</td>
+                        <td class="text-start font-monospace extra-small setting-code fw-bold">SET-GEN-01</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small setting-name">اسم المدرسة الرسمي والبيانات</strong>
+                            <small class="text-muted extra-small font-monospace">مدرسة المستقبل الأهلية Model School</small>
+                        </td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">المدرسة</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">مفعلة وموثقة</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-primary"
+                                    onclick="document.getElementById('pills-general-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> تعديل
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle settings-table-row" data-category="النظام">
+                        <td class="font-monospace fw-bold text-primary">2</td>
+                        <td class="text-start font-monospace extra-small setting-code fw-bold">SET-SYS-02</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small setting-name">تفاصيل خادم الـ Database</strong>
+                            <small class="text-muted extra-small font-monospace">MySQL Database (school_system_db)</small>
+                        </td>
+                        <td><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">النظام</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">متصل حياً</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-info"
+                                    onclick="document.getElementById('pills-system-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                                <i class="fa-solid fa-eye me-1"></i> عرض
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle settings-table-row" data-category="الأمان">
+                        <td class="font-monospace fw-bold text-primary">3</td>
+                        <td class="text-start font-monospace extra-small setting-code fw-bold">SET-SEC-03</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small setting-name">حظر الحسابات والتشفير JWT</strong>
+                            <small class="text-muted extra-small font-monospace">الحماية من محاولات الدخول الخاطئة والتشفير الآمن</small>
+                        </td>
+                        <td><span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">الأمان</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">نشط ومفعل</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-warning"
+                                    onclick="document.getElementById('pills-general-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                                <i class="fa-solid fa-shield me-1"></i> فحص
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle settings-table-row" data-category="الإشعارات">
+                        <td class="font-monospace fw-bold text-primary">4</td>
+                        <td class="text-start font-monospace extra-small setting-code fw-bold">SET-NOT-04</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small setting-name">إرسال تنبيهات غياب الطلاب</strong>
+                            <small class="text-muted extra-small font-monospace">تنبيهات إلكترونية فورية لأولياء الأمور</small>
+                        </td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">الإشعارات</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">مفعلة</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-danger"
+                                    onclick="document.getElementById('pills-notif-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                                <i class="fa-solid fa-bell me-1"></i> ضبط
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle settings-table-row" data-category="النسخ الاحتياطي">
+                        <td class="font-monospace fw-bold text-primary">5</td>
+                        <td class="text-start font-monospace extra-small setting-code fw-bold">SET-BAK-05</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small setting-name">النسخ الاحتياطي التلقائي SQL</strong>
+                            <small class="text-muted extra-small font-monospace">تصدير قاعدة البيانات وتحميل النسخ فورياً</small>
+                        </td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">النسخ الاحتياطي</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">جاهز 100%</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-success"
+                                    onclick="document.getElementById('pills-backup-tab').click(); document.getElementById('settingsTabsSection').scrollIntoView({behavior: 'smooth'});">
+                                <i class="fa-solid fa-download me-1"></i> تحميل
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Empty State -->
+        <div id="settingsTableEmptyState" class="p-5 text-center bg-white rounded-4 border-0 d-none">
+            <i class="fa-solid fa-inbox text-muted opacity-25 fs-1 d-block mb-3"></i>
+            <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد إعدادات مطابقة لنص البحث بالجدول</h6>
+            <p class="text-muted extra-small font-monospace mb-0">يرجى تعديل مصطلح البحث لفلترة خيارات التهيئة.</p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: TABBED SETTINGS FORMS PANEL    -->
+    <!-- ========================================== -->
+    <div id="settingsTabsSection" class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4">
+        
+        <div class="p-3 bg-white border-bottom no-print">
+            <ul class="nav nav-pills nav-fill gap-2 font-monospace extra-small fw-bold" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill py-2" id="pills-general-tab" data-bs-toggle="pill" data-bs-target="#tabGeneral" type="button" role="tab">
+                        <i class="fa-solid fa-sliders me-1"></i> الإعدادات العامة والأمان
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill py-2" id="pills-system-tab" data-bs-toggle="pill" data-bs-target="#tabSystem" type="button" role="tab">
+                        <i class="fa-solid fa-server me-1"></i> تفاصيل الخادم وقاعدة البيانات
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill py-2" id="pills-notif-tab" data-bs-toggle="pill" data-bs-target="#tabNotif" type="button" role="tab">
+                        <i class="fa-solid fa-bell me-1"></i> إعدادات الإشعارات
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill py-2" id="pills-backup-tab" data-bs-toggle="pill" data-bs-target="#tabBackup" type="button" role="tab">
+                        <i class="fa-solid fa-database me-1"></i> النسخ الاحتياطي
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="p-4">
+            <div class="tab-content font-monospace">
+                
+                <!-- Tab 1: General & Security Settings Form -->
+                <div class="tab-pane fade show active" id="tabGeneral" role="tabpanel">
+                    <h5 class="fw-bold mb-4 text-primary font-monospace">
+                        <i class="fa-solid fa-building-columns text-primary me-2"></i> بيانات المدرسة وإعدادات الحماية
+                    </h5>
+                    
                     <form action="{{ url_for('dashboard.settings') }}" method="POST">
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">اسم المدرسة</label>
-                                <input type="text" name="school_name" value="مدرسة المستقبل الأهلية" class="form-control bg-light border-0" required>
+                                <label class="form-label extra-small fw-bold text-dark mb-1">اسم المدرسة الرسمي</label>
+                                <input type="text" name="school_name" value="مدرسة المستقبل الأهلية" class="form-control form-control-modern rounded-pill extra-small" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">البريد الإلكتروني الرسمي</label>
-                                <input type="email" name="school_email" value="info@future-school.com" class="form-control bg-light border-0" required>
+                                <label class="form-label extra-small fw-bold text-dark mb-1">البريد الإلكتروني الرسمي</label>
+                                <input type="email" name="school_email" value="info@future-school.com" class="form-control form-control-modern rounded-pill extra-small" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">رقم الهاتف التواصل</label>
-                                <input type="text" name="school_phone" value="0555123456" class="form-control bg-light border-0">
+                                <label class="form-label extra-small fw-bold text-dark mb-1">رقم الهاتف التواصل</label>
+                                <input type="text" name="school_phone" value="0555123456" class="form-control form-control-modern rounded-pill extra-small">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">العنوان والمنطقة</label>
-                                <input type="text" name="school_address" value="الرياض - حي النزهة" class="form-control bg-light border-0">
+                                <label class="form-label extra-small fw-bold text-dark mb-1">العنوان والمنطقة</label>
+                                <input type="text" name="school_address" value="الرياض - حي النزهة" class="form-control form-control-modern rounded-pill extra-small">
                             </div>
                         </div>
 
-                        <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-shield-halved me-2 text-primary"></i> أمان وحماية النظام</h6>
-                        <div class="form-check form-switch mb-3">
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <h6 class="fw-bold mb-3 text-dark font-monospace"><i class="fa-solid fa-shield-halved me-2 text-warning"></i> أمان وحماية النظام</h6>
+                        <div class="form-check form-switch mb-3 extra-small">
                             <input class="form-check-input" type="checkbox" id="bruteForceSwitch" checked>
-                            <label class="form-check-label fw-bold" for="bruteForceSwitch">تفعيل حظر الحسابات التلقائي عند المحاولات الخاطئة (5 محاولات)</label>
+                            <label class="form-check-label fw-bold text-dark" for="bruteForceSwitch">تفعيل حظر الحسابات التلقائي عند المحاولات الخاطئة (5 محاولات)</label>
                         </div>
-                        <div class="form-check form-switch mb-4">
+                        <div class="form-check form-switch mb-4 extra-small">
                             <input class="form-check-input" type="checkbox" id="jwtSwitch" checked>
-                            <label class="form-check-label fw-bold" for="jwtSwitch">تفعيل التشفير الآمن لمعرفات الـ JWT HMAC</label>
+                            <label class="form-check-label fw-bold text-dark" for="jwtSwitch">تفعيل التشفير الآمن لمعرفات الـ JWT HMAC</label>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ الإعدادات</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm extra-small">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ إعدادات النظام
+                            </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Tab 2: System -->
-                <div class="tab-pane fade" id="tabSystem">
-                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-server me-2"></i> تفاصيل الخادم وقاعدة البيانات</h5>
-                    <p class="text-muted mb-2">نوع قاعدة البيانات المحلية: <span class="badge bg-success">MySQL Database (school_system_db)</span></p>
-                    <p class="text-muted">بيئة التشغيل: <span class="badge bg-primary">Flask 3.x / Python 3.12</span></p>
-                </div>
-
-                <!-- Tab 3: Notifications -->
-                <div class="tab-pane fade" id="tabNotif">
-                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-bell me-2"></i> تخصيص الإشعارات</h5>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" checked>
-                        <label class="form-check-label fw-bold">إرسال إشعارات البريد الإلكتروني عند غياب الطالب</label>
+                <!-- Tab 2: Server & Database Details -->
+                <div class="tab-pane fade" id="tabSystem" role="tabpanel">
+                    <h5 class="fw-bold mb-4 text-primary font-monospace"><i class="fa-solid fa-server me-2"></i> تفاصيل الخادم وقاعدة البيانات</h5>
+                    <div class="p-3 bg-light rounded-4 mb-3 border extra-small">
+                        <div class="mb-2"><strong>نوع قاعدة البيانات:</strong> <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-monospace px-3 py-1 ms-2">MySQL Database (school_system_db)</span></div>
+                        <div class="mb-2"><strong>بيئة التشغيل المحلية:</strong> <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace px-3 py-1 ms-2">Flask 3.x / Python 3.12</span></div>
+                        <div><strong>ربط الجداول (Single Source):</strong> <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill font-monospace px-3 py-1 ms-2">متصل وموثق 100%</span></div>
                     </div>
                 </div>
 
-                <!-- Tab 4: Backup -->
-                <div class="tab-pane fade" id="tabBackup">
-                    <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-database me-2"></i> النسخ الاحتياطي لقاعدة البيانات</h5>
-                    <button type="button" class="btn btn-outline-primary rounded-pill fw-bold" onclick="Swal.fire('تم النسخ', 'تم إنشاء نسخة احتياطية بنجاح من قاعدة البيانات', 'success')">
+                <!-- Tab 3: Notifications Settings -->
+                <div class="tab-pane fade" id="tabNotif" role="tabpanel">
+                    <h5 class="fw-bold mb-4 text-primary font-monospace"><i class="fa-solid fa-bell me-2"></i> تخصيص إشعارات النظام</h5>
+                    <div class="form-check form-switch mb-3 extra-small">
+                        <input class="form-check-input" type="checkbox" checked>
+                        <label class="form-check-label fw-bold text-dark">إرسال إشعارات البريد الإلكتروني عند غياب أو تأخر الطالب</label>
+                    </div>
+                    <div class="form-check form-switch mb-3 extra-small">
+                        <input class="form-check-input" type="checkbox" checked>
+                        <label class="form-check-label fw-bold text-dark">تفعيل إشعارات رصد الدرجات والشهادات الدراسية</label>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Database Backup -->
+                <div class="tab-pane fade" id="tabBackup" role="tabpanel">
+                    <h5 class="fw-bold mb-4 text-primary font-monospace"><i class="fa-solid fa-database me-2"></i> النسخ الاحتياطي لقاعدة البيانات</h5>
+                    <p class="text-muted extra-small mb-3">توليد نسخة احتياطية فورية وشاملة من جميع جداول النظام والسجلات الأكاديمية.</p>
+                    <button type="button" class="btn btn-outline-success rounded-pill fw-bold extra-small px-4" onclick="Swal.fire('تم النسخ', 'تم إنشاء نسخة احتياطية بنجاح من قاعدة البيانات', 'success')">
                         <i class="fa-solid fa-download me-1"></i> تحميل نسخة احتياطية الآن (SQL)
                     </button>
                 </div>
+
             </div>
         </div>
     </div>
+
 </div>
+
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 {% endblock %}
