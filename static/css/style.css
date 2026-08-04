@@ -1081,10 +1081,16 @@ body {
     outline-offset: 2px !important;
 }
 
-/* Buttons Loading Spinner */
-.btn-loading {
-    pointer-events: none;
-    opacity: 0.75;
+/* Offcanvas Overlay Rules */
+.offcanvas {
+    z-index: 1095 !important;
+}
+.offcanvas-backdrop {
+    z-index: 1090 !important;
+}
+#notificationsOffcanvas {
+    width: 480px !important;
+    max-width: 92vw !important;
 }
 
 

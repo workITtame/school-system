@@ -312,13 +312,18 @@
 <!-- ========================================== -->
 <!-- SECTION 7: Notifications Offcanvas Drawer -->
 <!-- ========================================== -->
-<div class="offcanvas offcanvas-start font-monospace" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel">
-    <div class="offcanvas-header bg-primary text-white p-3">
+<div class="offcanvas offcanvas-start font-monospace shadow-lg" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel" style="width: 480px !important; max-width: 92vw !important; z-index: 1095 !important;">
+    <div class="offcanvas-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
             <i class="fa-solid fa-bell fs-5"></i>
             <h5 class="offcanvas-title fw-bold text-white mb-0" id="notificationsOffcanvasLabel">مركز الإشعارات والتنبيهات</h5>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('notifications.index') }}" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold font-monospace extra-small" title="عرض صفحة الإشعارات بالكامل">
+                <i class="fa-solid fa-expand me-1"></i> عرض الكامل
+            </a>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
     </div>
     <div class="offcanvas-body p-0 bg-light-subtle">
         <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
