@@ -1,136 +1,606 @@
 {% extends 'layout.html' %}
 
-{% block title %}مركز التقارير الشاملة{% endblock %}
-{% block page_title %}التقارير والإحصائيات{% endblock %}
+{% block title %}مركز التقارير والإحصائيات الشامل | Enterprise SaaS Reports Center{% endblock %}
+{% block page_title %}مركز التقارير الشاملة{% endblock %}
 {% block page_subtitle %}الرئيسية / التقارير والأكاديميا{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold m-0 text-dark">مركز التقارير والإحصائيات</h3>
-            <p class="text-muted mb-0" style="font-size: 0.9rem;">اختر التقرير المطلوب لعرض التحليلات والتصدير</p>
+<div class="fade-in font-cairo" id="reportsModuleRoot">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: HERO HEADER                     -->
+    <!-- ========================================== -->
+    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
+         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+        <div class="position-absolute end-0 top-0 opacity-10 pe-4 pt-3 pointer-events-none">
+            <i class="fa-solid fa-chart-pie" style="font-size: 11rem; color: #ffffff;"></i>
         </div>
-        <a href="{{ url_for('reports.analytics') }}" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm">
-            <i class="fa-solid fa-chart-line me-1"></i> الإحصائيات العامة والتحليل
-        </a>
+        
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 2;">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
+                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">مركز التقارير الإدارية والأكاديمية</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-3">
+                    <h2 class="fw-bold text-white mb-0 font-monospace">مركز التقارير والإحصائيات الشامل</h2>
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Enterprise SaaS</span>
+                </div>
+                <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
+                    رصد وتأطير وتصدير كشوف وتقارير الطلاب، المعلمين، الصفوف، الجدول، الحضور، الواجبات، الاختبارات، المراسلات، والمالية المعتمدة.
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
+                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="document.getElementById('reportsFilterSearch')?.focus();">
+                    <i class="fa-solid fa-file-circle-plus"></i> <span>إنشاء تقرير</span>
+                </button>
+                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light" onclick="exportReportsMasterExcel()">
+                    <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
+                </button>
+                <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> <span>طباعة / PDF</span>
+                </button>
+                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-arrows-rotate fs-6"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- 8 Report Cards Grid matching Screen 6 -->
-    <div class="row g-4 mb-4">
-        <!-- Card 1: Students Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('reports.student_report') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-user-graduate fs-3"></i>
+    <!-- ========================================== -->
+    <!-- SECTION 2: GLASS KPI DASHBOARD             -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 no-print">
+        
+        <!-- KPI 1: Total Report Categories -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">فئات التقارير المتاحة</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-folder-tree fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الطلاب</h6>
-                    <p class="text-muted small mb-0">عرض وتصدير بيانات واسم الطالب</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">10</h3>
+                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> فئات معتمدة</small>
+            </div>
         </div>
 
-        <!-- Card 2: Teachers Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('teacher.index') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-success bg-opacity-10 text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-chalkboard-user fs-3"></i>
+        <!-- KPI 2: Student & Academic Reports -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">تقارير الطلاب والنتائج</span>
+                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-user-graduate fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير المعلمين</h6>
-                    <p class="text-muted small mb-0">عرض وتأطير المعلمين وحصصهم</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">4</h3>
+                <small class="text-info extra-small font-monospace"><i class="fa-solid fa-award me-1"></i> شهادات وكشوف</small>
+            </div>
         </div>
 
-        <!-- Card 3: Attendance Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('attendance.index') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-purple bg-opacity-10 text-purple mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: rgba(147, 51, 234, 0.1); color: #9333ea;">
-                        <i class="fa-solid fa-clipboard-user fs-3"></i>
+        <!-- KPI 3: Classes & Subjects Reports -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">تقارير الصفوف والمواد</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-chalkboard fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الحضور والغياب</h6>
-                    <p class="text-muted small mb-0">عرض تقارير الحضور والغياب</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">3</h3>
+                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-layer-group me-1"></i> توزيعات هيكلية</small>
+            </div>
         </div>
 
-        <!-- Card 4: Grades Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('grades.manage_grades') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-info bg-opacity-10 text-info mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-star fs-3"></i>
+        <!-- KPI 4: Financial & Administrative -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">التقارير المالية والإدارية</span>
+                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-file-invoice-dollar fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الدرجات</h6>
-                    <p class="text-muted small mb-0">عرض تقرير الدرجات والاستحواذ</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">3</h3>
+                <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-receipt me-1"></i> إيرادات ومصروفات</small>
+            </div>
         </div>
 
-        <!-- Card 5: Exams Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('exams.index') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-file-signature fs-3"></i>
+        <!-- KPI 5: Digital Readiness Rate -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">جاهزية التصدير والطباعة</span>
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-print fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الاختبارات</h6>
-                    <p class="text-muted small mb-0">عرض تقارير الاختبارات والنتائج</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">100%</h3>
+                <small class="text-warning extra-small font-monospace"><i class="fa-solid fa-bolt me-1"></i> دعم PDF & Excel</small>
+            </div>
         </div>
 
-        <!-- Card 6: Subjects Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('academic.subjects') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-book-open fs-3"></i>
+        <!-- KPI 6: Real-time System Sync -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">حالة ربط السجلات</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-link fs-6"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير المواد الدراسية</h6>
-                    <p class="text-muted small mb-0">عرض المواد الدراسية والمنهج</p>
                 </div>
-            </a>
+                <h3 class="fw-bold text-dark font-monospace mb-1">مباشر</h3>
+                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-rotate me-1"></i> تحديث قاعدة البيانات</small>
+            </div>
         </div>
 
-        <!-- Card 7: Finance Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('dashboard.finance') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-file-invoice-dollar fs-3"></i>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الشؤون المالية</h6>
-                    <p class="text-muted small mb-0">عرض تقارير الإيرادات والمصروفات</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: UNIFIED SEARCH & FILTERS BAR    -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm mb-4 bg-white border-0 no-print">
+        <div class="row g-2 align-items-center">
+            
+            <!-- Direct Search Input -->
+            <div class="col-12 col-md-5 col-lg-5">
+                <div class="input-group input-group-modern rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="reportsFilterSearch" class="form-control border-0 font-monospace extra-small ps-1" placeholder="ابحث باسم التقرير، الفئة الأكاديمية، أو نوع التقرير...">
                 </div>
-            </a>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-6 col-md-3 col-lg-3">
+                <select id="reportsFilterCategory" class="form-select form-select-modern rounded-pill font-monospace extra-small">
+                    <option value="">جميع الفئات الأكاديمية</option>
+                    <option value="طلاب">تقارير الطلاب والنتائج</option>
+                    <option value="معلمون">تقارير المعلمين والكادر</option>
+                    <option value="صفوف">تقارير الصفوف والمواد</option>
+                    <option value="حضور">تقارير الحضور والواجبات</option>
+                    <option value="إدارة">تقارير الإدارة والمراسلات</option>
+                </select>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="col-6 col-md-2 col-lg-2">
+                <select id="reportsFilterType" class="form-select form-select-modern rounded-pill font-monospace extra-small">
+                    <option value="">جميع صيغ التقارير</option>
+                    <option value="PDF">تصدير PDF / طباعة</option>
+                    <option value="Excel">تصدير Excel</option>
+                    <option value="تفاعلي">تقرير تفاعلي مباشر</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="col-12 col-md-2 col-lg-2 text-end">
+                <button type="button" id="reportsResetFiltersBtn" class="btn btn-outline-secondary rounded-pill px-3 w-100 font-monospace extra-small py-2 fw-bold">
+                    <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
+                </button>
+            </div>
+
         </div>
 
-        <!-- Card 8: Activities Report -->
-        <div class="col-md-3">
-            <a href="{{ url_for('notifications.index') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center hover-lift">
-                    <div class="rounded-circle bg-dark bg-opacity-10 text-dark mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-list-check fs-3"></i>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-2">تقرير الأنشطة</h6>
-                    <p class="text-muted small mb-0">عرض تقارير الأنشطة والفعاليات</p>
-                </div>
-            </a>
+        <div id="reportsActiveFiltersBadge" class="mt-2 d-none">
+            <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 font-monospace extra-small border border-warning-subtle">
+                <i class="fa-solid fa-filter-circle-xmark me-1"></i> الفلاتر نشطة
+            </span>
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: 10 REPORTS CATEGORY CARDS GRID  -->
+    <!-- ========================================== -->
+    <div class="mb-4 no-print">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-cubes text-primary me-2"></i> وحدات وفئات التقارير المعتمدة بالنظام</h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">10 فئات نشطة</span>
+        </div>
+
+        <div class="row g-3" id="reportsCategoryCardsContainer">
+            
+            <!-- Card 1: Students Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('reports.student_report') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الطلاب والشهادات وكشوف الدرجات" data-category="طلاب" data-type="PDF,Excel">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-user-graduate fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الطلاب والشهادات</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">كشوف درجات الطلاب، بطاقات الأداء السنوي، وإصدار الشهادات الرسمية.</p>
+                        <span class="btn btn-sm btn-primary-subtle text-primary rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            فتح التقرير <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 2: Teachers Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('teacher.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير المعلمين والكادر الأكاديمي والتخصصات" data-category="معلمون" data-type="تفاعلي">
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-chalkboard-user fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير المعلمين والكادر</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">توزيع التخصصات، النصاب التدريسي، وحصص الكادر التعليمي.</p>
+                        <span class="btn btn-sm btn-success-subtle text-success rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض السجلات <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 3: Classes Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('academic.classes') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الصفوف والشعب الدراسية والكشوفات" data-category="صفوف" data-type="Excel">
+                        <div class="rounded-circle bg-info bg-opacity-10 text-info mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-school fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الصفوف والشعب</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">توزيع الطلاب على الشعب، الطاقة الاستيعابية، والتوزيع الأكاديمي.</p>
+                        <span class="btn btn-sm btn-info-subtle text-info rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض الصفوف <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 4: Subjects Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('academic.subjects') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير المواد الدراسية والمناهج والأعيان" data-category="صفوف" data-type="تفاعلي">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-book-open fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير المواد الدراسية</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">خطة المناهج الدراسية، الساعات الأكاديمية، والارتباط بالصفوف.</p>
+                        <span class="btn btn-sm btn-secondary-subtle text-secondary rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض المواد <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 5: Timetable Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('timetable.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الجدول الدراسي والحصص الأسبوعية" data-category="صفوف" data-type="PDF">
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-calendar-days fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الجدول الدراسي</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">جداول الحصص الأسبوعية للمعلمين والشعب والتوزيع اليومي.</p>
+                        <span class="btn btn-sm btn-warning-subtle text-warning rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض الجدول <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 6: Attendance Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('attendance.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الحضور والغياب والانضباط المدرسي" data-category="حضور" data-type="Excel">
+                        <div class="rounded-circle bg-danger bg-opacity-10 text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-clipboard-user fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الحضور والغياب</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">سجلات الانضباط اليومي، معدلات الغياب، والإحصاءات التفصيلية.</p>
+                        <span class="btn btn-sm btn-danger-subtle text-danger rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض الحضور <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 7: Homework Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('homework.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الواجبات والتسليمات والتكليفات" data-category="حضور" data-type="تفاعلي">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-book-bookmark fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الواجبات والتكليفات</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">متابعة إسناد الواجبات، نسب التسليم، وتقييم أداء الواجبات.</p>
+                        <span class="btn btn-sm btn-primary-subtle text-primary rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض الواجبات <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 8: Exams & Grades Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('reports.performance') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الاختبارات والنتائج ومتوسطات الدرجات" data-category="طلاب" data-type="PDF,Excel">
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-chart-line fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تحليل أداء الاختبارات والدرجات</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">متوسطات الأداء الأكاديمي، تحليل درجات الصفوف، والنتائج العامة.</p>
+                        <span class="btn btn-sm btn-success-subtle text-success rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض التحليلات <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 9: Messages Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('messages.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الرسائل والمحادثات والتواصل الأكاديمي" data-category="إدارة" data-type="Excel">
+                        <div class="rounded-circle bg-info bg-opacity-10 text-info mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-comments fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الرسائل والتواصل</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">سجلات التواصل الأكاديمي، رسائل الكادر والمستخدمين، وإرسال الشحنات.</p>
+                        <span class="btn btn-sm btn-info-subtle text-info rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض المراسلات <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Card 10: Notifications Report -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('notifications.index') }}" class="text-decoration-none">
+                    <div class="glass-panel-card p-4 rounded-4 shadow-sm border-0 bg-white h-100 hover-lift text-center position-relative overflow-hidden report-category-card"
+                         data-title="تقرير الإشعارات والتنبيهات والأنشطة الأكاديمية" data-category="إدارة" data-type="تفاعلي">
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 58px; height: 58px;">
+                            <i class="fa-solid fa-bell fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1 font-monospace">تقارير الإشعارات والأنشطة</h6>
+                        <p class="text-muted extra-small font-monospace mb-3">سجل الإشعارات الأكاديمية، التنبيهات النظامية، وتوثيق الفعاليات.</p>
+                        <span class="btn btn-sm btn-warning-subtle text-warning rounded-pill px-3 fw-bold font-monospace extra-small w-100">
+                            عرض الإشعارات <i class="fa-solid fa-arrow-left ms-1"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Cards Empty State -->
+        <div id="reportsCardsEmptyState" class="glass-panel-card p-5 text-center bg-white rounded-4 shadow-sm border-0 mt-3 d-none">
+            <i class="fa-solid fa-folder-open text-muted opacity-25 fs-1 d-block mb-3"></i>
+            <h5 class="fw-bold text-dark font-monospace mb-1">لا توجد فئات تقارير مطابقة لمحددات البحث</h5>
+            <p class="text-muted extra-small font-monospace mb-3">جرب تغيير كلمات البحث أو إعادة ضبط الفلاتر لعرض التقارير المتاحة.</p>
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold font-monospace extra-small" onclick="resetReportsFilters()">إعادة ضبط الفلاتر</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: ENTERPRISE MASTER DATA GRID    -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-table-list text-primary me-2"></i> كتالوج التقارير الأكاديمية والإدارية المعتمدة</h5>
+                <small class="text-muted font-monospace extra-small">السجل الشامل للتقارير المتاحة للتصفح والاستخراج والتصدير</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 font-monospace extra-small fw-bold" onclick="exportReportsMasterExcel()">
+                <i class="fa-solid fa-file-excel me-1"></i> تصدير الكتالوج Excel
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table">
+                <thead class="bg-light sticky-top">
+                    <tr>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 50px;">#</th>
+                        <th class="py-3 font-monospace text-primary border-0 text-start" style="width: 120px;">كود التقرير</th>
+                        <th class="py-3 font-monospace text-primary border-0 text-start">اسم التقرير الشامل</th>
+                        <th class="py-3 font-monospace text-primary border-0">الفئة الأكاديمية</th>
+                        <th class="py-3 font-monospace text-primary border-0">الصيغ المتاحة</th>
+                        <th class="py-3 font-monospace text-primary border-0">الحالة والجاهزية</th>
+                        <th class="py-3 font-monospace text-primary border-0" style="width: 180px;">الإجراءات السريعة</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsMasterTableBody">
+                    
+                    <!-- Row 1: Student Marks & Certificates -->
+                    <tr class="align-middle report-table-row" data-category="طلاب" data-type="PDF,Excel">
+                        <td class="font-monospace fw-bold text-primary">1</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-STD-01</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">كشف درجات الطلاب وإصدار الشهادات</strong>
+                            <small class="text-muted extra-small font-monospace">استخراج كشوفات درجات المواد والامتحانات الفردية والجماعية للطلاب</small>
+                        </td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">طلاب والشهادات</span></td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">PDF / Excel</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('reports.student_report') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-primary">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> فتح التقرير
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 2: Performance Analytics -->
+                    <tr class="align-middle report-table-row" data-category="طلاب" data-type="PDF,Excel">
+                        <td class="font-monospace fw-bold text-primary">2</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-PRF-02</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">تحليل الأداء ومتوسطات درجات الصفوف</strong>
+                            <small class="text-muted extra-small font-monospace">رسم وتتبع متوسط درجات الاختبارات حسب الصفوف والشعب</small>
+                        </td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">الأداء الأكاديمي</span></td>
+                        <td><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">رسوم بيانية</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('reports.performance') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-success">
+                                <i class="fa-solid fa-chart-line me-1"></i> فتح التحليلات
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 3: Teacher Workload & Assignments -->
+                    <tr class="align-middle report-table-row" data-category="معلمون" data-type="تفاعلي">
+                        <td class="font-monospace fw-bold text-primary">3</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-TCH-03</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">تقرير نصاب وتوزيع المعلمين</strong>
+                            <small class="text-muted extra-small font-monospace">بيانات التخصصات والساعات الأكاديمية والمواد المسندة للمعلمين</small>
+                        </td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">الكادر الأكاديمي</span></td>
+                        <td><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">تفاعلي</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('teacher.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-dark">
+                                <i class="fa-solid fa-eye me-1"></i> معاينة السجل
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 4: Attendance & Discipline -->
+                    <tr class="align-middle report-table-row" data-category="حضور" data-type="Excel">
+                        <td class="font-monospace fw-bold text-primary">4</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-ATT-04</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">تقرير الحضور والغياب اليومي</strong>
+                            <small class="text-muted extra-small font-monospace">متابعة سجلات الحضور والانضباط ونسب الحضور الشاملة</small>
+                        </td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">الانضباط المدرسي</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">Excel</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-danger">
+                                <i class="fa-solid fa-clipboard-user me-1"></i> فتح الحضور
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 5: Class Roster & Sections -->
+                    <tr class="align-middle report-table-row" data-category="صفوف" data-type="Excel">
+                        <td class="font-monospace fw-bold text-primary">5</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-CLS-05</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">كشوفات توزيع الصفوف والشعب الدراسية</strong>
+                            <small class="text-muted extra-small font-monospace">قوائم أسماء الطلاب حسب الصفوف الدراسية والشعب المسجلة</small>
+                        </td>
+                        <td><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">الصفوف والشعب</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">Excel</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('academic.classes') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-info">
+                                <i class="fa-solid fa-school me-1"></i> فتح الصفوف
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 6: Weekly Timetable -->
+                    <tr class="align-middle report-table-row" data-category="صفوف" data-type="PDF">
+                        <td class="font-monospace fw-bold text-primary">6</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-TTB-06</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">جدول الحصص والبرنامج الأسبوعي</strong>
+                            <small class="text-muted extra-small font-monospace">جدول توزيع المعلمين والحصص الدراسية لكافة الشعب</small>
+                        </td>
+                        <td><span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">الجدول الدراسي</span></td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">PDF</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-warning">
+                                <i class="fa-solid fa-calendar-days me-1"></i> فتح الجدول
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 7: Messages & Communication Log -->
+                    <tr class="align-middle report-table-row" data-category="إدارة" data-type="Excel">
+                        <td class="font-monospace fw-bold text-primary">7</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-MSG-07</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">سجل الرسائل والمحادثات الأكاديمية</strong>
+                            <small class="text-muted extra-small font-monospace">سجلات المراسلات المباشرة والجماعية ونسب الاطلاع والحالات</small>
+                        </td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">المراسلات والإدارة</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">Excel</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('messages.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-primary">
+                                <i class="fa-solid fa-comments me-1"></i> فتح الرسائل
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Row 8: Financial Report -->
+                    <tr class="align-middle report-table-row" data-category="إدارة" data-type="Excel">
+                        <td class="font-monospace fw-bold text-primary">8</td>
+                        <td class="text-start font-monospace extra-small report-code fw-bold">REP-FIN-08</td>
+                        <td class="text-start">
+                            <strong class="d-block text-dark font-monospace extra-small report-name">تقرير الشؤون المالية والإيرادات</strong>
+                            <small class="text-muted extra-small font-monospace">ملخص المقبوضات والمصروفات الإدارية والمتحصلات</small>
+                        </td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill extra-small px-3 py-1 font-monospace report-cat">المالية والإدارة</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-2 py-1 font-monospace report-type">Excel</span></td>
+                        <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace report-status">متاح وموثق</span></td>
+                        <td>
+                            <a href="{{ url_for('dashboard.finance') }}" class="btn btn-sm btn-light border rounded-pill px-3 extra-small font-monospace fw-bold text-danger">
+                                <i class="fa-solid fa-file-invoice-dollar me-1"></i> فتح المالية
+                            </a>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Empty State -->
+        <div id="reportsTableEmptyState" class="p-5 text-center bg-white rounded-4 border-0 d-none">
+            <i class="fa-solid fa-inbox text-muted opacity-25 fs-1 d-block mb-3"></i>
+            <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد تقارير مطابقة لنص البحث بجدول الكتالوج</h6>
+            <p class="text-muted extra-small font-monospace mb-0">يرجى تعديل مصطلح البحث لفلترة السجلات الإحصائية.</p>
+        </div>
+    </div>
+
 </div>
 
 <style>
-.hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.hover-lift:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+@media print {
+    .top-navbar, #sidebar, header, nav, .navbar, .top-header, .topbar, .sidebar-wrapper,
+    .no-print, .btn, button, .breadcrumb, #reportsActiveFiltersBadge, .glass-panel-card.p-3 {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    body, html, .wrapper, .main-content, .container-fluid {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        box-shadow: none !important;
+    }
+
+    #reportsModuleRoot {
+        position: relative !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .table {
+        border: 1px solid #000000 !important;
+    }
 }
 </style>
+
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
 {% endblock %}
