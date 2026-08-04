@@ -211,7 +211,7 @@
             <!-- Header bar for grid view toggle & count -->
             <div class="d-flex align-items-center justify-content-between mb-3 bg-white p-3 rounded-4 shadow-sm border font-monospace extra-small">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-dark">عرض 1 - {{ student_cards|length if student_cards is defined else 11 }} من {{ kpi.total_students if kpi is defined else total_students }} طالب</span>
+                    <span class="fw-bold text-dark" id="visibleStudentsCount">عرض 1 - {{ student_cards|length if student_cards is defined else 11 }} من {{ kpi.total_students if kpi is defined else total_students }} طالب</span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" id="btnViewCards"><i class="fa-solid fa-border-all me-1"></i> بطاقات</button>
@@ -439,6 +439,11 @@ function filterStudentsGrid() {
             item.style.display = 'none';
         }
     });
+    
+    const countEl = document.getElementById('visibleStudentsCount');
+    if (countEl) {
+        countEl.textContent = `عرض 1 - ${visibleCount} من ${items.length} طالب`;
+    }
 }
 
 function resetStudentsFilters() {
@@ -473,19 +478,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnCards && btnList && grid) {
         btnCards.addEventListener('click', function() {
-            grid.classList.remove('row-cols-1');
-            btnCards.classList.remove('btn-light', 'text-muted');
+            const items = grid.querySelectorAll('.student-card-item');
+            items.forEach(it => {
+                it.classList.remove('col-12');
+                it.classList.add('col-12', 'col-md-6');
+            });
+            btnCards.classList.remove('btn-light', 'text-muted', 'border');
             btnCards.classList.add('btn-primary');
             btnList.classList.remove('btn-primary');
-            btnList.classList.add('btn-light', 'text-muted');
+            btnList.classList.add('btn-light', 'text-muted', 'border');
         });
         
         btnList.addEventListener('click', function() {
-            grid.classList.add('row-cols-1');
-            btnList.classList.remove('btn-light', 'text-muted');
+            const items = grid.querySelectorAll('.student-card-item');
+            items.forEach(it => {
+                it.classList.remove('col-md-6');
+                it.classList.add('col-12');
+            });
+            btnList.classList.remove('btn-light', 'text-muted', 'border');
             btnList.classList.add('btn-primary');
             btnCards.classList.remove('btn-primary');
-            btnCards.classList.add('btn-light', 'text-muted');
+            btnCards.classList.add('btn-light', 'text-muted', 'border');
         });
     }
 });
