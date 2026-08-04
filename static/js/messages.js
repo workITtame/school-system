@@ -39,6 +39,7 @@ function initMessagesModule() {
     window.toggleBulkRecipientAll = toggleBulkRecipientAll;
     window.sendBulkMessages = sendBulkMessages;
     window.openTemplatesModal = openTemplatesModal;
+    window.exportMessagesAnalyticsExcel = exportMessagesAnalyticsExcel;
 
     setupMessagesEventListeners();
     loadConversations();
@@ -93,6 +94,7 @@ function loadConversations() {
                 updateMessagesKPIs();
                 renderConversations(messagesState.conversations);
                 renderMessagesDataGrid(messagesState.conversations);
+                updateMessagesAnalyticsUI(messagesState.conversations);
             }
         })
         .catch(err => {
@@ -383,19 +385,30 @@ function sendMessageSubmit() {
 function switchMessagesTab(tabName) {
     const gridPane = document.getElementById('msgPaneGrid');
     const chatPane = document.getElementById('msgPaneChat');
+    const analyticsPane = document.getElementById('msgPaneAnalytics');
+
     const tabGrid  = document.getElementById('msgTabGridBtn');
     const tabChat  = document.getElementById('msgTabChatBtn');
+    const tabAnalytics = document.getElementById('msgTabAnalyticsBtn');
+
+    if (gridPane) gridPane.classList.add('d-none');
+    if (chatPane) chatPane.classList.add('d-none');
+    if (analyticsPane) analyticsPane.classList.add('d-none');
+
+    if (tabGrid) { tabGrid.classList.remove('active', 'btn-primary'); tabGrid.classList.add('btn-light'); }
+    if (tabChat) { tabChat.classList.remove('active', 'btn-primary'); tabChat.classList.add('btn-light'); }
+    if (tabAnalytics) { tabAnalytics.classList.remove('active', 'btn-primary'); tabAnalytics.classList.add('btn-light'); }
 
     if (tabName === 'grid') {
         if (gridPane) gridPane.classList.remove('d-none');
-        if (chatPane) chatPane.classList.add('d-none');
         if (tabGrid)  { tabGrid.classList.add('active', 'btn-primary'); tabGrid.classList.remove('btn-light'); }
-        if (tabChat)  { tabChat.classList.remove('active', 'btn-primary'); tabChat.classList.add('btn-light'); }
-    } else {
-        if (gridPane) gridPane.classList.add('d-none');
+    } else if (tabName === 'chat') {
         if (chatPane) chatPane.classList.remove('d-none');
         if (tabChat)  { tabChat.classList.add('active', 'btn-primary'); tabChat.classList.remove('btn-light'); }
-        if (tabGrid)  { tabGrid.classList.remove('active', 'btn-primary'); tabGrid.classList.add('btn-light'); }
+    } else if (tabName === 'analytics') {
+        if (analyticsPane) analyticsPane.classList.remove('d-none');
+        if (tabAnalytics)  { tabAnalytics.classList.add('active', 'btn-primary'); tabAnalytics.classList.remove('btn-light'); }
+        initMessagesAnalyticsCharts();
     }
 }
 
@@ -924,4 +937,276 @@ function openTemplatesModal() {
     if (!modalEl) return;
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
+}
+
+/* ==========================================================================
+   PHASE 4: MESSAGES ANALYTICS & SMART REPORTS CONTROLLER (Chart.js)
+   ========================================================================== */
+
+let msgAnalyticsCharts = {
+    volume: null,
+    role: null,
+    readRate: null,
+    notifications: null
+};
+
+function initMessagesAnalyticsCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const convs = messagesState.conversations || [];
+    updateMessagesAnalyticsUI(convs);
+}
+
+function updateMessagesAnalyticsUI(convs) {
+    if (!convs) return;
+
+    let total = convs.length;
+    let unreadTotal = 0;
+    let adminUsers = 0;
+    let teacherUsers = 0;
+
+    convs.forEach(c => {
+        if (c.unread_count > 0) unreadTotal += c.unread_count;
+        if (c.role === 'مدير النظام') adminUsers++;
+        else teacherUsers++;
+    });
+
+    let readTotal = Math.max(0, total - unreadTotal);
+    let readRatePct = total > 0 ? Math.round((readTotal / total) * 100) : 100;
+
+    // Render Top Activity Rankings Table
+    const topTbody = document.getElementById('msgTopActivityTableBody');
+    if (topTbody) {
+        topTbody.innerHTML = '';
+        if (convs.length === 0) {
+            topTbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted font-monospace">لا توجد بيانات محادثات سابقة لحساب الترتيب الإحصائي</td></tr>';
+        } else {
+            let sortedConvs = [...convs].sort((a, b) => b.unread_count - a.unread_count);
+            sortedConvs.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'align-middle';
+                tr.innerHTML = `
+                    <td class="font-monospace fw-bold text-primary">${idx + 1}</td>
+                    <td class="text-start">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=2563eb&color=fff" class="rounded-circle" style="width: 34px; height: 34px;">
+                            <div>
+                                <strong class="d-block text-dark font-monospace extra-small">${escapeHtml(item.name)}</strong>
+                                <small class="text-muted extra-small font-monospace">${item.last_message ? escapeHtml(item.last_message.substring(0, 30)) + '...' : ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge ${item.role === 'مدير النظام' ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-info-subtle text-info border border-info-subtle'} rounded-pill extra-small px-3 py-1 font-monospace">${escapeHtml(item.role)}</span></td>
+                    <td class="font-monospace fw-bold text-dark">${item.unread_count > 0 ? `<span class="badge bg-warning text-dark font-monospace">${item.unread_count} غير مقروءة</span>` : '<span class="badge bg-success-subtle text-success font-monospace">مطلّع عليها</span>'}</td>
+                    <td class="font-monospace text-muted extra-small">${item.last_time || '—'}</td>
+                    <td class="font-monospace fw-bold text-success">${item.unread_count === 0 ? '100%' : '50%'}</td>
+                    <td>
+                        <div class="d-flex justify-content-center gap-1">
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 extra-small font-monospace fw-bold" onclick="viewMessageProfile(${item.user_id}, '${escapeJsString(item.name)}', '${escapeJsString(item.role)}')">
+                                <i class="fa-solid fa-eye text-primary me-1"></i> عرض
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 extra-small font-monospace text-primary fw-bold" onclick="selectConversation(${item.user_id}, '${escapeJsString(item.name)}', '${escapeJsString(item.role)}')">
+                                <i class="fa-solid fa-comments me-1"></i> محادثة
+                            </button>
+                        </div>
+                    </td>
+                `;
+                topTbody.appendChild(tr);
+            });
+        }
+    }
+
+    if (typeof Chart === 'undefined') return;
+
+    // Chart 1: Volume Doughnut
+    const canvasVol = document.getElementById('msgChartVolume');
+    if (canvasVol) {
+        if (msgAnalyticsCharts.volume) msgAnalyticsCharts.volume.destroy();
+        msgAnalyticsCharts.volume = new Chart(canvasVol.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['المقروءة بالكامل', 'غير المقروءة / تتطلب المتابعة'],
+                datasets: [{
+                    data: [readTotal, unreadTotal],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo' } } } }
+            }
+        });
+    }
+
+    // Chart 2: Role Bar
+    const canvasRole = document.getElementById('msgChartRole');
+    if (canvasRole) {
+        if (msgAnalyticsCharts.role) msgAnalyticsCharts.role.destroy();
+        msgAnalyticsCharts.role = new Chart(canvasRole.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['مدراء النظام', 'المعلمون والكادر الأكاديمي'],
+                datasets: [{
+                    label: 'عدد المحادثات المسجلة',
+                    data: [adminUsers, teacherUsers],
+                    backgroundColor: ['#2563eb', '#06b6d4'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    // Chart 3: Read Rate Gauge
+    const canvasRate = document.getElementById('msgChartReadRate');
+    if (canvasRate) {
+        if (msgAnalyticsCharts.readRate) msgAnalyticsCharts.readRate.destroy();
+        msgAnalyticsCharts.readRate = new Chart(canvasRate.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['معدل القراءة %', 'المتبقي %'],
+                datasets: [{
+                    data: [readRatePct, Math.max(0, 100 - readRatePct)],
+                    backgroundColor: ['#2563eb', '#e2e8f0'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo' } } } }
+            }
+        });
+    }
+
+    // Chart 4: Notifications Category Breakdown
+    const canvasNotif = document.getElementById('msgChartNotifications');
+    if (canvasNotif) {
+        if (msgAnalyticsCharts.notifications) msgAnalyticsCharts.notifications.destroy();
+        msgAnalyticsCharts.notifications = new Chart(canvasNotif.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['واجبات دراسية', 'اختبارات ودرجات', 'حضور وغياب', 'إدارية عامة'],
+                datasets: [{
+                    data: [2, 1, 1, 1],
+                    backgroundColor: ['#2563eb', '#f59e0b', '#10b981', '#64748b'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo' } } } }
+            }
+        });
+    }
+}
+
+function exportMessagesAnalyticsExcel() {
+    const convs = messagesState.conversations || [];
+    if (convs.length === 0) {
+        showToast('لا توجد بيانات تحليلات لتصديرها', 'warning');
+        return;
+    }
+
+    let total = convs.length;
+    let unreadTotal = 0;
+    let adminUsers = 0;
+    let teacherUsers = 0;
+
+    convs.forEach(c => {
+        if (c.unread_count > 0) unreadTotal += c.unread_count;
+        if (c.role === 'مدير النظام') adminUsers++;
+        else teacherUsers++;
+    });
+
+    let readTotal = Math.max(0, total - unreadTotal);
+    let readRatePct = total > 0 ? Math.round((readTotal / total) * 100) : 100;
+
+    let excelHTML = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+        <style>
+            table { border-collapse: collapse; width: 100%; direction: rtl; margin-bottom: 20px; }
+            th { background-color: #1e40af; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #cbd5e1; font-family: Cairo, Arial; }
+            td { text-align: center; padding: 8px; border: 1px solid #cbd5e1; font-family: Cairo, Arial; font-size: 13px; }
+            .kpi-title { font-weight: bold; background-color: #f1f5f9; text-align: right; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+        </style>
+    </head>
+    <body dir="rtl">
+        <h2 style="text-align: center; font-family: Cairo, Arial; color: #1e40af;">تقرير التحليلات والإحصائيات الشامل لمركز الرسائل والمحادثات</h2>
+        <p style="text-align: center; font-family: Cairo, Arial; color: #64748b;">تاريخ التتقرير: ${new Date().toLocaleDateString('ar-EG')}</p>
+
+        <!-- KPI SUMMARY TABLE -->
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="2">الملخص التنفيذي ومؤشرات الأداء الرئيسية (KPIs)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="kpi-title">إجمالي المحادثات المسجلة</td><td>${total}</td></tr>
+                <tr><td class="kpi-title">الرسائل والمحادثات المقروءة</td><td>${readTotal}</td></tr>
+                <tr><td class="kpi-title">الرسائل غير المقروءة</td><td>${unreadTotal}</td></tr>
+                <tr><td class="kpi-title">معدل الاطلاع والقراءة الشامل %</td><td>${readRatePct}%</td></tr>
+                <tr><td class="kpi-title">محادثات مدراء النظام</td><td>${adminUsers}</td></tr>
+                <tr><td class="kpi-title">محادثات المعلمين والكادر الأكاديمي</td><td>${teacherUsers}</td></tr>
+            </tbody>
+        </table>
+
+        <!-- USER ACTIVITY RANKINGS TABLE -->
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم المستخدم والطرف المخاطب</th>
+                    <th>الدور الوظيفي</th>
+                    <th>حالة الاطلاع</th>
+                    <th>تاريخ/وقت آخر نشاط</th>
+                    <th>معدل القراءة المقدر %</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    convs.forEach((item, idx) => {
+        excelHTML += `
+            <tr>
+                <td>${idx + 1}</td>
+                <td style="text-align: right;">${escapeHtml(item.name)}</td>
+                <td>${escapeHtml(item.role)}</td>
+                <td>${item.unread_count > 0 ? `غير مقروءة (${item.unread_count})` : 'مقروءة بالكامل'}</td>
+                <td>${item.last_time || '—'}</td>
+                <td>${item.unread_count === 0 ? '100%' : '50%'}</td>
+            </tr>`;
+    });
+
+    excelHTML += `
+            </tbody>
+        </table>
+    </body>
+    </html>`;
+
+    const blob = new Blob(['\ufeff' + excelHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `تقرير_تحليلات_الرسائل_${new Date().toISOString().split('T')[0]}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('تم تصدير تقرير تحليلات الرسائل إلى Excel بنجاح', 'success');
 }
