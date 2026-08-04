@@ -117,11 +117,17 @@ function openSettingWorkspace(code) {
     if (heroDesc) heroDesc.textContent = setting.desc;
     if (heroStatus) heroStatus.textContent = setting.status;
 
-    // Trigger target Tab in Workspace Form Panel
-    const targetTabBtn = document.getElementById(setting.tabId);
-    if (targetTabBtn) {
-        targetTabBtn.click();
-    }
+    // Filter tab navigation pills so ONLY the tab corresponding to THIS specific setting is visible!
+    const allTabNavs = document.querySelectorAll('#settingsTabs .nav-item');
+    allTabNavs.forEach(nav => {
+        const btn = nav.querySelector('.nav-link');
+        if (btn && btn.id === setting.tabId) {
+            nav.classList.remove('d-none');
+            btn.click();
+        } else {
+            nav.classList.add('d-none');
+        }
+    });
 
     // Toggle View: Hide Catalog, Show Workspace smoothly
     if (catalogView) catalogView.classList.add('d-none');
@@ -136,6 +142,10 @@ function openSettingWorkspace(code) {
 function closeSettingWorkspace() {
     const catalogView = document.getElementById('settingsCatalogView');
     const workspaceView = document.getElementById('settingWorkspace');
+
+    // Restore all tabs when returning to catalog or general view
+    const allTabNavs = document.querySelectorAll('#settingsTabs .nav-item');
+    allTabNavs.forEach(nav => nav.classList.remove('d-none'));
 
     if (workspaceView) workspaceView.classList.add('d-none');
     if (catalogView) {
