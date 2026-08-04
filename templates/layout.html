@@ -1,213 +1,193 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="jwt-token" content="{{ session.get('jwt_token', '') }}">
-    <title>{% block title %}نظام إدارة المدرسة الاحترافي{% endblock %}</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap RTL CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
-    
-    <!-- FontAwesome 6.5.1 (Primary jsDelivr + Fallback CDNs) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/v4-shims.min.css">
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
-    <!-- Boxicons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
-    
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    <!-- HTMX / Turbo or SPA script if needed -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
+{% extends 'base.html' %}
 
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-
-    <div class="wrapper">
-        
-        <!-- Sidebar -->
-        <nav id="sidebar">
-            <div class="sidebar-logo-container">
-                <div class="sidebar-logo-icon">
-                    <i class="fa-solid fa-shield-halved"></i>
+{% block body %}
+<div class="app-wrapper d-flex">
+    
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 start-0 p-3" style="z-index: 1090;">
+        <div id="liveToast" class="toast align-items-center text-white border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body font-cairo fs-6 fw-bold" id="toastMessage">
+                    <!-- Message populated via JS -->
                 </div>
-                <div class="sidebar-logo-text">
-                    <h5>مدرسة المستقبل</h5>
-                    <small>نظام إدارة المدارس</small>
-                </div>
-            </div>
-            
-            <ul class="list-unstyled components">
-
-                
-                <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                    <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house"></i> لوحة التحكم</a>
-                </li>
-                
-                {% if session.get('user_role') == 'admin' %}
-                <li class="{% if request.blueprint == 'students' %}active{% endif %}">
-                    <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate"></i> الطلاب</a>
-                </li>
-                <li class="{% if request.blueprint == 'teacher' %}active{% endif %}">
-                    <a href="{{ url_for('teacher.index') }}"><i class="fa-solid fa-chalkboard-user"></i> المعلمون</a>
-                </li>
-                <li class="{% if request.blueprint == 'academic' and 'classes' in request.path %}active{% endif %}">
-                    <a href="{{ url_for('academic.classes') }}"><i class="fa-solid fa-layer-group"></i> الصفوف والشعب</a>
-                </li>
-                <li class="{% if request.blueprint == 'academic' and 'subjects' in request.path %}active{% endif %}">
-                    <a href="{{ url_for('academic.subjects') }}"><i class="fa-solid fa-book-open"></i> المواد الدراسية</a>
-                </li>
-                <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
-                    <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> الجداول الدراسية</a>
-                </li>
-                <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
-                    <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user"></i> الحضور والغياب</a>
-                </li>
-                <li class="{% if request.blueprint in ['exams', 'grades'] %}active{% endif %}">
-                    <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature"></i> الاختبارات والدرجات</a>
-                </li>
-                <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
-                    <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark"></i> الواجبات الدراسية</a>
-                </li>
-                <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
-                    <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope"></i> الرسائل</a>
-                </li>
-                <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
-                    <a href="{{ url_for('reports.student_report') }}"><i class="fa-solid fa-chart-column"></i> التقارير</a>
-                </li>
-                <li class="{% if request.endpoint == 'dashboard.finance' %}active{% endif %}">
-                    <a href="{{ url_for('dashboard.finance') }}"><i class="fa-solid fa-file-invoice-dollar"></i> الشؤون المالية</a>
-                </li>
-                <li class="{% if request.endpoint in ['auth.profile', 'dashboard.settings'] %}active{% endif %}">
-                    <a href="{{ url_for('dashboard.settings') }}"><i class="fa-solid fa-gear"></i> الإعدادات</a>
-                </li>
-                {% else %}
-                <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
-                    <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> جدولي الدراسي</a>
-                </li>
-                <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
-                    <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star"></i> إدخال الدرجات</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-
-        <!-- Page Content  -->
-        <div id="content" class="main-content">
-            <!-- Top Header -->
-            <div class="top-navbar">
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" id="sidebarCollapse" class="btn btn-light shadow-sm" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff;">
-                        <i class="fa-solid fa-bars text-muted"></i>
-                    </button>
-                    <!-- Breadcrumbs dynamically set -->
-                    <div class="d-none d-md-block ms-3">
-                        <h5 class="mb-0 fw-bold" style="font-size: 1.1rem;">{% block page_title %}لوحة التحكم{% endblock %}</h5>
-                        <small class="text-muted">الرئيسية / {% block page_subtitle %}لوحة التحكم{% endblock %}</small>
-                    </div>
-                </div>
-
-                <div class="top-navbar-actions">
-                    <a href="{{ url_for('messages.index') }}" class="icon-btn position-relative" title="مركز الرسائل والمحادثات">
-                        <i class="fa-regular fa-envelope"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">3</span>
-                    </a>
-                    <a href="{{ url_for('notifications.index') }}" class="icon-btn position-relative" {% if request.blueprint == 'messages' %}data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas"{% endif %} title="مركز الإشعارات والتنبيهات">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">1</span>
-                    </a>
-                    
-                    <div class="dropdown border-start ps-3 ms-2">
-                        <div class="navbar-user-profile" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="navbar-user-info text-end d-none d-sm-block">
-                                <h6>أ. {{ session.user_name }}</h6>
-                                <small>{{ 'مدير النظام' if session.user_role == 'admin' else 'معلم' }}</small>
-                            </div>
-                            <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ session.user_name }}&background=2563eb&color=fff'">
-                        </div>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="Swal.fire('الملف الشخصي', 'المستخدم: {{ session.user_name }}<br>الدور: {{ session.user_role }}', 'info')"><i class="fa-solid fa-user me-2 text-muted"></i> الملف الشخصي</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger py-2" href="{{ url_for('auth.logout') }}" data-turbo="false"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Container -->
-            <div class="container-fluid px-4 pb-5">
-                
-                <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <script>
-                            document.addEventListener("turbo:load", function() {
-                                const Toast = Swal.mixin({
-                                    toast: true,
-                                    position: 'top-end',
-                                    showConfirmButton: false,
-                                    timer: 3000,
-                                    timerProgressBar: true
-                                });
-
-                                {% for category, message in messages %}
-                                    let icon = 'info';
-                                    if ('{{ category }}' === 'success') icon = 'success';
-                                    if ('{{ category }}' === 'danger' || '{{ category }}' === 'error') icon = 'error';
-                                    if ('{{ category }}' === 'warning') icon = 'warning';
-
-                                    Toast.fire({
-                                        icon: icon,
-                                        title: '{{ message }}'
-                                    });
-                                {% endfor %}
-                            });
-                        </script>
-                    {% endif %}
-                {% endwith %}
-                
-                {% block content %}{% endblock %}
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
-    <!-- Sidebar Toggle Script -->
-    <script>
-        document.addEventListener('turbo:load', function() {
-            var sidebarCollapse = document.getElementById('sidebarCollapse');
-            if(sidebarCollapse) {
-                // remove existing listener to avoid duplicates if re-attached
-                var newBtn = sidebarCollapse.cloneNode(true);
-                sidebarCollapse.parentNode.replaceChild(newBtn, sidebarCollapse);
-                newBtn.addEventListener('click', function () {
-                    document.getElementById('sidebar').classList.toggle('active');
-                });
-            }
-        });
-    </script>
-    
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+    <!-- Quick Global Action Modal -->
+    <div class="modal fade" id="quickActionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden font-cairo">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold font-monospace fs-6 mb-0"><i class="fa-solid fa-bolt me-2"></i> إجراء سريع للنظام</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="text-muted extra-small font-monospace mb-4">اختر الإجراء السريع المطلوب تنفيذه مباشرة بالنظام</p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('students.home') }}" class="btn btn-outline-primary w-100 p-3 rounded-3 text-decoration-none">
+                                <i class="fa-solid fa-user-plus fs-4 d-block mb-2"></i>
+                                <span class="extra-small font-monospace fw-bold">إضافة طالب</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('teacher.index') }}" class="btn btn-outline-success w-100 p-3 rounded-3 text-decoration-none">
+                                <i class="fa-solid fa-user-tie fs-4 d-block mb-2"></i>
+                                <span class="extra-small font-monospace fw-bold">إضافة معلم</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('homework.index') }}" class="btn btn-outline-warning w-100 p-3 rounded-3 text-decoration-none">
+                                <i class="fa-solid fa-book-bookmark fs-4 d-block mb-2"></i>
+                                <span class="extra-small font-monospace fw-bold">واجب جديد</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('exams.index') }}" class="btn btn-outline-danger w-100 p-3 rounded-3 text-decoration-none">
+                                <i class="fa-solid fa-file-signature fs-4 d-block mb-2"></i>
+                                <span class="extra-small font-monospace fw-bold">جدول اختبار</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">
+                <i class="fa-solid fa-shield-halved text-white fs-4"></i>
+            </div>
+            <div class="sidebar-logo-text">
+                <h5>مدرسة المستقبل</h5>
+                <small>نظام إدارة المدارس</small>
+            </div>
+        </div>
+        
+        <ul class="list-unstyled components">
+
+            
+            <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house"></i> لوحة التحكم</a>
+            </li>
+            
+            {% if session.get('user_role') == 'admin' %}
+            <li class="{% if request.blueprint == 'students' %}active{% endif %}">
+                <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate"></i> الطلاب</a>
+            </li>
+            <li class="{% if request.blueprint == 'teacher' %}active{% endif %}">
+                <a href="{{ url_for('teacher.index') }}"><i class="fa-solid fa-chalkboard-user"></i> المعلمون</a>
+            </li>
+            <li class="{% if request.blueprint == 'academic' and 'classes' in request.path %}active{% endif %}">
+                <a href="{{ url_for('academic.classes') }}"><i class="fa-solid fa-layer-group"></i> الصفوف والشعب</a>
+            </li>
+            <li class="{% if request.blueprint == 'academic' and 'subjects' in request.path %}active{% endif %}">
+                <a href="{{ url_for('academic.subjects') }}"><i class="fa-solid fa-book-open"></i> المواد الدراسية</a>
+            </li>
+            <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> الجداول الدراسية</a>
+            </li>
+            <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
+                <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user"></i> الحضور والغياب</a>
+            </li>
+            <li class="{% if request.blueprint in ['exams', 'grades'] %}active{% endif %}">
+                <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature"></i> الاختبارات والدرجات</a>
+            </li>
+            <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
+                <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark"></i> الواجبات الدراسية</a>
+            </li>
+            <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
+                <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope"></i> الرسائل</a>
+            </li>
+            <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
+                <a href="{{ url_for('reports.student_report') }}"><i class="fa-solid fa-chart-column"></i> التقارير</a>
+            </li>
+            <li class="{% if request.endpoint == 'dashboard.finance' %}active{% endif %}">
+                <a href="{{ url_for('dashboard.finance') }}"><i class="fa-solid fa-file-invoice-dollar"></i> الشؤون المالية</a>
+            </li>
+            <li class="{% if request.endpoint in ['auth.profile', 'dashboard.settings'] %}active{% endif %}">
+                <a href="{{ url_for('dashboard.settings') }}"><i class="fa-solid fa-gear"></i> الإعدادات</a>
+            </li>
+            {% else %}
+            <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> جدولي الدراسي</a>
+            </li>
+            <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
+                <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star"></i> إدخال الدرجات</a>
+            </li>
+            {% endif %}
+
+            <li class="mt-4 border-top pt-2">
+                <a href="{{ url_for('auth.logout') }}" class="text-danger font-monospace" data-turbo="false" title="تسجيل الخروج المباشر">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-danger me-2"></i> <span>تسجيل الخروج</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content  -->
+    <div id="content" class="main-content">
+        <!-- Top Header -->
+        <div class="top-navbar">
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" id="sidebarCollapse" class="btn btn-light shadow-sm" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff;">
+                    <i class="fa-solid fa-bars text-muted"></i>
+                </button>
+                <!-- Breadcrumbs dynamically set -->
+                <div class="d-none d-md-block ms-3">
+                    <span class="text-muted font-monospace extra-small">نظام المستقبل الإداري</span>
+                </div>
+            </div>
+
+            <div class="top-navbar-actions">
+                <a href="{{ url_for('messages.index') }}" class="icon-btn position-relative" title="مركز الرسائل والمحادثات">
+                    <i class="fa-regular fa-envelope"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">3</span>
+                </a>
+                <a href="{{ url_for('notifications.index') }}" class="icon-btn position-relative" {% if request.blueprint == 'messages' %}data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas"{% endif %} title="مركز الإشعارات والتنبيهات">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">1</span>
+                </a>
+                
+                <div class="dropdown border-start ps-3 ms-2">
+                    <div class="navbar-user-profile" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                        <div class="navbar-user-info text-end d-none d-sm-block">
+                            <h6>أ. {{ session.user_name }}</h6>
+                            <small>{{ 'مدير النظام' if session.user_role == 'admin' else 'معلم' }}</small>
+                        </div>
+                        <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ session.user_name }}&background=2563eb&color=fff'">
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="Swal.fire('الملف الشخصي', 'المستخدم: {{ session.user_name }}<br>الدور: {{ session.user_role }}', 'info')"><i class="fa-solid fa-user me-2 text-muted"></i> الملف الشخصي</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger py-2" href="{{ url_for('auth.logout') }}" data-turbo="false"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <div class="container-fluid px-4 pb-5">
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <script>
+                        document.addEventListener("turbo:load", function() {
+                            {% for category, message in messages %}
+                                showToast("{{ message }}", "{{ 'success' if category == 'success' else ('danger' if category == 'error' else 'info') }}");
+                            {% endfor %}
+                        });
+                    </script>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
