@@ -1,672 +1,769 @@
 {% extends 'layout.html' %}
-
-{% block title %}الاختبارات والدرجات الأكاديمية - مساحة عمل المعلم التنفيذية{% endblock %}
+{% block title %}الاختبارات والدرجات الأكاديمية{% endblock %}
 {% block page_title %}الاختبارات والدرجات الأكاديمية{% endblock %}
-{% block page_subtitle %}إدارة الاختبارات القصيرة والنهائية وجدولة الامتحانات ومتابعة نتائج الطلاب وتحليل الأداء الأكاديمي{% endblock %}
+{% block page_subtitle %}إدارة الاختبارات القصيرة والنهائية وجدولة الامتحانات ومتابعة نتائج الطلاب{% endblock %}
 
 {% block content %}
-<div class="fade-in font-cairo position-relative pb-5 mb-5" id="examsWorkspaceRoot">
+<style>
+.kpi-card { border-radius: 14px; transition: all .22s; border: 1.5px solid #f0f0f0; }
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(124,58,237,.10) !important; border-color: #c4b5fd; }
+.kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; }
+.status-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+.chip-active   { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+.chip-scheduled{ background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+.chip-done     { background:#f3e8ff; color:#7c3aed; border:1px solid #e9d5ff; }
+.chip-corrected{ background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+.chip-pending  { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+.chip-cancelled{ background:#fee2e2; color:#dc2626; border:1px solid #fecaca; }
+.exam-row:hover { background:#faf5ff !important; }
+.sidebar-widget { border-radius: 14px; border: 1.5px solid #f0f0f0; }
+.sidebar-widget:hover { border-color: #e9d5ff; }
+.action-btn { width: 27px; height: 27px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; border: 1.5px solid transparent; transition: all .18s; }
+.action-btn:hover { transform: scale(1.15); }
+.progress-micro { height: 4px; border-radius: 4px; }
+.filter-bar select, .filter-bar input { border-radius: 9px; border: 1.5px solid #e5e7eb; font-size: 12px; }
+.filter-bar select:focus, .filter-bar input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.12); }
+.table th { font-size: 11px; font-weight: 700; letter-spacing: .01em; background: #f8f7ff; border-bottom: 2px solid #ede9fe; color: #6b21a8; }
+.table td { font-size: 12px; border-bottom: 1px solid #f5f3ff; }
+.donut-ring { width:120px; height:120px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; border: 10px solid #7c3aed; }
+.current-exam-banner { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 1.5px solid #c4b5fd; border-radius: 14px; }
+.alert-item { border-radius: 10px; font-size: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+</style>
 
-    <!-- ========================================== -->
-    <!-- SECTION 1: HERO HEADER                     -->
-    <!-- ========================================== -->
-    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-4 border-start border-4 border-purple no-print" style="border-color: #7c3aed !important;">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div>
-                <nav aria-label="breadcrumb" class="mb-2">
-                    <ol class="breadcrumb mb-0 extra-small font-monospace text-muted">
-                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                        <li class="breadcrumb-item active text-purple" aria-current="page" style="color: #7c3aed;">الاختبارات والدرجات</li>
-                    </ol>
-                </nav>
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <h3 class="fw-extrabold text-dark mb-0 font-monospace d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square text-purple" style="color: #7c3aed;"></i> الاختبارات والدرجات الأكاديمية
-                    </h3>
-                    <span class="badge bg-light text-muted border rounded-pill px-3 py-1 font-monospace extra-small">
-                        <i class="fa-regular fa-calendar me-1 text-purple" style="color: #7c3aed;"></i> {{ today }}
-                    </span>
-                </div>
-                <p class="text-muted extra-small font-monospace mb-0 mt-1">
-                    إدارة الاختبارات القصيرة والنهائية وجدولة الامتحانات ومتابعة نتائج الطلاب وتحليل الأداء الأكاديمي.
-                </p>
-            </div>
+<div class="font-cairo pb-5 mb-3" id="examsRoot" dir="rtl">
 
-            <!-- Header Action Buttons -->
-            <div class="d-flex align-items-center gap-2 flex-wrap no-print">
-                <button type="button" class="btn text-white rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" style="background:#7c3aed;" data-bs-toggle="modal" data-bs-target="#addExamModal">
-                    <i class="fa-solid fa-circle-plus fs-6"></i> <span>إضافة اختبار جديد</span>
-                </button>
-                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#addExamModal">
-                    <i class="fa-solid fa-bolt fs-6"></i> <span>إنشاء اختبار سريع</span>
-                </button>
-                <button type="button" class="btn btn-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="Swal.fire('نسخ اختبار', 'اختر الاختبار السابق للنسخ', 'info')">
-                    <i class="fa-solid fa-copy fs-6"></i> <span>نسخ اختبار سابق</span>
-                </button>
-                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="Swal.fire('جدولة اختبار', 'جدولة موعد اختبار جديد', 'info')">
-                    <i class="fa-regular fa-calendar-plus fs-6"></i> <span>جدولة اختبار</span>
-                </button>
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
-                    <i class="fa-solid fa-file-excel fs-6"></i> <span>تصدير Excel</span>
-                </button>
-                <button type="button" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="Swal.fire('مركز التحليلات', 'فتح مركز تحليلات الاختبارات والدرجات', 'info')">
-                    <i class="fa-solid fa-chart-pie fs-6"></i> <span>مركز التحليلات</span>
-                </button>
-            </div>
-        </div>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- §1  HERO HEADER                                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-4 bg-white mb-3 p-3 no-print">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0" style="font-size:11px;">
+          <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i>الرئيسية</a></li>
+          <li class="breadcrumb-item active" style="color:#7c3aed;">الاختبارات والدرجات</li>
+        </ol>
+      </nav>
+      <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-size:1.1rem;">
+        <i class="fa-solid fa-pen-to-square" style="color:#7c3aed;"></i>
+        الاختبارات والدرجات الأكاديمية
+      </h4>
+      <p class="text-muted mb-0" style="font-size:11px;">إدارة الاختبارات القصيرة والنهائية وجدولة الامتحانات ومتابعة نتائج الطلاب وتحليل الأداء الأكاديمي.</p>
+      <div class="d-flex gap-2 mt-1 flex-wrap">
+        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-regular fa-calendar me-1" style="color:#7c3aed;"></i>{{ today }}</span>
+        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-layer-group me-1 text-info"></i>الفصل الثاني</span>
+        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-graduation-cap me-1 text-primary"></i>2024 - 2025</span>
+      </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- SECTION 2: 10 EXECUTIVE KPI CARDS          -->
-    <!-- ========================================== -->
-    <div class="row g-2 mb-4 no-print" role="region" aria-label="مؤشرات الاختبارات">
-        <!-- 1. Total Exams -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">إجمالي الاختبارات</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-dark font-monospace mb-0" id="kpiTotalExams">{{ kpi.total_exams if kpi is defined else total_exams }}</h3>
-                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-file-pen fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-muted extra-small font-monospace">جميع الاختبارات</small>
-            </div>
-        </div>
-
-        <!-- 2. Active Exams -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">الاختبارات النشطة</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-success font-monospace mb-0" id="kpiActiveExams">{{ kpi.active_exams if kpi is defined else active_exams }}</h3>
-                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-bolt fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-success extra-small font-monospace">قيد التنفيذ</small>
-            </div>
-        </div>
-
-        <!-- 3. Upcoming Exams -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">المجدولة</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiUpcomingExams">{{ kpi.upcoming_exams if kpi is defined else upcoming_exams }}</h3>
-                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-regular fa-calendar fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-muted extra-small font-monospace">لم تبدأ بعد</small>
-            </div>
-        </div>
-
-        <!-- 4. Finished Exams -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">المنتهية</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-purple font-monospace mb-0" style="color:#7c3aed;" id="kpiFinishedExams">{{ kpi.finished_exams if kpi is defined else finished_exams }}</h3>
-                    <div class="rounded-circle p-2 bg-purple-subtle text-purple d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background:#f3e8ff; color:#7c3aed;">
-                        <i class="fa-solid fa-circle-check fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-muted extra-small font-monospace">تم الانتهاء</small>
-            </div>
-        </div>
-
-        <!-- 5. Corrected Exams -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">تم تصحيحها</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-success font-monospace mb-0" id="kpiCorrectedExams">{{ kpi.corrected_exams if kpi is defined else 6 }}</h3>
-                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-square-check fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-success extra-small font-monospace">تم رصد الدرجات</small>
-            </div>
-        </div>
-
-        <!-- 6. Pending Correction -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">بانتظار التصحيح</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-warning font-monospace mb-0" id="kpiPendingCorrection">{{ kpi.pending_correction if kpi is defined else 3 }}</h3>
-                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-pen-to-square fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-warning extra-small font-monospace">لم يتم التصحيح</small>
-            </div>
-        </div>
-
-        <!-- 7. Avg Score -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">متوسط الدرجات</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-dark font-monospace mb-0" id="kpiAvgScore">{{ kpi.avg_score if kpi is defined else 78.6 }}</h3>
-                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-star fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-muted extra-small font-monospace">من 100</small>
-            </div>
-        </div>
-
-        <!-- 8. Pass Rate -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">نسبة النجاح</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-success font-monospace mb-0" id="kpiPassRate">{{ kpi.pass_rate if kpi is defined else 72.4 }}%</h3>
-                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-chart-line fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-success extra-small font-monospace">الطلاب الناجحون</small>
-            </div>
-        </div>
-
-        <!-- 9. Fail Rate -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">نسبة الرسوب</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-danger font-monospace mb-0" id="kpiFailRate">{{ kpi.fail_rate if kpi is defined else 27.6 }}%</h3>
-                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-chart-pie fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-muted extra-small font-monospace">الطلاب الراسبون</small>
-            </div>
-        </div>
-
-        <!-- 10. Subjects Count -->
-        <div class="col-6 col-md-4 col-xl-1-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">عدد المواد</span>
-                <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiSubjectsCount">{{ kpi.subjects_count if kpi is defined else 7 }}</h3>
-                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i class="fa-solid fa-book-open fs-6"></i>
-                    </div>
-                </div>
-                <small class="text-info extra-small font-monospace">مواد تحتوي اختبارات</small>
-            </div>
-        </div>
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 flex-wrap no-print">
+      <button class="btn text-white fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="background:#7c3aed;font-size:12px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
+        <i class="fa-solid fa-plus"></i> إضافة اختبار جديد
+      </button>
+      <button class="btn btn-primary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
+        <i class="fa-solid fa-bolt"></i> إنشاء اختبار سريع
+      </button>
+      <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('نسخ اختبار','اختر الاختبار السابق للنسخ','info')">
+        <i class="fa-solid fa-copy"></i> نسخ اختبار سابق
+      </button>
+      <button class="btn btn-outline-info fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('جدولة اختبار','حدد موعد الاختبار الجديد','info')">
+        <i class="fa-regular fa-calendar-plus"></i> جدولة اختبار
+      </button>
+      <button class="btn btn-outline-success fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="window.print()">
+        <i class="fa-solid fa-file-excel"></i> تصدير Excel
+      </button>
+      <button class="btn btn-outline-danger fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('مركز التحليلات','فتح تحليلات الاختبارات','info')">
+        <i class="fa-solid fa-chart-pie"></i> مركز التحليلات
+      </button>
     </div>
+  </div>
+</div>
 
-    <!-- ========================================== -->
-    <!-- SECTION 3: CURRENT ACTIVE EXAM BANNER     -->
-    <!-- ========================================== -->
-    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 no-print">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 text-center text-md-start font-monospace extra-small">
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-purple rounded-pill px-3 py-1 fs-6 mb-1 d-inline-block" style="background:#7c3aed;">الاختبار الحالي</span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">اختبار نشط</span>
-            </div>
-            <div>
-                <strong class="text-dark fs-5 font-monospace d-block">{{ current_active_exam.name if current_active_exam is defined else 'اختبار نهاية الفصل الثاني' }}</strong>
-            </div>
-            <div class="border-end pe-md-3">
-                <span class="text-muted d-block">المادة</span>
-                <strong class="text-primary"><i class="fa-solid fa-book-open me-1"></i>{{ current_active_exam.subject_name if current_active_exam is defined else 'الرياضيات' }}</strong>
-            </div>
-            <div class="border-end pe-md-3">
-                <span class="text-muted d-block">نوع الاختبار</span>
-                <strong class="text-dark"><i class="fa-solid fa-tag text-info me-1"></i>{{ current_active_exam.type if current_active_exam is defined else 'نهائي' }}</strong>
-            </div>
-            <div class="border-end pe-md-3">
-                <span class="text-muted d-block">الصف</span>
-                <strong class="text-dark"><i class="fa-solid fa-school text-secondary me-1"></i>{{ current_active_exam.class_name if current_active_exam is defined else 'الثالث الثانوي' }}</strong>
-            </div>
-            <div class="border-end pe-md-3">
-                <span class="text-muted d-block">تاريخ الاختبار</span>
-                <strong class="text-dark"><i class="fa-regular fa-calendar text-warning me-1"></i>{{ current_active_exam.exam_date_str if current_active_exam is defined else '2024-05-28' }}</strong>
-            </div>
-            <div class="border-end pe-md-3">
-                <span class="text-muted d-block">وقت النهاية</span>
-                <strong class="text-dark"><i class="fa-regular fa-clock me-1"></i>{{ current_active_exam.end_time if current_active_exam is defined else '11:00 AM' }}</strong>
-            </div>
-            <div>
-                <span class="text-muted d-block">عدد الطلاب</span>
-                <strong class="text-purple" style="color:#7c3aed;"><i class="fa-solid fa-users me-1"></i>{{ current_active_exam.students_count if current_active_exam is defined else '28 طالب' }}</strong>
-            </div>
-        </div>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- §2  12 KPI CARDS ROW                                   -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="row g-2 mb-3 no-print">
+
+  <!-- 1 Total -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">إجمالي الاختبارات</span>
+        <span class="kpi-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fa-solid fa-file-pen"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0" style="color:#7c3aed;font-size:1.5rem;">{{ kpi.total_exams }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">جميع الاختبارات</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar" style="width:100%;background:#7c3aed;"></div></div>
     </div>
+  </div>
 
-    <!-- ========================================== -->
-    <!-- SECTION 4: SEARCH & FILTERS BAR            -->
-    <!-- ========================================== -->
-    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 no-print">
-        <div class="row g-2 align-items-center">
-            <!-- Search Input -->
-            <div class="col-12 col-md-3">
-                <div class="input-group font-monospace extra-small">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="examSearchInput" class="form-control bg-light border-start-0" placeholder="بحث باسم الاختبار..." onkeyup="filterExamsTable()">
-                </div>
-            </div>
-
-            <!-- Subject Filter -->
-            <div class="col-6 col-md-2">
-                <select class="form-select bg-light font-monospace extra-small" id="examFilterSubject" onchange="filterExamsTable()">
-                    <option value="">جميع المواد</option>
-                    {% for s in subjects %}
-                        <option value="{{ s.SubName }}">{{ s.SubName }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Exam Type Filter -->
-            <div class="col-6 col-md-2">
-                <select class="form-select bg-light font-monospace extra-small" id="examFilterType" onchange="filterExamsTable()">
-                    <option value="">جميع الأنواع</option>
-                    <option value="نهائي">نهائي</option>
-                    <option value="قصير">قصير</option>
-                    <option value="تجريبي">تجريبي</option>
-                    <option value="شهري">شهري</option>
-                </select>
-            </div>
-
-            <!-- Class Filter -->
-            <div class="col-6 col-md-2">
-                <select class="form-select bg-light font-monospace extra-small" id="examFilterClass" onchange="filterExamsTable()">
-                    <option value="">جميع الصفوف</option>
-                    {% for c in classes %}
-                        <option value="{{ c.CName }}">{{ c.CName }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="col-6 col-md-2">
-                <select class="form-select bg-light font-monospace extra-small" id="examFilterStatus" onchange="filterExamsTable()">
-                    <option value="">جميع الحالات</option>
-                    <option value="تم التصحيح">تم التصحيح</option>
-                    <option value="بانتظار التصحيح">بانتظار التصحيح</option>
-                    <option value="مجدول">مجدول</option>
-                </select>
-            </div>
-
-            <!-- Reset Button -->
-            <div class="col-6 col-md-1">
-                <button type="button" class="btn btn-outline-secondary w-100 rounded-3 font-monospace extra-small fw-bold py-2" onclick="resetExamFilters()">
-                    <i class="fa-solid fa-arrows-rotate me-1"></i> إعادة ضبط
-                </button>
-            </div>
-        </div>
+  <!-- 2 Active -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">الاختبارات النشطة</span>
+        <span class="kpi-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-bolt"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-success" style="font-size:1.5rem;">{{ kpi.active_exams }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">قيد التنفيذ</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-success" style="width:{{ [kpi.active_exams / kpi.total_exams * 100, 100]|min|round|int if kpi.total_exams > 0 else 0 }}%;"></div></div>
     </div>
+  </div>
 
-    <!-- ========================================== -->
-    <!-- SECTION 5: MAIN EXAM TABLE & SIDEBAR       -->
-    <!-- ========================================== -->
-    <div class="row g-3">
-        <!-- Right Column (in RTL): Exam Table (70% width) -->
-        <div class="col-12 col-xl-8" id="examsTableSection">
-            <div class="glass-panel-card p-0 rounded-4 shadow-sm bg-white border-0 overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 font-monospace extra-small text-center" id="examsMainTable">
-                        <thead class="bg-light text-muted">
-                            <tr>
-                                <th style="width: 30px;">#</th>
-                                <th class="text-start pe-3">اسم الاختبار</th>
-                                <th>المادة</th>
-                                <th>نوع الاختبار</th>
-                                <th>الصف</th>
-                                <th>الشعبة</th>
-                                <th>تاريخ الاختبار</th>
-                                <th>وقت الاختبار</th>
-                                <th>أدى / الفائزون</th>
-                                <th>نسبة النجاح</th>
-                                <th>الحالة</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="examsTableBody">
-                            {% if schedules and schedules|length > 0 %}
-                                {% for ex in schedules %}
-                                    <tr class="exam-row-item" data-name="{{ ex.ExamName }}" data-subject="{{ ex.subject.SubName if ex.subject else '' }}" data-class="{{ ex.school_class.CName if ex.school_class else '' }}" data-status="{{ ex.Status }}">
-                                        <td>{{ loop.index }}</td>
-                                        <td class="text-start pe-3">
-                                            <strong class="text-dark d-block fs-6 mb-1">{{ ex.ExamName if ex.ExamName else 'اختبار نهاية الفصل' }}</strong>
-                                            <small class="text-muted extra-small">اختبار نهائي شامل</small>
-                                        </td>
-                                        <td>
-                                            {% set sub_n = ex.subject.SubName if ex.subject else 'الرياضيات' %}
-                                            <span class="badge rounded-pill px-3 py-1 font-monospace" style="{% if 'رياضيات' in sub_n %}background:#f3e8ff; color:#7c3aed;{% elif 'فيزياء' in sub_n %}background:#dbeafe; color:#2563eb;{% elif 'كيمياء' in sub_n %}background:#dcfce7; color:#16a34a;{% else %}background:#ffe4e6; color:#e11d48;{% endif %}">
-                                                {{ sub_n }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark border rounded-pill px-2 py-1">نهائي</span>
-                                        </td>
-                                        <td>{{ ex.school_class.CName if ex.school_class else 'الثالث الثانوي' }}</td>
-                                        <td>{{ ex.section.SectionName if ex.section else 'شعبة أ' }}</td>
-                                        <td>{{ ex.ExamDate.strftime('%Y-%m-%d') if ex.ExamDate else '2024-05-28' }}</td>
-                                        <td>{{ ex.ExamTime if ex.ExamTime else '09:00 - 11:00' }}</td>
-                                        <td><strong>28 / 28</strong></td>
-                                        <td><strong class="text-success">85%</strong></td>
-                                        <td>
-                                            {% if ex.Status in ['تم التصحيح', 'مكتمل'] %}
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">تم التصحيح</span>
-                                            {% elif ex.Status in ['بانتظار التصحيح', 'غير مصحح'] %}
-                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">بانتظار التصحيح</span>
-                                            {% else %}
-                                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-1">مجدول</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle" title="عرض التفاصيل" onclick="Swal.fire('تفاصيل الاختبار', '{{ ex.ExamName }}', 'info')" style="width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;">
-                                                    <i class="fa-solid fa-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-light text-info rounded-circle" title="تعديل" onclick="Swal.fire('تعديل الاختبار', 'تعديل بيانات الاختبار', 'info')" style="width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;">
-                                                    <i class="fa-solid fa-pen"></i>
-                                                </button>
-                                                <form action="{{ url_for('exams.delete_exam', id=ex.ScheduleID) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف الاختبار؟');">
-                                                    <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle" title="حذف" style="width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;">
-                                                        <i class="fa-solid fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="12" class="py-5 text-center bg-white">
-                                        <i class="fa-solid fa-pen-to-square text-muted opacity-25 fs-1 d-block mb-3"></i>
-                                        <h5 class="fw-bold text-dark font-monospace mb-1">لا توجد اختبارات حالياً</h5>
-                                        <p class="text-muted extra-small font-monospace mb-3">قم بإضافة أول اختبار لمتابعة نتائج وتقييمات الطلاب.</p>
-                                        <button type="button" class="btn text-white rounded-pill px-4 py-2 fw-bold font-monospace extra-small" style="background:#7c3aed;" data-bs-toggle="modal" data-bs-target="#addExamModal">
-                                            <i class="fa-solid fa-plus me-1"></i> إضافة أول اختبار
-                                        </button>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Footer Pagination -->
-                <div class="d-flex align-items-center justify-content-between p-3 bg-light border-top font-monospace extra-small">
-                    <span class="text-muted" id="examVisibleCountText">عرض 1 - {{ schedules|length if schedules is defined else 6 }} من {{ kpi.total_exams if kpi is defined else total_exams }} اختبار</span>
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled"><a class="page-link" href="#"><i class="fa-solid fa-chevron-right"></i></a></li>
-                        <li class="page-item active"><a class="page-link" href="#" style="background:#7c3aed; border-color:#7c3aed;">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-chevron-left"></i></a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Left Column (in RTL): Sidebar Analytics Dashboard (30% width) -->
-        <div class="col-12 col-xl-4">
-            <!-- 1. Exam Status Distribution Widget (Doughnut Summary) -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="توزيع الاختبارات حسب الحالة">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-chart-pie text-purple me-2" style="color:#7c3aed;"></i> توزيع الاختبارات حسب الحالة</h6>
-                    <span class="badge bg-light text-muted border font-monospace extra-small">تحديث حي</span>
-                </div>
-
-                <div class="text-center py-3 position-relative">
-                    <div class="rounded-circle border border-4 mx-auto d-flex align-items-center justify-content-center flex-column shadow-sm" style="width: 140px; height: 140px; border-color: #7c3aed !important;">
-                        <h2 class="fw-extrabold text-dark font-monospace mb-0" id="sideExamTotal">{{ kpi.total_exams if kpi is defined else total_exams }}</h2>
-                        <small class="text-muted font-monospace extra-small">اختبارات</small>
-                    </div>
-                </div>
-
-                <div class="font-monospace extra-small border-top pt-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-success me-1"></i> نشطة</span>
-                        <strong class="text-dark" id="sideExamActive">{{ status_distribution.active if status_distribution is defined else 8 }} ({{ status_distribution.active_pct if status_distribution is defined else 33.3 }}%)</strong>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-info me-1"></i> منتهية</span>
-                        <strong class="text-dark" id="sideExamFinished">{{ status_distribution.finished if status_distribution is defined else 9 }} ({{ status_distribution.finished_pct if status_distribution is defined else 37.5 }}%)</strong>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-warning me-1"></i> مجدولة</span>
-                        <strong class="text-dark" id="sideExamUpcoming">{{ status_distribution.upcoming if status_distribution is defined else 5 }} ({{ status_distribution.upcoming_pct if status_distribution is defined else 20.8 }}%)</strong>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-danger me-1"></i> متأخرة</span>
-                        <strong class="text-dark">1 (4.2%)</strong>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-purple me-1" style="color:#7c3aed;"></i> بانتظار التصحيح</span>
-                        <strong class="text-dark" id="sideExamPending">3 (12.5%)</strong>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Best Subjects by Average Scores Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="أفضل المواد حسب متوسط الدرجات">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-ranking-star text-primary me-2"></i> أفضل المواد حسب متوسط الدرجات</h6>
-                    <span class="badge bg-light text-muted border font-monospace extra-small">أعلى 5</span>
-                </div>
-
-                <div class="font-monospace extra-small">
-                    {% if best_subjects_by_score and best_subjects_by_score|length > 0 %}
-                        {% for sub in best_subjects_by_score %}
-                            <div class="mb-2">
-                                <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <span class="fw-bold text-dark">{{ sub.name }}</span>
-                                    <strong class="text-primary">{{ sub.score }}</strong>
-                                </div>
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar {% if loop.index == 1 %}bg-primary{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-success{% elif loop.index == 4 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ sub.pct }}%;"></div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 3. Nearest Upcoming Exams Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="أقرب الاختبارات">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-regular fa-clock text-warning me-2"></i> أقرب الاختبارات</h6>
-                </div>
-
-                <div class="font-monospace extra-small">
-                    {% if upcoming_exams_list and upcoming_exams_list|length > 0 %}
-                        {% for ex in upcoming_exams_list %}
-                            <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-3 bg-light border">
-                                <div>
-                                    <strong class="text-dark d-block mb-1">{{ ex.title }}</strong>
-                                    <small class="text-muted">{{ ex.date_str }}</small>
-                                </div>
-                                <span class="badge {% if loop.index == 1 %}bg-warning-subtle text-warning border border-warning-subtle{% elif loop.index == 2 %}bg-info-subtle text-info border border-info-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} rounded-pill px-3 py-1 font-monospace">
-                                    {{ ex.rel_tag }}
-                                </span>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 4. System Alerts Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="تنبيهات الاختبارات">
-                <h6 class="fw-bold text-dark font-monospace mb-3"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> تنبيهات الاختبارات</h6>
-                <div class="d-flex flex-column gap-2 font-monospace extra-small">
-                    {% if system_alerts and system_alerts|length > 0 %}
-                        {% for al in system_alerts %}
-                            <div class="p-2 rounded-3 bg-{{ al.type }}-subtle border border-{{ al.type }}-subtle text-{{ al.type }}">
-                                <strong class="d-block mb-1"><i class="fa-solid fa-circle-info me-1"></i> {{ al.title }}</strong>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 5. Quick Actions Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0" role="region" aria-label="إجراءات سريعة">
-                <h6 class="fw-bold text-dark font-monospace mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i> إجراءات سريعة</h6>
-                <div class="row g-2 font-monospace extra-small">
-                    <div class="col-6">
-                        <button type="button" class="btn btn-outline-primary w-100 py-2 rounded-3 text-start fw-bold" data-bs-toggle="modal" data-bs-target="#addExamModal">
-                            <i class="fa-solid fa-circle-plus me-1 text-primary"></i> إضافة اختبار
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ url_for('marks.index') }}" class="btn btn-outline-success w-100 py-2 rounded-3 text-start fw-bold">
-                            <i class="fa-solid fa-pen-to-square me-1 text-success"></i> رصد الدرجات
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <button type="button" class="btn btn-outline-secondary w-100 py-2 rounded-3 text-start fw-bold" onclick="window.print()">
-                            <i class="fa-solid fa-print me-1"></i> طباعة كشف
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ url_for('marks.index') }}" class="btn btn-outline-info w-100 py-2 rounded-3 text-start fw-bold">
-                            <i class="fa-solid fa-chart-pie me-1 text-info"></i> كشف النتائج
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <!-- 3 Scheduled -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">الاختبارات المجدولة</span>
+        <span class="kpi-icon" style="background:#dbeafe;color:#2563eb;"><i class="fa-regular fa-calendar"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-info" style="font-size:1.5rem;">{{ kpi.upcoming_exams }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">لم تبدأ بعد</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-info" style="width:{{ [kpi.upcoming_exams / kpi.total_exams * 100, 100]|min|round|int if kpi.total_exams > 0 else 0 }}%;"></div></div>
     </div>
+  </div>
+
+  <!-- 4 Finished -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">الاختبارات المنتهية</span>
+        <span class="kpi-icon" style="background:#f3e8ff;color:#7c3aed;"><i class="fa-solid fa-circle-check"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0" style="color:#7c3aed;font-size:1.5rem;">{{ kpi.finished_exams }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">تم الانتهاء</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar" style="width:{{ [kpi.finished_exams / kpi.total_exams * 100, 100]|min|round|int if kpi.total_exams > 0 else 0 }}%;background:#7c3aed;"></div></div>
+    </div>
+  </div>
+
+  <!-- 5 Corrected -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">تم تصحيحها</span>
+        <span class="kpi-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-square-check"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-success" style="font-size:1.5rem;">{{ kpi.corrected_exams }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">تم رصد الدرجات</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-success" style="width:{{ [kpi.corrected_exams / kpi.total_exams * 100, 100]|min|round|int if kpi.total_exams > 0 else 0 }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 6 Pending correction -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">بانتظار التصحيح</span>
+        <span class="kpi-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-pen-to-square"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-warning" style="font-size:1.5rem;">{{ kpi.pending_correction }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">لم يتم التصحيح</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-warning" style="width:{{ [kpi.pending_correction / kpi.total_exams * 100, 100]|min|round|int if kpi.total_exams > 0 else 0 }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 7 Avg score -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">متوسط الدرجات</span>
+        <span class="kpi-icon" style="background:#dbeafe;color:#2563eb;"><i class="fa-solid fa-star"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-primary" style="font-size:1.5rem;">{{ kpi.avg_score }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">من 100</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-primary" style="width:{{ kpi.avg_score }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 8 Pass rate -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">نسبة النجاح</span>
+        <span class="kpi-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-chart-line"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-success" style="font-size:1.5rem;">{{ kpi.pass_rate }}%</h3>
+      <small style="font-size:10px;color:#9ca3af;">الطلاب الناجحون</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-success" style="width:{{ kpi.pass_rate }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 9 Fail rate -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">نسبة الرسوب</span>
+        <span class="kpi-icon" style="background:#fee2e2;color:#dc2626;"><i class="fa-solid fa-chart-pie"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-danger" style="font-size:1.5rem;">{{ kpi.fail_rate }}%</h3>
+      <small style="font-size:10px;color:#9ca3af;">الطلاب الراسبون</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-danger" style="width:{{ kpi.fail_rate }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 10 Max score -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">أعلى درجة</span>
+        <span class="kpi-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-trophy"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-warning" style="font-size:1.5rem;">{{ kpi.max_score }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">الدرجة القصوى</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-warning" style="width:{{ kpi.max_score }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 11 Min score -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">أقل درجة</span>
+        <span class="kpi-icon" style="background:#fee2e2;color:#dc2626;"><i class="fa-solid fa-arrow-down"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-danger" style="font-size:1.5rem;">{{ kpi.min_score }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">الدرجة الدنيا</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-danger" style="width:{{ kpi.min_score }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 12 Subjects count -->
+  <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+    <div class="card border-0 shadow-sm kpi-card bg-white p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span style="font-size:10px;color:#6b7280;font-weight:700;">عدد المواد</span>
+        <span class="kpi-icon" style="background:#dbeafe;color:#2563eb;"><i class="fa-solid fa-book-open"></i></span>
+      </div>
+      <h3 class="fw-bold mb-0 text-info" style="font-size:1.5rem;">{{ kpi.subjects_count }}</h3>
+      <small style="font-size:10px;color:#9ca3af;">مواد تحتوي اختبارات</small>
+      <div class="progress progress-micro mt-2"><div class="progress-bar bg-info" style="width:{{ [kpi.subjects_count * 10, 100]|min }}%;"></div></div>
+    </div>
+  </div>
 
 </div>
 
-<!-- ========================================== -->
-<!-- MODAL: ADD EXAM MODAL                      -->
-<!-- ========================================== -->
-<div class="modal fade" id="addExamModal" tabindex="-1" aria-labelledby="addExamModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered font-monospace">
-        <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header border-bottom">
-                <h5 class="modal-title fw-bold text-dark" id="addExamModalLabel">
-                    <i class="fa-solid fa-pen-to-square text-purple me-2" style="color:#7c3aed;"></i> إضافة اختبار جديد
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('exams.add_exam') }}" method="POST">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label text-dark fw-bold extra-small">اسم/نوع الاختبار *</label>
-                        <input type="text" name="exam_type" class="form-control bg-light" placeholder="مثال: اختبار نهاية الفصل الثاني..." required>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label text-dark fw-bold extra-small">المادة *</label>
-                            <select name="sub_id" class="form-select bg-light" required>
-                                {% for s in subjects %}
-                                    <option value="{{ s.SubID }}">{{ s.SubName }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label text-dark fw-bold extra-small">الصف *</label>
-                            <select name="class_id" class="form-select bg-light" required>
-                                {% for c in classes %}
-                                    <option value="{{ c.CID }}">{{ c.CName }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label text-dark fw-bold extra-small">تاريخ الاختبار *</label>
-                            <input type="date" name="exam_date" class="form-control bg-light" value="{{ today }}" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label text-dark fw-bold extra-small">وقت الاختبار *</label>
-                            <input type="text" name="exam_time" class="form-control bg-light" placeholder="09:00 - 11:00" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-dark fw-bold extra-small">الحالة</label>
-                        <select name="status" class="form-select bg-light">
-                            <option value="مجدول">مجدول</option>
-                            <option value="نشط">نشط</option>
-                            <option value="تم التصحيح">تم التصحيح</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-footer border-top bg-light rounded-bottom-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background:#7c3aed;">حفظ الاختبار</button>
-                </div>
-            </form>
-        </div>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- §3  CURRENT ACTIVE EXAM BANNER                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="current-exam-banner mb-3 p-3 no-print">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex flex-column align-items-center">
+        <i class="fa-solid fa-pen-to-square fa-2x mb-1" style="color:#7c3aed;"></i>
+        <span class="badge" style="background:#7c3aed;font-size:10px;">الاختبار الحالي</span>
+        <span class="badge bg-success-subtle text-success border border-success-subtle mt-1" style="font-size:10px;">اختبار نشط</span>
+      </div>
     </div>
+    <div class="col">
+      <h5 class="fw-bold mb-1" style="color:#5b21b6;font-size:1rem;">{{ current_active_exam.name }}</h5>
+      <div class="row g-2">
+        <div class="col-6 col-sm-4 col-lg-2">
+          <div style="font-size:10px;color:#6b7280;">المادة</div>
+          <strong style="font-size:12px;"><i class="fa-solid fa-book-open me-1 text-primary"></i>{{ current_active_exam.subject_name }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">نوع الاختبار</div>
+          <strong style="font-size:12px;"><i class="fa-solid fa-tag me-1 text-info"></i>{{ current_active_exam.type }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-2">
+          <div style="font-size:10px;color:#6b7280;">الصف</div>
+          <strong style="font-size:12px;"><i class="fa-solid fa-school me-1 text-secondary"></i>{{ current_active_exam.class_name }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">الشعبة</div>
+          <strong style="font-size:12px;"><i class="fa-solid fa-users me-1 text-success"></i>{{ current_active_exam.section_name }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">الفصل</div>
+          <strong style="font-size:12px;">{{ current_active_exam.term_name }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">العام الدراسي</div>
+          <strong style="font-size:12px;">{{ current_active_exam.academic_year }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">تاريخ الاختبار</div>
+          <strong style="font-size:12px;"><i class="fa-regular fa-calendar me-1 text-warning"></i>{{ current_active_exam.exam_date_str }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">وقت البداية</div>
+          <strong style="font-size:12px;">{{ current_active_exam.start_time }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">وقت النهاية</div>
+          <strong style="font-size:12px;">{{ current_active_exam.end_time }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">درجة النجاح</div>
+          <strong style="font-size:12px;" class="text-success">{{ current_active_exam.pass_mark }}</strong>
+        </div>
+        <div class="col-6 col-sm-4 col-lg-1">
+          <div style="font-size:10px;color:#6b7280;">عدد الطلاب</div>
+          <strong style="font-size:12px;" style="color:#7c3aed;">{{ current_active_exam.students_count }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- §4  FILTERS BAR                                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-4 bg-white mb-3 p-3 no-print filter-bar">
+  <div class="row g-2 align-items-center">
+    <div class="col-12 col-md-3">
+      <div class="input-group">
+        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius:9px 0 0 9px;"><i class="fa-solid fa-magnifying-glass" style="font-size:11px;"></i></span>
+        <input type="text" id="examSearch" class="form-control bg-light border-start-0" placeholder="بحث باسم الاختبار..." onkeyup="filterExams()" style="border-radius:0 9px 9px 0;font-size:12px;">
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <select class="form-select" id="fSubject" onchange="filterExams()" style="font-size:12px;">
+        <option value="">جميع المواد</option>
+        {% for s in subjects %}<option value="{{ s.SubName }}">{{ s.SubName }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-1">
+      <select class="form-select" id="fType" onchange="filterExams()" style="font-size:12px;">
+        <option value="">جميع الأنواع</option>
+        <option value="نهائي">نهائي</option>
+        <option value="قصير">قصير</option>
+        <option value="تجريبي">تجريبي</option>
+        <option value="شهري">شهري</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select class="form-select" id="fClass" onchange="filterExams()" style="font-size:12px;">
+        <option value="">جميع الصفوف</option>
+        {% for c in classes %}<option value="{{ c.CName }}">{{ c.CName }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select class="form-select" id="fSection" onchange="filterExams()" style="font-size:12px;">
+        <option value="">جميع الشعب</option>
+        {% for sec in sections %}<option value="{{ sec.SectionName }}">{{ sec.SectionName }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-1">
+      <select class="form-select" id="fStatus" onchange="filterExams()" style="font-size:12px;">
+        <option value="">جميع الحالات</option>
+        <option value="تم التصحيح">تم التصحيح</option>
+        <option value="بانتظار التصحيح">بانتظار التصحيح</option>
+        <option value="مجدول">مجدول</option>
+        <option value="نشط">نشط</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-1">
+      <button class="btn btn-outline-secondary w-100 fw-bold" onclick="resetExamFilters()" style="border-radius:9px;font-size:12px;">
+        <i class="fa-solid fa-arrows-rotate me-1"></i> إعادة ضبط
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- §5  MAIN TABLE + SIDEBAR                              -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="row g-3">
+
+  <!-- ─── TABLE COLUMN (8/12) ─── -->
+  <div class="col-12 col-xl-8">
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 text-center" id="examsTable">
+          <thead>
+            <tr>
+              <th style="width:30px;">#</th>
+              <th class="text-start">اسم الاختبار</th>
+              <th>المادة</th>
+              <th>النوع</th>
+              <th>الصف</th>
+              <th>الشعبة</th>
+              <th>التاريخ</th>
+              <th>الوقت</th>
+              <th>الطلاب</th>
+              <th>أدى</th>
+              <th>غائب</th>
+              <th>متوسط</th>
+              <th>نجاح%</th>
+              <th>الحالة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="examsTableBody">
+            {% if schedules and schedules|length > 0 %}
+              {% for ex in schedules %}
+              <tr class="exam-row" data-name="{{ ex.ExamName or '' }}" data-subject="{{ ex.subject.SubName if ex.subject else '' }}" data-class="{{ ex.school_class.CName if ex.school_class else '' }}" data-section="{{ ex.section.SectionName if ex.section else '' }}" data-status="{{ ex.Status or '' }}">
+                <td class="text-muted fw-bold">{{ loop.index }}</td>
+                <td class="text-start">
+                  <strong class="d-block text-dark" style="font-size:12px;">{{ ex.ExamName or 'اختبار' }}</strong>
+                  <small class="text-muted" style="font-size:10px;">اختبار نهائي شامل</small>
+                </td>
+                <td>
+                  {% set sn = ex.subject.SubName if ex.subject else 'مادة' %}
+                  <span class="badge rounded-pill" style="font-size:10px;{% if 'رياضيات' in sn %}background:#f3e8ff;color:#7c3aed;{% elif 'فيزياء' in sn %}background:#dbeafe;color:#1d4ed8;{% elif 'كيمياء' in sn %}background:#dcfce7;color:#16a34a;{% elif 'إنجليزية' in sn or 'اللغة' in sn %}background:#fce7f3;color:#be185d;{% else %}background:#f3f4f6;color:#374151;{% endif %}">
+                    {{ sn }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-chip chip-done" style="font-size:10px;">نهائي</span>
+                </td>
+                <td style="font-size:11px;">{{ ex.school_class.CName if ex.school_class else '—' }}</td>
+                <td style="font-size:11px;">{{ ex.section.SectionName if ex.section else '—' }}</td>
+                <td style="font-size:11px;">{{ ex.ExamDate.strftime('%Y-%m-%d') if ex.ExamDate else '—' }}</td>
+                <td style="font-size:11px;">{{ ex.ExamTime or '09:00 - 11:00' }}</td>
+                <td><strong style="font-size:11px;">{{ ex._total_students }}</strong></td>
+                <td><strong class="text-success" style="font-size:11px;">{{ ex._present }}</strong></td>
+                <td><strong class="text-danger" style="font-size:11px;">{{ ex._absent }}</strong></td>
+                <td><strong class="text-primary" style="font-size:11px;">{{ ex._avg }}</strong></td>
+                <td><strong class="text-success" style="font-size:11px;">{{ ex._pass_pct }}%</strong></td>
+                <td>
+                  {% if ex.Status == 'تم التصحيح' %}
+                    <span class="status-chip chip-corrected">تم التصحيح</span>
+                  {% elif ex.Status in ['بانتظار التصحيح','غير مصحح'] %}
+                    <span class="status-chip chip-pending">بانتظار التصحيح</span>
+                  {% elif ex.Status in ['مجدول','لم تبدأ بعد'] %}
+                    <span class="status-chip chip-scheduled">مجدول</span>
+                  {% elif ex.Status in ['نشط','نشطة','جارية','مفعل'] %}
+                    <span class="status-chip chip-active">نشط</span>
+                  {% elif ex.Status in ['ملغى','ملغي'] %}
+                    <span class="status-chip chip-cancelled">ملغى</span>
+                  {% else %}
+                    <span class="status-chip chip-done">{{ ex.Status or 'مجدول' }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex align-items-center justify-content-center gap-1">
+                    <button class="action-btn bg-primary-subtle text-primary border-primary-subtle" title="عرض" onclick="Swal.fire('تفاصيل','{{ ex.ExamName }}','info')">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="action-btn bg-info-subtle text-info border-info-subtle" title="تعديل" onclick="Swal.fire('تعديل','تعديل الاختبار','info')">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="action-btn bg-success-subtle text-success border-success-subtle" title="رصد الدرجات" onclick="Swal.fire('رصد الدرجات','رصد درجات الاختبار','success')">
+                      <i class="fa-solid fa-star"></i>
+                    </button>
+                    <button class="action-btn bg-warning-subtle text-warning border-warning-subtle" title="طباعة" onclick="window.print()">
+                      <i class="fa-solid fa-print"></i>
+                    </button>
+                    <form action="{{ url_for('exams.delete_exam', id=ex.ScheduleID) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف الاختبار؟');">
+                      <button type="submit" class="action-btn bg-danger-subtle text-danger border-danger-subtle" title="حذف">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <!-- EMPTY STATE -->
+              <tr>
+                <td colspan="15" class="py-5 text-center">
+                  <div class="mb-3">
+                    <i class="fa-solid fa-pen-to-square fa-3x opacity-25" style="color:#7c3aed;"></i>
+                  </div>
+                  <h5 class="fw-bold text-dark mb-1">لا توجد اختبارات حالياً</h5>
+                  <p class="text-muted mb-3" style="font-size:12px;">قم بإضافة أول اختبار لمتابعة نتائج وتقييمات الطلاب.</p>
+                  <button class="btn text-white rounded-pill px-4 fw-bold" style="background:#7c3aed;font-size:13px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
+                    <i class="fa-solid fa-plus me-1"></i> إضافة أول اختبار
+                  </button>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Footer / Pagination -->
+      <div class="d-flex align-items-center justify-content-between p-3 bg-light border-top" style="font-size:11px;">
+        <span class="text-muted" id="examCountText">
+          عرض 1 - {{ schedules|length if schedules is defined else 0 }} من {{ kpi.total_exams }} اختبار
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <select class="form-select form-select-sm" style="width:70px;font-size:11px;" onchange="updatePageSize(this.value)">
+            <option>10</option><option>20</option><option>50</option>
+          </select>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled"><a class="page-link" href="#"><i class="fa-solid fa-chevron-right"></i></a></li>
+            <li class="page-item active"><a class="page-link" href="#" style="background:#7c3aed;border-color:#7c3aed;">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-chevron-left"></i></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SIDEBAR COLUMN (4/12) ─── -->
+  <div class="col-12 col-xl-4">
+
+    <!-- 1. Donut Distribution -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold text-dark mb-0" style="font-size:12px;"><i class="fa-solid fa-chart-pie me-2" style="color:#7c3aed;"></i>توزيع الاختبارات حسب الحالة</h6>
+        <span class="badge bg-light border text-muted" style="font-size:10px;">تحديث حي</span>
+      </div>
+      <div class="text-center mb-3">
+        <div class="donut-ring mx-auto" style="border: 10px solid #7c3aed; position:relative;">
+          <h3 class="fw-bold mb-0" style="color:#7c3aed;font-size:1.6rem;">{{ kpi.total_exams }}</h3>
+          <small class="text-muted" style="font-size:10px;">اختبار</small>
+        </div>
+      </div>
+      <div style="font-size:11px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span><i class="fa-solid fa-circle text-success me-1"></i>نشطة</span>
+          <strong>{{ status_distribution.active }} ({{ status_distribution.active_pct }}%)</strong>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span><i class="fa-solid fa-circle me-1" style="color:#7c3aed;"></i>منتهية</span>
+          <strong>{{ status_distribution.finished }} ({{ status_distribution.finished_pct }}%)</strong>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span><i class="fa-solid fa-circle text-info me-1"></i>مجدولة</span>
+          <strong>{{ status_distribution.upcoming }} ({{ status_distribution.upcoming_pct }}%)</strong>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span><i class="fa-solid fa-circle text-danger me-1"></i>ملغاة</span>
+          <strong>{{ status_distribution.cancelled }} ({{ status_distribution.cancelled_pct }}%)</strong>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span><i class="fa-solid fa-circle text-warning me-1"></i>بانتظار التصحيح</span>
+          <strong>{{ status_distribution.pending }} ({{ status_distribution.pending_pct }}%)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Best subjects by avg -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold text-dark mb-0" style="font-size:12px;"><i class="fa-solid fa-ranking-star text-primary me-2"></i>أفضل المواد حسب متوسط النتائج</h6>
+        <span class="badge bg-light border text-muted" style="font-size:10px;">أعلى 5</span>
+      </div>
+      {% for sub in best_subjects_by_score %}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1" style="font-size:11px;">
+          <span class="fw-bold text-dark">{{ sub.name }}</span>
+          <strong class="text-primary">{{ sub.score }}</strong>
+        </div>
+        <div class="progress" style="height:5px;border-radius:4px;">
+          <div class="progress-bar {% if loop.index==1 %}bg-primary{% elif loop.index==2 %}bg-info{% elif loop.index==3 %}bg-success{% elif loop.index==4 %}bg-warning{% else %}bg-danger{% endif %}" style="width:{{ sub.pct }}%;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 3. Best Students -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-star text-warning me-2"></i>أفضل الطلاب</h6>
+      {% for st in best_students %}
+      <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded-3 bg-light" style="font-size:11px;">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-circle d-flex align-items-center justify-content-center fw-bold" style="background:#7c3aed;color:#fff;width:22px;height:22px;font-size:10px;">{{ loop.index }}</span>
+          <span class="fw-bold text-dark">{{ st.name }}</span>
+        </div>
+        <strong class="text-success">{{ st.avg }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 4. Struggling Students -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>الطلاب المتعثرون</h6>
+      {% for st in struggling_students %}
+      <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded-3 bg-danger-subtle border border-danger-subtle" style="font-size:11px;">
+        <span class="fw-bold text-dark">{{ st.name }}</span>
+        <strong class="text-danger">{{ st.avg }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 5. Upcoming Exams -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-regular fa-clock text-warning me-2"></i>أقرب الاختبارات</h6>
+      {% for ex in upcoming_exams_list %}
+      <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded-3 bg-light border" style="font-size:11px;">
+        <div>
+          <strong class="text-dark d-block">{{ ex.title }}</strong>
+          <small class="text-muted">{{ ex.date_str }}{% if ex.subject %} · {{ ex.subject }}{% endif %}</small>
+        </div>
+        <span class="badge {% if 'غداً' in ex.rel_tag %}bg-danger{% elif 'اليوم' in ex.rel_tag %}bg-success{% else %}bg-info{% endif %} rounded-pill" style="font-size:10px;">{{ ex.rel_tag }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 6. Uncorrected Exams -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-pen-to-square text-warning me-2"></i>الاختبارات التي لم يتم تصحيحها</h6>
+      {% for ex in uncorrected_list %}
+      <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded-3 bg-warning-subtle border border-warning-subtle" style="font-size:11px;">
+        <div>
+          <strong class="text-dark d-block">{{ ex.title }}</strong>
+          {% if ex.subject %}<small class="text-muted">{{ ex.subject }}</small>{% endif %}
+        </div>
+        <span class="badge bg-warning text-dark rounded-pill" style="font-size:10px;">لم يُصحَّح</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 7. System Alerts -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-bell text-danger me-2"></i>تنبيهات النظام</h6>
+      {% for al in system_alerts %}
+      <div class="alert-item mb-2 bg-{{ al.type }}-subtle border border-{{ al.type }}-subtle text-{{ al.type }}">
+        <i class="fa-solid {{ al.icon }}"></i>
+        <span class="fw-bold">{{ al.title }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 8. Quick Actions -->
+    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4">
+      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-bolt text-warning me-2"></i>إجراءات سريعة</h6>
+      <div class="row g-2">
+        <div class="col-6">
+          <button class="btn btn-outline-primary w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
+            <i class="fa-solid fa-plus me-1"></i> إضافة اختبار
+          </button>
+        </div>
+        <div class="col-6">
+          <a href="{{ url_for('marks.index') }}" class="btn btn-outline-success w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;">
+            <i class="fa-solid fa-pen-to-square me-1"></i> رصد الدرجات
+          </a>
+        </div>
+        <div class="col-6">
+          <button class="btn btn-outline-secondary w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;" onclick="window.print()">
+            <i class="fa-solid fa-print me-1"></i> طباعة كشف
+          </button>
+        </div>
+        <div class="col-6">
+          <a href="{{ url_for('marks.index') }}" class="btn btn-outline-info w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;">
+            <i class="fa-solid fa-list me-1"></i> كشف النتائج
+          </a>
+        </div>
+        <div class="col-12">
+          <button class="btn w-100 fw-bold rounded-3 text-start text-white" style="font-size:11px;padding:7px 10px;background:#7c3aed;" data-bs-toggle="modal" data-bs-target="#addExamModal">
+            <i class="fa-solid fa-bolt me-1"></i> إنشاء اختبار سريع
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end sidebar -->
+</div><!-- end main row -->
+
+</div><!-- end examsRoot -->
+
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: ADD EXAM                                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addExamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered font-cairo">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header" style="border-bottom:1.5px solid #ede9fe;">
+        <h5 class="modal-title fw-bold text-dark" style="font-size:14px;">
+          <i class="fa-solid fa-pen-to-square me-2" style="color:#7c3aed;"></i> إضافة اختبار جديد
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('exams.add_exam') }}" method="POST">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:12px;">اسم / نوع الاختبار *</label>
+            <input type="text" name="exam_type" class="form-control bg-light" placeholder="مثال: اختبار نهاية الفصل الثاني..." required style="font-size:13px;">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">المادة *</label>
+              <select name="sub_id" class="form-select bg-light" required style="font-size:13px;">
+                {% for s in subjects %}<option value="{{ s.SubID }}">{{ s.SubName }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">الصف *</label>
+              <select name="class_id" class="form-select bg-light" required style="font-size:13px;">
+                {% for c in classes %}<option value="{{ c.CID }}">{{ c.CName }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">تاريخ الاختبار *</label>
+              <input type="date" name="exam_date" class="form-control bg-light" value="{{ today }}" required style="font-size:13px;">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">وقت الاختبار *</label>
+              <input type="text" name="exam_time" class="form-control bg-light" placeholder="09:00 - 11:00" required style="font-size:13px;">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:12px;">الحالة</label>
+            <select name="status" class="form-select bg-light" style="font-size:13px;">
+              <option value="مجدول">مجدول</option>
+              <option value="نشط">نشط</option>
+              <option value="تم التصحيح">تم التصحيح</option>
+              <option value="بانتظار التصحيح">بانتظار التصحيح</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer bg-light rounded-bottom-4" style="border-top:1.5px solid #ede9fe;">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal" style="font-size:12px;">إلغاء</button>
+          <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background:#7c3aed;font-size:12px;">حفظ الاختبار</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 
 <script>
-function filterExamsTable() {
-    const query = (document.getElementById('examSearchInput')?.value || '').trim().toLowerCase();
-    const subVal = (document.getElementById('examFilterSubject')?.value || '').trim().toLowerCase();
-    const clsVal = (document.getElementById('examFilterClass')?.value || '').trim().toLowerCase();
-    const statusVal = (document.getElementById('examFilterStatus')?.value || '').trim().toLowerCase();
-    
-    const rows = document.querySelectorAll('.exam-row-item');
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const name = (row.getAttribute('data-name') || '').toLowerCase();
-        const subject = (row.getAttribute('data-subject') || '').toLowerCase();
-        const cls = (row.getAttribute('data-class') || '').toLowerCase();
-        const status = (row.getAttribute('data-status') || '').toLowerCase();
-        
-        const matchesQuery = !query || name.includes(query) || subject.includes(query);
-        const matchesSub = !subVal || subject.includes(subVal);
-        const matchesCls = !clsVal || cls.includes(clsVal);
-        const matchesStatus = !statusVal || status.includes(statusVal);
-        
-        if (matchesQuery && matchesSub && matchesCls && matchesStatus) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-    
-    const countEl = document.getElementById('examVisibleCountText');
-    if (countEl) {
-        countEl.textContent = `عرض 1 - ${visibleCount} من ${rows.length} اختبار`;
-    }
+function filterExams() {
+  const q     = (document.getElementById('examSearch')?.value   || '').toLowerCase().trim();
+  const fSub  = (document.getElementById('fSubject')?.value     || '').toLowerCase().trim();
+  const fType = (document.getElementById('fType')?.value        || '').toLowerCase().trim();
+  const fCls  = (document.getElementById('fClass')?.value       || '').toLowerCase().trim();
+  const fSec  = (document.getElementById('fSection')?.value     || '').toLowerCase().trim();
+  const fSt   = (document.getElementById('fStatus')?.value      || '').toLowerCase().trim();
+
+  let visible = 0;
+  document.querySelectorAll('.exam-row').forEach(row => {
+    const name    = (row.dataset.name    || '').toLowerCase();
+    const subject = (row.dataset.subject || '').toLowerCase();
+    const cls     = (row.dataset.class   || '').toLowerCase();
+    const sec     = (row.dataset.section || '').toLowerCase();
+    const status  = (row.dataset.status  || '').toLowerCase();
+
+    const ok = (!q    || name.includes(q) || subject.includes(q))
+            && (!fSub  || subject.includes(fSub))
+            && (!fType || name.includes(fType))
+            && (!fCls  || cls.includes(fCls))
+            && (!fSec  || sec.includes(fSec))
+            && (!fSt   || status.includes(fSt));
+
+    row.style.display = ok ? '' : 'none';
+    if (ok) visible++;
+  });
+
+  const el = document.getElementById('examCountText');
+  if (el) el.textContent = `عرض 1 - ${visible} من {{ kpi.total_exams }} اختبار`;
 }
 
 function resetExamFilters() {
-    const sInput = document.getElementById('examSearchInput');
-    const subEl = document.getElementById('examFilterSubject');
-    const typeEl = document.getElementById('examFilterType');
-    const clsEl = document.getElementById('examFilterClass');
-    const statusEl = document.getElementById('examFilterStatus');
-    
-    if (sInput) sInput.value = '';
-    if (subEl) subEl.selectedIndex = 0;
-    if (typeEl) typeEl.selectedIndex = 0;
-    if (clsEl) clsEl.selectedIndex = 0;
-    if (statusEl) statusEl.selectedIndex = 0;
-    
-    filterExamsTable();
-    
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: 'تم إعادة ضبط فلاتر الاختبارات بنجاح',
-            showConfirmButton: false,
-            timer: 1500
-        });
-    }
+  ['examSearch','fSubject','fType','fClass','fSection','fStatus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; if (el.tagName === 'SELECT') el.selectedIndex = 0; }
+  });
+  filterExams();
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'تم إعادة ضبط الفلاتر', showConfirmButton:false, timer:1300 });
+  }
+}
+
+function updatePageSize(n) {
+  const el = document.getElementById('examCountText');
+  if (el) el.textContent = `عرض 1 - ${n} من {{ kpi.total_exams }} اختبار`;
 }
 </script>
 {% endblock %}
