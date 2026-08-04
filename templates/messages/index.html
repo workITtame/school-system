@@ -26,8 +26,14 @@
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
-            <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="switchMessagesTab('chat'); document.getElementById('msgFilterSearch')?.focus();">
+            <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openComposerModal()">
                 <i class="fa-solid fa-plus-circle"></i> <span>رسالة جديدة</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openBulkComposerModal()">
+                <i class="fa-solid fa-users text-primary"></i> <span>إرسال جماعي</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openTemplatesModal()">
+                <i class="fa-solid fa-folder-open text-muted"></i> <span>القوالب</span>
             </button>
             <button type="button" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas">
                 <i class="fa-solid fa-bell"></i> <span>الإشعارات التنبيهية</span>
@@ -35,7 +41,7 @@
             <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="exportMessagesExcel()">
                 <i class="fa-solid fa-file-excel"></i> <span>تصدير Excel</span>
             </button>
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+            <button type="button" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
                 <i class="fa-solid fa-print"></i> <span>طباعة / PDF</span>
             </button>
             <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="loadMessagesData()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
@@ -604,6 +610,151 @@
                 <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold font-monospace" data-bs-dismiss="modal">إغلاق النافذة</button>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 9: MESSAGE COMPOSER MODAL (SINGLE) -->
+<!-- ========================================== -->
+<div class="modal fade" id="newMessageComposerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered font-monospace">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3 border-0 d-flex justify-content-between align-items-center no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-paper-plane fs-5"></i>
+                    <h5 class="modal-title fw-bold text-white mb-0">محرر الرسائل الأكاديمية المباشرة | Message Composer</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light-subtle">
+                <form id="singleComposerForm" onsubmit="event.preventDefault(); sendComposerMessage();">
+                    
+                    <!-- Recipient Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark extra-small">المستلم المخاطب (المستخدم):</label>
+                        <div class="input-group input-group-modern rounded-pill overflow-hidden border bg-white">
+                            <span class="input-group-text bg-white border-0 text-primary"><i class="fa-solid fa-user-check"></i></span>
+                            <select id="composerRecipientSelect" class="form-select border-0 font-monospace extra-small ps-1" required>
+                                <option value="">-- اختر المستلم المخاطب من القائمة --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Message Body & Live Counter -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <label class="form-label fw-bold text-dark extra-small mb-0">محتوى الرسالة الأكاديمية:</label>
+                            <small class="text-muted extra-small font-monospace"><span id="composerCharCounter">0</span> / 1000 حرف</small>
+                        </div>
+                        <textarea id="composerContentInput" class="form-control rounded-4 font-monospace extra-small p-3" rows="5" placeholder="اكتب نص الرسالة هنا مع التوضيح الأكاديمي المناسب..." required oninput="document.getElementById('composerCharCounter').textContent = this.value.length;"></textarea>
+                    </div>
+
+                    <!-- Attachments & Templates Empty State Card -->
+                    <div class="p-3 bg-white border rounded-4 mb-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 text-muted extra-small">
+                            <i class="fa-solid fa-circle-info text-info fs-5"></i>
+                            <span>المرفقات والقوالب مخصصة للتواصل المباشر مع الكادر الموثق</span>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill extra-small px-3">نصي مباشر</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-end gap-2 no-print">
+                        <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold font-monospace extra-small" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" id="composerSendBtn" class="btn btn-primary rounded-pill px-4 fw-bold font-monospace extra-small">
+                            <i class="fa-solid fa-paper-plane me-1"></i> إرسال الرسالة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 10: BULK MESSAGING STUDIO MODAL    -->
+<!-- ========================================== -->
+<div class="modal fade" id="bulkMessageComposerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable font-monospace">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white p-3 border-0 d-flex justify-content-between align-items-center no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-users fs-5 text-primary"></i>
+                    <h5 class="modal-title fw-bold text-white mb-0">استوديو الإرسال الجماعي | Bulk Messaging Studio</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light-subtle">
+                <form id="bulkComposerForm" onsubmit="event.preventDefault(); sendBulkMessages();">
+                    
+                    <div class="p-3 bg-white border rounded-4 mb-3 d-flex align-items-center justify-content-between">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input rounded-2" type="checkbox" id="bulkSelectAllCheck" onchange="toggleBulkRecipientAll(this.checked)">
+                            <label class="form-check-label fw-bold text-dark extra-small ms-1" for="bulkSelectAllCheck">تحديد جميع المستلمين المتاحين</label>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill extra-small px-3">إرسال جماعي محمي</span>
+                    </div>
+
+                    <!-- Recipients Selection List -->
+                    <div class="card border rounded-4 overflow-hidden mb-3">
+                        <div class="card-header bg-light py-2 px-3 fw-bold extra-small text-muted">قائمة الكادر والمستخدمين المتاحين للإرسال:</div>
+                        <div class="list-group list-group-flush overflow-auto" style="max-height: 200px;" id="bulkRecipientsList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Message Body -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark extra-small">نص الرسالة الجماعية:</label>
+                        <textarea id="bulkComposerContentInput" class="form-control rounded-4 font-monospace extra-small p-3" rows="4" placeholder="اكتب نص الرسالة الجماعية الموجهة للكادر المساعد..." required></textarea>
+                    </div>
+
+                    <!-- Dispatch Progress Bar -->
+                    <div id="bulkProgressContainer" class="p-3 bg-white border rounded-4 mb-3 d-none">
+                        <div class="d-flex justify-content-between extra-small font-monospace mb-1">
+                            <span class="text-dark fw-bold">تقدم الإرسال الجماعي:</span>
+                            <span class="text-primary fw-bold">ناجح: <span id="bulkSendSuccessCount">0</span> | فاشل: <span id="bulkSendFailCount">0</span></span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div id="bulkSendProgressBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-end gap-2 no-print">
+                        <button type="button" class="btn btn-light border rounded-pill px-4 fw-bold font-monospace extra-small" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" id="bulkSendSubmitBtn" class="btn btn-primary rounded-pill px-4 fw-bold font-monospace extra-small">
+                            <i class="fa-solid fa-paper-plane me-1"></i> بدء الإرسال الجماعي
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- SECTION 11: MESSAGE TEMPLATES MODAL        -->
+<!-- ========================================== -->
+<div class="modal fade" id="messageTemplatesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered font-monospace">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white p-3 border-0 d-flex justify-content-between align-items-center no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-folder-open fs-5 text-warning"></i>
+                    <h6 class="modal-title fw-bold text-white mb-0">قوالب الرسائل والأخطارات | Templates</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center bg-light-subtle">
+                <div class="p-4 bg-white rounded-4 border shadow-sm">
+                    <i class="fa-solid fa-folder-blank text-muted opacity-25 fs-1 d-block mb-3"></i>
+                    <h5 class="fw-bold text-dark mb-1">لا توجد قوالب رسائل مسجلة بقاعدة البيانات</h5>
+                    <p class="text-muted extra-small mb-4">نظام الرسائل الأكاديمي الحقيقي يركز على التواصل المباشر والتوثيق النصي الدقيق دون الاعتماد على القوالب الجاهزة.</p>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold extra-small" data-bs-dismiss="modal" onclick="openComposerModal()">
+                        <i class="fa-solid fa-plus me-1"></i> كتابة رسالة مباشرة الآن
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

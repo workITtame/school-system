@@ -33,6 +33,12 @@ function initMessagesModule() {
     window.printMessageProfile = printMessageProfile;
     window.exportMessageProfileExcel = exportMessageProfileExcel;
     window.viewNotificationProfile = viewNotificationProfile;
+    window.openComposerModal = openComposerModal;
+    window.sendComposerMessage = sendComposerMessage;
+    window.openBulkComposerModal = openBulkComposerModal;
+    window.toggleBulkRecipientAll = toggleBulkRecipientAll;
+    window.sendBulkMessages = sendBulkMessages;
+    window.openTemplatesModal = openTemplatesModal;
 
     setupMessagesEventListeners();
     loadConversations();
@@ -669,6 +675,253 @@ function viewNotificationProfile(id, title, category, time, read) {
     if (timeEl)     timeEl.textContent     = time || 'الآن';
     if (statusEl)   statusEl.textContent   = read ? 'تم الاطلاع والاعتماد' : 'إشعار جديد غير مقروء';
 
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+/* ==========================================================================
+   PHASE 3: MESSAGE COMPOSER & BULK MESSAGING CONTROLLER
+   ========================================================================== */
+
+function openComposerModal(targetRecipientId = null) {
+    const modalEl = document.getElementById('newMessageComposerModal');
+    if (!modalEl) return;
+
+    const recipientSelect = document.getElementById('composerRecipientSelect');
+    const contentInput = document.getElementById('composerContentInput');
+    const charCounter = document.getElementById('composerCharCounter');
+
+    if (contentInput) {
+        contentInput.value = '';
+        contentInput.classList.remove('is-invalid');
+    }
+    if (charCounter) charCounter.textContent = '0';
+
+    if (recipientSelect) {
+        recipientSelect.innerHTML = '<option value="">-- اختر المستلم المخاطب من القائمة --</option>';
+        if (messagesState.conversations && messagesState.conversations.length > 0) {
+            messagesState.conversations.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.user_id;
+                opt.textContent = `${c.name} (${c.role})`;
+                if (targetRecipientId && parseInt(targetRecipientId) === c.user_id) {
+                    opt.selected = true;
+                }
+                recipientSelect.appendChild(opt);
+            });
+        }
+    }
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function sendComposerMessage() {
+    const recipientSelect = document.getElementById('composerRecipientSelect');
+    const contentInput = document.getElementById('composerContentInput');
+    const sendBtn = document.getElementById('composerSendBtn');
+
+    const recipientId = recipientSelect?.value;
+    const content = contentInput?.value.trim();
+
+    let isValid = true;
+
+    if (!recipientId) {
+        if (recipientSelect) recipientSelect.classList.add('is-invalid');
+        showToast('يرجى اختيار المستلم المخاطب من القائمة', 'warning');
+        isValid = false;
+    } else {
+        if (recipientSelect) recipientSelect.classList.remove('is-invalid');
+    }
+
+    if (!content) {
+        if (contentInput) contentInput.classList.add('is-invalid');
+        showToast('يرجى كتابة نص الرسالة قبل الإرسال', 'warning');
+        isValid = false;
+    } else {
+        if (contentInput) contentInput.classList.remove('is-invalid');
+    }
+
+    if (!isValid) return;
+
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> جاري الإرسال...';
+    }
+
+    fetch('/messages/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient_id: parseInt(recipientId), content: content })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('تم إرسال الرسالة بنجاح', 'success');
+            const modalEl = document.getElementById('newMessageComposerModal');
+            const bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
+
+            loadConversations();
+        } else {
+            showToast(data.message || 'تعذر إرسال الرسالة', 'error');
+        }
+    })
+    .catch(err => {
+        showToast('حدث خطأ أثناء الإرسال', 'error');
+    })
+    .finally(() => {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> إرسال الرسالة';
+        }
+    });
+}
+
+function openBulkComposerModal() {
+    const modalEl = document.getElementById('bulkMessageComposerModal');
+    if (!modalEl) return;
+
+    const recipientsList = document.getElementById('bulkRecipientsList');
+    const contentInput = document.getElementById('bulkComposerContentInput');
+    const progressContainer = document.getElementById('bulkProgressContainer');
+    const selectAllCheck = document.getElementById('bulkSelectAllCheck');
+
+    if (contentInput) {
+        contentInput.value = '';
+        contentInput.classList.remove('is-invalid');
+    }
+    if (progressContainer) progressContainer.classList.add('d-none');
+    if (selectAllCheck) selectAllCheck.checked = false;
+
+    if (recipientsList) {
+        recipientsList.innerHTML = '';
+        if (!messagesState.conversations || messagesState.conversations.length === 0) {
+            recipientsList.innerHTML = '<div class="p-3 text-muted text-center extra-small font-monospace">لا يوجد مستخدمين مسجلين</div>';
+        } else {
+            messagesState.conversations.forEach(c => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'list-group-item p-3 d-flex align-items-center justify-content-between bg-white border-bottom';
+                itemDiv.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <input type="checkbox" class="form-check-input bulk-user-checkbox rounded-2" value="${c.user_id}">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2563eb&color=fff" class="rounded-circle" style="width: 36px; height: 36px;">
+                        <div>
+                            <strong class="d-block text-dark font-monospace extra-small">${escapeHtml(c.name)}</strong>
+                            <small class="text-muted extra-small">${escapeHtml(c.role)}</small>
+                        </div>
+                    </div>
+                    <span class="badge ${c.role === 'مدير النظام' ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-info-subtle text-info border border-info-subtle'} rounded-pill extra-small px-3 py-1 font-monospace">
+                        ${escapeHtml(c.role)}
+                    </span>
+                `;
+                recipientsList.appendChild(itemDiv);
+            });
+        }
+    }
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function toggleBulkRecipientAll(checked) {
+    const checkboxes = document.querySelectorAll('.bulk-user-checkbox');
+    checkboxes.forEach(cb => cb.checked = checked);
+}
+
+function sendBulkMessages() {
+    const contentInput = document.getElementById('bulkComposerContentInput');
+    const sendBtn = document.getElementById('bulkSendSubmitBtn');
+    const progressContainer = document.getElementById('bulkProgressContainer');
+    const progressBar = document.getElementById('bulkSendProgressBar');
+    const successCountEl = document.getElementById('bulkSendSuccessCount');
+    const failCountEl = document.getElementById('bulkSendFailCount');
+
+    const checkboxes = document.querySelectorAll('.bulk-user-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    const content = contentInput?.value.trim();
+
+    let isValid = true;
+
+    if (selectedIds.length === 0) {
+        showToast('يرجى اختيار مستلم واحد على الأقل من القائمة الإرسال الجماعي', 'warning');
+        isValid = false;
+    }
+
+    if (!content) {
+        if (contentInput) contentInput.classList.add('is-invalid');
+        showToast('يرجى كتابة نص الرسالة الجماعية قبل الإرسال', 'warning');
+        isValid = false;
+    } else {
+        if (contentInput) contentInput.classList.remove('is-invalid');
+    }
+
+    if (!isValid) return;
+
+    if (sendBtn) sendBtn.disabled = true;
+    if (progressContainer) progressContainer.classList.remove('d-none');
+    if (progressBar) progressBar.style.width = '0%';
+    if (successCountEl) successCountEl.textContent = '0';
+    if (failCountEl) failCountEl.textContent = '0';
+
+    let total = selectedIds.length;
+    let successCount = 0;
+    let failCount = 0;
+    let completed = 0;
+
+    const promises = selectedIds.map(rid => {
+        return fetch('/messages/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient_id: rid, content: content })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        })
+        .catch(() => {
+            failCount++;
+        })
+        .finally(() => {
+            completed++;
+            let pct = Math.round((completed / total) * 100);
+            if (progressBar) progressBar.style.width = pct + '%';
+            if (successCountEl) successCountEl.textContent = successCount;
+            if (failCountEl) failCountEl.textContent = failCount;
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'إرسال جماعي مكتمل',
+                html: `تم إرسال الرسالة الجماعية بنجاح إلى <b>${successCount}</b> مستخدم.<br>عدد الرسائل غير المسلمة: <b>${failCount}</b>`,
+                icon: successCount > 0 ? 'success' : 'error',
+                confirmButtonText: 'حسناً'
+            });
+        } else {
+            showToast(`تم إرسال الرسائل الجماعية: ${successCount} نجاح، ${failCount} فشل`, 'success');
+        }
+
+        loadConversations();
+
+        setTimeout(() => {
+            const modalEl = document.getElementById('bulkMessageComposerModal');
+            const bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
+            if (sendBtn) sendBtn.disabled = false;
+        }, 1200);
+    });
+}
+
+function openTemplatesModal() {
+    const modalEl = document.getElementById('messageTemplatesModal');
+    if (!modalEl) return;
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
 }
