@@ -1,33 +1,67 @@
 {% extends 'layout.html' %}
 
-{% block title %}مركز الإشعارات والتنبيهات{% endblock %}
-{% block page_title %}الإشعارات{% endblock %}
-{% block page_subtitle %}الرئيسية / الإشعارات والتنبيهات{% endblock %}
+{% block title %}مركز الإشعارات والتنبيهات | Enterprise SaaS{% endblock %}
+{% block page_title %}الإشعارات والتنبيهات{% endblock %}
+{% block page_subtitle %}سجل التنبيهات النظامية والإخطارات الأكاديمية المباشرة{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-bell text-primary me-2"></i> مركز الإشعارات والتنبيهات</h5>
-            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="Swal.fire('تحديث', 'تم تحديد جميع الإشعارات كمقروءة', 'success')">تحديد الكل كمقروء</button>
+<div class="container-fluid py-4 px-md-4 font-monospace">
+
+    <!-- Hero Header -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 fade-in no-print">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted font-monospace">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('messages.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-comments me-1"></i> الرسائل</a></li>
+                    <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">الإشعارات والتنبيهات</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-bell text-primary"></i> مركز الإشعارات والتنبيهات النظامية
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Notifications Hub</span>
+            </h3>
+            <p class="text-muted small mb-0 font-monospace">متابعة وعرض التنبيهات الصادرة آلياً عن موديولات الواجبات، الاختبارات، الحضور، والإدارة</p>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{{ url_for('messages.index') }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+                <i class="fa-solid fa-comments"></i> <span>مركز الرسائل والمحادثات</span>
+            </a>
+            <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="Swal.fire('تحديث', 'تم تحديد جميع الإشعارات كمقروءة بنجاح', 'success')">
+                <i class="fa-solid fa-check-double"></i> <span>تحديد الكل كمقروء</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> <span>طباعة التنبيهات</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notifications List Grid -->
+    <div class="glass-panel-card border-0 shadow-sm rounded-4 overflow-hidden fade-in p-0 mb-4">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark font-monospace"><i class="fa-solid fa-list-check text-primary me-2"></i> سجل التنبيهات الحديثة</h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">{{ notifications|length }} تنبيه مفعل</span>
         </div>
         <div class="card-body p-0">
             <div class="list-group list-group-flush">
                 {% for n in notifications %}
-                <div class="list-group-item p-3 d-flex align-items-center justify-content-between {% if not n.read %}bg-light{% endif %}">
+                <div class="list-group-item p-4 d-flex align-items-center justify-content-between border-bottom {% if not n.read %}bg-primary bg-opacity-10{% else %}bg-white{% endif %} transition-all">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center {% if n.category == 'واجبات' %}bg-primary bg-opacity-10 text-primary{% elif n.category == 'اختبارات' %}bg-warning bg-opacity-10 text-warning{% else %}bg-success bg-opacity-10 text-success{% endif %}" style="width: 45px; height: 45px;">
+                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm {% if n.category == 'واجبات' %}bg-primary text-white{% elif n.category == 'اختبارات' %}bg-warning text-dark{% else %}bg-success text-white{% endif %}" style="width: 48px; height: 48px;">
                             <i class="fa-solid {% if n.category == 'واجبات' %}fa-book-open{% elif n.category == 'اختبارات' %}fa-file-signature{% else %}fa-bullhorn{% endif %} fs-5"></i>
                         </div>
                         <div>
-                            <h6 class="mb-1 fw-bold text-dark">{{ n.title }}</h6>
-                            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i> {{ n.time }}</small>
+                            <h6 class="mb-1 fw-bold text-dark font-monospace">{{ n.title }}</h6>
+                            <small class="text-muted font-monospace extra-small"><i class="fa-regular fa-clock me-1"></i> {{ n.time }}</small>
                         </div>
                     </div>
-                    <div>
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2 me-2">{{ n.category }}</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge {% if n.category == 'واجبات' %}bg-primary-subtle text-primary border border-primary-subtle{% elif n.category == 'اختبارات' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} rounded-pill px-3 py-2 font-monospace extra-small">{{ n.category }}</span>
                         {% if not n.read %}
-                        <span class="badge bg-danger rounded-circle p-1" style="width: 10px; height: 10px; display: inline-block;"></span>
+                        <span class="badge bg-danger rounded-pill px-2 py-1 font-monospace extra-small"><i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>جديد</span>
+                        {% else %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-1 font-monospace extra-small">تم الاطلاع</span>
                         {% endif %}
                     </div>
                 </div>
@@ -35,5 +69,15 @@
             </div>
         </div>
     </div>
+
 </div>
+
+<style>
+@media print {
+    body * { visibility: hidden !important; }
+    .glass-panel-card, .glass-panel-card * { visibility: visible !important; }
+    .glass-panel-card { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print, .btn, button { display: none !important; }
+}
+</style>
 {% endblock %}
