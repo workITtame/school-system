@@ -1,155 +1,421 @@
 {% extends 'layout.html' %}
 
-{% block title %}كشف درجات طالب{% endblock %}
+{% block title %}كشف درجات طالب | Enterprise SaaS Reports{% endblock %}
+{% block page_title %}كشف درجات وأداء الطالب{% endblock %}
+{% block page_subtitle %}الرئيسية / التقارير / كشف درجات طالب{% endblock %}
 
 {% block content %}
-<div class="row fade-in d-print-none">
-    <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-transparent py-3 border-bottom">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-magnifying-glass me-2 text-primary"></i> تحديد الطالب</h5>
+<div class="fade-in font-cairo" id="studentReportModuleRoot">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: HERO HEADER                     -->
+    <!-- ========================================== -->
+    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
+         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+        <div class="position-absolute end-0 top-0 opacity-10 pe-4 pt-3 pointer-events-none">
+            <i class="fa-solid fa-graduation-cap" style="font-size: 11rem; color: #ffffff;"></i>
+        </div>
+        
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 2;">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
+                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="/reports" class="text-white text-decoration-none">مركز التقارير</a></li>
+                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">كشف درجات طالب</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-3">
+                    <h2 class="fw-bold text-white mb-0 font-monospace">كشف درجات وأداء الطالب الأكاديمي</h2>
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Enterprise SaaS Report</span>
+                </div>
+                <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
+                    استخراج السجل الأكاديمي والشهادة الرسمية للطالب مع التقييم البياني ومؤشرات الأداء الشاملة.
+                </p>
             </div>
-            <div class="card-body">
-                <form method="GET" action="{{ url_for('reports.student_report') }}" class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label text-secondary fw-bold">الصف</label>
-                        <select name="class_id" class="form-select bg-light border-0" required onchange="this.form.submit()">
-                            <option value="">اختر الصف</option>
-                            {% for c in classes %}
-                            <option value="{{ c.CID }}" {% if sel_class_id|string == c.CID|string %}selected{% endif %}>{{ c.CName }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-secondary fw-bold">الشعبة</label>
-                        <select name="section_id" class="form-select bg-light border-0" required onchange="this.form.submit()">
-                            <option value="">اختر الشعبة</option>
-                            {% for s in sections %}
-                            <option value="{{ s.SectionID }}" {% if sel_section_id|string == s.SectionID|string %}selected{% endif %}>{{ s.SectionName }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-secondary fw-bold">الطالب</label>
-                        <select name="student_id" class="form-select bg-light border-0" required>
-                            <option value="">اختر الطالب</option>
-                            {% for st in students %}
-                            <option value="{{ st.SID }}" {% if sel_student_id|string == st.SID|string %}selected{% endif %}>{{ st.SName }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-12 text-center mt-4">
-                        <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold">📄 عرض كشف الدرجات</button>
-                    </div>
-                </form>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
+                {% if selected_student %}
+                <a href="{{ url_for('reports.student_report_pdf_fast', student_id=selected_student.SID) }}" class="btn btn-danger rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> <span>تحميل شهادة PDF</span>
+                </a>
+                <a href="{{ url_for('reports.student_report_excel', student_id=selected_student.SID) }}" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light">
+                    <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
+                </a>
+                {% endif %}
+                <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> <span>طباعة</span>
+                </button>
+                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-arrows-rotate fs-6"></i>
+                </button>
             </div>
         </div>
     </div>
-</div>
 
-{% if selected_student and report_data is not none %}
-<!-- Printable Report -->
-<div class="card shadow-sm border-0 h-100" id="printable-report">
-    <div class="card-body p-5">
-        <!-- Report Header -->
-        <div class="text-center mb-5 pb-3 border-bottom border-2 border-primary">
-            <h2 class="fw-bold text-primary mb-3">نظام الإدارة المدرسية الاحترافي</h2>
-            <h4 class="fw-bold text-secondary">كشف درجات طالب</h4>
-        </div>
-        
-        <!-- Student Info -->
-        <div class="row mb-5">
-            <div class="col-md-8">
-                <table class="table table-borderless table-sm fs-5">
-                    <tr><th class="text-muted w-25">اسم الطالب:</th><td class="fw-bold">{{ selected_student.SName }}</td></tr>
-                    <tr><th class="text-muted">الصف:</th><td>{{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }}</td></tr>
-                    <tr><th class="text-muted">الشعبة:</th><td>{{ selected_student.section.SectionName if selected_student.section else 'غير محدد' }}</td></tr>
-                    <tr><th class="text-muted">ولي الأمر:</th><td>{{ selected_student.Parent_Name or 'غير محدد' }}</td></tr>
-                </table>
+    <!-- ========================================== -->
+    <!-- SECTION 2: GLASS SELECTION & FILTER FORM   -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-4 rounded-4 shadow-sm mb-4 bg-white border-0 no-print">
+        <form method="GET" action="{{ url_for('reports.student_report') }}" class="row g-3 align-items-end">
+            
+            <!-- Select Class -->
+            <div class="col-12 col-md-4">
+                <label class="form-label text-dark font-monospace extra-small fw-bold mb-2">
+                    <i class="fa-solid fa-school text-primary me-1"></i> الصف الدراسي
+                </label>
+                <select name="class_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required onchange="this.form.submit()">
+                    <option value="">اختر الصف الدراسي...</option>
+                    {% for c in classes %}
+                    <option value="{{ c.CID }}" {% if sel_class_id|string == c.CID|string %}selected{% endif %}>{{ c.CName }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-md-4 text-end">
-                {% if selected_student.Image %}
-                <img src="{{ url_for('static', filename=selected_student.Image) }}" class="rounded-circle shadow" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #f8f9fa;">
-                {% endif %}
-            </div>
-        </div>
 
-        <!-- Grades Tables by Exam -->
-        {% if report_data %}
-            {% for exam_name, grades in report_data.items() %}
-            <div class="mb-5">
-                <h5 class="fw-bold text-primary mb-3"><i class="fa fa-file-alt"></i> {{ exam_name }}</h5>
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center align-middle border-primary border-opacity-25">
-                        <thead class="table-primary">
-                            <tr>
-                                <th>المادة</th>
-                                <th>الدرجة</th>
-                                <th>التقدير</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for grade in grades %}
-                            <tr>
-                                <td class="fw-bold">{{ grade.subject_name }}</td>
-                                <td>{{ grade.score }}</td>
-                                <td>
-                                    {% if grade.score >= 90 %}ممتاز
-                                    {% elif grade.score >= 80 %}جيد جداً
-                                    {% elif grade.score >= 70 %}جيد
-                                    {% elif grade.score >= 50 %}مقبول
-                                    {% else %}<span class="text-danger fw-bold">ضعيف</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Select Section -->
+            <div class="col-12 col-md-4">
+                <label class="form-label text-dark font-monospace extra-small fw-bold mb-2">
+                    <i class="fa-solid fa-layer-group text-info me-1"></i> الشعبة الدراسية
+                </label>
+                <select name="section_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required onchange="this.form.submit()">
+                    <option value="">اختر الشعبة الدراسية...</option>
+                    {% for s in sections %}
+                    <option value="{{ s.SectionID }}" {% if sel_section_id|string == s.SectionID|string %}selected{% endif %}>{{ s.SectionName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select Student -->
+            <div class="col-12 col-md-4">
+                <label class="form-label text-dark font-monospace extra-small fw-bold mb-2">
+                    <i class="fa-solid fa-user-graduate text-success me-1"></i> اسم الطالب
+                </label>
+                <select name="student_id" class="form-select form-select-modern rounded-pill font-monospace extra-small" required onchange="this.form.submit()">
+                    <option value="">اختر الطالب...</option>
+                    {% for st in students %}
+                    <option value="{{ st.SID }}" {% if sel_student_id|string == st.SID|string %}selected{% endif %}>{{ st.SName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+        </form>
+    </div>
+
+    {% if selected_student and report_data is not none %}
+    
+    <!-- ========================================== -->
+    <!-- SECTION 3: STUDENT PROFILE & INFORMATION   -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-4 rounded-4 shadow-sm mb-4 bg-white border-0 position-relative overflow-hidden no-print">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            
+            <div class="d-flex align-items-center gap-4">
+                <div class="position-relative">
+                    {% if selected_student.Image %}
+                    <img src="{{ url_for('static', filename=selected_student.Image) }}" class="rounded-circle shadow-sm border border-3 border-primary" style="width: 85px; height: 85px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center border border-3 border-primary" style="width: 85px; height: 85px;">
+                        <i class="fa-solid fa-user-graduate fs-1"></i>
+                    </div>
+                    {% endif %}
+                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle" title="طالب نشط"></span>
+                </div>
+
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="fw-bold text-dark mb-0 font-monospace">{{ selected_student.SName }}</h4>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small">طالب منتظم</span>
+                    </div>
+                    <p class="text-muted extra-small font-monospace mt-1 mb-0">
+                        <i class="fa-solid fa-school text-muted me-1"></i> {{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }} — 
+                        <i class="fa-solid fa-layer-group text-muted ms-2 me-1"></i> الشعبة: {{ selected_student.section.SectionName if selected_student.section else 'غير محدد' }} |
+                        <i class="fa-solid fa-user text-muted ms-2 me-1"></i> ولي الأمر: {{ selected_student.Parent_Name or 'غير محدد' }}
+                    </p>
                 </div>
             </div>
-            {% endfor %}
-            
-            <!-- Summary -->
-            <div class="alert alert-info rounded-4 border-0 d-flex justify-content-between align-items-center p-4">
-                <h4 class="mb-0 text-dark fw-bold">المتوسط العام:</h4>
-                <h3 class="mb-0 fw-bold text-primary">{{ average }}%</h3>
+
+            <div>
+                <a href="{{ url_for('students.student_profile', id=selected_student.SID) }}" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold font-monospace extra-small">
+                    <i class="fa-solid fa-id-card me-1"></i> البروفايل الكامل للطالب
+                </a>
             </div>
-            
-        {% else %}
-            <div class="alert alert-warning text-center">لا توجد درجات مسجلة لهذا الطالب حتى الآن.</div>
-        {% endif %}
-        
-        <!-- Action Buttons -->
-        <div class="text-center mt-5 d-print-none" id="action-buttons">
-            <button onclick="window.print()" class="btn btn-dark btn-lg rounded-pill px-4 shadow fw-bold me-2">🖨️ طباعة</button>
-            <a href="{{ url_for('reports.student_report_pdf_fast', student_id=selected_student.SID) }}" class="btn btn-danger btn-lg rounded-pill px-4 shadow fw-bold me-2">⚡ تحميل كشهادة PDF (سريع جداً)</a>
-            <a href="{{ url_for('reports.student_report_excel', student_id=selected_student.SID) }}" class="btn btn-success btn-lg rounded-pill px-4 shadow fw-bold">
-                <i class="fa-solid fa-file-excel me-2"></i> تصدير Excel
-            </a>
+
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: GLASS KPI CARDS (5 CARDS)       -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 no-print">
+        
+        <!-- KPI 1: Overall Average -->
+        <div class="col-6 col-md-4 col-xl-2-4">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">المعدل الأكاديمي العام</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-chart-line fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ average }}%</h3>
+                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-award me-1"></i> النتيجة العامة</small>
+            </div>
+        </div>
+
+        <!-- KPI 2: Total Exams Evaluated -->
+        <div class="col-6 col-md-4 col-xl-2-4">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">الامتحانات المسجلة</span>
+                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-file-pen fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ report_data.keys()|length if report_data else 0 }}</h3>
+                <small class="text-info extra-small font-monospace"><i class="fa-solid fa-check-double me-1"></i> فترات تقييم</small>
+            </div>
+        </div>
+
+        <!-- KPI 3: General Rating -->
+        <div class="col-6 col-md-4 col-xl-2-4">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">التقدير الأكاديمي</span>
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-crown fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">
+                    {% if average >= 90 %}ممتاز
+                    {% elif average >= 80 %}جيد جداً
+                    {% elif average >= 70 %}جيد
+                    {% elif average >= 50 %}مقبول
+                    {% else %}ضعيف
+                    {% endif %}
+                </h3>
+                <small class="text-warning extra-small font-monospace"><i class="fa-solid fa-star me-1"></i> التقييم المستحق</small>
+            </div>
+        </div>
+
+        <!-- KPI 4: Academic Status -->
+        <div class="col-6 col-md-4 col-xl-2-4">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">حالة النتيجة</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-circle-check fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">
+                    {% if average >= 50 %}<span class="text-success">ناجح</span>
+                    {% else %}<span class="text-danger">يحتاج تحسين</span>
+                    {% endif %}
+                </h3>
+                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-shield-halved me-1"></i> حالة الاعتماد</small>
+            </div>
+        </div>
+
+        <!-- KPI 5: Digital Readiness -->
+        <div class="col-6 col-md-4 col-xl-2-4">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">جاهزية الشهادة</span>
+                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-certificate fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">100%</h3>
+                <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-print me-1"></i> موثقة ومتاحة</small>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: ENTERPRISE DATA GRID & TABLES  -->
+    <!-- ========================================== -->
+    {% if report_data %}
+        {% for exam_name, grades in report_data.items() %}
+        <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4 no-print">
+            <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold text-dark mb-0 font-monospace">
+                    <i class="fa-solid fa-file-invoice text-primary me-2"></i> {{ exam_name }}
+                </h5>
+                <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">{{ grades|length }} مواد دراسية</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table">
+                    <thead class="bg-light sticky-top">
+                        <tr>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 50px;">#</th>
+                            <th class="py-3 font-monospace text-primary border-0 text-start">المادة الدراسية</th>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 130px;">الدرجة المستحقة</th>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 150px;">التقدير الأكاديمي</th>
+                            <th class="py-3 font-monospace text-primary border-0" style="width: 250px;">مؤشر الأداء الأكاديمي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in grades %}
+                        <tr class="align-middle">
+                            <td class="font-monospace fw-bold text-primary">{{ loop.index }}</td>
+                            <td class="text-start font-monospace extra-small fw-bold text-dark">{{ grade.subject_name }}</td>
+                            <td>
+                                <span class="badge bg-white text-dark border shadow-sm font-monospace extra-small px-3 py-1 fs-6">
+                                    {{ grade.score }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if grade.score >= 90 %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-monospace extra-small px-3 py-1">ممتاز</span>
+                                {% elif grade.score >= 80 %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small px-3 py-1">جيد جداً</span>
+                                {% elif grade.score >= 70 %}
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill font-monospace extra-small px-3 py-1">جيد</span>
+                                {% elif grade.score >= 50 %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill font-monospace extra-small px-3 py-1">مقبول</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-monospace extra-small px-3 py-1">ضعيف</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress w-100 rounded-pill overflow-hidden" style="height: 10px; background-color: #f1f5f9;">
+                                        <div class="progress-bar {% if grade.score >= 80 %}bg-success{% elif grade.score >= 60 %}bg-warning{% else %}bg-danger{% endif %} rounded-pill" role="progressbar" style="width: {{ grade.score }}%" aria-valuenow="{{ grade.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="font-monospace extra-small fw-bold text-muted" style="width: 45px;">{{ grade.score }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: PRINTABLE CERTIFICATE TEMPLATE  -->
+    <!-- ========================================== -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4" id="printable-report">
+        <div class="card-body p-5">
+            <!-- Header for Printable document -->
+            <div class="text-center mb-4 pb-3 border-bottom border-2 border-primary">
+                <h2 class="fw-bold text-primary mb-2 font-monospace">مدرسة المستقبل الأهلية النموذجية</h2>
+                <h4 class="fw-bold text-dark font-monospace mb-0">كشف درجات وسجل دراسي للطالب</h4>
+            </div>
+
+            <!-- Student Detail Rows -->
+            <div class="row mb-4 align-items-center">
+                <div class="col-8">
+                    <table class="table table-borderless table-sm font-monospace extra-small">
+                        <tr><th class="text-muted w-25">اسم الطالب:</th><td class="fw-bold fs-6 text-dark">{{ selected_student.SName }}</td></tr>
+                        <tr><th class="text-muted">الصف الدراسي:</th><td>{{ selected_student.school_class.CName if selected_student.school_class else 'غير محدد' }}</td></tr>
+                        <tr><th class="text-muted">الشعبة الدراسية:</th><td>{{ selected_student.section.SectionName if selected_student.section else 'غير محدد' }}</td></tr>
+                        <tr><th class="text-muted">ولي الأمر:</th><td>{{ selected_student.Parent_Name or 'غير محدد' }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-4 text-end">
+                    {% if selected_student.Image %}
+                    <img src="{{ url_for('static', filename=selected_student.Image) }}" class="rounded-circle shadow-sm" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #cbd5e1;">
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Printable Tables -->
+            {% if report_data %}
+                {% for exam_name, grades in report_data.items() %}
+                <div class="mb-4">
+                    <h6 class="fw-bold text-primary mb-2 font-monospace"><i class="fa fa-file-alt"></i> {{ exam_name }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center align-middle border-primary border-opacity-25 font-monospace extra-small">
+                            <thead class="table-primary text-white">
+                                <tr>
+                                    <th>المادة الدراسية</th>
+                                    <th>الدرجة المستحقة</th>
+                                    <th>التقدير الأكاديمي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                <tr>
+                                    <td class="fw-bold">{{ grade.subject_name }}</td>
+                                    <td>{{ grade.score }}</td>
+                                    <td>
+                                        {% if grade.score >= 90 %}ممتاز
+                                        {% elif grade.score >= 80 %}جيد جداً
+                                        {% elif grade.score >= 70 %}جيد
+                                        {% elif grade.score >= 50 %}مقبول
+                                        {% else %}<span class="text-danger fw-bold">ضعيف</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="alert alert-info rounded-4 border-0 d-flex justify-content-between align-items-center p-3 font-monospace">
+                    <h5 class="mb-0 text-dark fw-bold">المتوسط العام للدرجات:</h5>
+                    <h4 class="mb-0 fw-bold text-primary">{{ average }}%</h4>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ========================================== -->
+    <!-- SECTION 7: ENTERPRISE EMPTY STATE          -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-5 text-center bg-white rounded-4 shadow-sm border-0 my-4">
+        <div class="rounded-circle bg-primary-subtle text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+            <i class="fa-solid fa-user-graduate fs-1"></i>
+        </div>
+        <h4 class="fw-bold text-dark font-monospace mb-2">يرجى تحديد الطالب لعرض كشف الدرجات</h4>
+        <p class="text-muted extra-small font-monospace mb-0" style="max-width: 500px; margin: 0 auto;">
+            اختر الصف الدراسي والشعبة ثم حدد اسم الطالب من القائمة أعلاه لتوليد ورصد الشهادة السنوية والتقرير الأكاديمي المفصل.
+        </p>
+    </div>
+    {% endif %}
+
 </div>
 
-
-
 <style>
+.col-xl-2-4 {
+    flex: 0 0 auto;
+    width: 20%;
+}
+@media (max-width: 1200px) {
+    .col-xl-2-4 {
+        width: 33.3333%;
+    }
+}
+@media (max-width: 768px) {
+    .col-xl-2-4 {
+        width: 50%;
+    }
+}
+
 @media print {
     @page { margin: 1cm; }
     body { background-color: white !important; }
-    .d-print-none { display: none !important; }
-    #sidebar, .navbar { display: none !important; }
-    .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
-    .card { box-shadow: none !important; border: none !important; }
-    
-    /* تقليل المسافات لضمان بقاء المحتوى في صفحة واحدة */
-    .p-5 { padding: 1.5rem !important; }
-    .mb-5 { margin-bottom: 1.5rem !important; }
-    .table { margin-bottom: 1rem !important; }
-    
-    /* منع الانقسام داخل العناصر المهمة */
-    .alert { page-break-inside: avoid; break-inside: avoid; }
-    tr { page-break-inside: avoid; break-inside: avoid; }
+    .no-print, .btn, button, nav, header, #sidebar, .navbar, .glass-panel-card.p-4 {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    .main-content, .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    #printable-report {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
 }
 </style>
-{% endif %}
 {% endblock %}
