@@ -12,9 +12,16 @@ const SETTINGS_REGISTRY = {
         tabId: 'pills-general-tab',
         formTabId: 'tabGeneral',
         desc: 'إدارة الاسم الرسمي للمدرسة، بريد التواصل، هاتف الإدارة والعنوان الجغرافي وخيارات الأمان.',
-        status: 'مفعلة وموثقة',
+        status: '✔ مكتمل',
+        statusBadgeClass: 'bg-success-subtle text-success border-success-subtle',
         prev: 'SET-BAK-05',
-        next: 'SET-SYS-02'
+        next: 'SET-SYS-02',
+        related: [
+            { name: 'الاسم الرسمي للمدرسة', icon: 'fa-school', code: 'SET-GEN-01' },
+            { name: 'البريد الإلكتروني الرسمي', icon: 'fa-envelope', code: 'SET-GEN-01' },
+            { name: 'رقم هاتف التواصل', icon: 'fa-phone', code: 'SET-GEN-01' },
+            { name: 'العنوان والمنطقة', icon: 'fa-location-dot', code: 'SET-GEN-01' }
+        ]
     },
     'SET-SYS-02': {
         code: 'SET-SYS-02',
@@ -23,9 +30,15 @@ const SETTINGS_REGISTRY = {
         tabId: 'pills-system-tab',
         formTabId: 'tabSystem',
         desc: 'استعراض حالة الاتصال الحية بالـ Database ومحرك بيئة Python 3.12 / Flask 3.x.',
-        status: 'متصل حياً',
+        status: '✔ مكتمل',
+        statusBadgeClass: 'bg-info-subtle text-info border-info-subtle',
         prev: 'SET-GEN-01',
-        next: 'SET-SEC-03'
+        next: 'SET-SEC-03',
+        related: [
+            { name: 'نوع قاعدة البيانات MySQL', icon: 'fa-database', code: 'SET-SYS-02' },
+            { name: 'مكتبات Python 3.12 / Flask', icon: 'fa-code-branch', code: 'SET-SYS-02' },
+            { name: 'ربط الجداول والتزامن', icon: 'fa-link', code: 'SET-SYS-02' }
+        ]
     },
     'SET-SEC-03': {
         code: 'SET-SEC-03',
@@ -34,9 +47,15 @@ const SETTINGS_REGISTRY = {
         tabId: 'pills-general-tab',
         formTabId: 'tabGeneral',
         desc: 'خيارات تفعيل حظر المحاولات الخاطئة والتشفير الآمن بالجلسات والمعدات.',
-        status: 'نشط ومفعل',
+        status: '✔ مكتمل',
+        statusBadgeClass: 'bg-warning-subtle text-warning border-warning-subtle',
         prev: 'SET-SYS-02',
-        next: 'SET-NOT-04'
+        next: 'SET-NOT-04',
+        related: [
+            { name: 'حظر المحاولات الخاطئة (5 محاولات)', icon: 'fa-user-lock', code: 'SET-SEC-03' },
+            { name: 'تشفير مفاتيح HMAC JWT', icon: 'fa-key', code: 'SET-SEC-03' },
+            { name: 'جدار حماية الصلاحيات', icon: 'fa-shield-halved', code: 'SET-SEC-03' }
+        ]
     },
     'SET-NOT-04': {
         code: 'SET-NOT-04',
@@ -45,9 +64,14 @@ const SETTINGS_REGISTRY = {
         tabId: 'pills-notif-tab',
         formTabId: 'tabNotif',
         desc: 'ضبط خيارات إشعارات غياب وحضور الطلاب الإلكترونية الفورية.',
-        status: 'مفعلة',
+        status: '⚠️ يحتاج مراجعة',
+        statusBadgeClass: 'bg-warning-subtle text-warning border-warning-subtle',
         prev: 'SET-SEC-03',
-        next: 'SET-BAK-05'
+        next: 'SET-BAK-05',
+        related: [
+            { name: 'إشعارات البريد للتأخر والغياب', icon: 'fa-paper-plane', code: 'SET-NOT-04' },
+            { name: 'تنبيهات الشهادات والدرجات', icon: 'fa-graduation-cap', code: 'SET-NOT-04' }
+        ]
     },
     'SET-BAK-05': {
         code: 'SET-BAK-05',
@@ -56,9 +80,14 @@ const SETTINGS_REGISTRY = {
         tabId: 'pills-backup-tab',
         formTabId: 'tabBackup',
         desc: 'توليد وتحميل وتصدير نسخة احتياطية من قاعدة البيانات بصيغة SQL فورياً.',
-        status: 'جاهز 100%',
+        status: '✔ مكتمل',
+        statusBadgeClass: 'bg-success-subtle text-success border-success-subtle',
         prev: 'SET-NOT-04',
-        next: 'SET-GEN-01'
+        next: 'SET-GEN-01',
+        related: [
+            { name: 'تصدير الملفات بصيغة SQL', icon: 'fa-file-code', code: 'SET-BAK-05' },
+            { name: 'الاستعادة والجاهزية الفورية', icon: 'fa-rotate-left', code: 'SET-BAK-05' }
+        ]
     }
 };
 
@@ -115,7 +144,38 @@ function openSettingWorkspace(code) {
     if (heroName) heroName.textContent = setting.name;
     if (heroCategory) heroCategory.textContent = setting.category;
     if (heroDesc) heroDesc.textContent = setting.desc;
-    if (heroStatus) heroStatus.textContent = setting.status;
+    if (heroStatus) {
+        heroStatus.textContent = setting.status;
+        heroStatus.className = `extra-small font-monospace badge px-3 py-1 ${setting.statusBadgeClass}`;
+    }
+
+    // Populate Related Settings Grid
+    const relatedContainer = document.getElementById('wsRelatedSettingsContainer');
+    if (relatedContainer) {
+        relatedContainer.innerHTML = '';
+        if (setting.related && setting.related.length > 0) {
+            setting.related.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'col-6 col-md-3';
+                itemEl.innerHTML = `
+                    <div class="glass-panel-card p-3 rounded-4 border-0 bg-light text-center hover-lift position-relative" style="cursor: pointer;" onclick="openSettingWorkspace('${item.code}')">
+                        <div class="rounded-circle bg-white shadow-sm p-2 text-primary mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="fa-solid ${item.icon} fs-6"></i>
+                        </div>
+                        <strong class="d-block extra-small text-dark font-monospace mb-1">${item.name}</strong>
+                        <small class="text-muted extra-small font-monospace"><i class="fa-solid fa-link me-1"></i> إعداد فعال</small>
+                    </div>
+                `;
+                relatedContainer.appendChild(itemEl);
+            });
+        } else {
+            relatedContainer.innerHTML = `
+                <div class="col-12 text-center py-3 text-muted extra-small font-monospace">
+                    <i class="fa-solid fa-inbox opacity-25 fs-4 d-block mb-1"></i> لا توجد إعدادات فرعية مرتبطة
+                </div>
+            `;
+        }
+    }
 
     // Filter tab navigation pills so ONLY the tab corresponding to THIS specific setting is visible!
     const allTabNavs = document.querySelectorAll('#settingsTabs .nav-item');
@@ -135,7 +195,7 @@ function openSettingWorkspace(code) {
     workspaceView.scrollIntoView({ behavior: 'smooth' });
 
     if (typeof showToast === 'function') {
-        showToast(`تم فتح مساحة عمل ${setting.name}`, 'info');
+        showToast(`تم فتح بروفايل ${setting.name}`, 'info');
     }
 }
 
