@@ -22,7 +22,9 @@ def index():
 @reports_bp.route("/reports/analytics")
 @login_required
 def analytics():
-    return render_template("reports/analytics.html")
+    from services.reports import get_reports_dashboard_metrics
+    metrics = get_reports_dashboard_metrics()
+    return render_template("reports/analytics.html", metrics=metrics)
 
 @reports_bp.route("/reports/student")
 @login_required
