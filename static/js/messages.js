@@ -29,6 +29,10 @@ function initMessagesModule() {
     window.toggleMessageSelection = toggleMessageSelection;
     window.clearMessageBulkSelections = clearMessageBulkSelections;
     window.switchMessagesTab = switchMessagesTab;
+    window.viewMessageProfile = viewMessageProfile;
+    window.printMessageProfile = printMessageProfile;
+    window.exportMessageProfileExcel = exportMessageProfileExcel;
+    window.viewNotificationProfile = viewNotificationProfile;
 
     setupMessagesEventListeners();
     loadConversations();
@@ -226,8 +230,11 @@ function renderMessagesDataGrid(list) {
             </td>
             <td>
                 <div class="d-flex justify-content-center gap-1">
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold font-monospace extra-small text-primary" onclick="selectConversation(${item.user_id}, '${escapeJsString(item.name)}', '${escapeJsString(item.role)}')">
-                        <i class="fa-solid fa-comments me-1"></i> فتح المحادثة
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 fw-bold font-monospace extra-small text-dark" title="عرض الملف الشخصي للرسالة والمحادثات" onclick="viewMessageProfile(${item.user_id}, '${escapeJsString(item.name)}', '${escapeJsString(item.role)}')">
+                        <i class="fa-solid fa-eye text-primary me-1"></i> عرض
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 fw-bold font-monospace extra-small text-primary" title="المحادثة الحية" onclick="selectConversation(${item.user_id}, '${escapeJsString(item.name)}', '${escapeJsString(item.role)}')">
+                        <i class="fa-solid fa-comments me-1"></i> محادثة
                     </button>
                 </div>
             </td>
@@ -533,4 +540,135 @@ function escapeHtml(str) {
 function escapeJsString(str) {
     if (!str) return '';
     return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+/* ==========================================================================
+   10-SECTION MESSAGE & NOTIFICATION PROFILE CONTROLLER
+   ========================================================================== */
+
+function viewMessageProfile(userId, name, role) {
+    const modalEl = document.getElementById('viewMessageProfileModal');
+    if (!modalEl) return;
+
+    const codeBadge   = document.getElementById('msgp-code-badge');
+    const heroTitle   = document.getElementById('msgp-hero-title');
+    const heroSub     = document.getElementById('msgp-hero-subtitle');
+    const recipientEl = document.getElementById('msgp-info-recipient');
+    const roleBadge   = document.getElementById('msgp-role-badge');
+    const targetAvatar= document.getElementById('msgp-target-avatar');
+
+    if (codeBadge)   codeBadge.textContent = `MSG-${userId}`;
+    if (heroTitle)   heroTitle.textContent = `الملف الشخصي للمحادثة والرسائل | ${name}`;
+    if (heroSub)     heroSub.textContent = `طرف التواصل: ${name} (${role}) | المعرف الرقمي: USER-${userId}`;
+    if (recipientEl) recipientEl.textContent = `${name} (${role})`;
+    if (roleBadge)   roleBadge.textContent = role;
+    if (targetAvatar) targetAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff`;
+
+    const threadBox = document.getElementById('msgp-thread-container');
+    if (threadBox) {
+        threadBox.innerHTML = '<div class="text-center py-4 font-monospace"><div class="spinner-border text-primary" role="status"></div><div class="small text-muted mt-2">جاري جلب تفاصيل المحادثة...</div></div>';
+    }
+
+    fetch(`/messages/api/thread/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const msgs = data.messages || [];
+
+                const kpiCount  = document.getElementById('msgp-kpi-count');
+                const kpiStatus = document.getElementById('msgp-kpi-status');
+                const kpiLast   = document.getElementById('msgp-kpi-last-active');
+
+                if (kpiCount)  kpiCount.textContent  = msgs.length;
+                if (kpiStatus) kpiStatus.textContent = msgs.length > 0 ? 'نشطة ومطلّع عليها' : 'محادثة جديدة';
+                if (kpiLast)   kpiLast.textContent   = msgs.length > 0 ? msgs[msgs.length - 1].time : '—';
+
+                const infoContent = document.getElementById('msgp-info-content');
+                const infoTime    = document.getElementById('msgp-info-time');
+
+                if (infoContent) {
+                    infoContent.textContent = msgs.length > 0 
+                        ? msgs[msgs.length - 1].content 
+                        : 'لا توجد رسائل سابقة مسجلة في هذا التكليف الدراسي.';
+                }
+                if (infoTime) {
+                    infoTime.textContent = msgs.length > 0 ? msgs[msgs.length - 1].time : '—';
+                }
+
+                if (threadBox) {
+                    threadBox.innerHTML = '';
+                    if (msgs.length === 0) {
+                        threadBox.innerHTML = `
+                            <div class="text-center py-4 text-muted font-monospace p-3">
+                                <i class="fa-solid fa-comments opacity-25 fs-1 d-block mb-2"></i>
+                                <span>لا توجد رسائل سابقة في السلسلة. يمكنك الرد والمراسلة الآن.</span>
+                            </div>`;
+                    } else {
+                        msgs.forEach(m => {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = `p-3 rounded-4 mb-2 border ${m.is_mine ? 'bg-primary-subtle border-primary-subtle text-primary ms-4' : 'bg-white border-light text-dark me-4'}`;
+                            msgDiv.innerHTML = `
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <strong class="font-monospace small">${m.is_mine ? 'أنت (المرسل)' : escapeHtml(name)}</strong>
+                                    <small class="text-muted extra-small">${m.time}</small>
+                                </div>
+                                <p class="mb-0 font-monospace small">${escapeHtml(m.content)}</p>
+                            `;
+                            threadBox.appendChild(msgDiv);
+                        });
+                    }
+                }
+
+                const timelineContainer = document.getElementById('msgp-timeline-box');
+                if (timelineContainer) {
+                    const lastTime = msgs.length > 0 ? msgs[msgs.length - 1].time : 'اليوم';
+                    timelineContainer.innerHTML = `
+                        <div class="d-flex gap-3 align-items-start mb-3">
+                            <div class="p-2 rounded-circle bg-success text-white"><i class="fa-solid fa-check"></i></div>
+                            <div>
+                                <strong class="d-block text-dark small">تم فتح وإنشاء السلسلة المحادثات</strong>
+                                <small class="text-muted extra-small">المستخدم المخاطب: ${escapeHtml(name)} (${escapeHtml(role)})</small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="p-2 rounded-circle bg-primary text-white"><i class="fa-solid fa-clock"></i></div>
+                            <div>
+                                <strong class="d-block text-dark small">آخر نشاط وتحديث للرسائل</strong>
+                                <small class="text-muted extra-small">الوقت: ${lastTime}</small>
+                            </div>
+                        </div>`;
+                }
+            }
+        });
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function printMessageProfile() {
+    window.print();
+}
+
+function exportMessageProfileExcel() {
+    exportMessagesExcel();
+}
+
+function viewNotificationProfile(id, title, category, time, read) {
+    const modalEl = document.getElementById('viewNotificationProfileModal');
+    if (!modalEl) return;
+
+    const badgeEl    = document.getElementById('notifp-code-badge');
+    const titleEl    = document.getElementById('notifp-title');
+    const categoryEl = document.getElementById('notifp-category');
+    const timeEl     = document.getElementById('notifp-time');
+    const statusEl   = document.getElementById('notifp-status');
+
+    if (badgeEl)    badgeEl.textContent    = `NOTIF-${id}`;
+    if (titleEl)    titleEl.textContent    = title || 'تفاصيل الإشعار الأكاديمي';
+    if (categoryEl) categoryEl.textContent = category || 'عام';
+    if (timeEl)     timeEl.textContent     = time || 'الآن';
+    if (statusEl)   statusEl.textContent   = read ? 'تم الاطلاع والاعتماد' : 'إشعار جديد غير مقروء';
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
 }
