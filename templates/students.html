@@ -29,10 +29,10 @@
 
             <!-- Header Action Buttons -->
             <div class="d-flex align-items-center gap-2 flex-wrap no-print">
-                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="scrollToPerformanceSummary()">
                     <i class="fa-solid fa-chart-line fs-6"></i> <span>كشف الأداء</span>
                 </button>
-                <button type="button" class="btn btn-purple rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white" style="background:#7c3aed;">
+                <button type="button" class="btn btn-purple rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white hover-lift" style="background:#7c3aed;" onclick="scrollToStudentsGrid()">
                     <i class="fa-solid fa-list-check fs-6"></i> <span>كشف الطلاب</span>
                 </button>
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
@@ -309,7 +309,7 @@
         <!-- Left Column (in RTL): Sidebar Analytics (30% width) -->
         <div class="col-12 col-xl-4">
             <!-- 1. Overall Performance Summary Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="ملخص الأداء العام">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" id="overallPerformanceCard" role="region" aria-label="ملخص الأداء العام">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> ملخص الأداء العام</h6>
                     <span class="badge bg-light text-muted border font-monospace extra-small">هذا الشهر</span>
@@ -402,11 +402,28 @@
 </div>
 
 <script>
+function scrollToPerformanceSummary() {
+    const el = document.getElementById('overallPerformanceCard');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('shadow-lg', 'border-primary');
+        setTimeout(() => el.classList.remove('shadow-lg', 'border-primary'), 2000);
+    }
+}
+
+function scrollToStudentsGrid() {
+    const el = document.getElementById('studentsCardsGrid');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
 function filterStudentsGrid() {
-    const query = (document.getElementById('studentSearchInput')?.value || '').toLowerCase();
-    const classVal = (document.getElementById('filterClass')?.value || '').toLowerCase();
+    const query = (document.getElementById('studentSearchInput')?.value || '').trim().toLowerCase();
+    const classVal = (document.getElementById('filterClass')?.value || '').trim().toLowerCase();
     const items = document.querySelectorAll('.student-card-item');
     
+    let visibleCount = 0;
     items.forEach(item => {
         const name = (item.getAttribute('data-name') || '').toLowerCase();
         const code = (item.getAttribute('data-code') || '').toLowerCase();
@@ -417,6 +434,7 @@ function filterStudentsGrid() {
         
         if (matchesQuery && matchesClass) {
             item.style.display = '';
+            visibleCount++;
         } else {
             item.style.display = 'none';
         }
@@ -424,9 +442,52 @@ function filterStudentsGrid() {
 }
 
 function resetStudentsFilters() {
-    if (document.getElementById('studentSearchInput')) document.getElementById('studentSearchInput').value = '';
-    if (document.getElementById('filterClass')) document.getElementById('filterClass').value = '';
+    const searchEl = document.getElementById('studentSearchInput');
+    const classEl = document.getElementById('filterClass');
+    const termEl = document.getElementById('filterTerm');
+    const yearEl = document.getElementById('filterYear');
+    
+    if (searchEl) searchEl.value = '';
+    if (classEl) classEl.selectedIndex = 0;
+    if (termEl) termEl.selectedIndex = 0;
+    if (yearEl) yearEl.selectedIndex = 0;
+    
     filterStudentsGrid();
+    
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'تم إعادة ضبط جميع الفلاتر بنجاح',
+            showConfirmButton: false,
+            timer: 1500
+        });
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCards = document.getElementById('btnViewCards');
+    const btnList = document.getElementById('btnViewList');
+    const grid = document.getElementById('studentsCardsGrid');
+    
+    if (btnCards && btnList && grid) {
+        btnCards.addEventListener('click', function() {
+            grid.classList.remove('row-cols-1');
+            btnCards.classList.remove('btn-light', 'text-muted');
+            btnCards.classList.add('btn-primary');
+            btnList.classList.remove('btn-primary');
+            btnList.classList.add('btn-light', 'text-muted');
+        });
+        
+        btnList.addEventListener('click', function() {
+            grid.classList.add('row-cols-1');
+            btnList.classList.remove('btn-light', 'text-muted');
+            btnList.classList.add('btn-primary');
+            btnCards.classList.remove('btn-primary');
+            btnCards.classList.add('btn-light', 'text-muted');
+        });
+    }
+});
 </script>
 {% endblock %}
