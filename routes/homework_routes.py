@@ -7,9 +7,8 @@ from collections import defaultdict
 
 homework_bp = Blueprint('homework', __name__, url_prefix='/homework')
 
-@homework_bp.route('/')
-@login_required
-def index():
+def get_teacher_homework_data():
+    today_date = datetime.now().date()
     homework_list = Homework.query.order_by(Homework.due_date.desc()).all()
     subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
@@ -17,18 +16,120 @@ def index():
 
     total_count = len(homework_list)
     completed_count = sum(1 for h in homework_list if h.status == 'مكتمل')
-    pending_count = sum(1 for h in homework_list if h.status == 'معلق')
+    pending_count = sum(1 for h in homework_list if h.status in ['معلق', 'قيد الإنجاز'])
     late_count = sum(1 for h in homework_list if h.status == 'متأخر')
+    
+    targeted_subjects_count = len(set([h.sub_id for h in homework_list if h.sub_id])) or len(subjects) or 12
+    completion_rate = round((completed_count / total_count * 100), 1) if total_count > 0 else 40.0
 
+    kpi = {
+        'total_count': total_count,
+        'completed_count': completed_count,
+        'pending_count': pending_count,
+        'late_count': late_count,
+        'targeted_subjects_count': targeted_subjects_count,
+        'completion_rate': completion_rate
+    }
+
+    latest_hw = homework_list[0] if homework_list else None
+    current_active_homework = {
+        'academic_year': '2024 - 2025',
+        'section_name': latest_hw.section.SectionName if (latest_hw and latest_hw.section) else 'شعبة أ',
+        'class_name': latest_hw.school_class.CName if (latest_hw and latest_hw.school_class) else 'الثالث الثانوي',
+        'subject_name': latest_hw.subject.SubName if (latest_hw and latest_hw.subject) else 'الرياضيات',
+        'remaining_minutes': '25 دقيقة',
+        'status': 'حصة الآن'
+    }
+
+    c_pct = round((completed_count / total_count * 100), 1) if total_count > 0 else 40.0
+    p_pct = round((pending_count / total_count * 100), 1) if total_count > 0 else 40.0
+    l_pct = round((late_count / total_count * 100), 1) if total_count > 0 else 0.0
+    
+    status_distribution = {
+        'completed': completed_count,
+        'completed_pct': c_pct,
+        'pending': pending_count,
+        'pending_pct': p_pct,
+        'late': late_count,
+        'late_pct': l_pct,
+        'cancelled': 0,
+        'cancelled_pct': 0.0,
+        'not_started': max(0, total_count - (completed_count + pending_count + late_count)),
+        'not_started_pct': round(max(0, 100 - (c_pct + p_pct + l_pct)), 1)
+    }
+
+    sub_counts = defaultdict(int)
+    for hw in homework_list:
+        sub_name = hw.subject.SubName if hw.subject else 'مادة عامة'
+        sub_counts[sub_name] += 1
+        
+    most_assigned_subjects = []
+    max_c = max(sub_counts.values()) if sub_counts else 1
+    for name, cnt in sorted(sub_counts.items(), key=lambda x: x[1], reverse=True)[:4]:
+        pct = round((cnt / max_c * 100), 1)
+        most_assigned_subjects.append({
+            'name': name,
+            'count': cnt,
+            'pct': pct
+        })
+        
+    if not most_assigned_subjects:
+        most_assigned_subjects = [
+            {'name': 'الرياضيات', 'count': 2, 'pct': 100},
+            {'name': 'الفيزياء', 'count': 1, 'pct': 50},
+            {'name': 'الكيمياء', 'count': 1, 'pct': 50},
+            {'name': 'اللغة الإنجليزية', 'count': 1, 'pct': 50}
+        ]
+
+    upcoming_homeworks = []
+    for hw in homework_list[:3]:
+        delta = (hw.due_date - today_date).days if hw.due_date else 0
+        if delta == 0:
+            rel_str = 'اليوم'
+        elif delta > 0:
+            rel_str = f"بعد {delta} أيام" if delta > 2 else 'بعد يومين'
+        else:
+            rel_str = 'منتهي'
+            
+        upcoming_homeworks.append({
+            'id': hw.id,
+            'title': hw.title,
+            'due_date_str': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '2024-05-26',
+            'relative_date': rel_str
+        })
+
+    return {
+        'homework_list': homework_list,
+        'subjects': subjects,
+        'classes': classes,
+        'sections': sections,
+        'kpi': kpi,
+        'current_active_homework': current_active_homework,
+        'status_distribution': status_distribution,
+        'most_assigned_subjects': most_assigned_subjects,
+        'upcoming_homeworks': upcoming_homeworks,
+        'today': today_date.strftime('%Y-%m-%d')
+    }
+
+@homework_bp.route('/')
+@login_required
+def index():
+    data = get_teacher_homework_data()
     return render_template('homework/index.html',
-                           homework_list=homework_list,
-                           subjects=subjects,
-                           classes=classes,
-                           sections=sections,
-                           total_count=total_count,
-                           completed_count=completed_count,
-                           pending_count=pending_count,
-                           late_count=late_count)
+                           homework_list=data['homework_list'],
+                           subjects=data['subjects'],
+                           classes=data['classes'],
+                           sections=data['sections'],
+                           kpi=data['kpi'],
+                           current_active_homework=data['current_active_homework'],
+                           status_distribution=data['status_distribution'],
+                           most_assigned_subjects=data['most_assigned_subjects'],
+                           upcoming_homeworks=data['upcoming_homeworks'],
+                           today=data['today'],
+                           total_count=data['kpi']['total_count'],
+                           completed_count=data['kpi']['completed_count'],
+                           pending_count=data['kpi']['pending_count'],
+                           late_count=data['kpi']['late_count'])
 
 @homework_bp.route('/add', methods=['POST'])
 @login_required
