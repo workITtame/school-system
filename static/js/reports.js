@@ -2,6 +2,8 @@
    ENTERPRISE SAAS REPORTS CENTER CONTROLLER (static/js/reports.js)
    ========================================================================== */
 
+let reportProfileChart = null;
+
 document.addEventListener('turbo:load', function() {
     initReportsModule();
 });
@@ -19,6 +21,7 @@ function initReportsModule() {
     window.exportReportsMasterExcel = exportReportsMasterExcel;
     window.filterReportsCatalog = filterReportsCatalog;
     window.resetReportsFilters = resetReportsFilters;
+    window.viewReportProfile = viewReportProfile;
 
     setupReportsEventListeners();
 }
@@ -121,6 +124,84 @@ function resetReportsFilters() {
 
     filterReportsCatalog();
     showToast('تمت إعادة ضبط الفلاتر بنجاح', 'info');
+}
+
+function viewReportProfile(code, name, category, routePath, desc, tablesStr, modulesStr) {
+    const modalEl = document.getElementById('viewReportProfileModal');
+    if (!modalEl) return;
+
+    // 1. Hero Header & Basic Info
+    const codeBadge = document.getElementById('repProfileHeroCode');
+    const titleEl = document.getElementById('repProfileHeroTitle');
+    const nameEl = document.getElementById('repProfileName');
+    const categoryEl = document.getElementById('repProfileCategory');
+    const descEl = document.getElementById('repProfileDesc');
+    const routeEl = document.getElementById('repProfileRoutePath');
+    const runBtn = document.getElementById('repProfileRunBtn');
+
+    if (codeBadge) codeBadge.textContent = code || 'REP-01';
+    if (titleEl) titleEl.textContent = name || 'تفاصيل التقرير الأكاديمي';
+    if (nameEl) nameEl.textContent = name || 'تقرير النظام';
+    if (categoryEl) categoryEl.textContent = category || 'عام';
+    if (descEl) descEl.textContent = desc || 'تقرير أكاديمي ديناميكي يعتمد بالكامل على قاعدة البيانات الحالية للنظام.';
+    if (routeEl) routeEl.textContent = routePath || '/reports';
+
+    if (runBtn && routePath) {
+        runBtn.href = routePath;
+    }
+
+    // 2. Related DB Tables
+    const tablesContainer = document.getElementById('repProfileTables');
+    if (tablesContainer) {
+        tablesContainer.innerHTML = '';
+        let tablesList = tablesStr ? tablesStr.split(',') : ['Student', 'Classes', 'Marks'];
+        tablesList.forEach(tbl => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small px-3 py-1 me-1 mb-1';
+            badge.innerHTML = `<i class="fa-solid fa-database me-1"></i> ${escapeHtml(tbl.trim())}`;
+            tablesContainer.appendChild(badge);
+        });
+    }
+
+    // 3. Related Modules
+    const modulesContainer = document.getElementById('repProfileModules');
+    if (modulesContainer) {
+        modulesContainer.innerHTML = '';
+        let modulesList = modulesStr ? modulesStr.split(',') : ['الطلاب', 'الصفوف'];
+        modulesList.forEach(mod => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-info-subtle text-info border border-info-subtle rounded-pill font-monospace extra-small px-3 py-1 me-1 mb-1';
+            badge.innerHTML = `<i class="fa-solid fa-cubes me-1"></i> ${escapeHtml(mod.trim())}`;
+            modulesContainer.appendChild(badge);
+        });
+    }
+
+    // 4. Analytics Chart.js rendering
+    const canvas = document.getElementById('repProfileAnalyticsChart');
+    if (canvas && typeof Chart !== 'undefined') {
+        if (reportProfileChart) reportProfileChart.destroy();
+        reportProfileChart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['السجلات المتاحة', 'معدل الاكتمال %', 'نسبة الجاهزية %'],
+                datasets: [{
+                    label: 'مؤشر أداء التقرير',
+                    data: [100, 95, 100],
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
 }
 
 function exportReportsMasterExcel() {

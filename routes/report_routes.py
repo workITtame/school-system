@@ -14,7 +14,10 @@ reports_bp = Blueprint('reports', __name__)
 @reports_bp.route("/reports")
 @login_required
 def index():
-    return render_template("reports/index.html")
+    from services.reports import get_reports_dashboard_metrics, get_reports_registry
+    metrics = get_reports_dashboard_metrics()
+    reports = get_reports_registry()
+    return render_template("reports/index.html", metrics=metrics, reports=reports)
 
 @reports_bp.route("/reports/analytics")
 @login_required
