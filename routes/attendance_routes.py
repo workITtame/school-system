@@ -150,7 +150,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     # Dynamic Most Absent
     most_absent = []
     for st in students:
-        st_abs_cnt = db.session.query(db.func.count(Attendance.id)).filter(Attendance.SID == st.SID, Attendance.Status.in_(['Absent', 'غائب'])).scalar() or 0
+        st_abs_cnt = db.session.query(db.func.count(Attendance.AttendanceID)).filter(Attendance.SID == st.SID, Attendance.Status.in_(['Absent', 'غائب'])).scalar() or 0
         if st_abs_cnt > 0 or att_dict.get(st.SID) in ['Absent', 'غائب']:
             effective_cnt = max(st_abs_cnt, 1 if att_dict.get(st.SID) in ['Absent', 'غائب'] else 0)
             most_absent.append({
@@ -164,7 +164,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     alerts = []
     if student_ids:
         absent_counts = db.session.query(
-            Attendance.SID, db.func.count(Attendance.id)
+            Attendance.SID, db.func.count(Attendance.AttendanceID)
         ).filter(
             Attendance.SID.in_(student_ids),
             Attendance.Status.in_(['Absent', 'غائب'])
@@ -183,7 +183,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
                 break
 
         late_counts = db.session.query(
-            Attendance.SID, db.func.count(Attendance.id)
+            Attendance.SID, db.func.count(Attendance.AttendanceID)
         ).filter(
             Attendance.SID.in_(student_ids),
             Attendance.Status.in_(['Late', 'متأخر', 'تأخر'])
