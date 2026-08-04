@@ -401,11 +401,25 @@
             <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-warning rounded-pill px-3 py-2 font-monospace extra-small fw-bold">
                 <i class="fa-solid fa-book-open text-warning me-1"></i> المواد الدراسية
             </a>
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 font-monospace extra-small fw-bold" onclick="Swal.fire('إعدادات الملف الشخصي', 'اسم المعلم: {{ teacher_info.TeacherName or user_name }}<br>المسمى الوظيفي: {{ teacher_info.TeacherTitle or \'معلم أكاديمي\' }}', 'info')">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 font-monospace extra-small fw-bold" onclick="showTeacherProfileModal()">
                 <i class="fa-solid fa-gear text-secondary me-1"></i> إعدادات الملف الشخصي
             </button>
         </div>
     </div>
 
 </div>
+
+<script>
+function showTeacherProfileModal() {
+    const tName = {{ (teacher_info.TeacherName or user_name or 'المعلم الأكاديمي')|tojson }};
+    const tTitle = {{ (teacher_info.TeacherTitle or 'معلم أكاديمي')|tojson }};
+    Swal.fire({
+        title: 'إعدادات الملف الشخصي',
+        html: `<strong>اسم المعلم:</strong> ${tName}<br><strong>المسمى الوظيفي:</strong> ${tTitle}`,
+        icon: 'info',
+        confirmButtonText: 'حسناً',
+        customClass: { confirmButton: 'btn btn-primary rounded-pill px-4' }
+    });
+}
+</script>
 {% endblock %}
