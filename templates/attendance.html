@@ -368,7 +368,7 @@
                     <a href="{{ url_for('students.home') }}" class="text-decoration-none font-monospace extra-small fw-bold text-primary">عرض الكل</a>
                 </div>
 
-                <div class="font-monospace extra-small">
+                <div class="font-monospace extra-small" id="mostAbsentContainer">
                     {% if most_absent and most_absent|length > 0 %}
                         {% for st in most_absent %}
                             <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-3 bg-light border">
@@ -435,6 +435,95 @@ function resetAttendanceFilters() {
     window.location.href = "{{ url_for('attendance.index') }}";
 }
 
+function updateLiveAttendanceAnalytics() {
+    const cards = document.querySelectorAll('.student-att-card-item');
+    const total = cards.length || 1;
+    
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let excused = 0;
+    
+    const absentStudentsMap = {};
+    
+    cards.forEach(card => {
+        const activeBtn = card.querySelector('.btn-att-state.active');
+        const sName = card.getAttribute('data-name') || 'طالب';
+        if (activeBtn) {
+            const title = activeBtn.getAttribute('title') || activeBtn.textContent.trim();
+            if (title.includes('حاضر')) {
+                present++;
+            } else if (title.includes('غائب')) {
+                absent++;
+                absentStudentsMap[sName] = (absentStudentsMap[sName] || 0) + 1;
+            } else if (title.includes('متأخر')) {
+                late++;
+            } else if (title.includes('مستأذن')) {
+                excused++;
+            }
+        }
+    });
+    
+    const attRate = total > 0 ? ((present + late + excused) / total * 100).toFixed(1) : '0.0';
+    const absRate = total > 0 ? (absent / total * 100).toFixed(1) : '0.0';
+    const lateRate = total > 0 ? (late / total * 100).toFixed(1) : '0.0';
+    const excRate = total > 0 ? (excused / total * 100).toFixed(1) : '0.0';
+    const discScore = total > 0 ? (((present * 1.0) + (late * 0.8) + (excused * 0.9)) / total * 100).toFixed(1) : '0.0';
+    
+    // Update Top KPIs
+    const elPres = document.getElementById('kpiPresent');
+    const elAbs = document.getElementById('kpiAbsent');
+    const elLate = document.getElementById('kpiLate');
+    const elExc = document.getElementById('kpiExcused');
+    const elAttR = document.getElementById('kpiAttRate');
+    const elAbsR = document.getElementById('kpiAbsRate');
+    const elDisc = document.getElementById('kpiDiscipline');
+    
+    if (elPres) elPres.textContent = present;
+    if (elAbs) elAbs.textContent = absent;
+    if (elLate) elLate.textContent = late;
+    if (elExc) elExc.textContent = excused;
+    if (elAttR) elAttR.textContent = `${attRate}%`;
+    if (elAbsR) elAbsR.textContent = `${absRate}%`;
+    if (elDisc) elDisc.textContent = `${discScore}%`;
+    
+    // Update Sidebar Widget "توزيع الحضور في الحصة"
+    const sidePres = document.getElementById('sidePresent');
+    const sideAbs = document.getElementById('sideAbsent');
+    const sideLate = document.getElementById('sideLate');
+    const sideExc = document.getElementById('sideExcused');
+    
+    if (sidePres) sidePres.textContent = `${present} (${attRate}%)`;
+    if (sideAbs) sideAbs.textContent = `${absent} (${absRate}%)`;
+    if (sideLate) sideLate.textContent = `${late} (${lateRate}%)`;
+    if (sideExc) sideExc.textContent = `${excused} (${excRate}%)`;
+    
+    // Update Sidebar Widget "أكثر الطلاب غياباً"
+    const mostAbsentContainer = document.getElementById('mostAbsentContainer');
+    if (mostAbsentContainer) {
+        const sortedAbsent = Object.entries(absentStudentsMap).sort((a, b) => b[1] - a[1]);
+        if (sortedAbsent.length > 0) {
+            let html = '';
+            sortedAbsent.slice(0, 3).forEach(([name, count], index) => {
+                html += `
+                    <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-3 bg-light border">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold me-1 text-danger">${index + 1}</span>
+                            <strong class="text-dark">${name}</strong>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 font-monospace">
+                            ${count} أيام
+                        </span>
+                    </div>
+                `;
+            });
+            mostAbsentContainer.innerHTML = html;
+        } else {
+            mostAbsentContainer.innerHTML = '<div class="py-3 text-center text-muted">لا يوجد طلاب غائبون حالياً في هذا الكشف.</div>';
+        }
+    }
+}
+
 function markStudentAttendance(sid, status, btnElement) {
     const dt = document.getElementById('filterDate')?.value || "{{ today }}";
     
@@ -451,6 +540,9 @@ function markStudentAttendance(sid, status, btnElement) {
         else if (status === 'غائب') btnElement.classList.add('bg-danger', 'text-white');
         else if (status === 'مستأذن') btnElement.classList.add('bg-info', 'text-white');
     }
+    
+    // Recalculate Live Analytics Immediately
+    updateLiveAttendanceAnalytics();
     
     // AJAX POST
     fetch("{{ url_for('attendance.mark_attendance') }}", {
@@ -484,6 +576,8 @@ function markAllAttendance(status) {
         }
     });
     
+    updateLiveAttendanceAnalytics();
+    
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             toast: true,
@@ -502,6 +596,11 @@ function resetAllMarks() {
         const btns = item.querySelectorAll('.btn-att-state');
         btns.forEach(b => b.classList.remove('active', 'bg-success', 'bg-warning', 'bg-danger', 'bg-info', 'text-white', 'text-dark'));
     });
+    updateLiveAttendanceAnalytics();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateLiveAttendanceAnalytics();
+});
 </script>
 {% endblock %}
