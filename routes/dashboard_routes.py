@@ -21,12 +21,31 @@ def get_teacher_dashboard_data(user_id):
     today_day_name = arabic_days[today.weekday()]
 
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=user_id).first()
+    
+    teacher_name = teacher.TeacherName if teacher else 'معلم أكاديمي'
+    teacher_title = teacher.TeacherTitle if (teacher and teacher.TeacherTitle) else 'معلم أكاديمي'
+    teacher_status = teacher.Status if (teacher and teacher.Status) else 'نشط'
+    subjects_list = [s.SubName for s in teacher.subjects] if (teacher and teacher.subjects) else []
+    subjects_str = " | ".join(subjects_list) if subjects_list else 'المواد الدراسية'
+    
+    words = teacher_name.split() if teacher_name else []
+    initials = ". ".join([w[0] for w in words[:2]]) if len(words) >= 2 else (words[0][:2] if words else 'م.أ')
+    
+    teacher_info = {
+        'TeacherName': teacher_name,
+        'TeacherTitle': teacher_title,
+        'Status': teacher_status,
+        'subjects_str': subjects_str,
+        'initials': initials
+    }
+
     if not teacher:
         return {
             'students': 0,
             'classes': 0,
             'active_homework': 0,
             'unread_messages': 0,
+            'upcoming_exams': 0,
             'current_lesson': {},
             'next_lesson': {},
             'today_events': [],
@@ -34,7 +53,8 @@ def get_teacher_dashboard_data(user_id):
             'recent_messages': [],
             'notifications': [],
             'attendance_chart': {'labels': arabic_days, 'data': [0]*7},
-            'performance': {'avg_score': 0, 'passed_count': 0, 'passed_rate': 0, 'failed_count': 0, 'failed_rate': 0, 'excellent_count': 0, 'excellent_rate': 0}
+            'performance': {'avg_score': 0, 'passed_count': 0, 'passed_rate': 0, 'failed_count': 0, 'failed_rate': 0, 'excellent_count': 0, 'excellent_rate': 0},
+            'teacher_info': teacher_info
         }
 
     # 1. Teacher Timetable Slots with Joined Loads (No N+1)
@@ -238,11 +258,21 @@ def get_teacher_dashboard_data(user_id):
     else:
         perf = {'avg_score': 0, 'passed_count': 0, 'passed_rate': 0, 'failed_count': 0, 'failed_rate': 0, 'excellent_count': 0, 'excellent_rate': 0}
 
+    # 9. Upcoming Exams for Teacher's Subjects
+    upcoming_exams_count = 0
+    if teacher_subject_ids:
+        upcoming_exams_count = ExamSchedule.query.filter(
+            ExamSchedule.SubID.in_(teacher_subject_ids),
+            ExamSchedule.ExamDate >= today,
+            ExamSchedule.is_deleted == False
+        ).count()
+
     return {
         'students': total_students,
         'classes': today_lessons_count,
         'active_homework': active_homework_count,
         'unread_messages': unread_messages_count,
+        'upcoming_exams': upcoming_exams_count,
         'current_lesson': current_lesson,
         'next_lesson': next_lesson,
         'today_events': today_events,
@@ -250,7 +280,8 @@ def get_teacher_dashboard_data(user_id):
         'recent_messages': recent_messages_list,
         'notifications': notifications,
         'attendance_chart': attendance_chart,
-        'performance': perf
+        'performance': perf,
+        'teacher_info': teacher_info
     }
 
 
@@ -655,6 +686,8 @@ def index():
                                total_classes=t_data['classes'],
                                active_homework_count=t_data['active_homework'],
                                unread_messages_count=t_data['unread_messages'],
+                               upcoming_exams=t_data.get('upcoming_exams', 0),
+                               teacher_info=t_data.get('teacher_info', {}),
                                current_lesson=t_data['current_lesson'],
                                next_lesson=t_data['next_lesson'],
                                today_events=t_data['today_events'],

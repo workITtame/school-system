@@ -1,343 +1,411 @@
 {% extends 'layout.html' %}
 
-{% block title %}مساحة عمل المعلم الإدارية والأكاديمية | Enterprise Teacher Workspace{% endblock %}
+{% block title %}مساحة عمل المعلم التنفيذية | Enterprise Teacher Workspace{% endblock %}
 
 {% block content %}
-<!-- Chart.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <div class="fade-in font-cairo position-relative pb-5 mb-5" id="teacherWorkspaceRoot">
 
-    <!-- HERO HEADER -->
+    <!-- ========================================== -->
+    <!-- SECTION 1: ENTERPRISE TEACHER HERO HEADER  -->
+    <!-- ========================================== -->
     <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
-         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
-        <!-- Background Icon positioned at right (start-0 in RTL) with 5% opacity so it NEVER overlaps action buttons -->
-        <div class="position-absolute start-0 top-0 opacity-05 ps-4 pt-2 pointer-events-none" style="z-index: 1;" aria-hidden="true">
-            <i class="fa-solid fa-chalkboard-user" style="font-size: 9rem; color: #ffffff;"></i>
-        </div>
+         style="background: linear-gradient(135deg, #1e1b4b 0%, #1e40af 50%, #2563eb 100%); color: #ffffff;">
         
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 10;">
-            <div>
-                <nav aria-label="breadcrumb" class="mb-2">
-                    <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
-                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">مساحة عمل المعلم</li>
-                    </ol>
-                </nav>
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <h2 class="fw-bold text-white mb-0 font-monospace" id="teacherGreetingTitle">
-                        مرحباً بك أستاذ(ة)، {{ user_name or session.user_name or 'المعلم الأكاديمي' }} 👋
-                    </h2>
-                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Enterprise Teacher Workspace</span>
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <!-- Right Column (In RTL): Teacher Profile Greeting & Info -->
+            <div class="col-12 col-lg-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Teacher Avatar Circle with Initials -->
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 82px; height: 82px; border: 3px solid rgba(255,255,255,0.4);">
+                        {{ teacher_info.initials or 'م.أ' }}
+                    </div>
+
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h3 class="fw-extrabold text-white mb-0 font-monospace">
+                                مرحباً بك أ. {{ teacher_info.TeacherName or user_name or 'المعلم الأكاديمي' }} 👋
+                            </h3>
+                        </div>
+                        <h6 class="text-white-50 font-monospace mb-2 extra-small">
+                            <i class="fa-solid fa-graduation-cap text-warning me-1"></i> {{ teacher_info.TeacherTitle or 'معلم أكاديمي' }} | <span class="text-white">{{ teacher_info.subjects_str or 'المواد الدراسية' }}</span>
+                        </h6>
+                        <p class="text-white-50 mb-3 extra-small font-monospace">
+                            متابعة يومك الدراسي والأنشطة الأكاديمية ورصد الحضور والتكليفات فورياً.
+                        </p>
+
+                        <!-- Footer Badges -->
+                        <div class="d-flex align-items-center gap-3 flex-wrap extra-small font-monospace">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 border border-white-25">
+                                <i class="fa-regular fa-calendar-check me-1 text-warning"></i> {{ today_date if today_date is defined else 'اليوم الحالي' }}
+                            </span>
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 border border-white-25">
+                                <i class="fa-regular fa-clock me-1 text-info"></i> الجلسة: نشطة
+                            </span>
+                            <span class="badge bg-success text-white rounded-pill px-3 py-1 shadow-sm">
+                                <i class="fa-solid fa-circle me-1" style="font-size:0.55rem;"></i> الحالة: {{ teacher_info.Status or 'نشط' }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
-                    كادر تعليمي معتمد | مركز متابعة الحصص الدراسية اليومية، رصد الحضور، التكليفات الأكاديمية، والدرجات.
-                </p>
             </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap position-relative" style="z-index: 10;">
-                <span class="badge bg-white bg-opacity-15 text-white border border-white-25 rounded-pill px-3 py-2 font-monospace extra-small">
-                    <i class="fa-regular fa-calendar-check me-1 text-warning"></i> اليوم: {{ today_date if today_date is defined else 'اليوم الحالي' }}
-                </span>
-                <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-calendar-days text-info fs-6"></i> <span>جدولي الدراسي</span>
-                </a>
-                <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light">
-                    <i class="fa-solid fa-clipboard-user text-success fs-6"></i> <span>رصد الحضور</span>
-                </a>
-                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-arrows-rotate fs-6"></i>
-                </button>
+            <!-- Left Column (In RTL): Quick Actions Grid in Hero Header -->
+            <div class="col-12 col-lg-5 col-xl-4 border-start-lg border-white-25 ps-lg-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small font-monospace fw-bold text-white-50"><i class="fa-solid fa-bolt text-warning me-1"></i> إجراءات سريعة</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-light w-100 p-2 rounded-3 text-center text-decoration-none hover-lift border-white-25">
+                            <i class="fa-solid fa-clipboard-user fs-5 d-block mb-1 text-success"></i>
+                            <span class="extra-small font-monospace fw-bold text-white d-block">رصد الحضور</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-light w-100 p-2 rounded-3 text-center text-decoration-none hover-lift border-white-25">
+                            <i class="fa-solid fa-calendar-days fs-5 d-block mb-1 text-info"></i>
+                            <span class="extra-small font-monospace fw-bold text-white d-block">جدولي الدراسي</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('homework.index') }}" class="btn btn-outline-light w-100 p-2 rounded-3 text-center text-decoration-none hover-lift border-white-25">
+                            <i class="fa-solid fa-book-bookmark fs-5 d-block mb-1 text-warning"></i>
+                            <span class="extra-small font-monospace fw-bold text-white d-block">إضافة واجب</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('exams.index') }}" class="btn btn-outline-light w-100 p-2 rounded-3 text-center text-decoration-none hover-lift border-white-25">
+                            <i class="fa-solid fa-file-signature fs-5 d-block mb-1 text-warning"></i>
+                            <span class="extra-small font-monospace fw-bold text-white d-block">إنشاء اختبار</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Loader -->
-    <div id="dashboardLoader" class="d-flex justify-content-center align-items-center py-5">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">جاري تحميل مساحة العمل...</span>
+    <!-- ========================================== -->
+    <!-- SECTION 2: 6 EXECUTIVE GLASS KPI CARDS     -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 no-print" role="region" aria-label="مؤشرات أداء المعلم اليومية">
+        <!-- Card 1: Total Students -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">إجمالي طلابي</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-user-group fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ total_students if total_students is defined else 0 }}</h3>
+                <small class="extra-small font-monospace"><a href="{{ url_for('students.home') }}" class="text-decoration-none text-primary fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> عرض الطلاب</a></small>
+            </div>
+        </div>
+
+        <!-- Card 2: Today's Lessons -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">حصص اليوم</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-calendar-check fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ total_classes if total_classes is defined else 0 }}</h3>
+                <small class="extra-small font-monospace"><a href="{{ url_for('timetable.index') }}" class="text-decoration-none text-success fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> عرض الجدول</a></small>
+            </div>
+        </div>
+
+        <!-- Card 3: Current Lesson Quick Card -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">الحصة الحالية</span>
+                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-clock fs-6"></i>
+                    </div>
+                </div>
+                <h6 class="fw-bold text-dark font-monospace mb-1 text-truncate" style="font-size:0.95rem;">
+                    {{ current_lesson.subject if (current_lesson and current_lesson.subject) else 'لا توجد حصة' }}
+                </h6>
+                <small class="extra-small font-monospace"><a href="{{ url_for('timetable.index') }}" class="text-decoration-none text-info fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> تفاصيل الحصة</a></small>
+            </div>
+        </div>
+
+        <!-- Card 4: Active Homeworks -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">الواجبات النشطة</span>
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-clipboard-list fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ active_homework_count if active_homework_count is defined else 0 }}</h3>
+                <small class="extra-small font-monospace"><a href="{{ url_for('homework.index') }}" class="text-decoration-none text-warning fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> إدارة الواجبات</a></small>
+            </div>
+        </div>
+
+        <!-- Card 5: Upcoming Exams -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">الاختبارات القادمة</span>
+                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-book-open fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ upcoming_exams if upcoming_exams is defined else 0 }}</h3>
+                <small class="extra-small font-monospace"><a href="{{ url_for('exams.index') }}" class="text-decoration-none text-danger fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> عرض الاختبارات</a></small>
+            </div>
+        </div>
+
+        <!-- Card 6: Unread Messages -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted font-monospace fw-bold">الرسائل غير المقروءة</span>
+                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-envelope fs-6"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark font-monospace mb-1">{{ unread_messages_count if unread_messages_count is defined else 0 }}</h3>
+                <small class="extra-small font-monospace"><a href="{{ url_for('messages.index') }}" class="text-decoration-none text-secondary fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> فتح الرسائل</a></small>
+            </div>
         </div>
     </div>
 
-    <!-- Main Content Workspace -->
-    <div id="dashboardContent" style="display: none;">
-
-        <!-- 6 GLASS KPI CARDS -->
-        <div class="row g-3 mb-4 no-print" role="region" aria-label="مؤشرات أداء المعلم اليومية">
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">إجمالي طلابي</span>
-                        <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-user-graduate fs-6"></i>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-students">{{ total_students if total_students is defined else 0 }}</h3>
-                    <small class="text-primary extra-small font-monospace"><a href="{{ url_for('students.home') }}" class="text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i> قائمة الطلاب</a></small>
+    <!-- ========================================== -->
+    <!-- SECTION 3: MIDDLE ROW (LESSONS & SCHEDULE) -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Current Lesson Panel -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-circle-play text-success me-2"></i> الحصة الحالية
+                    </h6>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 font-monospace">جارية الآن</span>
                 </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">حصص اليوم</span>
-                        <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-calendar-check fs-6"></i>
+                <div class="p-4 text-center d-flex flex-column justify-content-center h-100">
+                    {% if current_lesson and current_lesson.subject %}
+                        <h5 class="fw-bold text-primary font-monospace mb-1">{{ current_lesson.subject }}</h5>
+                        <p class="text-muted extra-small font-monospace mb-2">{{ current_lesson.class }}</p>
+                        <span class="badge bg-primary text-white font-monospace fs-6 py-2 px-3 rounded-pill mb-3 d-inline-block">{{ current_lesson.time }}</span>
+                        
+                        <a href="{{ url_for('attendance.index') }}" class="btn btn-success rounded-pill py-2 px-4 fw-bold shadow-sm font-monospace extra-small w-100">
+                            <i class="fa-solid fa-user-check me-1"></i> رصد الحضور الآن
+                        </a>
+                    {% else %}
+                        <div class="py-3">
+                            <div class="rounded-circle bg-light text-muted mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                                <i class="fa-regular fa-clock fs-3"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة جارية في هذه اللحظة</h6>
+                            <p class="text-muted extra-small font-monospace mb-0">جدولك الحالي خالي في هذا الوقت.</p>
                         </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-classes">{{ total_classes if total_classes is defined else 0 }}</h3>
-                    <small class="text-success extra-small font-monospace"><a href="{{ url_for('timetable.index') }}" class="text-decoration-none text-success"><i class="fa-solid fa-clock me-1"></i> حصص مجدولة</a></small>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">الواجبات النشطة</span>
-                        <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-book-open-reader fs-6"></i>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-homeworks">{{ active_homework_count if active_homework_count is defined else 0 }}</h3>
-                    <small class="text-warning extra-small font-monospace"><a href="{{ url_for('homework.index') }}" class="text-decoration-none text-warning"><i class="fa-solid fa-tasks me-1"></i> التكليفات الحالية</a></small>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">الرسائل الجديدة</span>
-                        <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-envelope-open-text fs-6"></i>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1" id="stat-messages">{{ unread_messages_count if unread_messages_count is defined else 0 }}</h3>
-                    <small class="text-info extra-small font-monospace"><a href="{{ url_for('messages.index') }}" class="text-decoration-none text-info"><i class="fa-solid fa-comments me-1"></i> صندوق الرسائل</a></small>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">جاهزية الجدول</span>
-                        <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-calendar-days fs-6"></i>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1">100%</h3>
-                    <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> مسند ومكتمل</small>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="extra-small text-muted font-monospace fw-bold">الانضباط الأكاديمي</span>
-                        <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i class="fa-solid fa-award fs-6"></i>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold text-dark font-monospace mb-1">98.5%</h3>
-                    <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-star me-1"></i> تقييم ممتاز</small>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- CURRENT & NEXT LESSON CARDS -->
-        <div class="row g-3 mb-4">
-            <!-- Right Column: Next Lesson -->
-            <div class="col-md-6 col-12">
-                <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
-                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
-                        <h6 class="fw-bold text-dark mb-0 font-monospace">
-                            <i class="fa-solid fa-forward-step text-warning me-2"></i> الحصة القادمة
-                        </h6>
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill extra-small px-3 font-monospace">مجدولة</span>
-                    </div>
-                    <div class="p-3" id="nextLessonContainer">
-                        {% if next_lesson and next_lesson.subject %}
-                            <div class="p-3 rounded-3" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h6 class="fw-bold text-warning mb-0 font-monospace">{{ next_lesson.subject }}</h6>
-                                    <span class="badge bg-warning text-dark font-monospace extra-small px-3 py-1 rounded-pill">{{ next_lesson.time }}</span>
-                                </div>
-                                <p class="text-dark font-monospace extra-small mb-0"><i class="fa-solid fa-layer-group text-muted me-1"></i> {{ next_lesson.class }}</p>
-                            </div>
-                        {% else %}
-                            <div class="p-4 text-center">
-                                <i class="fa-regular fa-calendar-xmark text-muted opacity-25 fs-1 d-block mb-2"></i>
-                                <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة قادمة متبقية اليوم</h6>
-                                <p class="text-muted extra-small font-monospace mb-0">انتهت الحصص الدراسية المجدولة لاليوم أو لم تُسجل حصة تالية.</p>
-                            </div>
-                        {% endif %}
-                    </div>
+        <!-- 2. Next Lesson Panel -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-forward-step text-warning me-2"></i> الحصة القادمة
+                    </h6>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill extra-small px-3 font-monospace">مجدولة</span>
                 </div>
-            </div>
-
-            <!-- Left Column: Current Lesson -->
-            <div class="col-md-6 col-12">
-                <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
-                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
-                        <h6 class="fw-bold text-dark mb-0 font-monospace">
-                            <i class="fa-solid fa-clock text-primary me-2"></i> الحصة الحالية
-                        </h6>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 font-monospace">جارية الآن</span>
-                    </div>
-                    <div class="p-3" id="currentLessonContainer">
-                        {% if current_lesson and current_lesson.subject %}
-                            <div class="p-3 rounded-3" style="background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h6 class="fw-bold text-primary mb-0 font-monospace">{{ current_lesson.subject }}</h6>
-                                    <span class="badge bg-primary text-white font-monospace extra-small px-3 py-1 rounded-pill">{{ current_lesson.time }}</span>
-                                </div>
-                                <p class="text-dark font-monospace extra-small mb-0"><i class="fa-solid fa-layer-group text-muted me-1"></i> {{ current_lesson.class }}</p>
+                <div class="p-4 text-center d-flex flex-column justify-content-center h-100">
+                    {% if next_lesson and next_lesson.subject %}
+                        <h5 class="fw-bold text-warning font-monospace mb-1">{{ next_lesson.subject }}</h5>
+                        <p class="text-muted extra-small font-monospace mb-2">{{ next_lesson.class }}</p>
+                        <span class="badge bg-warning text-dark font-monospace fs-6 py-2 px-3 rounded-pill mb-3 d-inline-block">{{ next_lesson.time }}</span>
+                        
+                        <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-warning rounded-pill py-2 px-4 fw-bold font-monospace extra-small w-100">
+                            <i class="fa-solid fa-eye me-1"></i> عرض تفاصيل الحصة
+                        </a>
+                    {% else %}
+                        <div class="py-3">
+                            <div class="rounded-circle bg-light text-muted mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                                <i class="fa-regular fa-calendar-xmark fs-3"></i>
                             </div>
-                        {% else %}
-                            <div class="p-4 text-center">
-                                <i class="fa-regular fa-clock text-muted opacity-25 fs-1 d-block mb-2"></i>
-                                <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة جارية في هذه اللحظة</h6>
-                                <p class="text-muted extra-small font-monospace mb-0">يمكنك الاستفادة من الوقت في إعداد الواجبات ورصد الدرجات.</p>
-                            </div>
-                        {% endif %}
-                    </div>
+                            <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">لا توجد حصة قادمة متبقية اليوم</h6>
+                            <p class="text-muted extra-small font-monospace mb-0">انتهت الحصص الدراسية المجدولة لليوم.</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- TODAY'S SCHEDULE TABLE -->
-        <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4" role="region" aria-label="جدول الحصص المجدولة اليوم">
-            <div class="p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div>
-                    <h5 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-list-check text-primary me-2"></i> جدول الحصص اليومية المجدولة</h5>
-                    <small class="text-muted font-monospace extra-small">عرض تفاصيل جميع الحصص والشعب الأكاديمية لليوم</small>
+        <!-- 3. Today's Schedule Panel -->
+        <div class="col-12 col-xl-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-calendar-days text-primary me-2"></i> جدول اليوم
+                    </h6>
+                    <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace extra-small fw-bold">
+                        عرض الجدول كامل
+                    </a>
                 </div>
-                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace extra-small fw-bold">
-                    <i class="fa-solid fa-calendar-days me-1"></i> الجدول الكامل
-                </a>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle mb-0 text-center custom-enterprise-table" aria-label="جدول الحصص اليومي للمعلم">
-                    <thead class="bg-light sticky-top">
-                        <tr>
-                            <th class="py-3 font-monospace text-primary border-0" style="width: 120px;">الوقت</th>
-                            <th class="py-3 font-monospace text-primary border-0 text-start">المادة الدراسية</th>
-                            <th class="py-3 font-monospace text-primary border-0 text-start">الصف والشعبة</th>
-                            <th class="py-3 font-monospace text-primary border-0">الحالة التشغيلية</th>
-                            <th class="py-3 font-monospace text-primary border-0" style="width: 140px;">الإجراء السريع</th>
-                        </tr>
-                    </thead>
-                    <tbody id="todayEventsTableBody">
-                        {% if today_events and today_events|length > 0 %}
-                            {% for ev in today_events %}
-                                <tr class="align-middle {% if ev.is_current %}table-primary{% elif ev.is_next %}table-warning{% endif %}">
-                                    <td class="font-monospace extra-small fw-bold">{{ ev.time }}</td>
-                                    <td class="text-start font-monospace extra-small fw-bold text-dark">{{ ev.subject_name }}</td>
-                                    <td class="text-start font-monospace extra-small text-muted">{{ ev.class_name }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ ev.color }}-subtle text-{{ ev.color }} border border-{{ ev.color }}-subtle rounded-pill extra-small px-3 py-1 font-monospace">
-                                            {{ ev.status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 extra-small font-monospace fw-bold">
-                                            رصد الحضور
-                                        </a>
+                <div class="table-responsive p-0">
+                    <table class="table table-hover align-middle text-center mb-0 extra-small font-monospace" aria-label="جدول الحصص اليومي">
+                        <tbody id="todayScheduleBody">
+                            {% if today_events and today_events|length > 0 %}
+                                {% for ev in today_events %}
+                                    <tr class="{% if ev.is_current %}table-primary{% elif ev.is_next %}table-warning{% endif %}">
+                                        <td class="fw-bold text-muted" style="width: 100px;">{{ ev.time }}</td>
+                                        <td class="text-start fw-bold text-dark">{{ ev.subject_name }}</td>
+                                        <td class="text-muted">{{ ev.class_name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ ev.color }}-subtle text-{{ ev.color }} rounded-pill px-2 py-1">
+                                                {{ ev.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-muted">
+                                        <i class="fa-solid fa-inbox opacity-25 fs-2 d-block mb-2"></i>
+                                        لا توجد حصص مجدولة اليوم.
                                     </td>
                                 </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr id="emptyScheduleRow">
-                                <td colspan="5" class="py-5 text-center">
-                                    <i class="fa-solid fa-calendar-xmark text-muted opacity-25 fs-1 d-block mb-3"></i>
-                                    <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد حصص مجدولة لليوم</h6>
-                                    <p class="text-muted extra-small font-monospace mb-0">جدولك اليومي خالي من الحصص الدراسية المجدولة.</p>
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- QUICK ACTIONS GRID -->
-        <div class="glass-panel-card p-4 rounded-4 shadow-sm mb-4 bg-white border-0" role="region" aria-label="الإجراءات السريعة للمعلم">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-bolt text-warning me-2"></i> الإجراءات والمهام السريعة</h5>
-                <span class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small">وصول مباشر</span>
-            </div>
-            <div class="row g-3">
-                <div class="col-6 col-md-3">
-                    <a href="{{ url_for('attendance.index') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
-                        <div class="rounded-circle bg-warning-subtle text-warning mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-clipboard-user fs-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">رصد الحضور والغياب</h6>
-                        <small class="text-muted font-monospace extra-small">تسجيل الحضور اليومي</small>
-                    </a>
+    <!-- ========================================== -->
+    <!-- SECTION 4: LOWER ROW (HOMEWORK, MSG, NOTIF) -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Latest Homework -->
+        <div class="col-12 col-md-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-book-bookmark text-warning me-2"></i> آخر الواجبات
+                    </h6>
+                    <a href="{{ url_for('homework.index') }}" class="text-decoration-none font-monospace extra-small fw-bold text-warning">عرض الكل</a>
                 </div>
-                <div class="col-6 col-md-3">
-                    <a href="{{ url_for('homework.index') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
-                        <div class="rounded-circle bg-primary-subtle text-primary mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-book-bookmark fs-4"></i>
+                <div class="p-3">
+                    {% if recent_activities and recent_activities|length > 0 %}
+                        {% for hw in recent_activities %}
+                            <div class="p-2 mb-2 rounded-3 bg-light border d-flex align-items-center justify-content-between extra-small font-monospace">
+                                <div>
+                                    <strong class="d-block text-dark">{{ hw.text }}</strong>
+                                    <small class="text-muted">{{ hw.subject_name }} | {{ hw.class_name }}</small>
+                                </div>
+                                <span class="badge bg-{{ hw.color }}-subtle text-{{ hw.color }} rounded-pill px-2 py-1">
+                                    {{ hw.status }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted font-monospace extra-small">
+                            <i class="fa-solid fa-box-open opacity-25 fs-2 d-block mb-2"></i>
+                            لا توجد واجبات حديثة مسجلة.
                         </div>
-                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">إضافة واجب دراسي</h6>
-                        <small class="text-muted font-monospace extra-small">إنشاء تكليف للطلاب</small>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a href="{{ url_for('grades.manage_grades') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
-                        <div class="rounded-circle bg-success-subtle text-success mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-star fs-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">إدخال درجات الطلاب</h6>
-                        <small class="text-muted font-monospace extra-small">رصد نتائج الاختبارات</small>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a href="{{ url_for('reports.student_report') }}" class="glass-panel-card p-3 rounded-4 text-decoration-none text-center d-block hover-lift bg-light border-0">
-                        <div class="rounded-circle bg-info-subtle text-info mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-chart-column fs-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark font-monospace extra-small mb-1">استخراج التقارير</h6>
-                        <small class="text-muted font-monospace extra-small">كشوفات الأداء الأكاديمي</small>
-                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
+        <!-- 2. Latest Messages -->
+        <div class="col-12 col-md-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-envelope text-primary me-2"></i> آخر الرسائل
+                    </h6>
+                    <a href="{{ url_for('messages.index') }}" class="text-decoration-none font-monospace extra-small fw-bold text-primary">عرض الكل</a>
+                </div>
+                <div class="p-3">
+                    {% if recent_messages and recent_messages|length > 0 %}
+                        {% for msg in recent_messages %}
+                            <div class="p-2 mb-2 rounded-3 bg-light border d-flex align-items-center justify-content-between extra-small font-monospace">
+                                <div>
+                                    <strong class="d-block text-dark">{{ msg.sender_name }}</strong>
+                                    <small class="text-muted text-truncate d-block" style="max-width: 180px;">{{ msg.content }}</small>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1">
+                                    {{ msg.time }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted font-monospace extra-small">
+                            <i class="fa-solid fa-inbox opacity-25 fs-2 d-block mb-2"></i>
+                            لا توجد رسائل جديدة.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Latest Notifications -->
+        <div class="col-12 col-md-4">
+            <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+                    <h6 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="fa-solid fa-bell text-danger me-2"></i> آخر الإشعارات
+                    </h6>
+                    <a href="{{ url_for('notifications.index') }}" class="text-decoration-none font-monospace extra-small fw-bold text-danger">عرض الكل</a>
+                </div>
+                <div class="p-3">
+                    {% if notifications and notifications|length > 0 %}
+                        {% for n in notifications %}
+                            <div class="p-2 mb-2 rounded-3 bg-light border extra-small font-monospace">
+                                <strong class="d-block text-dark">{{ n.title or 'إشعار نظام' }}</strong>
+                                <small class="text-muted">{{ n.content or '' }}</small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted font-monospace extra-small">
+                            <i class="fa-solid fa-bell-slash opacity-25 fs-2 d-block mb-2"></i>
+                            لا توجد إشعارات حالية.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: BOTTOM QUICK ACTIONS BAR        -->
+    <!-- ========================================== -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm bg-white border-0" role="region" aria-label="إجراءات سريعة إضافية">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-star text-warning me-2"></i> إجراءات سريعة إضافية</h6>
+            <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">مركز العمل المباشر</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+            <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-outline-primary rounded-pill px-3 py-2 font-monospace extra-small fw-bold">
+                <i class="fa-solid fa-star text-warning me-1"></i> إدخال درجات الطلاب
+            </a>
+            <a href="{{ url_for('homework.index') }}" class="btn btn-outline-success rounded-pill px-3 py-2 font-monospace extra-small fw-bold">
+                <i class="fa-solid fa-plus-circle text-success me-1"></i> إنشاء واجب جديد
+            </a>
+            <a href="{{ url_for('reports.student_report') }}" class="btn btn-outline-info rounded-pill px-3 py-2 font-monospace extra-small fw-bold">
+                <i class="fa-solid fa-chart-column text-info me-1"></i> عرض التقارير
+            </a>
+            <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-warning rounded-pill px-3 py-2 font-monospace extra-small fw-bold">
+                <i class="fa-solid fa-book-open text-warning me-1"></i> المواد الدراسية
+            </a>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 font-monospace extra-small fw-bold" onclick="Swal.fire('إعدادات الملف الشخصي', 'اسم المعلم: {{ teacher_info.TeacherName or user_name }}<br>المسمى الوظيفي: {{ teacher_info.TeacherTitle or \'معلم أكاديمي\' }}', 'info')">
+                <i class="fa-solid fa-gear text-secondary me-1"></i> إعدادات الملف الشخصي
+            </button>
+        </div>
     </div>
 
 </div>
-
-<script>
-function loadTeacherDashboardData() {
-    fetch('/api/teacher/dashboard')
-        .then(response => {
-            if(!response.ok) throw new Error('Network error');
-            return response.json();
-        })
-        .then(data => {
-            // Update KPIs
-            if(data.students !== undefined) document.getElementById('stat-students').innerText = data.students;
-            if(data.classes !== undefined) document.getElementById('stat-classes').innerText = data.classes;
-            if(data.active_homework !== undefined) document.getElementById('stat-homeworks').innerText = data.active_homework;
-            if(data.unread_messages !== undefined) document.getElementById('stat-messages').innerText = data.unread_messages;
-
-            const loader = document.getElementById('dashboardLoader');
-            const content = document.getElementById('dashboardContent');
-            if(loader) loader.style.display = 'none';
-            if(content) content.style.display = 'block';
-        })
-        .catch(err => {
-            console.log('Using template initial data rendering fallback');
-            const loader = document.getElementById('dashboardLoader');
-            const content = document.getElementById('dashboardContent');
-            if(loader) loader.style.display = 'none';
-            if(content) content.style.display = 'block';
-        });
-}
-
-document.addEventListener('DOMContentLoaded', loadTeacherDashboardData);
-</script>
 {% endblock %}
