@@ -30,10 +30,12 @@
 
         <!-- Action Header Buttons -->
         <div class="d-flex flex-wrap align-items-center gap-2 no-print">
+            {% if session.get('user_role') == 'admin' %}
             <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-scale" data-bs-toggle="modal" data-bs-target="#addSlotModal">
                 <i class="fa-solid fa-circle-plus fs-5"></i>
                 <span>إضافة حصة جديدة</span>
             </button>
+            {% endif %}
             <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-bold text-muted border shadow-sm hover-scale" onclick="exportTimetableExcel()">
                 <i class="fa-solid fa-file-excel text-success me-1"></i> تصدير Excel
             </button>
