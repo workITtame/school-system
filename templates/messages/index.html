@@ -610,19 +610,23 @@
 
 <style>
 @media print {
-    header, nav, .navbar, .top-header, .topbar, #sidebar, .sidebar, .sidebar-wrapper,
+    .top-navbar, #sidebar, header, nav, .navbar, .top-header, .topbar, .sidebar-wrapper,
     .no-print, .btn, button, #messagesBulkBar, .breadcrumb, #msgActiveFiltersBadge,
     .modal-header .btn-close, .modal-footer, .offcanvas, .offcanvas-backdrop {
         display: none !important;
         visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    body, html {
+    body, html, .wrapper, .main-content, .container-fluid {
         background: #ffffff !important;
         color: #000000 !important;
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
+        box-shadow: none !important;
     }
 
     #messagesModuleRoot {
