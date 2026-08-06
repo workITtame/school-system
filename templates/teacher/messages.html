@@ -366,19 +366,54 @@
         var text = input.value.trim();
         if (!text) return;
 
+        var targetStudentId = window.activeStudentId;
+        if (!targetStudentId) {
+            var firstItem = document.querySelector('#conversationListContainer .conv-item');
+            if (firstItem) {
+                targetStudentId = firstItem.id.replace('conv-item-', '');
+                window.activeStudentId = targetStudentId;
+            } else {
+                targetStudentId = 1;
+            }
+        }
+
         fetch('/messages/api/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ conversation_id: window.activeStudentId, message: text })
+            body: JSON.stringify({ conversation_id: targetStudentId, message: text })
         })
         .then(function(res) { return res.json(); })
         .then(function(res) {
             if (res.success) {
                 input.value = '';
-                sessionStorage.removeItem('msg_draft_' + window.activeStudentId);
-                openConversation(window.activeStudentId);
+                sessionStorage.removeItem('msg_draft_' + targetStudentId);
+                
+                var stream = document.getElementById('chatMessagesStream');
+                if (stream) {
+                    var timeStr = (res.message && res.message.time) ? res.message.time : 'الآن';
+                    var msgText = (res.message && res.message.text) ? res.message.text : text;
+                    var bubble = '<div class="d-flex flex-column align-items-end max-w-75 ms-auto animate__animated animate__fadeIn">' +
+                        '<div class="p-3 bg-primary text-white rounded-4 shadow-sm extra-small line-height-lg">' + msgText + '</div>' +
+                        '<small class="text-muted font-monospace extra-small mt-1 me-1">' + timeStr + ' <i class="fa-solid fa-check-double text-success ms-1"></i></small>' +
+                        '</div>';
+                    stream.insertAdjacentHTML('beforeend', bubble);
+                    stream.scrollTop = stream.scrollHeight;
+                }
+
+                var item = document.getElementById('conv-item-' + targetStudentId);
+                if (item) {
+                    var p = item.querySelector('p');
+                    if (p) p.textContent = text;
+                }
+
                 showMessageToast('تم إرسال الرسالة بنجاح 🚀', 'success');
+            } else {
+                showMessageToast(res.error || 'فشل إرسال الرسالة', 'error');
             }
+        })
+        .catch(function(err) {
+            console.error(err);
+            showMessageToast('تعذر إرسال الرسالة، يرجى المحاولة مرة أخرى', 'error');
         });
     };
 
@@ -386,6 +421,14 @@
         document.getElementById('messageInputText').value = text;
         submitComposerMessage();
     };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var firstItem = document.querySelector('#conversationListContainer .conv-item');
+        if (firstItem) {
+            var stId = firstItem.id.replace('conv-item-', '');
+            openConversation(stId);
+        }
+    });
 
     window.openBulkMessagingModal = function(scope) {
         if (scope) {

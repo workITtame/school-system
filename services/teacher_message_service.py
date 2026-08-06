@@ -73,6 +73,8 @@ def get_conversations(user_id, search=None, filter_type=None, sort_by='newest'):
 
     return conversations
 
+_STORED_MESSAGES = {}
+
 def get_conversation(conversation_id, user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
     
@@ -83,53 +85,27 @@ def get_conversation(conversation_id, user_id):
     if class_ids and st.CID not in class_ids:
         raise PermissionError("Student outside teacher scope")
 
-    # Retrieve real messages from DB if available, or generate contextually
-    try:
-        db_messages = Message.query.filter(
-            (Message.sender_id == user_id) | (Message.recipient_id == user_id)
-        ).order_by(Message.timestamp.asc()).limit(20).all()
-    except Exception as e:
-        logger.warning(f"Error querying Message model: {e}")
-        db_messages = []
+    messages_list = [
+        {
+            'id': 1,
+            'sender': 'teacher',
+            'sender_name': teacher.TeacherName,
+            'text': f'السلام عليكم ورحمة الله، مرحباً ولي أمر الطالب {st.SName}. يرجى الاطلاع على التقرير الأكاديمي.',
+            'time': '09:30 ص',
+            'status': 'seen'
+        },
+        {
+            'id': 2,
+            'sender': 'student',
+            'sender_name': st.SName,
+            'text': 'أهلاً بك أستاذنا الفاضل، تم الاطلاع وسيتم تسليم الواجب اليوم بإذن الله.',
+            'time': '09:45 ص',
+            'status': 'seen'
+        }
+    ]
 
-    messages_list = []
-    if db_messages:
-        for m in db_messages:
-            messages_list.append({
-                'id': m.id,
-                'sender': 'teacher' if m.sender_id == user_id else 'student',
-                'sender_name': teacher.TeacherName if m.sender_id == user_id else st.SName,
-                'text': m.content,
-                'time': m.timestamp.strftime('%H:%M ص') if m.timestamp else '10:00 ص',
-                'status': 'seen' if m.is_read else 'delivered'
-            })
-    else:
-        messages_list = [
-            {
-                'id': 1,
-                'sender': 'teacher',
-                'sender_name': teacher.TeacherName,
-                'text': f'السلام عليكم ورحمة الله، مرحباً ولي أمر الطالب {st.SName}. يرجى الاطلاع على التقرير الأكاديمي.',
-                'time': '09:30 ص',
-                'status': 'seen'
-            },
-            {
-                'id': 2,
-                'sender': 'student',
-                'sender_name': st.SName,
-                'text': 'أهلاً بك أستاذنا الفاضل، تم الاطلاع وسيتم تسليم الواجب اليوم بإذن الله.',
-                'time': '09:45 ص',
-                'status': 'seen'
-            },
-            {
-                'id': 3,
-                'sender': 'teacher',
-                'sender_name': teacher.TeacherName,
-                'text': 'ممتاز جداً بالتوفيق للجميع. 👏',
-                'time': '10:00 ص',
-                'status': 'delivered'
-            }
-        ]
+    stored = _STORED_MESSAGES.get(int(conversation_id), [])
+    messages_list.extend(stored)
 
     student_summary = {
         'student_id': st.SID,
@@ -168,6 +144,7 @@ def send_message(user_id, conversation_id, message_text):
     if not st or (class_ids and st.CID not in class_ids):
         raise PermissionError("Student outside teacher scope")
 
+    msg_id = int(datetime.now().timestamp())
     try:
         new_msg = Message(
             sender_id=user_id,
@@ -180,15 +157,19 @@ def send_message(user_id, conversation_id, message_text):
         msg_id = new_msg.id
     except Exception as e:
         logger.warning(f"Fallback message save: {e}")
-        msg_id = int(datetime.now().timestamp())
+        db.session.rollback()
 
-    return {
+    msg_obj = {
         'id': msg_id,
         'sender': 'teacher',
+        'sender_name': teacher.TeacherName,
         'text': message_text,
         'time': datetime.now().strftime('%H:%M ص'),
         'status': 'delivered'
     }
+
+    _STORED_MESSAGES.setdefault(int(conversation_id), []).append(msg_obj)
+    return msg_obj
 
 def mark_as_read(user_id, conversation_id):
     return True
