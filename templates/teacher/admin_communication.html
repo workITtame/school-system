@@ -1,0 +1,499 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}مركز الاتصالات الإدارية | مساحة العمل للمعلم (Enterprise Administration ↔ Teacher Communication Center){% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="adminCommunicationPageContainer">
+    
+    <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="adminCommToastContainer"></div>
+
+    <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-building-columns fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
+                                🏫 مركز الاتصالات الإدارية الرسمي (Administration ↔ Teacher Communication Center)
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
+                            التعاميم الجديدة: <span class="text-white fw-bold text-warning">{{ stats.new_announcements }}</span> | 
+                            الرسائل الخاصة: <span class="text-white fw-bold">{{ stats.private_messages }}</span> | 
+                            الطلبات المفتوحة: <span class="text-white fw-bold text-info">{{ stats.open_requests }}</span> | 
+                            آخر تحديث: <span class="text-white fw-bold">{{ stats.last_update }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta & Primary Actions -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="openNewRequestModal()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> تقديم طلب إداري جديد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 6 KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات التواصل الإداري">
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('announcements')">
+            {{ macros.render_kpi_card("التعاميم الجديدة", stats.new_announcements, "تعاميم وقرارات رسمية", "fa-solid fa-bullhorn", "primary", "javascript:switchMainTab('announcements')", "التعاميم الجديدة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('messages')">
+            {{ macros.render_kpi_card("الرسائل الخاصة", stats.private_messages, "تواصل متبادل مع الإدارة", "fa-solid fa-comments", "info", "javascript:switchMainTab('messages')", "الرسائل الخاصة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('requests')">
+            {{ macros.render_kpi_card("الطلبات المفتوحة", stats.open_requests, "طلبات إجازات واستئذان", "fa-solid fa-paper-plane", "warning", "javascript:switchMainTab('requests')", "الطلبات المفتوحة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('requests')">
+            {{ macros.render_kpi_card("الطلبات المعتمدة", stats.approved_requests, "طلبات تم الموافقة عليها", "fa-solid fa-circle-check", "success", "javascript:switchMainTab('requests')", "الطلبات المعتمدة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('requests')">
+            {{ macros.render_kpi_card("الطلبات المرفوضة", stats.rejected_requests, "طلبات مرفوضة مع تبرير", "fa-solid fa-circle-xmark", "danger", "javascript:switchMainTab('requests')", "الطلبات المرفوضة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchMainTab('tasks')">
+            {{ macros.render_kpi_card("المهام المسندة", stats.assigned_tasks, "مهام المراقبة والإشراف", "fa-solid fa-list-check", "secondary", "javascript:switchMainTab('tasks')", "المهام المسندة") }}
+        </div>
+    </div>
+
+    <!-- 3. MAIN ENTERPRISE TABS HEADER -->
+    <div class="card rounded-4 shadow-sm border-0 mb-4 bg-white">
+        <div class="p-2 border-bottom">
+            <ul class="nav nav-pills nav-fill font-cairo extra-small fw-bold gap-2" id="adminCommMainTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill py-2" id="tab-btn-announcements" data-bs-toggle="tab" data-bs-target="#tab-announcements" type="button">
+                        📢 التعاميم والقرارات الإدارية
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2" id="tab-btn-messages" data-bs-toggle="tab" data-bs-target="#tab-messages" type="button">
+                        💬 الرسائل الخاصة مع الإدارة
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2" id="tab-btn-requests" data-bs-toggle="tab" data-bs-target="#tab-requests" type="button">
+                        📝 طلباتي ورسائل الخدمة
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2" id="tab-btn-tasks" data-bs-toggle="tab" data-bs-target="#tab-tasks" type="button">
+                        📋 المهام والتكليفات الإدارية
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2" id="tab-btn-archive" data-bs-toggle="tab" data-bs-target="#tab-archive" type="button">
+                        📁 الأرشيف والسجلات
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 4. TAB CONTENTS WORKSPACE -->
+    <div class="tab-content" id="adminCommTabContent">
+        
+        <!-- TAB 1: ANNOUNCEMENTS -->
+        <div class="tab-pane fade show active" id="tab-announcements">
+            <div class="card rounded-4 shadow-sm border-0 p-3 bg-white mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                    <h6 class="fw-bold text-dark mb-0 extra-small">
+                        <i class="fa-solid fa-bullhorn text-primary me-2"></i> التعاميم والقرارات الإدارية الصادرة من إدارة المدرسة:
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" id="announcementSearchInput" class="form-control form-control-sm extra-small" placeholder="بحث بالتعميم..." onkeyup="searchAnnouncements(this.value)">
+                    </div>
+                </div>
+
+                <div class="row g-3" id="announcementsGridContainer">
+                    {% for a in announcements %}
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="card rounded-4 border shadow-sm p-3 h-100 bg-white hover-scale transition-all">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge bg-{{ a.priority_badge }} rounded-pill px-3 py-1 extra-small">{{ a.priority_label }}</span>
+                                    <small class="text-muted font-monospace extra-small">{{ a.date_str }}</small>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-2 fs-6">{{ a.title }}</h6>
+                                <p class="text-secondary extra-small mb-3 line-height-md">{{ a.description }}</p>
+                                <div class="mt-auto border-top pt-2 d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
+                                    <small class="text-muted"><i class="fa-solid fa-paperclip me-1"></i> {{ a.attachment_name }}</small>
+                                    {% if a.acknowledged %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-bold">🟢 تم تأكيد الاطلاع</span>
+                                    {% else %}
+                                        <button type="button" class="btn btn-xs btn-primary rounded-pill px-3 fw-bold" onclick="acknowledgeAnnouncement({{ a.id }})">
+                                            تأكيد الاطلاع ✔
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: PRIVATE MESSAGES WORKSPACE -->
+        <div class="tab-pane fade" id="tab-messages">
+            <div class="row g-3" style="min-height: 520px;">
+                <!-- Left Threads List (4 cols) -->
+                <div class="col-12 col-lg-4">
+                    <div class="card rounded-4 shadow-sm border-0 h-100 p-3 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-comments me-2 text-primary"></i> المحادثات الخاصة مع الإدارة:</h6>
+                        <div class="list-group list-group-flush extra-small gap-2" id="adminThreadsListContainer">
+                            {% for m in messages %}
+                                <div class="list-group-item list-group-item-action p-2 rounded-3 border bg-light shadow-sm cursor-pointer" onclick="openAdminThread({{ m.conversation_id }})">
+                                    <strong class="text-dark d-block mb-1">{{ m.admin_name }}</strong>
+                                    <p class="text-secondary mb-1 text-truncate">{{ m.last_message }}</p>
+                                    <small class="text-muted font-monospace">{{ m.last_time }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Thread Stream & Composer (8 cols) -->
+                <div class="col-12 col-lg-8">
+                    <div class="card rounded-4 shadow-sm border-0 h-100 d-flex flex-column bg-white">
+                        <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between">
+                            <h6 class="fw-bold text-dark mb-0 fs-6" id="activeAdminTitle">إدارة الموارد البشرية والتعيينات</h6>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 extra-small">متصل الآن</span>
+                        </div>
+                        <div class="card-body p-3 flex-grow-1 overflow-y-auto bg-light d-flex flex-column gap-3" id="adminMessagesStream" style="max-height: 360px; min-height: 300px;">
+                            <div class="d-flex flex-column align-items-start max-w-75 me-auto">
+                                <div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">
+                                    مرحباً بك أستاذ، نود إحاطتكم بتحديث نصاب الحصص الأسبوعي لهذا الفصل.
+                                </div>
+                                <small class="text-muted font-monospace extra-small mt-1 ms-1">09:00 ص</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white p-3 border-top">
+                            <form id="adminMessageForm" class="d-flex align-items-center gap-2" onsubmit="event.preventDefault(); submitAdminMessage();">
+                                <input type="text" id="adminMessageInput" class="form-control form-control-sm extra-small py-2" placeholder="اكتب رسالتك للإدارة هنا..." required>
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold flex-shrink-0">
+                                    إرسال <i class="fa-solid fa-paper-plane ms-1"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: REQUESTS WORKSPACE -->
+        <div class="tab-pane fade" id="tab-requests">
+            <div class="card rounded-4 shadow-sm border-0 p-3 bg-white mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                    <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-paper-plane me-2 text-primary"></i> سجل طلبات ورسائل الخدمة المقدمة للإدارة:</h6>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold extra-small" onclick="openNewRequestModal()">
+                        <i class="fa-solid fa-plus me-1"></i> تقديم طلب جديد
+                    </button>
+                </div>
+
+                <div class="table-responsive extra-small">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>نوع الطلب</th>
+                                <th>عنوان الطلب</th>
+                                <th>تاريخ تقديم الطلب</th>
+                                <th>الحالة الأكاديمية</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTbody">
+                            {% for r in requests %}
+                                <tr>
+                                    <td class="font-monospace fw-bold">#{{ r.id }}</td>
+                                    <td><span class="badge bg-light text-primary border rounded-pill px-3 py-1">{{ r.request_type }}</span></td>
+                                    <td class="fw-bold">{{ r.title }}</td>
+                                    <td class="font-monospace text-muted">{{ r.date_str }}</td>
+                                    <td><span class="badge bg-{{ r.status_badge }} rounded-pill px-3 py-1">{{ r.status_label }}</span></td>
+                                    <td>
+                                        {% if r.status in ['Draft', 'Submitted', 'Under Review'] %}
+                                            <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-3" onclick="cancelRequest({{ r.id }})">إلغاء الطلب</button>
+                                        {% else %}
+                                            <span class="text-muted extra-small">مكتمل</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: TASKS WORKSPACE -->
+        <div class="tab-pane fade" id="tab-tasks">
+            <div class="card rounded-4 shadow-sm border-0 p-3 bg-white mb-4">
+                <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-list-check me-2 text-primary"></i> المهام والتكليفات الإدارية المسندة للمعلم:</h6>
+                <div class="row g-3" id="tasksGridContainer">
+                    {% for t in tasks %}
+                        <div class="col-12 col-md-6">
+                            <div class="card rounded-4 border shadow-sm p-3 bg-white">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge bg-{{ t.status_badge }} rounded-pill px-3 py-1 extra-small">{{ t.status_label }}</span>
+                                    <small class="text-muted font-monospace extra-small">تاريخ الاستحقاق: {{ t.due_date }}</small>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-2 fs-6">{{ t.title }}</h6>
+                                <p class="text-secondary extra-small mb-3 line-height-md">{{ t.description }}</p>
+                                <div class="d-flex align-items-center justify-content-end gap-2 border-top pt-2 extra-small">
+                                    {% if t.status == 'Pending' %}
+                                        <button type="button" class="btn btn-xs btn-success rounded-pill px-3 fw-bold" onclick="updateTaskStatus({{ t.id }}, 'Completed')">قبول وإكمال المهمة ✔</button>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace">مكتملة 🟢</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: ARCHIVE -->
+        <div class="tab-pane fade" id="tab-archive">
+            <div class="card rounded-4 shadow-sm border-0 p-4 bg-white text-center">
+                <i class="fa-solid fa-box-archive fs-1 text-muted mb-2"></i>
+                <h6 class="fw-bold text-dark mb-1">أرشيف المعاملات والتواصل الإداري</h6>
+                <p class="text-muted extra-small">جميع السجلات المؤرشفة والتعاميم السابقة متاحة للحفظ والاسترجاع الفوري.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. NEW REQUEST MODAL (#newRequestModal) -->
+<div class="modal fade font-cairo" id="newRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h6 class="modal-header-title fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2"></i> تقديم طلب إداري جديد</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 extra-small">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark">نوع الطلب:</label>
+                    <select id="reqTypeSelect" class="form-select form-select-sm">
+                        <option value="إجازة اعتيادية">إجازة اعتيادية / مرضية</option>
+                        <option value="تعديل الجدول">طلب تعديل أو تبديل جدول</option>
+                        <option value="دعم فني">طلب دعم فني أو صيانة قاعة</option>
+                        <option value="تقرير حادثة">تقرير حادثة أو سلوك طلابي</option>
+                        <option value="مقترح">مقترح أكاديمي أو تطويري</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark">عنوان الطلب:</label>
+                    <input type="text" id="reqTitleInput" class="form-control form-control-sm" placeholder="أدخل عنوان الطلب مختصر..." required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark">تفاصيل وشرح الطلب:</label>
+                    <textarea id="reqDescInput" class="form-control extra-small" rows="4" placeholder="أدخل شرح تفاصيل الطلب والمبررات..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="submitTeacherRequest()">إرسال الطلب للإدارة 🚀</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. 900px DRAWER (#adminCommDrawer) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="adminCommDrawer" style="width: 900px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3 sticky-top" style="z-index: 1060;">
+        <h6 class="offcanvas-title fw-bold mb-0">
+            <i class="fa-solid fa-building-columns me-2"></i> سجل وتفاصيل المعاملة الإدارية (#adminCommDrawer)
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-4" id="adminCommDrawerContent">
+        <!-- Dynamic Drawer Data -->
+    </div>
+</div>
+
+<!-- JAVASCRIPT HANDLERS -->
+<script>
+(function() {
+    window.showAdminToast = function(message, type) {
+        var container = document.getElementById('adminCommToastContainer');
+        if (!container) return;
+
+        var typeClass = 'bg-primary';
+        var icon = 'fa-circle-info';
+        if (type === 'success') { typeClass = 'bg-success'; icon = 'fa-circle-check'; }
+        else if (type === 'warning') { typeClass = 'bg-warning text-dark'; icon = 'fa-triangle-exclamation'; }
+        else if (type === 'error' || type === 'danger') { typeClass = 'bg-danger'; icon = 'fa-circle-xmark'; }
+
+        var toastId = 'toast-' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center text-white ' + typeClass + ' border-0 shadow-lg font-cairo extra-small mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex p-2">' +
+            '<div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid ' + icon + ' fs-6"></i> ' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        container.insertAdjacentHTML('beforeend', html);
+        var toastEl = document.getElementById(toastId);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            bsToast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function() { toastEl.remove(); }, 4000);
+        }
+    };
+
+    window.switchMainTab = function(tabName) {
+        var btn = document.getElementById('tab-btn-' + tabName);
+        if (btn && typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+            var bsTab = bootstrap.Tab.getOrCreateInstance(btn);
+            bsTab.show();
+        }
+    };
+
+    window.acknowledgeAnnouncement = function(id) {
+        fetch('/admin-communication/api/acknowledge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showAdminToast(res.message, 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            }
+        });
+    };
+
+    window.submitAdminMessage = function() {
+        var input = document.getElementById('adminMessageInput');
+        var text = input.value.trim();
+        if (!text) return;
+
+        fetch('/admin-communication/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                input.value = '';
+                var stream = document.getElementById('adminMessagesStream');
+                var bubble = '<div class="d-flex flex-column align-items-end max-w-75 ms-auto animate__animated animate__fadeIn">' +
+                    '<div class="p-3 bg-primary text-white rounded-4 shadow-sm extra-small line-height-lg">' + text + '</div>' +
+                    '<small class="text-muted font-monospace extra-small mt-1 me-1">الآن <i class="fa-solid fa-check-double text-success ms-1"></i></small>' +
+                    '</div>';
+                stream.insertAdjacentHTML('beforeend', bubble);
+                stream.scrollTop = stream.scrollHeight;
+                showAdminToast('تم إرسال الرسالة للإدارة بنجاح 🚀', 'success');
+            }
+        });
+    };
+
+    window.openNewRequestModal = function() {
+        var modalEl = document.getElementById('newRequestModal');
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        }
+    };
+
+    window.submitTeacherRequest = function() {
+        var reqType = document.getElementById('reqTypeSelect').value;
+        var title = document.getElementById('reqTitleInput').value.trim();
+        var desc = document.getElementById('reqDescInput').value.trim();
+
+        if (!title || !desc) return;
+
+        fetch('/admin-communication/api/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_type: reqType, title: title, description: desc })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                var modalEl = document.getElementById('newRequestModal');
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    var bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+                }
+                showAdminToast(res.message, 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            }
+        });
+    };
+
+    window.cancelRequest = function(id) {
+        fetch('/admin-communication/api/cancel-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showAdminToast(res.message, 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            }
+        });
+    };
+
+    window.updateTaskStatus = function(id, status) {
+        fetch('/admin-communication/api/task-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, status: status })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showAdminToast(res.message, 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            }
+        });
+    };
+
+    window.openAdminThread = function(convId) {
+        fetch('/admin-communication/api/conversation/' + convId)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                document.getElementById('activeAdminTitle').textContent = data.admin_name || 'إدارة المدرسة';
+                var stream = document.getElementById('adminMessagesStream');
+                var html = '';
+                (data.messages || []).forEach(function(m) {
+                    if (m.sender === 'teacher') {
+                        html += '<div class="d-flex flex-column align-items-end max-w-75 ms-auto">';
+                        html += '<div class="p-3 bg-primary text-white rounded-4 shadow-sm extra-small line-height-lg">' + m.text + '</div>';
+                        html += '<small class="text-muted font-monospace extra-small mt-1 me-1">' + m.time + '</small>';
+                        html += '</div>';
+                    } else {
+                        html += '<div class="d-flex flex-column align-items-start max-w-75 me-auto">';
+                        html += '<div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">' + m.text + '</div>';
+                        html += '<small class="text-muted font-monospace extra-small mt-1 ms-1">' + m.time + '</small>';
+                        html += '</div>';
+                    }
+                });
+                stream.innerHTML = html;
+                stream.scrollTop = stream.scrollHeight;
+            });
+    };
+})();
+</script>
+{% endblock %}
