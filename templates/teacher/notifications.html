@@ -1,0 +1,461 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}مركز الإشعارات والتنبيهات | مساحة العمل للمعلم (Enterprise Teacher Notification Center){% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="teacherNotificationsPageContainer">
+    
+    <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="notificationToastContainer"></div>
+
+    <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-bell fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
+                                🔔 مركز الإشعارات والتنبيهات المباشرة (Enterprise Notification Center)
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
+                            غير المقروءة: <span class="text-white fw-bold text-warning">{{ stats.unread_count }}</span> | 
+                            إشعارات اليوم: <span class="text-white fw-bold">{{ stats.today_count }}</span> | 
+                            عالية الأولوية: <span class="text-white fw-bold text-danger">{{ stats.priority_count }}</span> | 
+                            آخر تحديث: <span class="text-white fw-bold">{{ stats.last_update }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta & Primary Actions -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="markAllRead()">
+                        <i class="fa-solid fa-check-double me-1"></i> تعليم الجميع كمقروء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 6 KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الإشعارات والتنبيهات">
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('all')">
+            {{ macros.render_kpi_card("إجمالي الإشعارات", stats.total_notifications, "جميع السجلات المرصودة", "fa-solid fa-bell", "primary", "javascript:filterNotifications('all')", "إجمالي الإشعارات") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('unread')">
+            {{ macros.render_kpi_card("غير المقروءة", stats.unread_count, "تتطلب الإشراف والاطلاع", "fa-solid fa-envelope-open", "danger", "javascript:filterNotifications('unread')", "الإشعارات غير المقروءة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('all')">
+            {{ macros.render_kpi_card("إشعارات اليوم", stats.today_count, "سجلات الأنشطة اليومية", "fa-solid fa-calendar-day", "info", "javascript:filterNotifications('all')", "إشعارات اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('priority')">
+            {{ macros.render_kpi_card("عالية الأولوية", stats.priority_count, "تنبيات عاجلة وحرجة", "fa-solid fa-triangle-exclamation", "warning", "javascript:filterNotifications('priority')", "الإشعارات عالية الأولوية") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('homework')">
+            {{ macros.render_kpi_card("الأكاديمية", stats.academic_count, "واجبات، اختبارات ودرجات", "fa-solid fa-graduation-cap", "success", "javascript:filterNotifications('homework')", "الإشعارات الأكاديمية") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterNotifications('admin')">
+            {{ macros.render_kpi_card("الإدارية", stats.admin_count, "تعاميم واجتماعات الإدارة", "fa-solid fa-bullhorn", "secondary", "javascript:filterNotifications('admin')", "الإشعارات الإدارية") }}
+        </div>
+    </div>
+
+    <!-- 3. SMART INSIGHTS DEDICATED BANNER -->
+    <div class="card border-0 rounded-4 shadow-sm bg-white mb-4 p-3 border-start border-4 border-primary" id="smartInsightsContainer">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold text-dark mb-0 font-cairo extra-small">
+                <i class="fa-solid fa-wand-magic-sparkles text-primary me-2 fs-6"></i> مصفوفة الرؤى والتوجيهات الأكاديمية الذكية (Smart Notification Insights):
+            </h6>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 extra-small font-monospace">آلي مباشر</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 overflow-x-auto extra-small pb-1" id="smartInsightsList">
+            {% for ins in stats.smart_insights %}
+                <span class="badge bg-{{ ins.type }}-subtle text-{{ ins.type }} border border-{{ ins.type }}-subtle rounded-pill px-3 py-2 text-wrap line-height-md shadow-2xs">
+                    {{ ins.text }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 4. FILTER TOOLBAR (SEARCH + CATEGORIES CHIPS + PRIORITY + READ STATUS) -->
+    <div class="card rounded-4 shadow-sm border-0 mb-4 p-3 bg-white">
+        <div class="row g-2 align-items-center">
+            
+            <!-- Search Box -->
+            <div class="col-12 col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="notificationSearchInput" class="form-control border-start-0 ps-0 extra-small" placeholder="بحث باسم الطالب، العنوان أو المادة..." onkeyup="searchNotifications(this.value)">
+                </div>
+            </div>
+
+            <!-- Priority Dropdown -->
+            <div class="col-6 col-md-2">
+                <select id="priorityFilterSelect" class="form-select form-select-sm extra-small" onchange="loadNotifications()">
+                    <option value="all">كل الأولويات</option>
+                    <option value="urgent">عاجلة 🔴</option>
+                    <option value="high">مرتفعة 🟠</option>
+                    <option value="medium">متوسطة 🟡</option>
+                    <option value="low">منخفضة 🟢</option>
+                </select>
+            </div>
+
+            <!-- Read Status Dropdown -->
+            <div class="col-6 col-md-2">
+                <select id="readStatusFilterSelect" class="form-select form-select-sm extra-small" onchange="loadNotifications()">
+                    <option value="all">كل الحالات</option>
+                    <option value="unread">غير المقروءة 🔴</option>
+                    <option value="read">المقروءة ✔</option>
+                    <option value="archived">المؤرشفة 📁</option>
+                </select>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-12 col-md-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="markAllRead()"><i class="fa-solid fa-check-double me-1"></i> تحديد الكل كمقروء</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="bulkNotificationAction('archive')"><i class="fa-solid fa-box-archive me-1"></i> أرشفة المحدد</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="bulkNotificationAction('delete')"><i class="fa-solid fa-trash me-1"></i> حذف المحدد</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Chips Row -->
+        <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small mt-3 pt-2 border-top" id="categoryChipsContainer">
+            <span class="text-muted fw-bold me-1">الفئات:</span>
+            <button type="button" class="btn btn-xs btn-primary rounded-pill px-3 active" onclick="filterNotifications('all', this)">الجميع</button>
+            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3" onclick="filterNotifications('homework', this)">📚 الواجبات</button>
+            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3" onclick="filterNotifications('exams', this)">📝 الاختبارات</button>
+            <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-3" onclick="filterNotifications('attendance', this)">🟡 الحضور</button>
+            <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-3" onclick="filterNotifications('gradebook', this)">⭐ الدرجات</button>
+            <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-3" onclick="filterNotifications('messages', this)">💬 الرسائل</button>
+            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3" onclick="filterNotifications('admin', this)">🏢 الإدارة</button>
+        </div>
+    </div>
+
+    <!-- 5. ENTERPRISE NOTIFICATION TIMELINE STREAM LIST -->
+    <div class="card rounded-4 shadow-sm border-0 p-3 bg-white mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+            <h6 class="fw-bold text-dark mb-0 extra-small">
+                <i class="fa-solid fa-list-check me-2 text-primary"></i> الجدول الزمني وسجل الإشعارات والتنبيهات المباشرة:
+            </h6>
+            <small class="text-muted font-monospace extra-small" id="timelineCountText">عرض الإشعارات المفلترة</small>
+        </div>
+
+        <div class="list-group list-group-flush extra-small gap-3" id="notificationTimelineContainer">
+            {% if notifications and notifications|length > 0 %}
+                {% for n in notifications %}
+                    <div class="list-group-item p-3 rounded-4 border shadow-sm notif-item position-relative hover-scale transition-all {% if not n.read %}bg-primary-subtle border-start border-4 border-primary{% else %}bg-light{% endif %}"
+                         id="notif-item-{{ n.id }}"
+                         style="cursor: pointer;"
+                         onclick="openNotification({{ n.id }})">
+                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm {{ n.color_class }}" style="width: 42px; height: 42px;">
+                                    <i class="{{ n.icon }} fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                        <h6 class="fw-bold text-dark mb-0 fs-6">{{ n.title }}</h6>
+                                        <span class="badge bg-{{ n.priority_badge }} rounded-pill px-2 py-1 extra-small">{{ n.priority_label }}</span>
+                                        <span class="badge bg-white text-secondary border rounded-pill px-2 py-1 extra-small">{{ n.module_name }}</span>
+                                    </div>
+                                    <p class="text-secondary extra-small mb-0 line-height-md font-cairo">{{ n.description }}</p>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted font-monospace extra-small d-block mb-1">{{ n.timestamp }}</small>
+                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1 font-monospace extra-small">{{ n.date_str }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Controls Row -->
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 flex-wrap gap-2 extra-small">
+                            <div class="d-flex align-items-center gap-2 text-muted font-monospace">
+                                {% if n.student_name %}
+                                    <span><i class="fa-solid fa-user-graduate me-1 text-primary"></i> {{ n.student_name }}</span>
+                                {% endif %}
+                                {% if n.class_name %}
+                                    <span>| <i class="fa-solid fa-school me-1 text-info"></i> {{ n.class_name }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{{ n.action_url }}" class="btn btn-xs btn-primary rounded-pill px-3 fw-bold" onclick="event.stopPropagation();">
+                                    {{ n.action_label }} <i class="fa-solid fa-arrow-left ms-1"></i>
+                                </a>
+                                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="event.stopPropagation(); archiveNotification({{ n.id }});" title="أرشفة">
+                                    <i class="fa-solid fa-box-archive"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="event.stopPropagation(); deleteNotification({{ n.id }});" title="حذف">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-5 text-center text-muted extra-small">لا توجد إشعارات مطابقة لخيارات الفلترة الحالية.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 6. 850px NOTIFICATION DRAWER (#notificationDrawer) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="notificationDrawer" style="width: 850px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3 sticky-top" style="z-index: 1060;">
+        <h6 class="offcanvas-title fw-bold mb-0">
+            <i class="fa-solid fa-bell me-2"></i> تفاصيل وسجل الإشعار الأكاديمي (#notificationDrawer)
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-4" id="notificationDrawerContent">
+        <!-- Dynamic Drawer Data -->
+    </div>
+</div>
+
+<!-- JAVASCRIPT HANDLERS -->
+<script>
+(function() {
+    var activeCategory = 'all';
+
+    window.showNotificationToast = function(message, type) {
+        var container = document.getElementById('notificationToastContainer');
+        if (!container) return;
+
+        var typeClass = 'bg-primary';
+        var icon = 'fa-circle-info';
+        if (type === 'success') { typeClass = 'bg-success'; icon = 'fa-circle-check'; }
+        else if (type === 'warning') { typeClass = 'bg-warning text-dark'; icon = 'fa-triangle-exclamation'; }
+        else if (type === 'error' || type === 'danger') { typeClass = 'bg-danger'; icon = 'fa-circle-xmark'; }
+
+        var toastId = 'toast-' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center text-white ' + typeClass + ' border-0 shadow-lg font-cairo extra-small mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex p-2">' +
+            '<div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid ' + icon + ' fs-6"></i> ' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        container.insertAdjacentHTML('beforeend', html);
+        var toastEl = document.getElementById(toastId);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            bsToast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function() { toastEl.remove(); }, 4000);
+        }
+    };
+
+    window.loadNotifications = function() {
+        var priority = document.getElementById('priorityFilterSelect').value;
+        var readStatus = document.getElementById('readStatusFilterSelect').value;
+        var search = document.getElementById('notificationSearchInput').value;
+
+        var url = '/notifications/api/list?category=' + encodeURIComponent(activeCategory) +
+                  '&priority=' + encodeURIComponent(priority) +
+                  '&read_status=' + encodeURIComponent(readStatus) +
+                  '&search=' + encodeURIComponent(search);
+
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var container = document.getElementById('notificationTimelineContainer');
+                var html = '';
+                (data.items || []).forEach(function(n) {
+                    var bgClass = n.read ? 'bg-light' : 'bg-primary-subtle border-start border-4 border-primary';
+                    html += '<div class="list-group-item p-3 rounded-4 border shadow-sm notif-item position-relative hover-scale transition-all ' + bgClass + '" id="notif-item-' + n.id + '" style="cursor: pointer;" onclick="openNotification(' + n.id + ')">';
+                    html += '<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">';
+                    html += '<div class="d-flex align-items-center gap-3">';
+                    html += '<div class="rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm ' + n.color_class + '" style="width: 42px; height: 42px;"><i class="' + n.icon + ' fs-5"></i></div>';
+                    html += '<div>';
+                    html += '<div class="d-flex align-items-center gap-2 flex-wrap mb-1">';
+                    html += '<h6 class="fw-bold text-dark mb-0 fs-6">' + n.title + '</h6>';
+                    html += '<span class="badge bg-' + n.priority_badge + ' rounded-pill px-2 py-1 extra-small">' + n.priority_label + '</span>';
+                    html += '<span class="badge bg-white text-secondary border rounded-pill px-2 py-1 extra-small">' + n.module_name + '</span>';
+                    html += '</div>';
+                    html += '<p class="text-secondary extra-small mb-0 line-height-md font-cairo">' + n.description + '</p>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="text-end"><small class="text-muted font-monospace extra-small d-block mb-1">' + n.timestamp + '</small><span class="badge bg-light text-dark border rounded-pill px-2 py-1 font-monospace extra-small">' + n.date_str + '</span></div>';
+                    html += '</div>';
+                    html += '<div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 flex-wrap gap-2 extra-small">';
+                    html += '<div class="d-flex align-items-center gap-2 text-muted font-monospace">';
+                    if (n.student_name) html += '<span><i class="fa-solid fa-user-graduate me-1 text-primary"></i> ' + n.student_name + '</span>';
+                    if (n.class_name) html += '<span>| <i class="fa-solid fa-school me-1 text-info"></i> ' + n.class_name + '</span>';
+                    html += '</div>';
+                    html += '<div class="d-flex align-items-center gap-2">';
+                    html += '<a href="' + n.action_url + '" class="btn btn-xs btn-primary rounded-pill px-3 fw-bold" onclick="event.stopPropagation();">' + n.action_label + ' <i class="fa-solid fa-arrow-left ms-1"></i></a>';
+                    html += '<button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="event.stopPropagation(); archiveNotification(' + n.id + ');" title="أرشفة"><i class="fa-solid fa-box-archive"></i></button>';
+                    html += '<button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="event.stopPropagation(); deleteNotification(' + n.id + ');" title="حذف"><i class="fa-solid fa-trash"></i></button>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                container.innerHTML = html || '<div class="p-5 text-center text-muted extra-small">لا توجد إشعارات مطابقة لخيارات الفلترة الحالية.</div>';
+            });
+    };
+
+    window.filterNotifications = function(cat, btn) {
+        activeCategory = cat || 'all';
+        if (btn && btn.parentElement) {
+            btn.parentElement.querySelectorAll('button').forEach(function(b) {
+                b.classList.remove('btn-primary', 'active');
+                b.classList.add('btn-outline-primary', 'btn-outline-warning', 'btn-outline-success', 'btn-outline-info', 'btn-outline-secondary');
+            });
+            btn.classList.add('btn-primary', 'active');
+        }
+        loadNotifications();
+    };
+
+    var searchTimer = null;
+    window.searchNotifications = function(query) {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            loadNotifications();
+        }, 300);
+    };
+
+    window.openNotification = function(id) {
+        var drawerEl = document.getElementById('notificationDrawer');
+        var drawerBody = document.getElementById('notificationDrawerContent');
+        if (!drawerEl || !drawerBody) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+            bsDrawer.show();
+        }
+
+        drawerBody.innerHTML = '<div class="p-4 text-center text-muted extra-small"><div class="spinner-border spinner-border-sm me-2"></div>جاري تحميل تفاصيل الإشعار...</div>';
+
+        fetch('/notifications/api/detail/' + id)
+            .then(function(res) { return res.json(); })
+            .then(function(item) {
+                var html = '<div class="font-cairo extra-small pb-4">';
+                
+                // Header Card
+                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-4 shadow-sm border-0"><h5 class="fw-bold mb-1">' + item.title + '</h5><small class="text-white-50">المصدر: ' + item.module_name + ' | التاريخ: ' + item.date_str + '</small></div>';
+
+                // 5 Tabs Header
+                html += '<ul class="nav nav-pills nav-fill mb-3 font-cairo extra-small fw-bold bg-light p-2 rounded-3 border" role="tablist">';
+                html += '<li class="nav-item"><button class="nav-link active rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#notifTabDetail" type="button">📋 التفاصيل</button></li>';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#notifTabSource" type="button">🏢 المصدر</button></li>';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#notifTabLog" type="button">📜 السجل</button></li>';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#notifTabStudent" type="button">👤 الطالب</button></li>';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#notifTabActions" type="button">🚀 الإجراءات</button></li>';
+                html += '</ul>';
+
+                // Tabs Content
+                html += '<div class="tab-content extra-small">';
+                
+                // Details
+                html += '<div class="tab-pane fade show active" id="notifTabDetail"><div class="card p-3 border-0 bg-light rounded-4 mb-3"><p class="line-height-lg text-dark mb-0">' + item.description + '</p></div></div>';
+                
+                // Source
+                html += '<div class="tab-pane fade" id="notifTabSource"><div class="card p-3 border-0 bg-light rounded-4 mb-3"><p class="mb-1 text-muted">وحدة النظام: <strong>' + item.module_name + '</strong></p><p class="mb-0 text-muted">الأولوية: <strong>' + item.priority_label + '</strong></p></div></div>';
+                
+                // Log
+                html += '<div class="tab-pane fade" id="notifTabLog"><div class="card p-3 border-0 bg-light rounded-4 mb-3"><p class="mb-0 text-muted font-monospace">تم توليد الإشعار تلقائياً بتاريخ: ' + item.date_str + ' ' + item.timestamp + '</p></div></div>';
+                
+                // Student
+                html += '<div class="tab-pane fade" id="notifTabStudent"><div class="card p-3 border-0 bg-light rounded-4 mb-3"><p class="mb-1 text-muted">اسم الطالب: <strong>' + (item.student_name || 'غير محدد') + '</strong></p><p class="mb-0 text-muted">الصف: <strong>' + (item.class_name || 'عام') + '</strong></p></div></div>';
+                
+                // Actions
+                html += '<div class="tab-pane fade" id="notifTabActions"><div class="card p-3 border-0 bg-light rounded-4 mb-3"><a href="' + item.action_url + '" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">' + item.action_label + ' <i class="fa-solid fa-arrow-left ms-1"></i></a></div></div>';
+
+                html += '</div>';
+
+                // Sticky Footer
+                html += '<div class="border-top pt-3 mt-4 d-flex align-items-center justify-content-between"><a href="' + item.action_url + '" class="btn btn-primary rounded-pill px-4 fw-bold">' + item.action_label + '</a><button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">إغلاق</button></div>';
+
+                html += '</div>';
+                drawerBody.innerHTML = html;
+            });
+    };
+
+    window.markNotificationRead = function(id) {
+        fetch('/notifications/api/read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                var el = document.getElementById('notif-item-' + id);
+                if (el) el.classList.replace('bg-primary-subtle', 'bg-light');
+                showNotificationToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.markAllRead = function() {
+        fetch('/notifications/api/read-all', { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    loadNotifications();
+                    showNotificationToast(res.message, 'success');
+                }
+            });
+    };
+
+    window.archiveNotification = function(id) {
+        fetch('/notifications/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                var el = document.getElementById('notif-item-' + id);
+                if (el) el.remove();
+                showNotificationToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.deleteNotification = function(id) {
+        fetch('/notifications/api/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                var el = document.getElementById('notif-item-' + id);
+                if (el) el.remove();
+                showNotificationToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.bulkNotificationAction = function(action) {
+        fetch('/notifications/api/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                loadNotifications();
+                showNotificationToast(res.message, 'success');
+            }
+        });
+    };
+})();
+</script>
+{% endblock %}
