@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from models import Subject, Classes, Sections, Student, SchoolTable, Teacher
@@ -74,6 +75,8 @@ def index():
         logger.error(f"Error fetching teacher exams: {e}")
         exams_data = {'items': [], 'total': 0, 'page': 1, 'per_page': 10, 'total_pages': 1}
 
+    teacher = Teacher.query.filter_by(user_id=user_id).first()
+
     return render_template(
         'teacher/exams.html',
         kpi=kpi_stats,
@@ -81,7 +84,9 @@ def index():
         pagination=exams_data,
         subjects=subjects,
         classes=classes,
-        sections=sections
+        sections=sections,
+        teacher_info=teacher,
+        today=date.today().strftime('%Y-%m-%d')
     )
 
 @exam_bp.route('/api/list', methods=['GET'])
