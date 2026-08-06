@@ -1115,4 +1115,46 @@ body {
     }
 }
 
+/* Enterprise Grades SaaS Custom CSS Rules */
+.star-rating-badge {
+    background: linear-gradient(135deg, #fef08a, #facc15) !important;
+    color: #713f12 !important;
+    border: 1px solid #eab308 !important;
+    box-shadow: 0 2px 4px rgba(234, 179, 8, 0.2);
+}
+
+.text-purple { color: #7c3aed !important; }
+.bg-purple { background-color: #7c3aed !important; }
+.bg-purple-subtle { background-color: rgba(124, 58, 237, 0.1) !important; }
+.border-purple-subtle { border-color: rgba(124, 58, 237, 0.2) !important; }
+
+.btn-purple {
+    background-color: #7c3aed !important;
+    border-color: #7c3aed !important;
+    color: #ffffff !important;
+}
+.btn-purple:hover {
+    background-color: #6d28d9 !important;
+    border-color: #6d28d9 !important;
+}
+
+.btn-outline-purple {
+    color: #7c3aed !important;
+    border-color: #7c3aed !important;
+    background-color: transparent !important;
+}
+.btn-outline-purple:hover {
+    background-color: #7c3aed !important;
+    color: #ffffff !important;
+}
+
+.hover-lift {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.hover-lift:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.12) !important;
+}
+
+
 

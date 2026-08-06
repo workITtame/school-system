@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/teacher-dashboard.css') }}">
+
+<div class="app-wrapper d-flex">
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 start-0 p-3" style="z-index: 1090;">
+        <div id="liveToast" class="toast align-items-center text-white border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body font-cairo fs-6 fw-bold" id="toastMessage"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation strictly for Teacher Workspace -->
+    <nav id="sidebar" class="sidebar teacher-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">
+                <i class="fa-solid fa-chalkboard-user text-white fs-4"></i>
+            </div>
+            <div class="sidebar-logo-text">
+                <h5>مدرسة المستقبل</h5>
+                <small>مساحة عمل المعلم</small>
+            </div>
+        </div>
+        
+        <ul class="list-unstyled components">
+            <li class="{% if request.endpoint == 'teacher.dashboard' %}active{% endif %}">
+                <a href="{{ url_for('teacher.dashboard') }}"><i class="fa-solid fa-house text-primary me-2"></i> <span>لوحة التحكم</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days text-info me-2"></i> <span>جدولي الدراسي</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'students' %}active{% endif %}">
+                <a href="{{ url_for('students.home') }}"><i class="fa-solid fa-user-graduate text-success me-2"></i> <span>طلابي</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">
+                <a href="{{ url_for('attendance.index') }}"><i class="fa-solid fa-clipboard-user text-warning me-2"></i> <span>الحضور والغياب</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'homework' %}active{% endif %}">
+                <a href="{{ url_for('homework.index') }}"><i class="fa-solid fa-book-bookmark text-primary me-2"></i> <span>الواجبات</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'exams' %}active{% endif %}">
+                <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature text-danger me-2"></i> <span>الاختبارات</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
+                <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>الدرجات</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
+                <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope text-primary me-2"></i> <span>الرسائل</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'notifications' %}active{% endif %}">
+                <a href="{{ url_for('notifications.index') }}"><i class="fa-regular fa-bell text-danger me-2"></i> <span>الإشعارات</span></a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content Wrapper -->
+    <div id="content" class="main-content flex-grow-1 min-vh-100 d-flex flex-column bg-light">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 py-2 sticky-top shadow-sm">
+            <div class="container-fluid p-0">
+                <button type="button" id="sidebarCollapse" class="btn btn-light me-3 border shadow-sm rounded-circle p-2">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                
+                <span class="navbar-brand font-cairo fw-bold fs-5 mb-0 text-dark">
+                    <i class="fa-solid fa-chalkboard-user text-primary me-2"></i> لوحة المعلم التنفيذية
+                </span>
+
+                <div class="d-flex align-items-center gap-3 ms-auto">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 p-1 text-dark" href="#" id="teacherUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="avatar-circle bg-primary text-white rounded-circle fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            <span class="font-cairo fw-bold extra-small d-none d-md-inline">{{ current_user.name or 'المعلم' }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 font-cairo extra-small" aria-labelledby="teacherUserDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user me-2 text-primary"></i>الملف الشخصي</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>تسجيل الخروج</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Workspace Container -->
+        <main class="container-fluid p-4 flex-grow-1">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show font-cairo extra-small rounded-3 shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/teacher-dashboard.js') }}"></script>
+{% endblock %}

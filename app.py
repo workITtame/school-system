@@ -20,6 +20,9 @@ def create_app(config_class=Config):
     bcrypt.init_app(app)
     jwt.init_app(app)
     
+    from utils.template_filters import register_template_filters
+    register_template_filters(app)
+
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'الرجاء تسجيل الدخول للوصول إلى هذه الصفحة'

@@ -1,14 +1,54 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask_login import login_required, current_user
+from datetime import datetime
 import time
 from models import Qualifications
-from utils.decorators import admin_required
+from utils.decorators import admin_required, teacher_required
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 
 from models import Qualifications, Teacher
 
+@teacher_bp.route('/dashboard')
+@login_required
+@teacher_required
+def dashboard():
+    from services.teacher_dashboard_service import (
+        get_teacher_by_user_id,
+        get_today_classes,
+        get_students_needing_attention,
+        get_pending_homeworks,
+        get_upcoming_exams,
+        get_teacher_notifications,
+        get_dashboard_statistics
+    )
+    
+    teacher = get_teacher_by_user_id(current_user.id)
+    stats = get_dashboard_statistics(teacher)
+    today_classes = get_today_classes(teacher.TeacherID if teacher else None)
+    attention_students = get_students_needing_attention(teacher)
+    homeworks = get_pending_homeworks(teacher)
+    upcoming_exams = get_upcoming_exams(teacher)
+    notifications = get_teacher_notifications(current_user.id)
+    
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    
+    return render_template(
+        'teacher/dashboard.html',
+        stats=stats,
+        today_classes=today_classes,
+        attention_students=attention_students,
+        homeworks=homeworks,
+        upcoming_exams=upcoming_exams,
+        notifications=notifications,
+        today_date=today_date,
+        user_name=current_user.name
+    )
+
 @teacher_bp.route('/')
+@admin_required
 def index():
+
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     from models import Qualifications, Teacher, SchoolTable, Classes, db

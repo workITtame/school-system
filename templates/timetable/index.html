@@ -8,24 +8,25 @@
     <!-- ========================================== -->
     <!-- SECTION 1: HERO HEADER                     -->
     <!-- ========================================== -->
-    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print" 
-         style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+    <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print"
+        style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
         <!-- Background Icon positioned at right (start-0 in RTL) with 5% opacity so it NEVER overlaps action buttons -->
-        <div class="position-absolute start-0 top-0 opacity-05 ps-4 pt-2 pointer-events-none" style="z-index: 1;" aria-hidden="true">
-            <i class="fa-solid fa-calendar-days" style="font-size: 9rem; color: #ffffff;"></i>
-        </div>
-        
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 10;">
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative"
+            style="z-index: 10;">
             <div>
                 <nav aria-label="breadcrumb" class="mb-2">
                     <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
-                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i
+                                    class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
                         <li class="breadcrumb-item active text-white opacity-75" aria-current="page">جدولي الدراسي</li>
                     </ol>
                 </nav>
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <h2 class="fw-bold text-white mb-0 font-monospace">جدولي الدراسي</h2>
-                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Teacher Timetable Workspace</span>
+                    <span
+                        class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Teacher
+                        Timetable Workspace</span>
                 </div>
                 <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
                     عرض وإدارة جدول حصصك اليومية والأسبوعية ومتابعة الحصص الحالية والقادمة فورياً.
@@ -33,16 +34,25 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap position-relative" style="z-index: 10;">
-                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="document.getElementById('weeklyTimetableCard')?.scrollIntoView({behavior: 'smooth'})">
+                <button type="button"
+                    class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2"
+                    onclick="document.getElementById('weeklyTimetableCard')?.scrollIntoView({behavior: 'smooth'})">
                     <i class="fa-solid fa-calendar-week fs-6"></i> <span>عرض الأسبوع</span>
                 </button>
-                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light" onclick="exportTimetableExcel()">
+                <button type="button"
+                    class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light"
+                    onclick="exportTimetableExcel()">
                     <i class="fa-solid fa-file-excel text-success fs-6"></i> <span>تصدير Excel</span>
                 </button>
-                <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                <button type="button"
+                    class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2"
+                    onclick="window.print()">
                     <i class="fa-solid fa-print fs-6"></i> <span>طباعة / PDF</span>
                 </button>
-                <button type="button" class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0" onclick="location.reload()" title="إعادة تحميل البيانات" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                <button type="button"
+                    class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0"
+                    onclick="location.reload()" title="إعادة تحميل البيانات"
+                    style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-arrows-rotate fs-6"></i>
                 </button>
             </div>
@@ -55,85 +65,103 @@
     <div class="row g-3 mb-4 no-print" role="region" aria-label="مؤشرات الجدول الدراسي اليومية">
         <!-- Card 1: Today's Lessons Count -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">حصص اليوم</span>
-                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-calendar-day fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.today_lessons_count }}</h3>
-                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> حصص مجدولة</small>
+                <small class="text-primary extra-small font-monospace"><i class="fa-solid fa-check-circle me-1"></i> حصص
+                    مجدولة</small>
             </div>
         </div>
 
         <!-- Card 2: Current Slot Info -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">الحصة الحالية</span>
-                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-clock fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.current_slot_num }}</h3>
-                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-hourglass-half me-1"></i> {{ kpi.current_slot_time }}</small>
+                <small class="text-success extra-small font-monospace"><i class="fa-solid fa-hourglass-half me-1"></i>
+                    {{ kpi.current_slot_time }}</small>
             </div>
         </div>
 
         <!-- Card 3: Next Slot Info -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">الحصة القادمة</span>
-                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-hourglass-start fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.next_slot_num }}</h3>
-                <small class="text-warning extra-small font-monospace"><i class="fa-solid fa-clock me-1"></i> {{ kpi.next_slot_time }}</small>
+                <small class="text-warning extra-small font-monospace"><i class="fa-solid fa-clock me-1"></i> {{
+                    kpi.next_slot_time }}</small>
             </div>
         </div>
 
         <!-- Card 4: Total Taught Students -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">إجمالي الطلاب</span>
-                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-user-group fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.total_students }}</h3>
-                <small class="text-info extra-small font-monospace"><i class="fa-solid fa-users me-1"></i> طلاب وطالبات</small>
+                <small class="text-info extra-small font-monospace"><i class="fa-solid fa-users me-1"></i> طلاب
+                    وطالبات</small>
             </div>
         </div>
 
         <!-- Card 5: Today's Occupancy Rate -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">نسبة إشغال اليوم</span>
-                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-chart-line fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.occupancy_rate }}%</h3>
-                <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-bolt me-1"></i> من الوقت الكلي</small>
+                <small class="text-danger extra-small font-monospace"><i class="fa-solid fa-bolt me-1"></i> من الوقت
+                    الكلي</small>
             </div>
         </div>
 
         <!-- Card 6: Taught Classes Count -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
+            <div
+                class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="extra-small text-muted font-monospace fw-bold">الصفوف اليوم</span>
-                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-school fs-6"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark font-monospace mb-1">{{ kpi.taught_classes_count }}</h3>
-                <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-layer-group me-1"></i> صفوف مختلفة</small>
+                <small class="text-secondary extra-small font-monospace"><i class="fa-solid fa-layer-group me-1"></i>
+                    صفوف مختلفة</small>
             </div>
         </div>
     </div>
@@ -145,59 +173,66 @@
         <!-- 1. Current Lesson Active Card (Left Column in RTL) -->
         <div class="col-12 col-lg-5 col-xl-4">
             <div class="glass-panel-card p-0 rounded-4 shadow-sm border-0 bg-white h-100 overflow-hidden">
-                <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff;">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between"
+                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff;">
                     <h6 class="fw-bold text-white mb-0 font-monospace">
                         <i class="fa-solid fa-circle-play me-2"></i> الحصة الحالية
                     </h6>
-                    <span class="badge bg-white text-success rounded-pill extra-small px-3 font-monospace">جارية الآن</span>
+                    <span class="badge bg-white text-success rounded-pill extra-small px-3 font-monospace">جارية
+                        الآن</span>
                 </div>
                 <div class="p-4 text-center">
                     {% if current_lesson and current_lesson.subject %}
-                        <div class="mb-3">
-                            <h4 class="fw-extrabold text-primary font-monospace mb-1">
-                                <i class="fa-solid fa-book-open me-2"></i>{{ current_lesson.subject }}
-                            </h4>
-                            <h6 class="text-dark font-monospace extra-small">{{ current_lesson.class }}</h6>
-                        </div>
+                    <div class="mb-3">
+                        <h4 class="fw-extrabold text-primary font-monospace mb-1">
+                            <i class="fa-solid fa-book-open me-2"></i>{{ current_lesson.subject }}
+                        </h4>
+                        <h6 class="text-dark font-monospace extra-small">{{ current_lesson.class }}</h6>
+                    </div>
 
-                        <div class="row g-2 bg-light p-3 rounded-4 border mb-3 font-monospace extra-small">
-                            <div class="col-6 border-end">
-                                <span class="text-muted d-block mb-1">الوقت</span>
-                                <strong class="text-dark">{{ current_lesson.time }}</strong>
-                            </div>
-                            <div class="col-6">
-                                <span class="text-muted d-block mb-1">عدد الطلاب</span>
-                                <strong class="text-dark">{{ current_lesson.students_count }} طالب</strong>
-                            </div>
-                            <div class="col-6 border-top border-end pt-2 mt-2">
-                                <span class="text-muted d-block mb-1">القاعة</span>
-                                <strong class="text-primary"><i class="fa-solid fa-location-dot me-1"></i>{{ current_lesson.room }}</strong>
-                            </div>
-                            <div class="col-6 border-top pt-2 mt-2">
-                                <span class="text-muted d-block mb-1">نسبة الحضور</span>
-                                <strong class="text-success"><i class="fa-solid fa-chart-pie me-1"></i>{{ current_lesson.attendance_rate }}%</strong>
-                            </div>
+                    <div class="row g-2 bg-light p-3 rounded-4 border mb-3 font-monospace extra-small">
+                        <div class="col-6 border-end">
+                            <span class="text-muted d-block mb-1">الوقت</span>
+                            <strong class="text-dark">{{ current_lesson.time }}</strong>
                         </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block mb-1">عدد الطلاب</span>
+                            <strong class="text-dark">{{ current_lesson.students_count }} طالب</strong>
+                        </div>
+                        <div class="col-6 border-top border-end pt-2 mt-2">
+                            <span class="text-muted d-block mb-1">القاعة</span>
+                            <strong class="text-primary"><i class="fa-solid fa-location-dot me-1"></i>{{
+                                current_lesson.room }}</strong>
+                        </div>
+                        <div class="col-6 border-top pt-2 mt-2">
+                            <span class="text-muted d-block mb-1">نسبة الحضور</span>
+                            <strong class="text-success"><i class="fa-solid fa-chart-pie me-1"></i>{{
+                                current_lesson.attendance_rate }}%</strong>
+                        </div>
+                    </div>
 
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ url_for('attendance.index') }}" class="btn btn-success rounded-pill py-2 px-3 fw-bold font-monospace extra-small w-100 shadow-sm">
-                                <i class="fa-solid fa-user-check me-1"></i> رصد الحضور الآن
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('attendance.index') }}"
+                            class="btn btn-success rounded-pill py-2 px-3 fw-bold font-monospace extra-small w-100 shadow-sm">
+                            <i class="fa-solid fa-user-check me-1"></i> رصد الحضور الآن
+                        </a>
+                        <div class="d-flex gap-1 w-100">
+                            <a href="{{ url_for('messages.index') }}"
+                                class="btn btn-sm btn-outline-secondary rounded-pill w-50 font-monospace extra-small">
+                                <i class="fa-regular fa-envelope me-1"></i> إرسال رسالة
                             </a>
-                            <div class="d-flex gap-1 w-100">
-                                <a href="{{ url_for('messages.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill w-50 font-monospace extra-small">
-                                    <i class="fa-regular fa-envelope me-1"></i> إرسال رسالة
-                                </a>
-                                <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-sm btn-outline-warning rounded-pill w-50 font-monospace extra-small">
-                                    <i class="fa-solid fa-star me-1"></i> رصد الدرجات
-                                </a>
-                            </div>
+                            <a href="{{ url_for('grades.manage_grades') }}"
+                                class="btn btn-sm btn-outline-warning rounded-pill w-50 font-monospace extra-small">
+                                <i class="fa-solid fa-star me-1"></i> رصد الدرجات
+                            </a>
                         </div>
+                    </div>
                     {% else %}
-                        <div class="py-4">
-                            <i class="fa-regular fa-clock text-muted opacity-25 fs-1 d-block mb-3"></i>
-                            <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد حصة جارية في هذه اللحظة</h6>
-                            <p class="text-muted extra-small font-monospace mb-0">جدولك الحالي خالي في الوقت الحاضر.</p>
-                        </div>
+                    <div class="py-4">
+                        <i class="fa-regular fa-clock text-muted opacity-25 fs-1 d-block mb-3"></i>
+                        <h6 class="fw-bold text-dark font-monospace mb-1">لا توجد حصة جارية في هذه اللحظة</h6>
+                        <p class="text-muted extra-small font-monospace mb-0">جدولك الحالي خالي في الوقت الحاضر.</p>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -210,29 +245,33 @@
                     <h6 class="fw-bold text-dark mb-0 font-monospace">
                         <i class="fa-solid fa-timeline text-primary me-2"></i> جدول حصص اليوم المباشر (Timeline)
                     </h6>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">{{ today_day_name }}</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">{{
+                        today_day_name }}</span>
                 </div>
                 <div class="p-3 overflow-auto">
                     <div class="d-flex gap-3 pb-2" style="min-width: 600px;">
                         {% if daily_timeline and daily_timeline|length > 0 %}
-                            {% for slot in daily_timeline %}
-                                <div class="glass-panel-card p-3 rounded-4 border bg-white flex-grow-1 position-relative hover-lift text-center {% if slot.is_current %}border-success border-2 bg-success-subtle{% elif slot.is_next %}border-warning border-2 bg-warning-subtle{% endif %}" style="min-width: 170px;">
-                                    <span class="badge bg-{{ slot.status_class }} rounded-pill extra-small font-monospace px-3 py-1 mb-2 d-inline-block">
-                                        {{ slot.status }}
-                                    </span>
-                                    <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">{{ slot.subject_name }}</h6>
-                                    <p class="text-muted extra-small font-monospace mb-2">{{ slot.class_name }}</p>
-                                    <div class="extra-small font-monospace text-primary fw-bold border-top pt-2">
-                                        <i class="fa-solid fa-clock me-1"></i>{{ slot.time }}
-                                    </div>
-                                    <small class="text-muted font-monospace d-block mt-1" style="font-size:0.7rem;"><i class="fa-solid fa-location-dot me-1"></i>{{ slot.room }}</small>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="p-4 text-center w-100 text-muted font-monospace extra-small">
-                                <i class="fa-solid fa-calendar-xmark opacity-25 fs-1 d-block mb-2"></i>
-                                لا توجد حصص مجدولة اليوم.
+                        {% for slot in daily_timeline %}
+                        <div class="glass-panel-card p-3 rounded-4 border bg-white flex-grow-1 position-relative hover-lift text-center {% if slot.is_current %}border-success border-2 bg-success-subtle{% elif slot.is_next %}border-warning border-2 bg-warning-subtle{% endif %}"
+                            style="min-width: 170px;">
+                            <span
+                                class="badge bg-{{ slot.status_class }} rounded-pill extra-small font-monospace px-3 py-1 mb-2 d-inline-block">
+                                {{ slot.status }}
+                            </span>
+                            <h6 class="fw-bold text-dark font-monospace mb-1 extra-small">{{ slot.subject_name }}</h6>
+                            <p class="text-muted extra-small font-monospace mb-2">{{ slot.class_name }}</p>
+                            <div class="extra-small font-monospace text-primary fw-bold border-top pt-2">
+                                <i class="fa-solid fa-clock me-1"></i>{{ slot.time }}
                             </div>
+                            <small class="text-muted font-monospace d-block mt-1" style="font-size:0.7rem;"><i
+                                    class="fa-solid fa-location-dot me-1"></i>{{ slot.room }}</small>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="p-4 text-center w-100 text-muted font-monospace extra-small">
+                            <i class="fa-solid fa-calendar-xmark opacity-25 fs-1 d-block mb-2"></i>
+                            لا توجد حصص مجدولة اليوم.
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -251,12 +290,16 @@
                     <h6 class="fw-bold text-dark mb-0 font-monospace">
                         <i class="fa-solid fa-table-list text-primary me-2"></i> جدول اليوم التفصيلي
                     </h6>
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace extra-small fw-bold" onclick="location.reload()">
+                    <button type="button"
+                        class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace extra-small fw-bold"
+                        onclick="location.reload()">
                         تحديث البيانات
                     </button>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle text-center mb-0 extra-small font-monospace custom-enterprise-table" aria-label="جدول حصص اليوم">
+                    <table
+                        class="table table-bordered align-middle text-center mb-0 extra-small font-monospace custom-enterprise-table"
+                        aria-label="جدول حصص اليوم">
                         <thead class="bg-light sticky-top">
                             <tr>
                                 <th class="py-2 border-0 text-primary">#</th>
@@ -270,25 +313,30 @@
                         </thead>
                         <tbody>
                             {% if daily_timeline and daily_timeline|length > 0 %}
-                                {% for slot in daily_timeline %}
-                                    <tr class="{% if slot.is_current %}table-success{% elif slot.is_next %}table-warning{% endif %}">
-                                        <td class="fw-bold text-primary">{{ slot.num }}</td>
-                                        <td class="fw-bold text-dark">{{ slot.time }}</td>
-                                        <td class="text-start fw-bold text-dark">{{ slot.subject_name }}</td>
-                                        <td class="text-muted">{{ slot.class_name }}</td>
-                                        <td><span class="badge bg-light text-dark border font-monospace">{{ slot.room }}</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary font-monospace">{{ slot.students_count }}</span></td>
-                                        <td>
-                                            <span class="badge bg-{{ slot.status_class }}-subtle text-{{ slot.status_class }} border border-{{ slot.status_class }}-subtle rounded-pill px-3 py-1 font-monospace">
-                                                {{ slot.status }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
+                            {% for slot in daily_timeline %}
+                            <tr
+                                class="{% if slot.is_current %}table-success{% elif slot.is_next %}table-warning{% endif %}">
+                                <td class="fw-bold text-primary">{{ slot.num }}</td>
+                                <td class="fw-bold text-dark">{{ slot.time }}</td>
+                                <td class="text-start fw-bold text-dark">{{ slot.subject_name }}</td>
+                                <td class="text-muted">{{ slot.class_name }}</td>
+                                <td><span class="badge bg-light text-dark border font-monospace">{{ slot.room }}</span>
+                                </td>
+                                <td><span class="badge bg-primary-subtle text-primary font-monospace">{{
+                                        slot.students_count }}</span></td>
+                                <td>
+                                    <span
+                                        class="badge bg-{{ slot.status_class }}-subtle text-{{ slot.status_class }} border border-{{ slot.status_class }}-subtle rounded-pill px-3 py-1 font-monospace">
+                                        {{ slot.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
                             {% else %}
-                                <tr>
-                                    <td colspan="7" class="py-4 text-center text-muted">لا توجد حصص مسجلة بالجدول اليومي.</td>
-                                </tr>
+                            <tr>
+                                <td colspan="7" class="py-4 text-center text-muted">لا توجد حصص مسجلة بالجدول اليومي.
+                                </td>
+                            </tr>
                             {% endif %}
                         </tbody>
                     </table>
@@ -303,37 +351,45 @@
                     <h6 class="fw-bold text-dark mb-0 font-monospace">
                         <i class="fa-solid fa-calendar-week text-primary me-2"></i> الجدول الأسبوعي الفعلي
                     </h6>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">السبت - الخميس</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">السبت -
+                        الخميس</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle text-center mb-0 extra-small font-monospace" aria-label="الجدول الأسبوعي للمعلم">
+                    <table class="table table-bordered align-middle text-center mb-0 extra-small font-monospace"
+                        aria-label="الجدول الأسبوعي للمعلم">
                         <thead class="bg-light sticky-top">
                             <tr>
                                 {% for day in week_days %}
-                                    <th class="py-2 text-primary border-0 {% if day == today_day_name %}bg-primary text-white{% endif %}">{{ day }}</th>
+                                <th
+                                    class="py-2 text-primary border-0 {% if day == today_day_name %}bg-primary text-white{% endif %}">
+                                    {{ day }}</th>
                                 {% endfor %}
                             </tr>
                         </thead>
                         <tbody>
                             {% set max_rows = 5 %}
                             {% for row_idx in range(max_rows) %}
-                                <tr>
-                                    {% for day in week_days %}
-                                        {% set day_slots = weekly_matrix.get(day, []) %}
-                                        {% if day_slots|length > row_idx %}
-                                            {% set slot = day_slots[row_idx] %}
-                                            <td class="p-2 bg-light-subtle align-top" style="min-width: 110px;">
-                                                <div class="p-2 rounded-3 bg-white border shadow-sm text-center">
-                                                    <strong class="d-block text-primary extra-small mb-1">{{ slot.subject }}</strong>
-                                                    <small class="text-muted d-block extra-small" style="font-size:0.68rem;">{{ slot.class }}</small>
-                                                    <small class="text-secondary d-block font-monospace" style="font-size:0.65rem;"><i class="fa-solid fa-clock me-1"></i>{{ slot.time }}</small>
-                                                </div>
-                                            </td>
-                                        {% else %}
-                                            <td class="p-2 text-muted opacity-25 align-middle">—</td>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tr>
+                            <tr>
+                                {% for day in week_days %}
+                                {% set day_slots = weekly_matrix.get(day, []) %}
+                                {% if day_slots|length > row_idx %}
+                                {% set slot = day_slots[row_idx] %}
+                                <td class="p-2 bg-light-subtle align-top" style="min-width: 110px;">
+                                    <div class="p-2 rounded-3 bg-white border shadow-sm text-center">
+                                        <strong class="d-block text-primary extra-small mb-1">{{ slot.subject
+                                            }}</strong>
+                                        <small class="text-muted d-block extra-small" style="font-size:0.68rem;">{{
+                                            slot.class }}</small>
+                                        <small class="text-secondary d-block font-monospace"
+                                            style="font-size:0.65rem;"><i class="fa-solid fa-clock me-1"></i>{{
+                                            slot.time }}</small>
+                                    </div>
+                                </td>
+                                {% else %}
+                                <td class="p-2 text-muted opacity-25 align-middle">—</td>
+                                {% endif %}
+                                {% endfor %}
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -348,10 +404,13 @@
     <div class="row g-3">
         <!-- 1. Today's Summary -->
         <div class="col-12 col-lg-7 col-xl-8">
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0" role="region" aria-label="ملخص اليوم الإحصائي">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0" role="region"
+                aria-label="ملخص اليوم الإحصائي">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> ملخص اليوم الإحصائي</h6>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">تنسيق تلقائي</span>
+                    <h6 class="fw-bold text-dark font-monospace mb-0"><i
+                            class="fa-solid fa-chart-pie text-primary me-2"></i> ملخص اليوم الإحصائي</h6>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small">تنسيق
+                        تلقائي</span>
                 </div>
                 <div class="row g-3 text-center font-monospace">
                     <div class="col-6 col-md-3">
@@ -384,21 +443,27 @@
 
         <!-- 2. Bottom Quick Actions -->
         <div class="col-12 col-lg-5 col-xl-4">
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 h-100" role="region" aria-label="إجراءات سريعة">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 h-100" role="region"
+                aria-label="إجراءات سريعة">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-bolt text-warning me-2"></i> إجراءات سريعة</h6>
+                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-bolt text-warning me-2"></i>
+                        إجراءات سريعة</h6>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-success rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
+                    <a href="{{ url_for('attendance.index') }}"
+                        class="btn btn-outline-success rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-clipboard-user me-1"></i> رصد الحضور
                     </a>
-                    <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-outline-warning rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
+                    <a href="{{ url_for('grades.manage_grades') }}"
+                        class="btn btn-outline-warning rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-star me-1"></i> رصد الدرجات
                     </a>
-                    <a href="{{ url_for('homework.index') }}" class="btn btn-outline-primary rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
+                    <a href="{{ url_for('homework.index') }}"
+                        class="btn btn-outline-primary rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-book-bookmark me-1"></i> إضافة واجب
                     </a>
-                    <a href="{{ url_for('reports.student_report') }}" class="btn btn-outline-info rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
+                    <a href="{{ url_for('reports.student_report') }}"
+                        class="btn btn-outline-info rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-chart-column me-1"></i> التقارير
                     </a>
                 </div>
@@ -409,8 +474,8 @@
 </div>
 
 <script>
-function exportTimetableExcel() {
-    Swal.fire('تصدير Excel', 'جاري تجهيز وتصدير جدول الحصص الأسبوعي بصيغة Excel...', 'info');
-}
+    function exportTimetableExcel() {
+        Swal.fire('تصدير Excel', 'جاري تجهيز وتصدير جدول الحصص الأسبوعي بصيغة Excel...', 'info');
+    }
 </script>
 {% endblock %}

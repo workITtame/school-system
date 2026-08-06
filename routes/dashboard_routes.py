@@ -41,7 +41,7 @@ def get_teacher_dashboard_data(user_id):
 
     if not teacher:
         return {
-            'students': 0,
+            'students': Student.query.filter_by(is_deleted=False).count(),
             'classes': 0,
             'active_homework': 0,
             'unread_messages': 0,
@@ -71,6 +71,7 @@ def get_teacher_dashboard_data(user_id):
     teacher_subject_ids = list(set([s.SubID for s in slots if s.SubID] + [sub.SubID for sub in teacher.subjects]))
 
     # 2. Students Count (Strictly Taught by Teacher)
+    total_students = 0
     if teacher_class_ids:
         if teacher_section_ids:
             total_students = Student.query.filter(
@@ -83,8 +84,9 @@ def get_teacher_dashboard_data(user_id):
                 Student.is_deleted == False,
                 Student.CID.in_(teacher_class_ids)
             ).count()
-    else:
-        total_students = 0
+
+    if not total_students or total_students == 0:
+        total_students = Student.query.filter_by(is_deleted=False).count()
 
     # 3. Today's Slots & Lessons Count
     today_slots = [s for s in slots if s.day and s.day.DName == today_day_name]
@@ -667,8 +669,6 @@ def get_admin_dashboard_data():
 @dashboard_bp.route("/dashboard")
 @login_required
 def index():
-    today = datetime.now().date()
-    
     if current_user.role == 'admin':
         admin_data = get_admin_dashboard_data()
         return render_template("dashboard/index.html",
@@ -676,26 +676,8 @@ def index():
                                user_role=current_user.role,
                                **admin_data)
     else:
-        # Teacher Dashboard rendering with Scoped Data
-        t_data = get_teacher_dashboard_data(current_user.id)
-        return render_template("dashboard.html",
-                               user_name=current_user.name,
-                               user_role=current_user.role,
-                               today_date=today.strftime('%Y-%m-%d'),
-                               total_students=t_data['students'],
-                               total_classes=t_data['classes'],
-                               active_homework_count=t_data['active_homework'],
-                               unread_messages_count=t_data['unread_messages'],
-                               upcoming_exams=t_data.get('upcoming_exams', 0),
-                               teacher_info=t_data.get('teacher_info', {}),
-                               current_lesson=t_data['current_lesson'],
-                               next_lesson=t_data['next_lesson'],
-                               today_events=t_data['today_events'],
-                               recent_activities=t_data['recent_activities'],
-                               recent_messages=t_data['recent_messages'],
-                               notifications=t_data['notifications'],
-                               attendance_chart=t_data['attendance_chart'],
-                               performance=t_data['performance'])
+        return redirect(url_for('teacher.dashboard'))
+
 
 
 @dashboard_bp.route("/api/dashboard/stats")

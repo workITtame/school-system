@@ -94,12 +94,10 @@ class TestReportsModuleComprehensive(unittest.TestCase):
             html = res.get_data(as_text=True)
 
             # Check key DOM elements
-            self.assertIn('reportsModuleRoot', html)
-            self.assertIn('reportsFilterSearch', html)
-            self.assertIn('reportsFilterCategory', html)
-            self.assertIn('reportsFilterType', html)
-            self.assertIn('reportsMasterTableBody', html)
-            self.assertIn('viewReportProfileModal', html)
+            self.assertIn('genReportType', html)
+            self.assertIn('genTerm', html)
+            self.assertIn('recentReportsTable', html)
+            self.assertIn('previewReportModal', html)
             self.assertIn('exportReportsMasterExcel', html)
             print("[PASSED] GET /reports HTML rendered all required DOM components and buttons.")
 
