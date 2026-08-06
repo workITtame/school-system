@@ -9,13 +9,16 @@ from models.grade import Marks
 logger = logging.getLogger(__name__)
 
 def get_teacher_by_user_id(user_id):
-    """Fetch Teacher profile linked to the logged-in User ID or fallback by Email."""
+    """Fetch Teacher profile linked to the logged-in User ID or fallback by Email or first active teacher for Admin."""
     try:
         teacher = Teacher.query.filter_by(user_id=user_id, is_deleted=False).first()
         if not teacher:
             user = User.query.get(user_id)
-            if user and hasattr(user, 'email') and user.email:
-                teacher = Teacher.query.filter_by(Email=user.email, is_deleted=False).first()
+            if user:
+                if hasattr(user, 'email') and user.email:
+                    teacher = Teacher.query.filter_by(Email=user.email, is_deleted=False).first()
+                if not teacher and getattr(user, 'role', None) == 'admin':
+                    teacher = Teacher.query.filter_by(is_deleted=False).first()
         return teacher
     except Exception as e:
         logger.exception("Error in get_teacher_by_user_id: %s", str(e))

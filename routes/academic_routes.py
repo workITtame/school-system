@@ -7,14 +7,12 @@ from utils.decorators import admin_required
 academic_bp = Blueprint('academic', __name__, url_prefix='/academic')
 
 @academic_bp.route('/')
+@admin_required
 def index():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
-    # Redirect to classes by default
     return redirect(url_for('academic.classes'))
 
 @academic_bp.route('/classes')
+@admin_required
 def classes():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
