@@ -53,6 +53,7 @@ def create_app(config_class=Config):
     from routes.grading_routes import grading_bp
     from routes.gradebook_routes import gradebook_bp
     from routes.admin_teacher_communication_routes import admin_teacher_bp
+    from routes.profile_routes import profile_bp
 
     @jwt.unauthorized_loader
     def unauthorized_callback(callback):
@@ -91,6 +92,7 @@ def create_app(config_class=Config):
     app.register_blueprint(grading_bp)
     app.register_blueprint(gradebook_bp)
     app.register_blueprint(admin_teacher_bp)
+    app.register_blueprint(profile_bp)
     
     @app.errorhandler(404)
     def page_not_found(e):

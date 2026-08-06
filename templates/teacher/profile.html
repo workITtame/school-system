@@ -1,0 +1,513 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}حسابي وإعدادات التخصيص | مساحة العمل للمعلم (Enterprise Teacher Profile & Settings Center){% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="teacherProfilePageContainer">
+    
+    <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="profileToastContainer"></div>
+
+    <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-user-gear fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
+                                👤 حسابي وإعدادات التخصيص الشخصية (Enterprise Teacher Profile Center)
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            المعلم: <span class="text-white fw-bold">{{ profile.name if profile else current_user.name }}</span> | 
+                            التخصص: <span class="text-white fw-bold">{{ profile.specialization }}</span> | 
+                            مكتمل الحساب: <span class="text-white fw-bold text-warning">{{ profile.completion_pct }}%</span> | 
+                            آخر دخول: <span class="text-white fw-bold">{{ profile.last_login }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta & Primary Actions -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="exportProfile()">
+                        <i class="fa-solid fa-download me-1"></i> تصدير السجل الأكاديمي
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 6 KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الملف الشخصي والأمان">
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("مكتمل الحساب", profile.completion_pct, "نسبة اكتمال الملف الشخصي", "fa-solid fa-chart-pie", "primary", "javascript:void(0)", "مكتمل الحساب") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("مستوى الأمان", 98, "تأمين الجلسات وكلمة السر", "fa-solid fa-shield-halved", "success", "javascript:void(0)", "مستوى الأمان") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("الإشعارات", 3, "إشعارات النظام غير المقروءة", "fa-solid fa-bell", "info", "javascript:void(0)", "الإشعارات") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("الجلسات النشطة", sessions|length, "أجهزة متصلة بحسابك", "fa-solid fa-laptop-code", "warning", "javascript:void(0)", "الجلسات النشطة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("تسجيلات الدخول", 5, "تسجيلات الدخول هذا الأسبوع", "fa-solid fa-clock-rotate-left", "secondary", "javascript:void(0)", "تسجيلات الدخول") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2">
+            {{ macros.render_kpi_card("حالة الحساب", 1, "حساب موثق ومعتمد بنجاح", "fa-solid fa-user-check", "success", "javascript:void(0)", "حالة الحساب") }}
+        </div>
+    </div>
+
+    <!-- 3. SPLIT WORKSPACE: SIDEBAR TABS + MAIN SETTINGS CONTENT -->
+    <div class="row g-3">
+        
+        <!-- SIDEBAR NAVIGATION TABS (3 cols) -->
+        <div class="col-12 col-lg-3">
+            <div class="card rounded-4 shadow-sm border-0 p-3 bg-white h-100">
+                <div class="nav flex-column nav-pills font-cairo extra-small fw-bold gap-2" id="profileSidebarTabs" role="tablist">
+                    <button class="nav-link active text-start rounded-3 py-2 px-3" id="tab-btn-info" data-bs-toggle="pill" data-bs-target="#tab-info" type="button">
+                        👤 المعلومات الشخصية
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-security" data-bs-toggle="pill" data-bs-target="#tab-security" type="button">
+                        🔒 الأمان وتغيير كلمة السر
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-notifications" data-bs-toggle="pill" data-bs-target="#tab-notifications" type="button">
+                        🔔 إعدادات الإشعارات والتنبيهات
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-appearance" data-bs-toggle="pill" data-bs-target="#tab-appearance" type="button">
+                        🎨 الثيم والمظهر العام
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-dashboard" data-bs-toggle="pill" data-bs-target="#tab-dashboard" type="button">
+                        📊 تخصيص لوحة التحكم
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-sessions" data-bs-toggle="pill" data-bs-target="#tab-sessions" type="button">
+                        💻 الأجهزة والجلسات النشطة
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-history" data-bs-toggle="pill" data-bs-target="#tab-history" type="button">
+                        📄 سجل النشاط والأحداث
+                    </button>
+                    <button class="nav-link text-start rounded-3 py-2 px-3" id="tab-btn-export" data-bs-toggle="pill" data-bs-target="#tab-export" type="button">
+                        📥 تصدير السجل الشخصي
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN SETTINGS CONTENT PANES (9 cols) -->
+        <div class="col-12 col-lg-9">
+            <div class="tab-content" id="profileTabContent">
+                
+                <!-- PANE 1: PERSONAL INFO -->
+                <div class="tab-pane fade show active" id="tab-info">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-id-card text-primary me-2"></i> تعديل وتحديث البيانات الشخصية والأكاديمية:</h6>
+                        <form id="profileInfoForm" onsubmit="event.preventDefault(); saveProfile();">
+                            <div class="row g-3 extra-small">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-dark">اسم المعلم الثلاثي:</label>
+                                    <input type="text" id="profNameInput" class="form-control form-control-sm" value="{{ profile.name }}" required>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-dark">البريد الإلكتروني الرسمي:</label>
+                                    <input type="email" id="profEmailInput" class="form-control form-control-sm bg-light" value="{{ profile.email }}" readonly>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-dark">رقم الهاتف التواصل:</label>
+                                    <input type="text" id="profPhoneInput" class="form-control form-control-sm" value="{{ profile.phone }}">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-bold text-dark">التخصص الأكاديمي الرئيسي:</label>
+                                    <input type="text" id="profSpecInput" class="form-control form-control-sm bg-light" value="{{ profile.specialization }}" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">المؤهل العلمي والشهادات:</label>
+                                    <input type="text" id="profQualInput" class="form-control form-control-sm" value="{{ profile.qualification }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">الساعات المكتبية والتواجد:</label>
+                                    <input type="text" id="profHoursInput" class="form-control form-control-sm" value="{{ profile.office_hours }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">النبذة التعريفية السيرة:</label>
+                                    <textarea id="profBioInput" class="form-control extra-small" rows="3">{{ profile.bio }}</textarea>
+                                </div>
+                            </div>
+                            <div class="mt-4 border-top pt-3 text-end">
+                                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">حفظ التغييرات 💾</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- PANE 2: SECURITY & PASSWORD -->
+                <div class="tab-pane fade" id="tab-security">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white mb-4">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-lock text-primary me-2"></i> تغيير كلمة المرور وتأمين الحساب:</h6>
+                        <form id="passwordForm" onsubmit="event.preventDefault(); changePassword();">
+                            <div class="row g-3 extra-small max-w-50">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">كلمة المرور الحالية:</label>
+                                    <input type="password" id="currPassInput" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">كلمة المرور الجديدة:</label>
+                                    <input type="password" id="newPassInput" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark">تأكيد كلمة المرور الجديدة:</label>
+                                    <input type="password" id="confirmPassInput" class="form-control form-control-sm" required>
+                                </div>
+                            </div>
+                            <div class="mt-4 border-top pt-3">
+                                <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold">تحديث كلمة المرور 🔒</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1 fs-6"><i class="fa-solid fa-shield-halved text-success me-2"></i> التحقق بخطوتين (2FA)</h6>
+                                <p class="text-muted extra-small mb-0">حماية إضافية لحساب المعلم عبر رمز الجوال أو تطبيق المصادقة.</p>
+                            </div>
+                            <div class="form-check form-switch fs-5">
+                                <input class="form-check-input" type="checkbox" role="switch" id="twoFactorSwitch" onchange="showProfileToast('تم تحديث خيار التحقق بخطوتين', 'info')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 3: NOTIFICATION PREFERENCES -->
+                <div class="tab-pane fade" id="tab-notifications">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-bell text-primary me-2"></i> تخصيص استقبال الإشعارات والتنبيهات:</h6>
+                        <form id="notifPrefsForm" onsubmit="event.preventDefault(); savePreferences();">
+                            <div class="row g-3 extra-small">
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">إشعارات تسليم الواجبات 📚</label>
+                                        <input class="form-check-input" type="checkbox" id="prefHw" {% if notif_prefs.notify_homework %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">إشعارات الحضور والغياب 🟡</label>
+                                        <input class="form-check-input" type="checkbox" id="prefAtt" {% if notif_prefs.notify_attendance %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">إشعارات نتائج الاختبارات 📝</label>
+                                        <input class="form-check-input" type="checkbox" id="prefExams" {% if notif_prefs.notify_exams %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">إشعارات الرسائل والتواصل 💬</label>
+                                        <input class="form-check-input" type="checkbox" id="prefMsgs" {% if notif_prefs.notify_messages %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">التعاميم الإدارية 📢</label>
+                                        <input class="form-check-input" type="checkbox" id="prefAdmin" {% if notif_prefs.notify_announcements %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                        <label class="form-check-label fw-bold mb-0">تحديثات سجل الدرجات ⭐</label>
+                                        <input class="form-check-input" type="checkbox" id="prefGrades" {% if notif_prefs.notify_grades %}checked{% endif %}>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 border-top pt-3 text-end">
+                                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">حفظ تفضيلات الإشعارات 🔔</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- PANE 4: APPEARANCE -->
+                <div class="tab-pane fade" id="tab-appearance">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-palette text-primary me-2"></i> تخصيص الثيم والمظهر العام للوحة المعلم:</h6>
+                        <div class="row g-3 extra-small">
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light border-primary" onclick="showProfileToast('تم التبديل للنمط الفاتح', 'success')">
+                                    <i class="fa-solid fa-sun fs-2 text-warning mb-2"></i>
+                                    <strong class="d-block text-dark mb-1">النمط الفاتح (Light Mode)</strong>
+                                    <small class="text-muted">الوضع الافتراضي النهاري المريح</small>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-dark text-white" onclick="showProfileToast('تم التبديل للنمط الليلي الداكن 🌙', 'info')">
+                                    <i class="fa-solid fa-moon fs-2 text-info mb-2"></i>
+                                    <strong class="d-block text-white mb-1">النمط الداكن (Dark Mode)</strong>
+                                    <small class="text-white-50">مناسب للعمل في الإضاءة المنخفضة</small>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light" onclick="showProfileToast('مزامنة مظهر النظام التلقائي', 'info')">
+                                    <i class="fa-solid fa-desktop fs-2 text-secondary mb-2"></i>
+                                    <strong class="d-block text-dark mb-1">حسب مظهر النظام (System)</strong>
+                                    <small class="text-muted">المزامنة مع إعدادات جهازك</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 5: DASHBOARD PREFERENCES -->
+                <div class="tab-pane fade" id="tab-dashboard">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-chart-line text-primary me-2"></i> تخصيص عناصر وودجات لوحة التحكم:</h6>
+                        <form id="dashPrefsForm" onsubmit="event.preventDefault(); saveDashboardPrefs();">
+                            <div class="mb-3 extra-small">
+                                <label class="form-label fw-bold text-dark">الصفحة الرئيسية الافتراضية عند الدخول:</label>
+                                <select id="dashLandingSelect" class="form-select form-select-sm">
+                                    <option value="/dashboard/">لوحة التحكم الرئيسية (Executive Dashboard)</option>
+                                    <option value="/students/">إدارة الطلاب والفصول (Students Workspace)</option>
+                                    <option value="/attendance/">حضور وغياب الطلاب (Attendance Center)</option>
+                                    <option value="/homework/">واجبات الطلاب وتصحيحها (Homework Workspace)</option>
+                                    <option value="/exams/">جدول وإدارة الاختبارات (Exams Center)</option>
+                                    <option value="/grades/">مركز سجل الدرجات (Gradebook Center)</option>
+                                </select>
+                            </div>
+                            <div class="mt-4 border-top pt-3 text-end">
+                                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">حفظ تفضيلات لوحة التحكم 📊</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- PANE 6: SESSIONS & DEVICES -->
+                <div class="tab-pane fade" id="tab-sessions">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+                            <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-laptop-code text-primary me-2"></i> الأجهزة والجلسات النشطة بحسابك:</h6>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 extra-small" onclick="logoutAll()">
+                                <i class="fa-solid fa-power-off me-1"></i> تسجيل الخروج من الأجهزة الأخرى
+                            </button>
+                        </div>
+                        <div class="list-group list-group-flush extra-small gap-2" id="sessionsListContainer">
+                            {% for s in sessions %}
+                                <div class="list-group-item p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="fa-solid fa-desktop fs-4 text-primary"></i>
+                                        <div>
+                                            <strong class="text-dark d-block mb-0 fs-6">{{ s.device }}</strong>
+                                            <small class="text-muted font-monospace">{{ s.browser }} | IP: {{ s.ip }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if s.is_current %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-bold">الجلسة الحالية 🟢</span>
+                                        {% else %}
+                                            <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-3" onclick="terminateSession('{{ s.session_id }}')">إنهاء الجلسة</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 7: ACTIVITY LOG -->
+                <div class="tab-pane fade" id="tab-history">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> سجل الأنشطة والأحداث السابقة:</h6>
+                        <div class="list-group list-group-flush extra-small gap-2">
+                            {% for h in login_history %}
+                                <div class="list-group-item p-2 border-0 bg-light rounded-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <strong class="text-dark d-block">{{ h.device }}</strong>
+                                        <small class="text-muted font-monospace">IP: {{ h.ip }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-light text-dark border font-monospace">{{ h.date }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 8: EXPORT -->
+                <div class="tab-pane fade" id="tab-export">
+                    <div class="card rounded-4 shadow-sm border-0 p-4 bg-white text-center">
+                        <i class="fa-solid fa-file-export fs-1 text-primary mb-3"></i>
+                        <h6 class="fw-bold text-dark mb-2">تصدير وتنزيل الأرشيف الشخصي للمعلم</h6>
+                        <p class="text-muted extra-small mb-4">يمكنك تنزيل نسخة كاملة من سجل إعداداتك وملاحظاتك الشخصية بصيغة JSON أو CSV موثقة.</p>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold me-2" onclick="exportProfile('json')">تنزيل بصيغة JSON 📥</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4 fw-bold" onclick="exportProfile('csv')">تنزيل بصيغة CSV 📄</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JAVASCRIPT HANDLERS -->
+<script>
+(function() {
+    window.showProfileToast = function(message, type) {
+        var container = document.getElementById('profileToastContainer');
+        if (!container) return;
+
+        var typeClass = 'bg-primary';
+        var icon = 'fa-circle-info';
+        if (type === 'success') { typeClass = 'bg-success'; icon = 'fa-circle-check'; }
+        else if (type === 'warning') { typeClass = 'bg-warning text-dark'; icon = 'fa-triangle-exclamation'; }
+        else if (type === 'error' || type === 'danger') { typeClass = 'bg-danger'; icon = 'fa-circle-xmark'; }
+
+        var toastId = 'toast-' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center text-white ' + typeClass + ' border-0 shadow-lg font-cairo extra-small mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex p-2">' +
+            '<div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid ' + icon + ' fs-6"></i> ' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        container.insertAdjacentHTML('beforeend', html);
+        var toastEl = document.getElementById(toastId);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            bsToast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function() { toastEl.remove(); }, 4000);
+        }
+    };
+
+    window.saveProfile = function() {
+        var name = document.getElementById('profNameInput').value;
+        var phone = document.getElementById('profPhoneInput').value;
+        var qual = document.getElementById('profQualInput').value;
+        var hours = document.getElementById('profHoursInput').value;
+        var bio = document.getElementById('profBioInput').value;
+
+        fetch('/profile/api/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, phone: phone, qualification: qual, office_hours: hours, bio: bio })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showProfileToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.changePassword = function() {
+        var curr = document.getElementById('currPassInput').value;
+        var newP = document.getElementById('newPassInput').value;
+        var conf = document.getElementById('confirmPassInput').value;
+
+        if (newP !== conf) {
+            showProfileToast('كلمة المرور الجديدة غير مطابقة', 'error');
+            return;
+        }
+
+        fetch('/profile/api/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ current_password: curr, new_password: newP })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                document.getElementById('currPassInput').value = '';
+                document.getElementById('newPassInput').value = '';
+                document.getElementById('confirmPassInput').value = '';
+                showProfileToast(res.message, 'success');
+            } else {
+                showProfileToast(res.error || 'فشل تحديث كلمة المرور', 'error');
+            }
+        });
+    };
+
+    window.savePreferences = function() {
+        var payload = {
+            notify_homework: document.getElementById('prefHw').checked,
+            notify_attendance: document.getElementById('prefAtt').checked,
+            notify_exams: document.getElementById('prefExams').checked,
+            notify_messages: document.getElementById('prefMsgs').checked,
+            notify_announcements: document.getElementById('prefAdmin').checked,
+            notify_grades: document.getElementById('prefGrades').checked
+        };
+
+        fetch('/profile/api/preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showProfileToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.saveDashboardPrefs = function() {
+        var landing = document.getElementById('dashLandingSelect').value;
+        fetch('/profile/api/dashboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ default_landing: landing })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showProfileToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.terminateSession = function(sessId) {
+        fetch('/profile/api/logout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                showProfileToast(res.message, 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            }
+        });
+    };
+
+    window.logoutAll = function() {
+        fetch('/profile/api/logout-all', { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    showProfileToast(res.message, 'success');
+                }
+            });
+    };
+
+    window.exportProfile = function(format) {
+        window.open('/profile/api/export?format=' + (format || 'json'), '_blank');
+        showProfileToast('جاري تحضير وتنزيل ملفك الشخصي 📄', 'info');
+    };
+})();
+</script>
+{% endblock %}
