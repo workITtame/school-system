@@ -298,22 +298,44 @@ def save_lesson_attendance_api():
 @login_required
 def index():
     if hasattr(current_user, 'role') and current_user.role == 'teacher':
-        classes = Classes.query.filter_by(is_deleted=False).all()
-        sections = Sections.query.filter_by(is_deleted=False).all()
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         today_date = date.today()
+        
+        teacher_class_ids = set()
+        teacher_section_ids = set()
+        if teacher:
+            slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+            for s in slots:
+                if s.CID: teacher_class_ids.add(s.CID)
+                if s.SectionID: teacher_section_ids.add(s.SectionID)
+
+        if not teacher_class_ids:
+            assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
+            for st in assigned_students:
+                if st.CID: teacher_class_ids.add(st.CID)
+                if st.SectionID: teacher_section_ids.add(st.SectionID)
+
+        classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
+        sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
         
         class_id = request.args.get('class_id')
         section_id = request.args.get('section_id')
+
+        if class_id and teacher_class_ids:
+            try:
+                if int(class_id) not in teacher_class_ids:
+                    return jsonify({'error': 'Access to out-of-scope class forbidden'}), 403
+            except ValueError:
+                pass
         
         data = get_teacher_attendance_data(current_user.id, class_id=class_id, section_id=section_id)
 
-        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         active_slot_id = None
         if teacher:
             slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
             if not slot:
-                cls = Classes.query.filter_by(is_deleted=False).first()
-                sec = Sections.query.filter_by(is_deleted=False).first()
+                cls = classes[0] if classes else Classes.query.filter_by(is_deleted=False).first()
+                sec = sections[0] if sections else Sections.query.filter_by(is_deleted=False).first()
                 sub = teacher.subjects[0] if teacher.subjects else Subject.query.filter_by(is_deleted=False).first()
                 slot = SchoolTable(
                     TeacherID=teacher.TeacherID,

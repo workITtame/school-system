@@ -865,3 +865,20 @@ function bulkSendMessage() {
     alert(`سيتم توجيهك إلى صفحة الرسائل لإرسال رسالة جماعية لـ ${ids.length} طلاب.`);
     window.location.href = `/messages/?recipients=${ids.join(',')}`;
 }
+
+// Explicitly expose functions to global window object for reliable inline event invocation
+window.openLessonDrawer = openLessonDrawer;
+window.setPageStudentAttendance = setPageStudentAttendance;
+window.updateStickySaveBarLabel = updateStickySaveBarLabel;
+window.filterPageAttendanceList = filterPageAttendanceList;
+window.filterPageAttendanceByStatus = filterPageAttendanceByStatus;
+window.markAllAttendancePage = markAllAttendancePage;
+window.savePageAttendanceBulk = savePageAttendanceBulk;
+window.setStudentAttendanceStatus = setStudentAttendanceStatus;
+window.markAllAttendanceBulk = markAllAttendanceBulk;
+window.saveLessonAttendanceBulk = saveLessonAttendanceBulk;
+window.switchTimetableTab = switchTimetableTab;
+window.toggleSelectAllStudents = toggleSelectAllStudents;
+window.updateBulkToolbar = updateBulkToolbar;
+window.clearBulkSelection = clearBulkSelection;
+window.bulkSendMessage = bulkSendMessage;
