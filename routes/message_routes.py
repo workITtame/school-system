@@ -1,220 +1,192 @@
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
+import logging
+from datetime import datetime
+from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from models import db, User, Message, Student, Classes, Sections, Subject, Teacher
-from sqlalchemy import or_, and_, desc
+from models import Teacher, Classes, Subject, Sections
+from services.teacher_message_service import (
+    get_teacher_message_statistics,
+    get_conversations,
+    get_conversation,
+    create_conversation,
+    send_message,
+    mark_as_read,
+    archive_conversation,
+    delete_conversation,
+    bulk_send
+)
+
+logger = logging.getLogger(__name__)
 
 messages_bp = Blueprint('messages', __name__, url_prefix='/messages')
 
-@messages_bp.route('/')
-@login_required
-def index():
-    user_id = current_user.id if hasattr(current_user, 'id') else session.get('user_id', 1)
-    
-    # Real DB Counts
-    total_messages = Message.query.count() or 325
-    received_messages = Message.query.filter_by(recipient_id=user_id).count() or 158
-    sent_messages = Message.query.filter_by(sender_id=user_id).count() or 167
-    unread_messages = Message.query.filter_by(recipient_id=user_id, is_read=False).count() or 12
-    
-    other_users = User.query.filter(User.id != user_id).all()
-    students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
+def _get_teacher_meta(user_id):
+    teacher = Teacher.query.filter_by(user_id=user_id).first()
+    subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
-    subjects = Subject.query.filter_by(is_deleted=False).all()
-    
-    metrics = {
-        'total_messages': total_messages,
-        'received_messages': received_messages,
-        'sent_messages': sent_messages,
-        'unread_messages': unread_messages,
-        'active_conversations': len(other_users) or 18,
-        'sent_notifications': 24,
-        'student_messages': 126,
-        'parent_messages': 89,
-        'admin_messages': 43,
-        'avg_reply_time': '2 ساعة 15 دقيقة',
-        'response_rate': '96%',
-        'urgent_messages': 7
-    }
+    return teacher, subjects, classes, sections
 
-    # Demo / Live Message Cards matching screenshot
-    message_cards = [
-        {
-            "id": 1,
-            "sender_name": "أحمد محمد علي",
-            "role_title": "طالب - الصف الثالث الثانوي",
-            "avatar": "https://ui-avatars.com/api/?name=أحمد+محمد&background=2563eb&color=fff",
-            "subject": "استفسار حول درجات الاختبار",
-            "preview": "أستاذ سمير، هل يمكنك إرسال كشف درجات الاختبار الأخير؟",
-            "time": "10:30 ص",
-            "attachments_count": 2,
-            "status": "unread",
-            "status_label": "غير مقروءة",
-            "badge_class": "bg-primary-subtle text-primary border border-primary-subtle"
-        },
-        {
-            "id": 2,
-            "sender_name": "ولي أمر / محمد خالد",
-            "role_title": "ولي أمر - الصف الثالث الثانوي",
-            "avatar": "https://ui-avatars.com/api/?name=محمد+خالد&background=16a34a&color=fff",
-            "subject": "شكر وتفدير",
-            "preview": "شكراً جزيلاً على اهتمامك ومتابعتك الدائمة لأداء ابني...",
-            "time": "4:15 ص",
-            "attachments_count": 1,
-            "status": "replied",
-            "status_label": "تم الرد",
-            "badge_class": "bg-success-subtle text-success border border-success-subtle"
-        },
-        {
-            "id": 3,
-            "sender_name": "إدارة المدرسة",
-            "role_title": "الإدارة التنفيذية",
-            "avatar": "https://ui-avatars.com/api/?name=إدارة+المدرسة&background=7c3aed&color=fff",
-            "subject": "موعد اجتماع أولياء الأمور",
-            "preview": "نود إعلامكم بموعد اجتماع أولياء الأمور يوم الأحد القادم...",
-            "time": "11:20 ص",
-            "attachments_count": 1,
-            "status": "urgent",
-            "status_label": "عاجلة",
-            "badge_class": "bg-danger-subtle text-danger border border-danger-subtle"
-        },
-        {
-            "id": 4,
-            "sender_name": "سارة إبراهيم محمود",
-            "role_title": "طالبة - الصف الثالث الثانوي",
-            "avatar": "https://ui-avatars.com/api/?name=سارة+إبراهيم&background=06b6d4&color=fff",
-            "subject": "استفسار عن الواجب",
-            "preview": "أستاذ سمير، في استفسار عن الواجب المطلوب تسليمه...",
-            "time": "25 مايو",
-            "attachments_count": 1,
-            "status": "unread",
-            "status_label": "غير مقروءة",
-            "badge_class": "bg-primary-subtle text-primary border border-primary-subtle"
-        },
-        {
-            "id": 5,
-            "sender_name": "أ. علي حسن منصور",
-            "role_title": "معلم - مادة الفيزياء",
-            "avatar": "https://ui-avatars.com/api/?name=علي+منصور&background=f59e0b&color=fff",
-            "subject": "جدول الاختبارات النهائي",
-            "preview": "تم إرسال جدول الاختبارات النهائي للفصل الدراسي الثاني...",
-            "time": "24 مايو",
-            "attachments_count": 1,
-            "status": "replied",
-            "status_label": "تم الرد",
-            "badge_class": "bg-success-subtle text-success border border-success-subtle"
-        }
-    ]
-
-    return render_template('messages/index.html',
-                           metrics=metrics,
-                           other_users=other_users,
-                           students=students,
-                           classes=classes,
-                           sections=sections,
-                           subjects=subjects,
-                           message_cards=message_cards)
-
-@messages_bp.route('/api/conversations')
+@messages_bp.route('/', methods=['GET'])
 @login_required
-def get_conversations():
-    user_id = current_user.id if hasattr(current_user, 'id') else session.get('user_id', 1)
-    users = User.query.filter(User.id != user_id).all()
-    conversations = []
-    
-    for u in users:
-        last_msg = Message.query.filter(
-            or_(
-                and_(Message.sender_id == user_id, Message.recipient_id == u.id),
-                and_(Message.sender_id == u.id, Message.recipient_id == user_id)
-            )
-        ).order_by(Message.timestamp.desc()).first()
-        
-        unread_count = Message.query.filter_by(
-            sender_id=u.id, 
-            recipient_id=user_id, 
-            is_read=False
-        ).count()
-        
-        conversations.append({
-            'user_id': u.id,
-            'name': u.name,
-            'role': 'مدير النظام' if u.role == 'admin' else 'معلم',
-            'last_message': last_msg.content if last_msg else 'ابدأ المحادثة الآن',
-            'last_time': last_msg.timestamp.strftime('%H:%M %Y-%m-%d') if last_msg else '',
-            'unread_count': unread_count
-        })
-        
-    return jsonify({'success': True, 'conversations': conversations})
+def index():
+    user_id = current_user.id
+    try:
+        teacher, subjects, classes, sections = _get_teacher_meta(user_id)
+        kpi_stats = get_teacher_message_statistics(user_id)
+        conversations = get_conversations(user_id)
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        logger.error(f"Error loading messages page: {e}")
+        kpi_stats = {'total_conversations': 0, 'unread_count': 0, 'sent_today': 0, 'received_today': 0, 'bulk_sent': 0, 'last_activity': ''}
+        conversations = []
+        teacher, subjects, classes, sections = None, [], [], []
 
-@messages_bp.route('/api/thread/<int:user_id>')
+    return render_template(
+        'teacher/messages.html',
+        kpi=kpi_stats,
+        conversations=conversations,
+        subjects=subjects,
+        classes=classes,
+        sections=sections,
+        teacher_info=teacher,
+        today=datetime.now().strftime('%Y-%m-%d')
+    )
+
+@messages_bp.route('/api/list', methods=['GET'])
 @login_required
-def get_thread(user_id):
-    current_uid = current_user.id if hasattr(current_user, 'id') else session.get('user_id', 1)
-    target_user = User.query.get_or_404(user_id)
-    
-    unread = Message.query.filter_by(sender_id=user_id, recipient_id=current_uid, is_read=False).all()
-    for m in unread:
-        m.is_read = True
-    db.session.commit()
-    
-    messages = Message.query.filter(
-        or_(
-            and_(Message.sender_id == current_uid, Message.recipient_id == user_id),
-            and_(Message.sender_id == user_id, Message.recipient_id == current_uid)
-        )
-    ).order_by(Message.timestamp.asc()).all()
-    
-    chat_history = []
-    for m in messages:
-        chat_history.append({
-            'id': m.id,
-            'sender_id': m.sender_id,
-            'is_mine': m.sender_id == current_uid,
-            'content': m.content,
-            'time': m.timestamp.strftime('%H:%M')
-        })
-        
-    return jsonify({
-        'success': True,
-        'target_user': {'id': target_user.id, 'name': target_user.name, 'role': 'مدير النظام' if target_user.role == 'admin' else 'معلم'},
-        'messages': chat_history
-    })
+def api_list():
+    user_id = current_user.id
+    search = request.args.get('search')
+    filter_type = request.args.get('filter')
+    sort_by = request.args.get('sort', 'newest')
+
+    try:
+        convs = get_conversations(user_id, search=search, filter_type=filter_type, sort_by=sort_by)
+        return jsonify({'conversations': convs})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/conversation/<int:conversation_id>', methods=['GET'])
+@login_required
+def api_conversation(conversation_id):
+    user_id = current_user.id
+    try:
+        data = get_conversation(conversation_id, user_id)
+        return jsonify(data)
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/create', methods=['POST'])
+@login_required
+def api_create():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    student_id = payload.get('student_id')
+    if not student_id:
+        return jsonify({'error': 'Student ID required'}), 400
+
+    try:
+        res = create_conversation(user_id, student_id)
+        return jsonify({'success': True, 'conversation': res})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @messages_bp.route('/api/send', methods=['POST'])
 @login_required
-def send_message():
-    data = request.get_json()
-    recipient_id = data.get('recipient_id')
-    content = data.get('content')
-    current_uid = current_user.id if hasattr(current_user, 'id') else session.get('user_id', 1)
-    
-    if not recipient_id or not content or not content.strip():
-        return jsonify({'success': False, 'message': 'محتوى الرسالة والمستلم مطلوبان'}), 400
-        
-    if int(recipient_id) == current_uid:
-        return jsonify({'success': False, 'message': 'لا يمكن إرسال رسالة لنفسك'}), 400
-        
-    recipient_user = User.query.get(recipient_id)
-    if not recipient_user or getattr(recipient_user, 'is_deleted', False):
-        return jsonify({'success': False, 'message': 'المستلم غير موجود أو تم إغلاق حسابه'}), 404
-        
-    msg = Message(
-        sender_id=current_uid,
-        recipient_id=recipient_id,
-        content=content.strip()
-    )
-    db.session.add(msg)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'تم إرسال الرسالة بنجاح',
-        'data': {
-            'id': msg.id,
-            'sender_id': msg.sender_id,
-            'is_mine': True,
-            'content': msg.content,
-            'time': msg.timestamp.strftime('%H:%M')
-        }
-    })
+def api_send():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    message_text = payload.get('message', '').strip()
+
+    if not conversation_id or not message_text:
+        return jsonify({'error': 'Conversation ID and message required'}), 400
+
+    try:
+        msg = send_message(user_id, conversation_id, message_text)
+        return jsonify({'success': True, 'message': msg})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/archive', methods=['POST'])
+@login_required
+def api_archive():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    try:
+        success = archive_conversation(user_id, conversation_id)
+        return jsonify({'success': success, 'message': 'تم أرشفة المحادثة بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/delete', methods=['POST'])
+@login_required
+def api_delete():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    try:
+        success = delete_conversation(user_id, conversation_id)
+        return jsonify({'success': success, 'message': 'تم حذف المحادثة بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/read', methods=['POST'])
+@login_required
+def api_read():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    try:
+        success = mark_as_read(user_id, conversation_id)
+        return jsonify({'success': success})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/bulk', methods=['POST'])
+@login_required
+def api_bulk():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    student_ids = payload.get('student_ids', [])
+    message_text = payload.get('message', '').strip()
+
+    if not message_text:
+        return jsonify({'error': 'Message text is required'}), 400
+
+    try:
+        res = bulk_send(user_id, student_ids, message_text)
+        return jsonify({'success': True, 'result': res, 'message': f'تم إرسال الرسالة إلى {res.get("sent_count", 0)} طالب بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/search', methods=['GET'])
+@login_required
+def api_search():
+    user_id = current_user.id
+    query = request.args.get('q', '')
+    try:
+        convs = get_conversations(user_id, search=query)
+        return jsonify({'results': convs})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

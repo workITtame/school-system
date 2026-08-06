@@ -1,0 +1,472 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}مركز الرسائل والتواصل | مساحة العمل للمعلم (Enterprise Messaging Center){% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="teacherMessagesPageContainer">
+    
+    <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="messageToastContainer"></div>
+
+    <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-comments fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
+                                💬 مركز الرسائل والتواصل المباشر (Enterprise Messaging Center)
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
+                            إجمالي المحادثات: <span class="text-white fw-bold">{{ kpi.total_conversations }}</span> | 
+                            غير المقروءة: <span class="text-white fw-bold text-warning">{{ kpi.unread_count }}</span> | 
+                            آخر نشاط: <span class="text-white fw-bold">{{ kpi.last_activity }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta & Primary Actions -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="openBulkMessagingModal()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> إرسال جماعي محدد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 6 KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الرسائل والتواصل">
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('')">
+            {{ macros.render_kpi_card("إجمالي المحادثات", kpi.total_conversations, "جميع طلاب الفصل", "fa-solid fa-comments", "primary", "javascript:filterConversations('')", "إجمالي المحادثات") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('unread')">
+            {{ macros.render_kpi_card("غير المقروءة", kpi.unread_count, "محادثات تتطلب رد", "fa-solid fa-envelope-open-text", "danger", "javascript:filterConversations('unread')", "الرسائل غير المقروءة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('')">
+            {{ macros.render_kpi_card("المرسلة اليوم", kpi.sent_today, "تواصل معلم ومدرس", "fa-solid fa-paper-plane", "success", "javascript:filterConversations('')", "الرسائل المرسلة اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('')">
+            {{ macros.render_kpi_card("المستلمة اليوم", kpi.received_today, "ردود أسر الطلاب", "fa-solid fa-inbox", "info", "javascript:filterConversations('')", "الرسائل المستلمة اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="openBulkMessagingModal()">
+            {{ macros.render_kpi_card("الإشعارات الجماعية", kpi.bulk_sent, "حملات التذكير", "fa-solid fa-bullhorn", "warning", "javascript:openBulkMessagingModal()", "الإشعارات الجماعية") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('')">
+            {{ macros.render_kpi_card("آخر نشاط", 1, "تحديث فوري آلي", "fa-solid fa-clock-rotate-left", "secondary", "javascript:filterConversations('')", "آخر نشاط للتواصل") }}
+        </div>
+    </div>
+
+    <!-- 3. FLOATING BULK MESSAGING TOOLBAR -->
+    <div class="card bg-dark text-white rounded-4 shadow-lg border-0 mb-4 p-3 animate__animated animate__fadeInUp">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace">{{ conversations|length }}</span>
+                <span class="fw-bold">محادثة نشطة بالمركز</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="openBulkMessagingModal('all')"><i class="fa-solid fa-users me-1"></i> إرسال لجميع الطلاب</button>
+                <button type="button" class="btn btn-sm btn-info rounded-pill px-3 text-white" onclick="openBulkMessagingModal('failing')"><i class="fa-solid fa-user-xmark me-1"></i> إرسال للمتعثرين 🔴</button>
+                <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 text-dark" onclick="openBulkMessagingModal('absent')"><i class="fa-solid fa-clipboard-user me-1"></i> إرسال للغائبين ⚠️</button>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="openBulkMessagingModal('late_hw')"><i class="fa-solid fa-clock me-1"></i> تذكير الواجبات 📚</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ENTERPRISE SPLIT LAYOUT (LEFT CONVERSATION LIST + RIGHT CHAT WORKSPACE & SIDEBAR) -->
+    <div class="row g-3" style="min-height: 600px;">
+        
+        <!-- LEFT PANEL: Conversation Roster List (4 cols) -->
+        <div class="col-12 col-lg-4">
+            <div class="card rounded-4 shadow-sm border-0 h-100 d-flex flex-column bg-white">
+                <div class="p-3 border-bottom">
+                    <!-- Search Input -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="conversationSearchInput" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="searchConversations(this.value)">
+                    </div>
+
+                    <!-- Filter Chips -->
+                    <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small pb-1" id="convFilterChips">
+                        <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 active" onclick="filterConversations('', this)">الكل</button>
+                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="filterConversations('unread', this)">🔴 غير مقروءة</button>
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="filterConversations('pinned', this)">📌 المثبتة</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="filterConversations('archived', this)">📁 المؤرشفة</button>
+                    </div>
+                </div>
+
+                <!-- Conversation Roster List -->
+                <div class="flex-grow-1 overflow-y-auto list-group list-group-flush extra-small pe-1 p-2" id="conversationListContainer" style="max-height: 520px;">
+                    {% if conversations and conversations|length > 0 %}
+                        {% for conv in conversations %}
+                            <div class="list-group-item list-group-item-action p-2 mb-2 rounded-3 border-0 shadow-sm conv-item {% if loop.first %}active-conv bg-primary-subtle border-start border-4 border-primary{% else %}bg-light{% endif %}"
+                                 id="conv-item-{{ conv.student_id }}"
+                                 style="cursor: pointer;"
+                                 onclick="openConversation({{ conv.student_id }})">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                                            <i class="fa-solid fa-user-graduate"></i>
+                                        </div>
+                                        <div>
+                                            <strong class="text-dark d-block mb-0 fs-6">{{ conv.student_name }}</strong>
+                                            <small class="text-muted font-monospace extra-small">{{ conv.class_name }} - {{ conv.section_name }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted font-monospace extra-small d-block">{{ conv.last_message_time }}</small>
+                                        {% if conv.unread_count > 0 %}
+                                            <span class="badge bg-danger rounded-pill px-2 py-1 extra-small">{{ conv.unread_count }}</span>
+                                        {% else %}
+                                            <i class="fa-solid fa-check-double text-success extra-small"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <p class="text-secondary extra-small mb-0 text-truncate font-cairo ps-1">
+                                    {{ conv.last_message }}
+                                </p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted extra-small">لا توجد محادثات مطابقة.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Active Chat Workspace (8 cols) -->
+        <div class="col-12 col-lg-8">
+            <div class="card rounded-4 shadow-sm border-0 h-100 d-flex flex-column bg-white" id="chatWorkspaceContainer">
+                
+                <!-- Chat Active Header -->
+                <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                            <i class="fa-solid fa-user-graduate fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 fs-6" id="activeStudentName">اختر محادثة لبدء التواصل</h6>
+                            <small class="text-muted extra-small font-monospace" id="activeStudentMeta">الرقم الأكاديمي: -- | الصف: --</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 extra-small" id="activeStudentOnline">🟢 متصل الآن</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 extra-small" onclick="openConversationDrawer()">
+                            <i class="fa-solid fa-circle-info me-1"></i> معلومات الطالب
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Timeline Stream -->
+                <div class="card-body p-3 flex-grow-1 overflow-y-auto bg-light d-flex flex-column gap-3" id="chatMessagesStream" style="max-height: 400px; min-height: 350px;">
+                    <!-- Default message bubbles loaded dynamically -->
+                    <div class="d-flex flex-column align-items-start max-w-75 me-auto">
+                        <div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">
+                            السلام عليكم ورحمة الله، مرحباً ولي أمر الطالب. يرجى الاطلاع على التقرير الأكاديمي المرصود.
+                        </div>
+                        <small class="text-muted font-monospace extra-small mt-1 ms-1">09:30 ص <i class="fa-solid fa-check-double text-success ms-1"></i></small>
+                    </div>
+
+                    <div class="d-flex flex-column align-items-end max-w-75 ms-auto">
+                        <div class="p-3 bg-primary text-white rounded-4 shadow-sm extra-small line-height-lg">
+                            أهلاً بك أستاذنا الفاضل، تم الاطلاع وسيتم تسليم الواجب المطلوب اليوم بإذن الله.
+                        </div>
+                        <small class="text-muted font-monospace extra-small mt-1 me-1">09:45 ص</small>
+                    </div>
+                </div>
+
+                <!-- Sticky Message Composer & Quick Templates -->
+                <div class="card-footer bg-white p-3 border-top sticky-bottom">
+                    <!-- Quick Presets Dropdown Bar -->
+                    <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small mb-2 pb-1">
+                        <span class="text-muted fw-bold me-1">قوالب سريعة:</span>
+                        <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2" onclick="sendQuickTemplate('يرجى تسليم الواجب المطلوب الأسبوعي 📚')">تسليم الواجب</button>
+                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="sendQuickTemplate('أداء ممتاز وإجابة متكاملة 👏')">ممتاز 👏</button>
+                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2" onclick="sendQuickTemplate('تم تحديث درجتك وسجل أداءك بنجاح 🟢')">تحديث الدرجة</button>
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="sendQuickTemplate('يرجى مراجعة سبب الغياب وتأكيده ⚠️')">مراجعة الغياب</button>
+                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="sendQuickTemplate('مستوى الطالب يتطلب متابعة أكاديمية عاجلة 🔴')">يحتاج متابعة</button>
+                    </div>
+
+                    <!-- Composer Input Row -->
+                    <form id="messageComposerForm" class="d-flex align-items-center gap-2" onsubmit="event.preventDefault(); submitComposerMessage();">
+                        <input type="text" id="messageInputText" class="form-control form-control-sm extra-small py-2" placeholder="اكتب رسالتك الأكاديمية هنا..." required>
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold flex-shrink-0">
+                            إرسال <i class="fa-solid fa-paper-plane ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. 850px CONVERSATION DRAWER (#conversationDrawer) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="conversationDrawer" style="width: 850px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3">
+        <h6 class="offcanvas-title fw-bold mb-0">
+            <i class="fa-solid fa-user-gear me-2"></i> سجل المحادثة وملف الطالب التفصيلي
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-4" id="conversationDrawerContent">
+        <!-- Dynamic Drawer Data -->
+    </div>
+</div>
+
+<!-- 6. BULK MESSAGING MODAL -->
+<div class="modal fade font-cairo" id="bulkMessagingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h6 class="modal-header-title fw-bold mb-0"><i class="fa-solid fa-bullhorn me-2"></i> إرسال إشعار تواصل جماعي</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 extra-small">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark">نطاق الطلاب المستهدفين:</label>
+                    <select id="bulkTargetScope" class="form-select form-select-sm">
+                        <option value="all">جميع طلاب الفصل والتخصص</option>
+                        <option value="failing">الطلاب المتعثرون أكاديمياً 🔴</option>
+                        <option value="absent">الطلاب الغائبون مؤخراً ⚠️</option>
+                        <option value="late_hw">أصحاب الواجبات المتأخرة 📚</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark">نص الرسالة الجماعية:</label>
+                    <textarea id="bulkMessageText" class="form-control extra-small" rows="4" placeholder="أدخل نص الرسالة الجماعية..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-modal="dismiss" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="submitBulkMessage()">إرسال الرسالة الجماعية 🚀</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JAVASCRIPT HANDLERS -->
+<script>
+(function() {
+    var activeStudentId = 1;
+
+    window.showMessageToast = function(message, type) {
+        var container = document.getElementById('messageToastContainer');
+        if (!container) return;
+
+        var typeClass = 'bg-primary';
+        var icon = 'fa-circle-info';
+        if (type === 'success') { typeClass = 'bg-success'; icon = 'fa-circle-check'; }
+        else if (type === 'warning') { typeClass = 'bg-warning text-dark'; icon = 'fa-triangle-exclamation'; }
+        else if (type === 'error' || type === 'danger') { typeClass = 'bg-danger'; icon = 'fa-circle-xmark'; }
+
+        var toastId = 'toast-' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center text-white ' + typeClass + ' border-0 shadow-lg font-cairo extra-small mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex p-2">' +
+            '<div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid ' + icon + ' fs-6"></i> ' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        container.insertAdjacentHTML('beforeend', html);
+        var toastEl = document.getElementById(toastId);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            bsToast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function() { toastEl.remove(); }, 4000);
+        }
+    };
+
+    window.openConversation = function(studentId) {
+        activeStudentId = studentId;
+
+        document.querySelectorAll('#conversationListContainer .conv-item').forEach(function(item) {
+            item.classList.remove('active-conv', 'bg-primary-subtle', 'border-start', 'border-4', 'border-primary');
+            item.classList.add('bg-light');
+        });
+
+        var targetItem = document.getElementById('conv-item-' + studentId);
+        if (targetItem) {
+            targetItem.classList.remove('bg-light');
+            targetItem.classList.add('active-conv', 'bg-primary-subtle', 'border-start', 'border-4', 'border-primary');
+        }
+
+        fetch('/messages/api/conversation/' + studentId)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.student) {
+                    document.getElementById('activeStudentName').textContent = data.student.student_name;
+                    document.getElementById('activeStudentMeta').textContent = 'الرقم الأكاديمي: ' + data.student.academic_id + ' | الصف: ' + data.student.class_name + ' (' + data.student.section_name + ')';
+                }
+
+                var stream = document.getElementById('chatMessagesStream');
+                var html = '';
+                (data.messages || []).forEach(function(m) {
+                    if (m.sender === 'teacher') {
+                        html += '<div class="d-flex flex-column align-items-end max-w-75 ms-auto">';
+                        html += '<div class="p-3 bg-primary text-white rounded-4 shadow-sm extra-small line-height-lg">' + m.text + '</div>';
+                        html += '<small class="text-muted font-monospace extra-small mt-1 me-1">' + m.time + ' <i class="fa-solid fa-check-double text-success ms-1"></i></small>';
+                        html += '</div>';
+                    } else {
+                        html += '<div class="d-flex flex-column align-items-start max-w-75 me-auto">';
+                        html += '<div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">' + m.text + '</div>';
+                        html += '<small class="text-muted font-monospace extra-small mt-1 ms-1">' + m.time + '</small>';
+                        html += '</div>';
+                    }
+                });
+                stream.innerHTML = html;
+                stream.scrollTop = stream.scrollHeight;
+            });
+    };
+
+    window.submitComposerMessage = function() {
+        var input = document.getElementById('messageInputText');
+        var text = input.value.trim();
+        if (!text) return;
+
+        fetch('/messages/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: activeStudentId, message: text })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                input.value = '';
+                openConversation(activeStudentId);
+                showMessageToast('تم إرسال الرسالة بنجاح 🚀', 'success');
+            }
+        });
+    };
+
+    window.sendQuickTemplate = function(text) {
+        document.getElementById('messageInputText').value = text;
+        submitComposerMessage();
+    };
+
+    window.openBulkMessagingModal = function(scope) {
+        if (scope) {
+            var sel = document.getElementById('bulkTargetScope');
+            if (sel) sel.value = scope;
+        }
+        var modalEl = document.getElementById('bulkMessagingModal');
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        }
+    };
+
+    window.submitBulkMessage = function() {
+        var text = document.getElementById('bulkMessageText').value.trim();
+        if (!text) return;
+
+        fetch('/messages/api/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                var modalEl = document.getElementById('bulkMessagingModal');
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    var bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+                }
+                showMessageToast(res.message, 'success');
+            }
+        });
+    };
+
+    window.filterConversations = function(filterType, btn) {
+        if (btn && btn.parentElement) {
+            btn.parentElement.querySelectorAll('button').forEach(function(b) {
+                b.classList.remove('btn-primary', 'active');
+                b.classList.add('btn-outline-secondary', 'btn-outline-danger', 'btn-outline-warning');
+            });
+            btn.classList.add('btn-primary', 'active');
+        }
+
+        fetch('/messages/api/list?filter=' + (filterType || ''))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var container = document.getElementById('conversationListContainer');
+                var html = '';
+                (data.conversations || []).forEach(function(conv, idx) {
+                    var activeClass = (idx === 0) ? 'active-conv bg-primary-subtle border-start border-4 border-primary' : 'bg-light';
+                    html += '<div class="list-group-item list-group-item-action p-2 mb-2 rounded-3 border-0 shadow-sm conv-item ' + activeClass + '" id="conv-item-' + conv.student_id + '" style="cursor: pointer;" onclick="openConversation(' + conv.student_id + ')">';
+                    html += '<div class="d-flex align-items-center justify-content-between mb-1">';
+                    html += '<div class="d-flex align-items-center gap-2">';
+                    html += '<div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;"><i class="fa-solid fa-user-graduate"></i></div>';
+                    html += '<div><strong class="text-dark d-block mb-0 fs-6">' + conv.student_name + '</strong><small class="text-muted font-monospace extra-small">' + conv.class_name + ' - ' + conv.section_name + '</small></div>';
+                    html += '</div>';
+                    html += '<div class="text-end"><small class="text-muted font-monospace extra-small d-block">' + conv.last_message_time + '</small></div>';
+                    html += '</div>';
+                    html += '<p class="text-secondary extra-small mb-0 text-truncate font-cairo ps-1">' + conv.last_message + '</p>';
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+            });
+    };
+
+    window.searchConversations = function(term) {
+        fetch('/messages/api/search?q=' + encodeURIComponent(term || ''))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var container = document.getElementById('conversationListContainer');
+                var html = '';
+                (data.results || []).forEach(function(conv) {
+                    html += '<div class="list-group-item list-group-item-action p-2 mb-2 rounded-3 border-0 shadow-sm bg-light conv-item" id="conv-item-' + conv.student_id + '" style="cursor: pointer;" onclick="openConversation(' + conv.student_id + ')">';
+                    html += '<div class="d-flex align-items-center justify-content-between mb-1">';
+                    html += '<div><strong class="text-dark d-block mb-0 fs-6">' + conv.student_name + '</strong><small class="text-muted font-monospace extra-small">' + conv.class_name + '</small></div>';
+                    html += '<small class="text-muted font-monospace extra-small">' + conv.last_message_time + '</small>';
+                    html += '</div>';
+                    html += '<p class="text-secondary extra-small mb-0 text-truncate font-cairo">' + conv.last_message + '</p>';
+                    html += '</div>';
+                });
+                container.innerHTML = html || '<div class="p-4 text-center text-muted extra-small">لا توجد محادثات مطابقة.</div>';
+            });
+    };
+
+    window.openConversationDrawer = function() {
+        var drawerEl = document.getElementById('conversationDrawer');
+        var drawerBody = document.getElementById('conversationDrawerContent');
+        if (!drawerEl || !drawerBody) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+            bsDrawer.show();
+        }
+
+        fetch('/messages/api/conversation/' + activeStudentId)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var st = data.student || {};
+                var html = '<div class="font-cairo extra-small">';
+                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-3 border-0"><h5 class="fw-bold mb-1">' + (st.student_name || 'الطالب') + '</h5><small class="text-white-50">الرقم الأكاديمي: ' + (st.academic_id || '--') + ' | الصف: ' + (st.class_name || '--') + '</small></div>';
+                html += '<div class="row g-2 font-monospace text-center mb-3"><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">متوسط الواجبات</small><strong class="text-primary">' + (st.homework_avg || 9.5) + '</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">متوسط الاختبارات</small><strong class="text-primary">' + (st.exam_avg || 94.0) + '</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">معدل الحضور</small><strong class="text-success">' + (st.attendance_pct || 96.0) + '%</strong></div></div></div>';
+                html += '<h6 class="fw-bold text-dark mb-2">سجل المراسلات التفصيلي:</h6>';
+                html += '<div class="list-group list-group-flush border-top border-bottom mb-3">';
+                (data.messages || []).forEach(function(m) {
+                    html += '<div class="list-group-item bg-transparent px-0 py-2"><strong>' + m.sender_name + ':</strong> ' + m.text + ' <small class="text-muted font-monospace me-2">(' + m.time + ')</small></div>';
+                });
+                html += '</div></div>';
+                drawerBody.innerHTML = html;
+            });
+    };
+})();
+</script>
+{% endblock %}
