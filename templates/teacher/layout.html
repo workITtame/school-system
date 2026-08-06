@@ -60,6 +60,9 @@
             <li class="{% if request.blueprint == 'profile' %}active{% endif %}">
                 <a href="{{ url_for('profile.index') }}"><i class="fa-solid fa-user-gear text-primary me-2"></i> <span>حسابي والملف الشخصي</span></a>
             </li>
+            <li class="mt-3 border-top pt-2">
+                <a href="{{ url_for('auth.logout') }}" class="text-danger fw-bold"><i class="fa-solid fa-arrow-right-from-bracket text-danger me-2"></i> <span>تسجيل الخروج</span></a>
+            </li>
         </ul>
     </nav>
 
