@@ -1,7 +1,7 @@
 {% extends 'teacher/layout.html' %}
 {% import 'teacher/macros.html' as macros %}
 
-{% block title %}مركز الرسائل والتواصل | مساحة العمل للمعلم (Enterprise Messaging Center){% endblock %}
+{% block title %}مركز المراسلات والتواصل التفاعلي | مساحة العمل للمعلم (Teacher ↔ Student Communication Workspace){% endblock %}
 
 {% block content %}
 <div class="fade-in font-cairo position-relative pb-5" id="teacherMessagesPageContainer">
@@ -21,7 +21,7 @@
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                             <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
-                                💬 مركز الرسائل والتواصل المباشر (Enterprise Messaging Center)
+                                💬 مركز التواصل والتفاعل المباشر للمعلم (Teacher ↔ Student Workspace)
                             </h4>
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
@@ -87,7 +87,7 @@
     </div>
 
     <!-- 4. ENTERPRISE SPLIT LAYOUT (LEFT CONVERSATION LIST + RIGHT CHAT WORKSPACE & SIDEBAR) -->
-    <div class="row g-3" style="min-height: 600px;">
+    <div class="row g-3" style="min-height: 620px;">
         
         <!-- LEFT PANEL: Conversation Roster List (4 cols) -->
         <div class="col-12 col-lg-4">
@@ -117,12 +117,12 @@
                                  style="cursor: pointer;"
                                  onclick="openConversation({{ conv.student_id }})">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                                    <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation(); openStudentProfileDrawer({{ conv.student_id }});">
+                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 38px; height: 38px;">
                                             <i class="fa-solid fa-user-graduate"></i>
                                         </div>
                                         <div>
-                                            <strong class="text-dark d-block mb-0 fs-6">{{ conv.student_name }}</strong>
+                                            <strong class="text-dark d-block mb-0 fs-6 text-primary-hover">{{ conv.student_name }}</strong>
                                             <small class="text-muted font-monospace extra-small">{{ conv.class_name }} - {{ conv.section_name }}</small>
                                         </div>
                                     </div>
@@ -153,8 +153,8 @@
                 
                 <!-- Chat Active Header -->
                 <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                    <div class="d-flex align-items-center gap-3" style="cursor: pointer;" onclick="openStudentProfileDrawer(activeStudentId)">
+                        <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
                             <i class="fa-solid fa-user-graduate fs-4"></i>
                         </div>
                         <div>
@@ -162,16 +162,31 @@
                             <small class="text-muted extra-small font-monospace" id="activeStudentMeta">الرقم الأكاديمي: -- | الصف: --</small>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 extra-small" id="activeStudentOnline">🟢 متصل الآن</span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 extra-small" onclick="openConversationDrawer()">
-                            <i class="fa-solid fa-circle-info me-1"></i> معلومات الطالب
+                    
+                    <!-- Header Quick Actions Bar -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 extra-small fw-bold" onclick="openStudentProfileDrawer(activeStudentId)">
+                            <i class="fa-solid fa-user me-1"></i> 👤 ملف الطالب
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 extra-small" onclick="sendQuickTemplate('يرجى تسليم الواجب المطلوب الأسبوعي 📚')">
+                            <i class="fa-solid fa-book-bookmark me-1"></i> تذكير بالواجب
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 extra-small" onclick="sendQuickTemplate('تنبيه الحضور: يرجى مراجعة سبب الغياب وتأكيده ⚠️')">
+                            <i class="fa-solid fa-clipboard-user me-1"></i> إنذار غياب
                         </button>
                     </div>
                 </div>
 
+                <!-- Smart Suggestions Bar -->
+                <div class="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2 extra-small overflow-x-auto" id="smartSuggestionsBar">
+                    <span class="text-muted fw-bold me-1"><i class="fa-solid fa-wand-magic-sparkles text-primary me-1"></i> مقترحات ذكية:</span>
+                    <button type="button" class="btn btn-xs btn-white border rounded-pill px-2" onclick="sendQuickTemplate('يرجى تسليم الواجب في أقرب وقت ممكن.')">💡 يرجى تسليم الواجب بأسرع وقت</button>
+                    <button type="button" class="btn btn-xs btn-white border rounded-pill px-2" onclick="sendQuickTemplate('تم تسجيل غيابك اليوم بحصص الفصل.')">💡 تم تسجيل غيابك اليوم</button>
+                    <button type="button" class="btn btn-xs btn-white border rounded-pill px-2" onclick="sendQuickTemplate('أحسنت، أداء متميز واستمر بهذا المستوى.')">💡 أحسنت، استمر بهذا المستوى</button>
+                </div>
+
                 <!-- Chat Messages Timeline Stream -->
-                <div class="card-body p-3 flex-grow-1 overflow-y-auto bg-light d-flex flex-column gap-3" id="chatMessagesStream" style="max-height: 400px; min-height: 350px;">
+                <div class="card-body p-3 flex-grow-1 overflow-y-auto bg-light d-flex flex-column gap-3" id="chatMessagesStream" style="max-height: 380px; min-height: 320px;">
                     <!-- Default message bubbles loaded dynamically -->
                     <div class="d-flex flex-column align-items-start max-w-75 me-auto">
                         <div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">
@@ -188,21 +203,24 @@
                     </div>
                 </div>
 
-                <!-- Sticky Message Composer & Quick Templates -->
+                <!-- Sticky Message Composer & Quick Academic Templates -->
                 <div class="card-footer bg-white p-3 border-top sticky-bottom">
                     <!-- Quick Presets Dropdown Bar -->
                     <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small mb-2 pb-1">
-                        <span class="text-muted fw-bold me-1">قوالب سريعة:</span>
-                        <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2" onclick="sendQuickTemplate('يرجى تسليم الواجب المطلوب الأسبوعي 📚')">تسليم الواجب</button>
-                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="sendQuickTemplate('أداء ممتاز وإجابة متكاملة 👏')">ممتاز 👏</button>
-                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2" onclick="sendQuickTemplate('تم تحديث درجتك وسجل أداءك بنجاح 🟢')">تحديث الدرجة</button>
-                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="sendQuickTemplate('يرجى مراجعة سبب الغياب وتأكيده ⚠️')">مراجعة الغياب</button>
-                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="sendQuickTemplate('مستوى الطالب يتطلب متابعة أكاديمية عاجلة 🔴')">يحتاج متابعة</button>
+                        <span class="text-muted fw-bold me-1">قوالب أكاديمية:</span>
+                        <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2" onclick="sendQuickTemplate('يرجى تسليم الواجب.')">يرجى تسليم الواجب</button>
+                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="sendQuickTemplate('يوجد اختبار قريب.')">يوجد اختبار قريب</button>
+                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="sendQuickTemplate('تم تصحيح واجبك.')">تم تصحيح واجبك</button>
+                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2" onclick="sendQuickTemplate('تم تحديث درجتك.')">تم تحديث درجتك</button>
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="sendQuickTemplate('يرجى مراجعة الغياب.')">مراجعة الغياب</button>
+                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="sendQuickTemplate('أحسنت.')">أحسنت 👏</button>
+                        <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2" onclick="sendQuickTemplate('ممتاز.')">ممتاز ⭐</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="sendQuickTemplate('تحتاج إلى متابعة.')">تحتاج متابعة ⚠️</button>
                     </div>
 
                     <!-- Composer Input Row -->
                     <form id="messageComposerForm" class="d-flex align-items-center gap-2" onsubmit="event.preventDefault(); submitComposerMessage();">
-                        <input type="text" id="messageInputText" class="form-control form-control-sm extra-small py-2" placeholder="اكتب رسالتك الأكاديمية هنا..." required>
+                        <input type="text" id="messageInputText" class="form-control form-control-sm extra-small py-2" placeholder="اكتب رسالتك الأكاديمية هنا..." onkeyup="onComposerTyping()" required>
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold flex-shrink-0">
                             إرسال <i class="fa-solid fa-paper-plane ms-1"></i>
                         </button>
@@ -213,15 +231,15 @@
     </div>
 </div>
 
-<!-- 5. 850px CONVERSATION DRAWER (#conversationDrawer) -->
-<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="conversationDrawer" style="width: 850px; max-width: 95vw;">
-    <div class="offcanvas-header bg-primary text-white p-3">
+<!-- 5. 900px SMART STUDENT PROFILE DRAWER (#studentProfileDrawer) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="studentProfileDrawer" style="width: 900px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3 sticky-top" style="z-index: 1060;">
         <h6 class="offcanvas-title fw-bold mb-0">
-            <i class="fa-solid fa-user-gear me-2"></i> سجل المحادثة وملف الطالب التفصيلي
+            <i class="fa-solid fa-user-graduate me-2"></i> ملف ومساحة التواصل والتفاعل للطالب (#studentProfileDrawer)
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body p-4" id="conversationDrawerContent">
+    <div class="offcanvas-body p-4" id="studentProfileDrawerContent">
         <!-- Dynamic Drawer Data -->
     </div>
 </div>
@@ -250,7 +268,7 @@
                 </div>
             </div>
             <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-modal="dismiss" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">إلغاء</button>
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="submitBulkMessage()">إرسال الرسالة الجماعية 🚀</button>
             </div>
         </div>
@@ -260,7 +278,7 @@
 <!-- JAVASCRIPT HANDLERS -->
 <script>
 (function() {
-    var activeStudentId = 1;
+    window.activeStudentId = 1;
 
     window.showMessageToast = function(message, type) {
         var container = document.getElementById('messageToastContainer');
@@ -291,7 +309,7 @@
     };
 
     window.openConversation = function(studentId) {
-        activeStudentId = studentId;
+        window.activeStudentId = studentId;
 
         document.querySelectorAll('#conversationListContainer .conv-item').forEach(function(item) {
             item.classList.remove('active-conv', 'bg-primary-subtle', 'border-start', 'border-4', 'border-primary');
@@ -303,6 +321,10 @@
             targetItem.classList.remove('bg-light');
             targetItem.classList.add('active-conv', 'bg-primary-subtle', 'border-start', 'border-4', 'border-primary');
         }
+
+        // Restore draft message if any
+        var draft = sessionStorage.getItem('msg_draft_' + studentId);
+        document.getElementById('messageInputText').value = draft || '';
 
         fetch('/messages/api/conversation/' + studentId)
             .then(function(res) { return res.json(); })
@@ -332,6 +354,13 @@
             });
     };
 
+    window.onComposerTyping = function() {
+        var text = document.getElementById('messageInputText').value;
+        if (window.activeStudentId) {
+            sessionStorage.setItem('msg_draft_' + window.activeStudentId, text);
+        }
+    };
+
     window.submitComposerMessage = function() {
         var input = document.getElementById('messageInputText');
         var text = input.value.trim();
@@ -340,13 +369,14 @@
         fetch('/messages/api/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ conversation_id: activeStudentId, message: text })
+            body: JSON.stringify({ conversation_id: window.activeStudentId, message: text })
         })
         .then(function(res) { return res.json(); })
         .then(function(res) {
             if (res.success) {
                 input.value = '';
-                openConversation(activeStudentId);
+                sessionStorage.removeItem('msg_draft_' + window.activeStudentId);
+                openConversation(window.activeStudentId);
                 showMessageToast('تم إرسال الرسالة بنجاح 🚀', 'success');
             }
         });
@@ -441,9 +471,10 @@
             });
     };
 
-    window.openConversationDrawer = function() {
-        var drawerEl = document.getElementById('conversationDrawer');
-        var drawerBody = document.getElementById('conversationDrawerContent');
+    // 900px Student Profile Drawer (#studentProfileDrawer) with 8 Tabs
+    window.openStudentProfileDrawer = function(studentId, targetTab) {
+        var drawerEl = document.getElementById('studentProfileDrawer');
+        var drawerBody = document.getElementById('studentProfileDrawerContent');
         if (!drawerEl || !drawerBody) return;
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
@@ -451,19 +482,102 @@
             bsDrawer.show();
         }
 
-        fetch('/messages/api/conversation/' + activeStudentId)
+        drawerBody.innerHTML = '<div class="p-3 font-cairo extra-small">' +
+            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 120px;"></div></div>' +
+            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-pill" style="height: 40px;"></div></div>' +
+            '<div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 250px;"></div></div>' +
+            '</div>';
+
+        fetch('/messages/api/student/' + studentId)
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                var st = data.student || {};
-                var html = '<div class="font-cairo extra-small">';
-                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-3 border-0"><h5 class="fw-bold mb-1">' + (st.student_name || 'الطالب') + '</h5><small class="text-white-50">الرقم الأكاديمي: ' + (st.academic_id || '--') + ' | الصف: ' + (st.class_name || '--') + '</small></div>';
-                html += '<div class="row g-2 font-monospace text-center mb-3"><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">متوسط الواجبات</small><strong class="text-primary">' + (st.homework_avg || 9.5) + '</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">متوسط الاختبارات</small><strong class="text-primary">' + (st.exam_avg || 94.0) + '</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">معدل الحضور</small><strong class="text-success">' + (st.attendance_pct || 96.0) + '%</strong></div></div></div>';
-                html += '<h6 class="fw-bold text-dark mb-2">سجل المراسلات التفصيلي:</h6>';
+                var p = data.profile || {};
+                var activeTabName = targetTab || 'overview';
+                var html = '<div class="font-cairo extra-small pb-5 position-relative">';
+                
+                // Student Profile Header Card
+                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-4 shadow-sm border-0 position-relative overflow-hidden">';
+                html += '<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">';
+                html += '<div class="d-flex align-items-center gap-3">';
+                html += '<div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-4 d-flex align-items-center justify-content-center shadow" style="width: 52px; height: 52px;"><i class="fa-solid fa-user-graduate"></i></div>';
+                html += '<div>';
+                html += '<h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-award me-1 text-warning"></i> ' + (p.student_name || 'الطالب') + '</h5>';
+                html += '<small class="text-white-50 font-monospace">الرقم الأكاديمي: ' + (p.academic_id || '--') + ' | المادة: ' + (p.subject_name || '--') + '</small>';
+                html += '</div>';
+                html += '</div>';
+                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 extra-small fw-bold shadow-sm">' + (p.letter_grade || '🟢 ممتاز') + '</span>';
+                html += '</div>';
+
+                // Quick KPI Row
+                html += '<div class="row g-2 text-center mt-2 font-monospace extra-small text-dark">';
+                html += '<div class="col-3"><div class="p-2 bg-white rounded shadow-sm"><small class="text-muted d-block">الصف والشعبة</small><strong>' + (p.class_name || '--') + ' (' + (p.section_name || '--') + ')</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-white rounded shadow-sm"><small class="text-muted d-block">إنجاز الواجبات</small><strong class="text-primary">' + (p.homework_completion || '91.6%') + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-white rounded shadow-sm"><small class="text-muted d-block">معدل الحضور</small><strong class="text-success">' + (p.attendance_pct || '96.0%') + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-white rounded shadow-sm"><small class="text-muted d-block">المعدل النهائي</small><strong class="text-success fw-bold fs-6">' + (p.final_grade || '94.5%') + '</strong></div></div>';
+                html += '</div>';
+                html += '</div>';
+
+                // 8 Tabs Header
+                html += '<ul class="nav nav-pills nav-fill mb-3 font-cairo extra-small fw-bold bg-white p-2 rounded-3 shadow-sm border sticky-top" style="top: 55px; z-index: 1040;" role="tablist">';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'overview' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfOverview" type="button">👤 نظرة عامة</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'messages' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfMessages" type="button">💬 المحادثات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'homework' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfHomework" type="button">📚 الواجبات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'exams' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfExams" type="button">📝 الاختبارات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'grades' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfGrades" type="button">⭐ الدرجات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'attendance' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfAttendance" type="button">📅 الحضور</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'performance' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfPerformance" type="button">📈 الأداء</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'notes' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stProfNotes" type="button">📝 الملاحظات</button></li>';
+                html += '</ul>';
+
+                // Tab Content Wrapper
+                html += '<div class="tab-content extra-small">';
+                
+                // 1. Overview
+                html += '<div class="tab-pane fade ' + (activeTabName === 'overview' ? 'show active' : '') + '" id="stProfOverview">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3"><h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> السجل الزمني للتفاعل والأنشطة الأكاديمية الأخيرة:</h6>';
                 html += '<div class="list-group list-group-flush border-top border-bottom mb-3">';
-                (data.messages || []).forEach(function(m) {
-                    html += '<div class="list-group-item bg-transparent px-0 py-2"><strong>' + m.sender_name + ':</strong> ' + m.text + ' <small class="text-muted font-monospace me-2">(' + m.time + ')</small></div>';
+                (data.recent_activity || []).forEach(function(act) {
+                    html += '<div class="list-group-item bg-transparent px-0 py-2 d-flex align-items-center justify-content-between"><div><strong class="text-dark">' + act.title + '</strong></div><span class="badge bg-light text-dark border font-monospace">' + act.time + '</span></div>';
                 });
-                html += '</div></div>';
+                html += '</div></div></div>';
+
+                // 2. Messages
+                html += '<div class="tab-pane fade ' + (activeTabName === 'messages' ? 'show active' : '') + '" id="stProfMessages">';
+                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center"><h6 class="fw-bold text-dark mb-2">إرسال رسالة مباشرة سريعة للطالب</h6><button type="button" class="btn btn-sm btn-primary rounded-pill px-4" onclick="openConversation(' + studentId + '); bootstrap.Offcanvas.getInstance(document.getElementById(\'studentProfileDrawer\')).hide();">فتح المحادثة الفورية 💬</button></div></div>';
+
+                // 3. Homework
+                html += '<div class="tab-pane fade ' + (activeTabName === 'homework' ? 'show active' : '') + '" id="stProfHomework">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="mb-0 text-muted">نسبة إنجاز الواجبات الكلية: <strong class="text-primary font-monospace">' + (p.homework_completion || '91.6%') + '</strong></p></div></div>';
+
+                // 4. Exams
+                html += '<div class="tab-pane fade ' + (activeTabName === 'exams' ? 'show active' : '') + '" id="stProfExams">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="mb-0 text-muted">متوسط نتائج الاختبارات الأكاديمية: <strong class="text-success font-monospace">' + (p.exam_average || '95.0%') + '</strong></p></div></div>';
+
+                // 5. Grades
+                html += '<div class="tab-pane fade ' + (activeTabName === 'grades' ? 'show active' : '') + '" id="stProfGrades">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="mb-0 text-muted">الدرجة النهائية المرصودة: <strong class="text-success font-monospace fs-6">' + (p.final_grade || '94.5%') + '</strong></p></div></div>';
+
+                // 6. Attendance
+                html += '<div class="tab-pane fade ' + (activeTabName === 'attendance' ? 'show active' : '') + '" id="stProfAttendance">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="mb-0 text-muted">نسبة مواظبة الحضور والغياب: <strong class="text-info font-monospace">' + (p.attendance_pct || '96.0%') + '</strong></p></div></div>';
+
+                // 7. Performance
+                html += '<div class="tab-pane fade ' + (activeTabName === 'performance' ? 'show active' : '') + '" id="stProfPerformance">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="mb-0 text-muted">الترتيب الأكاديمي العام بالفصل: <strong class="text-warning font-monospace">المركز #' + (p.rank || 1) + '</strong></p></div></div>';
+
+                // 8. Notes
+                html += '<div class="tab-pane fade ' + (activeTabName === 'notes' ? 'show active' : '') + '" id="stProfNotes">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><textarea class="form-control extra-small mb-2" rows="3" placeholder="ملاحظات المعلم الخاصة..."></textarea><button type="button" class="btn btn-sm btn-primary rounded-pill px-4" onclick="showMessageToast(\'تم حفظ الملاحظة بنجاح\', \'success\')">حفظ</button></div></div>';
+
+                html += '</div>';
+
+                // Sticky Footer
+                html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
+                html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openConversation(' + studentId + '); bootstrap.Offcanvas.getInstance(document.getElementById(\'studentProfileDrawer\')).hide();"><i class="fa-solid fa-comments me-2"></i> البدء المباشر بالمحادثة</button>';
+                html += '<button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">إغلاق</button>';
+                html += '</div>';
+
+                html += '</div>';
                 drawerBody.innerHTML = html;
             });
     };

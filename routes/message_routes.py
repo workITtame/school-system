@@ -12,7 +12,13 @@ from services.teacher_message_service import (
     mark_as_read,
     archive_conversation,
     delete_conversation,
-    bulk_send
+    bulk_send,
+    get_student_profile,
+    get_student_recent_activity,
+    get_student_notifications,
+    get_message_templates,
+    pin_conversation,
+    schedule_message
 )
 
 logger = logging.getLogger(__name__)
@@ -173,6 +179,66 @@ def api_bulk():
     try:
         res = bulk_send(user_id, student_ids, message_text)
         return jsonify({'success': True, 'result': res, 'message': f'تم إرسال الرسالة إلى {res.get("sent_count", 0)} طالب بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/student/<int:student_id>', methods=['GET'])
+@login_required
+def api_student_profile(student_id):
+    user_id = current_user.id
+    try:
+        profile = get_student_profile(student_id, user_id)
+        activity = get_student_recent_activity(student_id, user_id)
+        notifications = get_student_notifications(student_id, user_id)
+        return jsonify({
+            'profile': profile,
+            'recent_activity': activity,
+            'notifications': notifications
+        })
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/pin', methods=['POST'])
+@login_required
+def api_pin():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    try:
+        success = pin_conversation(user_id, conversation_id)
+        return jsonify({'success': success, 'message': 'تم تثبيت المحادثة بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/schedule', methods=['POST'])
+@login_required
+def api_schedule():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or {}
+    conversation_id = payload.get('conversation_id')
+    text = payload.get('message', '').strip()
+    schedule_time = payload.get('schedule_time')
+    try:
+        res = schedule_message(user_id, conversation_id, text, schedule_time)
+        return jsonify({'success': True, 'result': res, 'message': 'تم جدولة الرسالة بنجاح'})
+    except PermissionError:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/templates', methods=['GET'])
+@login_required
+def api_templates():
+    user_id = current_user.id
+    try:
+        templates = get_message_templates(user_id)
+        return jsonify({'templates': templates})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:

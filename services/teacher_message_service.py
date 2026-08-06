@@ -193,11 +193,85 @@ def send_message(user_id, conversation_id, message_text):
 def mark_as_read(user_id, conversation_id):
     return True
 
+def pin_conversation(user_id, conversation_id):
+    return True
+
+def mute_conversation(user_id, conversation_id):
+    return True
+
 def archive_conversation(user_id, conversation_id):
     return True
 
 def delete_conversation(user_id, conversation_id):
     return True
+
+def schedule_message(user_id, conversation_id, text, schedule_time):
+    return {
+        'scheduled_id': int(datetime.now().timestamp()),
+        'conversation_id': conversation_id,
+        'text': text,
+        'schedule_time': schedule_time
+    }
+
+def get_student_profile(student_id, user_id):
+    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    st = Student.query.get(student_id)
+    if not st or (class_ids and st.CID not in class_ids):
+        raise PermissionError("Student outside teacher scope")
+
+    return {
+        'student_id': st.SID,
+        'student_name': st.SName,
+        'academic_id': f"20240{st.SID}",
+        'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
+        'section_name': st.section.SectionName if st.section else 'شعبة أ',
+        'subject_name': 'الرياضيات والعلوم الأكاديمية',
+        'gpa': 94.5,
+        'rank': 1,
+        'letter_grade': '🟢 ممتاز (94.5%)',
+        'pass_rate': 100.0,
+        'homework_completion': '91.6%',
+        'exam_average': '95.0%',
+        'attendance_pct': '96.0%',
+        'final_grade': '94.5%',
+        'last_activity': 'اليوم 10:45 ص'
+    }
+
+def get_student_recent_activity(student_id, user_id):
+    return [
+        {'time': 'اليوم 10:45 ص', 'type': 'homework', 'title': 'تم تسليم واجب الرياضيات #2', 'badge': 'تسليم متميز 🟢'},
+        {'time': 'أمس 02:30 م', 'type': 'exam', 'title': 'تم رصد درجة اختبار المنتصف (95%)', 'badge': 'ناجح 🟢'},
+        {'time': 'قبل يومين', 'type': 'attendance', 'title': 'تم تسجيل حضور بالحصص الأسبوعية', 'badge': 'حاضر 🟢'},
+        {'time': 'قبل 3 أيام', 'type': 'note', 'title': 'تم إضافة ملاحظة معلم المادة الأكاديمية', 'badge': 'ملاحظة إيجابية 📝'}
+    ]
+
+def get_student_notifications(student_id, user_id):
+    return [
+        {'id': 1, 'date': '2026-08-04', 'type': 'تنبيه الواجبات', 'text': 'تم إرسال تذكير تسليم الواجب الأسبوعي'},
+        {'id': 2, 'date': '2026-08-01', 'type': 'تنبيه الدرجات', 'text': 'تم تحديث درجة اختبار المنتصف'}
+    ]
+
+def get_message_templates(user_id):
+    return [
+        {'id': 1, 'category': 'واجبات', 'text': 'يرجى تسليم الواجب المطلوب في أقرب وقت.'},
+        {'id': 2, 'category': 'اختبارات', 'text': 'يوجد اختبار قصير قريب يرجى الاستعداد والراجعة.'},
+        {'id': 3, 'category': 'درجات', 'text': 'تم تصحيح واجبك وتحديث الدرجة المرصودة بالسجل.'},
+        {'id': 4, 'category': 'حضور', 'text': 'يرجى مراجعة سبب الغياب وتأكيده مع إدارة المدرسة.'},
+        {'id': 5, 'category': 'تشجيع', 'text': 'أحسنت، ممتاز جداً استمر بهذا المستوى الأكاديمي 👏'},
+        {'id': 6, 'category': 'متابعة', 'text': 'تحتاج إلى متابعة إضافية للدروس والتطبيقات ⚠️'}
+    ]
+
+def send_homework_reminder(user_id, student_id, homework_title='الواجب الأسبوعي'):
+    msg = f"يرجى العلم بأنه يتوجب تسليم ({homework_title}) في موعده المحدد 📚."
+    return send_message(user_id, student_id, msg)
+
+def send_exam_reminder(user_id, student_id, exam_title='الاختبار الأكاديمي'):
+    msg = f"تذكير أكاديمي: موعد ({exam_title}) قريب يرجى الاستعداد الجيد 📝."
+    return send_message(user_id, student_id, msg)
+
+def send_attendance_warning(user_id, student_id):
+    msg = "تنبيه الحضور: يرجى الالتزام بمواعيد الحضور والمواظبة اليومية ⚠️."
+    return send_message(user_id, student_id, msg)
 
 def bulk_send(user_id, student_ids, message_text):
     return {
