@@ -594,19 +594,125 @@ function filterAttendanceStudents(query) {
     });
 }
 
-// Save bulk attendance via AJAX POST
-function saveLessonAttendanceBulk(slotId) {
-    const saveBtn = document.getElementById('saveAttendanceBtn');
+// Global state for Standalone Attendance Page
+window.pageAttendanceEdits = {};
+window.pageAttendanceUnsavedCount = 0;
+
+function setPageStudentAttendance(sid, newStatus) {
+    window.pageAttendanceEdits[sid] = newStatus;
+    
+    const rowEl = document.getElementById(`page-att-row-${sid}`);
+    if (rowEl) {
+        rowEl.classList.add('modified-row');
+        
+        const buttons = rowEl.querySelectorAll('.btn-att-chip');
+        buttons.forEach(btn => {
+            btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-secondary';
+            if (btn.textContent.includes(newStatus)) {
+                if (newStatus === 'حاضر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold';
+                else if (newStatus === 'غائب') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold';
+                else if (newStatus === 'متأخر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold';
+                else if (newStatus === 'بعذر' || newStatus === 'مستأذن') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold';
+            }
+        });
+    }
+
+    window.pageAttendanceUnsavedCount = Object.keys(window.pageAttendanceEdits).length;
+    updateStickySaveBarLabel();
+}
+
+function updateStickySaveBarLabel() {
+    const btnLabel = document.getElementById('stickySaveBtnLabel');
+    const saveBtn = document.getElementById('stickyPageSaveBtn');
+    const count = window.pageAttendanceUnsavedCount;
+    
+    if (btnLabel) {
+        if (count > 0) {
+            btnLabel.textContent = `حفظ سجل الحضور (${count})`;
+            if (saveBtn) {
+                saveBtn.className = 'btn btn-sm btn-warning text-dark rounded-pill px-4 py-2 fw-bold shadow-sm extra-small';
+            }
+        } else {
+            btnLabel.textContent = 'حفظ سجل الحضور';
+            if (saveBtn) {
+                saveBtn.className = 'btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm extra-small';
+            }
+        }
+    }
+}
+
+function filterPageAttendanceList(query) {
+    const filter = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('.page-att-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const counterEl = document.getElementById('attendanceResultsCounter');
+    if (counterEl) {
+        counterEl.textContent = `عرض ${visibleCount} من أصل ${rows.length} طالباً`;
+    }
+}
+
+function filterPageAttendanceByStatus(status) {
+    const filter = status.trim();
+    const rows = document.querySelectorAll('.page-att-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        if (!filter || row.textContent.includes(filter)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const counterEl = document.getElementById('attendanceResultsCounter');
+    if (counterEl) {
+        counterEl.textContent = `عرض ${visibleCount} من أصل ${rows.length} طالباً`;
+    }
+}
+
+function markAllAttendancePage(status) {
+    const rows = document.querySelectorAll('.page-att-row');
+    rows.forEach(row => {
+        const sid = row.getAttribute('data-sid');
+        if (sid) {
+            setPageStudentAttendance(parseInt(sid), status);
+        }
+    });
+}
+
+function savePageAttendanceBulk(slotId) {
+    const saveBtn = document.getElementById('stickyPageSaveBtn');
     if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
     }
 
-    const state = window.lessonAttendanceState || {};
-    const attendancePayload = Object.keys(state).map(sid => ({
+    const edits = window.pageAttendanceEdits || {};
+    const attendancePayload = Object.keys(edits).map(sid => ({
         student_id: parseInt(sid),
-        status: state[sid]
+        status: edits[sid]
     }));
+
+    if (attendancePayload.length === 0) {
+        alert('لا توجد أي تعديلات غير محفوظة.');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            updateStickySaveBarLabel();
+        }
+        return;
+    }
 
     fetch('/attendance/api/save', {
         method: 'POST',
@@ -614,28 +720,36 @@ function saveLessonAttendanceBulk(slotId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            slot_id: slotId,
+            slot_id: slotId || 1,
             attendance: attendancePayload
         })
     })
     .then(res => {
-        if (!res.ok) throw new Error('فشل حفظ سجل الحضور أو لا توجد صلاحيات.');
+        if (!res.ok) throw new Error('فشل حفظ التعديلات.');
         return res.json();
     })
     .then(resData => {
-        window.hasUnsavedAttendanceChanges = false;
-        if (window.currentLessonWorkspaceData) {
-            window.currentLessonWorkspaceData.present_count = resData.stats.present_count || 0;
-            window.currentLessonWorkspaceData.absent_count = resData.stats.absent_count || 0;
+        window.pageAttendanceEdits = {};
+        window.pageAttendanceUnsavedCount = 0;
+        
+        document.querySelectorAll('.page-att-row').forEach(r => r.classList.remove('modified-row'));
+        
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        const indicator = document.getElementById('lastSaveTimeIndicator');
+        if (indicator) indicator.textContent = timeStr;
+
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            updateStickySaveBarLabel();
         }
-        renderWorkspaceAttendanceTab();
         alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
     })
     .catch(err => {
         alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> حفظ سجل الحضور';
+            updateStickySaveBarLabel();
         }
     });
 }

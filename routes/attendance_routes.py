@@ -282,10 +282,37 @@ def save_lesson_attendance_api():
     return jsonify(res)
 
 @attendance_bp.route('/')
+@login_required
 def index():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        classes = Classes.query.filter_by(is_deleted=False).all()
+        sections = Sections.query.filter_by(is_deleted=False).all()
+        today_date = date.today()
         
+        class_id = request.args.get('class_id')
+        section_id = request.args.get('section_id')
+        
+        data = get_teacher_attendance_data(current_user.id, class_id=class_id, section_id=section_id)
+
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        active_slot_id = None
+        if teacher:
+            slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
+            if slot:
+                active_slot_id = slot.SchoolTableID
+
+        return render_template('teacher/attendance.html',
+                               classes=classes,
+                               sections=sections,
+                               today=today_date.strftime('%Y-%m-%d'),
+                               teacher_info=data['teacher_info'],
+                               current_lesson=data['current_lesson'],
+                               kpi=data['kpi'],
+                               attendance_cards=data['attendance_cards'],
+                               most_absent=data['most_absent'],
+                               alerts=data['alerts'],
+                               active_slot_id=active_slot_id)
+
     classes = Classes.query.all()
     sections = Sections.query.all()
     today_date = date.today()
@@ -293,7 +320,8 @@ def index():
     class_id = request.args.get('class_id')
     section_id = request.args.get('section_id')
     
-    data = get_teacher_attendance_data(session['user_id'], class_id=class_id, section_id=section_id)
+    user_id = session.get('user_id', current_user.id if current_user.is_authenticated else 1)
+    data = get_teacher_attendance_data(user_id, class_id=class_id, section_id=section_id)
         
     return render_template('attendance.html',
                            classes=classes,

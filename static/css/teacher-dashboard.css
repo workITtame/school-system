@@ -108,6 +108,28 @@
     font-size: var(--font-size-sm);
 }
 
+/* STICKY FOOTER SAVE ACTION BAR */
+.sticky-save-footer {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* MODIFIED ROW HIGHLIGHT IN ATTENDANCE ROSTER */
+.page-att-row.modified-row {
+    border-start: 4px solid #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.08) !important;
+    transition: all 0.25s ease-in-out;
+}
+
+/* ATTENDANCE STATUS CHIPS ANIMATION */
+.btn-att-chip {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-att-chip:hover {
+    transform: translateY(-1px);
+}
+
 /* KPI Summary Cards & Hover Effects */
 .kpi-card {
     background: var(--card-bg);
