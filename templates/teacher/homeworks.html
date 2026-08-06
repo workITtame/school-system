@@ -241,7 +241,7 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2 text-primary" type="button" onclick="alert('الانتقال إلى Phase 5.1 — Homework Grading Workspace (قيد التطوير)')">
+                                                <button class="dropdown-item py-2 text-primary" type="button" onclick="openHomeworkGradingWorkspace({{ hw.id }})">
                                                     <i class="fa-solid fa-star me-2"></i> 📝 بدء التصحيح (Phase 5.1)
                                                 </button>
                                             </li>
@@ -357,16 +357,38 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer bg-light p-3 border-top-0 d-flex justify-content-between">
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4 fw-bold" onclick="saveHomeworkModal('مسودة')">
-                        <i class="fa-regular fa-file-lines me-1"></i> حفظ كمسودة
-                    </button>
-                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="saveHomeworkModal('منشور')">
-                        <i class="fa-solid fa-paper-plane me-1"></i> نشر مباشرة
-                    </button>
-                </div>
+<!-- PHASE 5.1 HOMEWORK GRADING WORKSPACE OFF-CANVAS DRAWER (900px) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="homeworkGradingWorkspaceDrawer" aria-labelledby="homeworkGradingWorkspaceDrawerLabel" style="width: 900px; max-width: 95vw;">
+    <div class="offcanvas-header bg-dark text-white p-3">
+        <h6 class="offcanvas-title fw-bold mb-0" id="homeworkGradingWorkspaceDrawerLabel">
+            <i class="fa-solid fa-star text-warning me-2"></i> مساحة عمل تصحيح الواجبات (Homework Grading Workspace - Phase 5.1)
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4 bg-light" id="homeworkGradingDrawerContent">
+        <!-- Loading Skeleton -->
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="extra-small text-muted mt-2">جاري تحميل بيئة العمل وتصحيح الواجبات...</p>
+        </div>
+    </div>
+</div>
+
+<!-- STUDENT SUBMISSION GRADING MODAL -->
+<div class="modal fade font-cairo" id="studentGradingModal" tabindex="-1" aria-labelledby="studentGradingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white p-3">
+                <h6 class="modal-title fw-bold mb-0" id="studentGradingModalLabel">
+                    <i class="fa-solid fa-user-pen me-2"></i> تصحيح وتقييم تسليم الطالب
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 extra-small" id="studentGradingModalContent">
+                <!-- Submission Viewer & Panel -->
             </div>
         </div>
     </div>
@@ -463,7 +485,7 @@
                 html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">تم التسليم</small><strong class="fs-6 text-success font-monospace">' + data.received_count + ' طالب</strong></div></div>';
                 html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">لم يسلموا</small><strong class="fs-6 text-danger font-monospace">' + data.unreceived_count + ' طالب</strong></div></div>';
                 html += '</div>';
-                html += '<div class="d-grid"><button type="button" class="btn btn-primary rounded-pill py-2 fw-bold" onclick="alert(\'الانتقال إلى Phase 5.1 — Homework Grading Workspace (قيد التطوير)\')"><i class="fa-solid fa-star me-2"></i> بدء تصحيح تسليمات الطلاب (Phase 5.1)</button></div>';
+                html += '<div class="d-grid"><button type="button" class="btn btn-primary rounded-pill py-2 fw-bold" onclick="openHomeworkGradingWorkspace(' + data.id + ')"><i class="fa-solid fa-star me-2"></i> بدء تصحيح تسليمات الطلاب (Phase 5.1)</button></div>';
                 html += '</div>';
 
                 // Tab 2: Students Roster
@@ -604,6 +626,390 @@
         var counter = document.getElementById('homeworkResultsCounter');
         if (counter) counter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' واجباً';
     };
+
+    // =========================================================================
+    // PHASE 5.1 HOMEWORK GRADING WORKSPACE JS FUNCTIONS
+    // =========================================================================
+
+    var currentGradingHwId = null;
+    var currentGradingStudentId = null;
+    var autoSaveTimeout = null;
+
+    // 1. Open 900px Homework Grading Workspace
+    window.openHomeworkGradingWorkspace = function(hwId) {
+        currentGradingHwId = hwId;
+        var drawerEl = document.getElementById('homeworkGradingWorkspaceDrawer');
+        var drawerBody = document.getElementById('homeworkGradingDrawerContent');
+        if (!drawerEl || !drawerBody) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+            bsDrawer.show();
+        } else {
+            drawerEl.classList.add('show');
+            drawerEl.style.display = 'block';
+            drawerEl.style.visibility = 'visible';
+        }
+
+        drawerBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="extra-small text-muted mt-2">جاري تحميل بيئة العمل وتصحيح الواجبات...</p></div>';
+
+        fetch('/homework/grading/workspace/' + hwId)
+            .then(function(res) {
+                if (!res.ok) throw new Error('فشل فتح بيئة تصحيح الواجب.');
+                return res.json();
+            })
+            .then(function(data) {
+                renderHomeworkGradingWorkspaceHTML(data, drawerBody);
+            })
+            .catch(function(err) {
+                drawerBody.innerHTML = '<div class="alert alert-danger p-3 extra-small">حدث خطأ: ' + err.message + '</div>';
+            });
+    };
+
+    // Render Grading Workspace HTML inside Drawer
+    function renderHomeworkGradingWorkspaceHTML(data, container) {
+        var html = '<div class="font-cairo extra-small">';
+
+        // Header Metadata Card
+        html += '<div class="card bg-dark text-white p-3 rounded-3 mb-4 shadow-sm border-0">';
+        html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+        html += '<h5 class="fw-bold mb-0 text-warning"><i class="fa-solid fa-star me-2"></i>' + data.title + '</h5>';
+        html += '<span class="badge bg-white text-dark rounded-pill px-3 py-1 fw-bold">' + data.status + '</span>';
+        html += '</div>';
+        html += '<div class="d-flex align-items-center gap-3 text-white-50 extra-small flex-wrap">';
+        html += '<span>المادة: <strong class="text-white">' + data.subject_name + '</strong></span>';
+        html += '<span>الصف: <strong class="text-white">' + data.class_name + ' (' + data.section_name + ')</strong></span>';
+        html += '<span>الدرجة الكلية: <strong class="text-warning">' + data.max_grade + ' درجات</strong></span>';
+        html += '<span>موعد التسليم: <strong class="text-white">' + data.due_date + '</strong></span>';
+        html += '</div>';
+        html += '</div>';
+
+        // 4 KPI Summary Cards
+        html += '<div class="row g-2 mb-4 text-center">';
+        html += '<div class="col-3"><div class="card p-2 border-0 bg-white shadow-sm rounded-3"><small class="text-muted d-block">إجمالي التسليمات</small><strong class="fs-5 text-primary font-monospace">' + data.total_submissions + ' / ' + data.total_students + '</strong></div></div>';
+        html += '<div class="col-3"><div class="card p-2 border-0 bg-white shadow-sm rounded-3"><small class="text-muted d-block">بانتظار التصحيح</small><strong class="fs-5 text-warning font-monospace">' + data.pending_grading + '</strong></div></div>';
+        html += '<div class="col-3"><div class="card p-2 border-0 bg-white shadow-sm rounded-3"><small class="text-muted d-block">تم التصحيح</small><strong class="fs-5 text-success font-monospace">' + data.graded_count + '</strong></div></div>';
+        html += '<div class="col-3"><div class="card p-2 border-0 bg-white shadow-sm rounded-3"><small class="text-muted d-block">متوسط الدرجات</small><strong class="fs-5 text-info font-monospace">' + data.average_grade + ' / ' + data.max_grade + '</strong></div></div>';
+        html += '</div>';
+
+        // Quick Filters & Bulk Actions
+        html += '<div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap bg-white p-2 rounded-3 shadow-sm border">';
+        html += '<div class="d-flex align-items-center gap-1 overflow-x-auto">';
+        html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradingQueue(\'\', this)">جميع الطلاب (' + data.total_students + ')</button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradingQueue(\'بانتظار التصحيح\', this)">🟡 بانتظار التصحيح (' + data.pending_grading + ')</button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradingQueue(\'تم التصحيح\', this)">🟢 تم التصحيح (' + data.graded_count + ')</button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradingQueue(\'لم يسلم\', this)">🔴 لم يسلم (' + data.unreceived_count + ')</button>';
+        html += '</div>';
+        html += '<button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 extra-small fw-bold" onclick="publishHomeworkGrades(' + data.id + ')"><i class="fa-solid fa-paper-plane me-1"></i> نشر جميع الدرجات</button>';
+        html += '</div>';
+
+        // Student Grading Roster Table
+        html += '<div class="card rounded-3 shadow-sm border-0 overflow-hidden mb-3">';
+        html += '<div class="card-header bg-white p-2 border-bottom fw-bold"><i class="fa-solid fa-users me-1 text-primary"></i> قائمة تصحيح الطلاب (' + data.students.length + ' طالب)</div>';
+        html += '<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">';
+        html += '<table class="table table-hover align-middle mb-0 extra-small" id="gradingStudentsTable">';
+        html += '<thead class="bg-light text-muted"><tr><th>#</th><th>اسم الطالب</th><th>الرقم الأكاديمي</th><th>حالة التسليم</th><th>الدرجة</th><th>الحالة</th><th class="text-center">الإجراءات</th></tr></thead>';
+        html += '<tbody>';
+
+        if (data.students && data.students.length > 0) {
+            data.students.forEach(function(s, idx) {
+                html += '<tr class="grading-student-row" data-status="' + s.grading_status + '" data-submission="' + s.submission_status + '">';
+                html += '<td class="font-monospace text-muted">' + (idx + 1) + '</td>';
+                html += '<td><strong class="text-dark d-block">' + s.student_name + '</strong></td>';
+                html += '<td class="font-monospace text-muted">' + s.academic_id + '</td>';
+                html += '<td><span class="badge ' + (s.submission_status === 'تم التسليم' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle') + ' rounded-pill">' + s.submission_status + '</span></td>';
+                html += '<td class="font-monospace fw-bold">' + (s.grade !== null ? s.grade + ' / ' + s.max_grade : '---') + '</td>';
+                html += '<td>';
+                if (s.grading_status === 'تم التصحيح') {
+                    html += '<span class="badge bg-success text-white rounded-pill px-2 py-1">🟢 تم التصحيح</span>';
+                } else if (s.grading_status === 'بانتظار التصحيح') {
+                    html += '<span class="badge bg-warning text-dark rounded-pill px-2 py-1">🟡 بانتظار التصحيح</span>';
+                } else {
+                    html += '<span class="badge bg-secondary text-white rounded-pill px-2 py-1">🔴 لم يسلم</span>';
+                }
+                html += '</td>';
+                html += '<td class="text-center">';
+                html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 extra-small fw-bold" onclick="loadStudentSubmission(' + data.id + ', ' + s.student_id + ')"><i class="fa-solid fa-pen-to-square me-1"></i> تصحيح</button>';
+                html += '</td>';
+                html += '</tr>';
+            });
+        } else {
+            html += '<tr><td colspan="7" class="text-center text-muted py-4">لا يوجد طلاب لهذا الصف.</td></tr>';
+        }
+
+        html += '</tbody></table></div></div>';
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Filter Grading Queue Chips
+    window.filterGradingQueue = function(status, btnElement) {
+        var buttons = btnElement.parentElement.querySelectorAll('button');
+        buttons.forEach(function(b) {
+            b.classList.remove('btn-primary', 'active');
+            b.classList.add('btn-outline-secondary');
+        });
+        btnElement.classList.remove('btn-outline-secondary');
+        btnElement.classList.add('btn-primary', 'active');
+
+        var rows = document.querySelectorAll('#gradingStudentsTable tbody tr.grading-student-row');
+        rows.forEach(function(r) {
+            var st = r.getAttribute('data-status') || '';
+            var sub = r.getAttribute('data-submission') || '';
+            if (!status || st.indexOf(status) !== -1 || sub.indexOf(status) !== -1) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
+    };
+
+    // 2. Load Individual Student Submission in Modal
+    window.loadStudentSubmission = function(hwId, studentId) {
+        currentGradingHwId = hwId;
+        currentGradingStudentId = studentId;
+
+        var modalEl = document.getElementById('studentGradingModal');
+        var modalBody = document.getElementById('studentGradingModalContent');
+        if (!modalEl || !modalBody) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+        }
+
+        modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="extra-small text-muted mt-2">جاري تحميل بيانات تسليم الطالب...</p></div>';
+
+        fetch('/homework/api/grading/submission/' + hwId + '/' + studentId)
+            .then(function(res) {
+                if (!res.ok) throw new Error('فشل جلب بيانات تسليم الطالب.');
+                return res.json();
+            })
+            .then(function(data) {
+                renderStudentGradingModalHTML(data, modalBody);
+            })
+            .catch(function(err) {
+                modalBody.innerHTML = '<div class="alert alert-danger p-3 extra-small">حدث خطأ: ' + err.message + '</div>';
+            });
+    };
+
+    // Render Student Submission & Grading Panel inside Modal
+    function renderStudentGradingModalHTML(data, container) {
+        var html = '<div class="font-cairo extra-small">';
+
+        // Student Info Header
+        html += '<div class="card bg-light p-3 rounded-3 mb-3 border-0 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2">';
+        html += '<div>';
+        html += '<h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-graduate text-primary me-2"></i>' + data.student_name + '</h6>';
+        html += '<small class="text-muted">الرقم الأكاديمي: <span class="font-monospace fw-bold text-dark">' + data.academic_id + '</span> | وقت التسليم: ' + data.submission_date + '</small>';
+        html += '</div>';
+        html += '<span class="badge ' + (data.submission_status === 'تم التسليم' ? 'bg-success text-white' : 'bg-danger text-white') + ' rounded-pill px-3 py-1">' + data.submission_status + '</span>';
+        html += '</div>';
+
+        // Split Layout: Submission Attachments (Left/Main) & Grading Panel (Right)
+        html += '<div class="row g-3">';
+        
+        // Left Column: Submission Attachments & Preview
+        html += '<div class="col-12 col-md-7">';
+        html += '<div class="card p-3 border rounded-3 h-100 bg-white">';
+        html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-paperclip text-primary me-2"></i> مرفقات التسليم ومعاينة الملفات:</h6>';
+        if (data.attachments && data.attachments.length > 0) {
+            data.attachments.forEach(function(att) {
+                html += '<div class="p-2 mb-2 rounded bg-light border d-flex align-items-center justify-content-between">';
+                html += '<div><i class="fa-solid fa-file-pdf text-danger fs-5 me-2"></i><strong>' + att.file_name + '</strong> <small class="text-muted">(' + att.file_size + ')</small></div>';
+                html += '<button type="button" class="btn btn-sm btn-outline-primary rounded-pill extra-small" onclick="alert(\'معاينة ملف PDF الطالب مباشرة\')"><i class="fa-regular fa-eye me-1"></i> معاينة</button>';
+                html += '</div>';
+            });
+        } else {
+            html += '<div class="alert alert-secondary p-3 text-center mb-0">لم يرفق الطالب أي ملفات لهذا الواجب.</div>';
+        }
+
+        // Timeline
+        html += '<h6 class="fw-bold text-dark mt-3 mb-2"><i class="fa-solid fa-timeline text-primary me-2"></i> السجل الزمني للتسليم:</h6>';
+        html += '<ul class="list-group list-group-flush border rounded-3">';
+        if (data.timeline && data.timeline.length > 0) {
+            data.timeline.forEach(function(t) {
+                html += '<li class="list-group-item d-flex justify-content-between align-items-center py-1"><small>' + t.title + '</small><span class="font-monospace text-muted extra-small">' + t.time + '</span></li>';
+            });
+        }
+        html += '</ul>';
+
+        html += '</div></div>';
+
+        // Right Column: Grading Form & Controls
+        html += '<div class="col-12 col-md-5">';
+        html += '<div class="card p-3 border rounded-3 bg-white shadow-sm">';
+        html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-pen-to-square text-success me-2"></i> أدوات إدخال الدرجة والتغذية الراجعة:</h6>';
+
+        // Auto Save Status Alert
+        html += '<div id="autoSaveStatusAlert" class="alert alert-light border text-muted p-1 text-center extra-small mb-2" style="display:none;"><i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ تلقائياً...</div>';
+
+        // Grade Input
+        html += '<div class="mb-3">';
+        html += '<label class="form-label fw-bold text-dark mb-1">الدرجة المستحقة (من ' + data.max_grade + '):</label>';
+        html += '<input type="number" id="gradingScoreInput" class="form-control form-control-sm font-monospace fw-bold fs-6 text-primary" value="' + (data.grade !== null ? data.grade : '') + '" min="0" max="' + data.max_grade + '" step="0.5" placeholder="أدخل الدرجة..." oninput="autoSaveSubmission(' + data.homework_id + ', ' + data.student_id + ')">';
+        html += '</div>';
+
+        // Feedback Textarea
+        html += '<div class="mb-3">';
+        html += '<label class="form-label fw-bold text-dark mb-1">الملاحظات والتغذية الراجعة:</label>';
+        html += '<textarea id="gradingFeedbackInput" class="form-control form-control-sm" rows="4" placeholder="اكتب ملاحظات المعلم للطالب هنا..." oninput="autoSaveSubmission(' + data.homework_id + ', ' + data.student_id + ')">' + (data.feedback || '') + '</textarea>';
+        html += '</div>';
+
+        // Action Buttons
+        html += '<div class="d-grid gap-2">';
+        html += '<button type="button" class="btn btn-sm btn-success rounded-pill fw-bold py-2" onclick="saveStudentGrade(' + data.homework_id + ', ' + data.student_id + ', false)"><i class="fa-solid fa-floppy-disk me-1"></i> حفظ الدرجة والملاحظات (Ctrl+S)</button>';
+
+        if (data.next_student_id) {
+            html += '<button type="button" class="btn btn-sm btn-primary rounded-pill fw-bold py-2" onclick="saveStudentGrade(' + data.homework_id + ', ' + data.student_id + ', true)"><i class="fa-solid fa-forward me-1"></i> حفظ والانتقال للطالب التالي ←</button>';
+        }
+
+        html += '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill py-1 mt-1" onclick="reopenStudentSubmission(' + data.homework_id + ', ' + data.student_id + ')"><i class="fa-solid fa-rotate-left me-1"></i> إعادة فتح التسليم للطالب</button>';
+        html += '</div>';
+
+        // Prev / Next Student Navigation Footer
+        html += '<div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">';
+        if (data.prev_student_id) {
+            html += '<button type="button" class="btn btn-sm btn-light border rounded-pill" onclick="loadStudentSubmission(' + data.homework_id + ', ' + data.prev_student_id + ')">→ الطالب السابق</button>';
+        } else {
+            html += '<span></span>';
+        }
+        if (data.next_student_id) {
+            html += '<button type="button" class="btn btn-sm btn-light border rounded-pill" onclick="loadStudentSubmission(' + data.homework_id + ', ' + data.next_student_id + ')">الطالب التالي ←</button>';
+        }
+        html += '</div>';
+
+        html += '</div></div>';
+
+        html += '</div></div>';
+        container.innerHTML = html;
+    }
+
+    // 3. Save Student Grade API Action
+    window.saveStudentGrade = function(hwId, studentId, isNext) {
+        var scoreInput = document.getElementById('gradingScoreInput');
+        var feedbackInput = document.getElementById('gradingFeedbackInput');
+        if (!scoreInput || !feedbackInput) return;
+
+        var score = scoreInput.value.trim();
+        var feedback = feedbackInput.value.trim();
+
+        fetch('/homework/api/grading/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                homework_id: hwId,
+                student_id: studentId,
+                grade: score ? parseFloat(score) : null,
+                feedback: feedback
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(resData) {
+            if (resData.success) {
+                var statusAlert = document.getElementById('autoSaveStatusAlert');
+                if (statusAlert) {
+                    statusAlert.className = 'alert alert-success border p-1 text-center extra-small mb-2';
+                    statusAlert.style.display = 'block';
+                    statusAlert.innerHTML = '<i class="fa-solid fa-check me-1"></i> تم حفظ الدرجة بنجاح!';
+                }
+
+                if (isNext) {
+                    openHomeworkGradingWorkspace(hwId);
+                    setTimeout(function() {
+                        fetch('/homework/api/grading/submission/' + hwId + '/' + studentId)
+                            .then(function(r) { return r.json(); })
+                            .then(function(sData) {
+                                if (sData.next_student_id) {
+                                    loadStudentSubmission(hwId, sData.next_student_id);
+                                }
+                            });
+                    }, 300);
+                } else {
+                    openHomeworkGradingWorkspace(hwId);
+                }
+            } else {
+                alert('❌ خطأ في الحفظ: ' + resData.error);
+            }
+        })
+        .catch(function(err) {
+            alert('❌ حدث خطأ في الاتصال: ' + err.message);
+        });
+    };
+
+    // 4. Auto Save Student Submission
+    window.autoSaveSubmission = function(hwId, studentId) {
+        var statusAlert = document.getElementById('autoSaveStatusAlert');
+        if (statusAlert) {
+            statusAlert.className = 'alert alert-warning border p-1 text-center extra-small mb-2';
+            statusAlert.style.display = 'block';
+            statusAlert.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ تلقائياً...';
+        }
+
+        if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(function() {
+            var scoreInput = document.getElementById('gradingScoreInput');
+            var feedbackInput = document.getElementById('gradingFeedbackInput');
+            if (!scoreInput || !feedbackInput) return;
+
+            fetch('/homework/api/grading/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    homework_id: hwId,
+                    student_id: studentId,
+                    grade: scoreInput.value ? parseFloat(scoreInput.value) : null,
+                    feedback: feedbackInput.value
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(resData) {
+                if (resData.success && statusAlert) {
+                    statusAlert.className = 'alert alert-success border p-1 text-center extra-small mb-2';
+                    statusAlert.innerHTML = '<i class="fa-solid fa-check me-1"></i> تم الحفظ تلقائياً.';
+                }
+            });
+        }, 1200);
+    };
+
+    // 5. Publish All Homework Grades Action
+    window.publishHomeworkGrades = function(hwId) {
+        if (!confirm('هل أنت تأكد من نشر جميع درجات هذا الواجب للطلاب؟')) return;
+        fetch('/homework/api/grading/publish/' + hwId, { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(resData) {
+                alert('✅ تم نشر درجات الواجب لجميع الطلاب بنجاح!');
+                openHomeworkGradingWorkspace(hwId);
+            });
+    };
+
+    // 6. Reopen Student Submission Action
+    window.reopenStudentSubmission = function(hwId, studentId) {
+        if (!confirm('هل أنت تأكد من إعادة فتح التسليم لهـذا الطالب؟')) return;
+        fetch('/homework/api/grading/reopen/' + hwId + '/' + studentId, { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(resData) {
+                alert('✅ تم إعادة فتح التسليم للطالب بنجاح!');
+                loadStudentSubmission(hwId, studentId);
+            });
+    };
+
+    // 7. Keyboard Shortcuts for Grading Modal
+    document.addEventListener('keydown', function(e) {
+        var modalEl = document.getElementById('studentGradingModal');
+        if (!modalEl || !modalEl.classList.contains('show')) return;
+
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            if (currentGradingHwId && currentGradingStudentId) {
+                saveStudentGrade(currentGradingHwId, currentGradingStudentId, false);
+            }
+        }
+    });
 })();
 </script>
 {% endblock %}

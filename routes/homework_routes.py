@@ -122,6 +122,16 @@ from services.teacher_homework_service import (
     delete_teacher_homework
 )
 
+from services.teacher_homework_grading_service import (
+    get_homework_grading_workspace,
+    get_student_submission,
+    save_grade as service_save_grade,
+    save_feedback as service_save_feedback,
+    publish_grades as service_publish_grades,
+    reopen_submission as service_reopen_submission,
+    get_grading_statistics
+)
+
 @homework_bp.route('/')
 @login_required
 def index():
@@ -571,6 +581,80 @@ def api_delete_homework(hw_id):
     try:
         success = delete_teacher_homework(hw_id, current_user.id)
         return jsonify({'success': success, 'message': 'تم حذف الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ----------------------------------------------------------------------
+# PHASE 5.1 TEACHER HOMEWORK GRADING WORKSPACE API ENDPOINTS
+# ----------------------------------------------------------------------
+
+@homework_bp.route('/grading/workspace/<int:hw_id>')
+@login_required
+def api_grading_workspace(hw_id):
+    try:
+        workspace_data = get_homework_grading_workspace(hw_id, current_user.id)
+        if not workspace_data:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify(workspace_data)
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/grading/submission/<int:hw_id>/<int:student_id>')
+@login_required
+def api_grading_submission(hw_id, student_id):
+    try:
+        sub_data = get_student_submission(hw_id, student_id, current_user.id)
+        if not sub_data:
+            return jsonify({'error': 'Submission or student not found'}), 404
+        return jsonify(sub_data)
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/grading/save', methods=['POST'])
+@login_required
+def api_grading_save():
+    try:
+        req_data = request.get_json() or request.form
+        hw_id = req_data.get('homework_id')
+        student_id = req_data.get('student_id')
+        grade = req_data.get('grade')
+        feedback = req_data.get('feedback')
+
+        if not hw_id or not student_id:
+            return jsonify({'error': 'homework_id and student_id are required'}), 400
+
+        success = service_save_grade(int(hw_id), int(student_id), current_user.id, grade, feedback)
+        return jsonify({'success': success, 'message': 'تم حفظ الدرجة والملاحظات بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except ValueError as ve:
+        return jsonify({'error': str(ve)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/grading/publish/<int:hw_id>', methods=['POST'])
+@login_required
+def api_grading_publish_all(hw_id):
+    try:
+        success = service_publish_grades(hw_id, current_user.id)
+        return jsonify({'success': success, 'message': 'تم نشر جميع الدرجات للطلاب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/grading/reopen/<int:hw_id>/<int:student_id>', methods=['POST'])
+@login_required
+def api_grading_reopen(hw_id, student_id):
+    try:
+        success = service_reopen_submission(hw_id, student_id, current_user.id)
+        return jsonify({'success': success, 'message': 'تم إعادة فتح التسليم للطالب بنجاح'})
     except PermissionError as pe:
         return jsonify({'error': str(pe)}), 403
     except Exception as e:

@@ -291,3 +291,41 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     height: 6px;
     border-radius: 999px;
 }
+
+/* Phase 5.1 Grading Workspace Styles */
+.grading-workspace {
+    width: 900px !important;
+    max-width: 95vw;
+}
+
+.grading-sidebar {
+    background-color: #f8fafc;
+    border-left: 1px solid #e2e8f0;
+}
+
+.grading-panel {
+    border-radius: 12px;
+    background-color: #ffffff;
+}
+
+.submission-viewer {
+    border-radius: 12px;
+    background-color: #ffffff;
+}
+
+.grading-progress {
+    height: 10px;
+    border-radius: 999px;
+}
+
+.grading-status {
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+}
+
+.grading-queue {
+    max-height: 450px;
+    overflow-y: auto;
+}
