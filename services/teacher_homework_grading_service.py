@@ -262,3 +262,9 @@ def get_grading_statistics(homework_id, user_id):
         'graded_count': ws['graded_count'],
         'average_grade': ws['average_grade']
     }
+
+def get_submission_history(homework_id, student_id, user_id):
+    sub = get_student_submission(homework_id, student_id, user_id)
+    if not sub:
+        return []
+    return sub.get('timeline', [])
