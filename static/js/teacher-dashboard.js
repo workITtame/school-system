@@ -604,6 +604,7 @@ function setPageStudentAttendance(sid, newStatus) {
     const rowEl = document.getElementById(`page-att-row-${sid}`);
     if (rowEl) {
         rowEl.classList.add('modified-row');
+        rowEl.setAttribute('data-current-status', newStatus);
         
         const buttons = rowEl.querySelectorAll('.btn-att-chip');
         buttons.forEach(btn => {
@@ -619,6 +620,57 @@ function setPageStudentAttendance(sid, newStatus) {
 
     window.pageAttendanceUnsavedCount = Object.keys(window.pageAttendanceEdits).length;
     updateStickySaveBarLabel();
+    recalculatePageAttendanceMetrics();
+}
+
+function recalculatePageAttendanceMetrics() {
+    const rows = document.querySelectorAll('.page-att-row');
+    const total = rows.length;
+    if (total === 0) return;
+
+    let present = 0, absent = 0, late = 0, excused = 0;
+    rows.forEach(r => {
+        let st = r.getAttribute('data-current-status');
+        if (!st) {
+            const activeBtn = r.querySelector('.btn-att-chip.fw-bold');
+            if (activeBtn) {
+                if (activeBtn.textContent.includes('حاضر')) st = 'حاضر';
+                else if (activeBtn.textContent.includes('غائب')) st = 'غائب';
+                else if (activeBtn.textContent.includes('متأخر')) st = 'متأخر';
+                else if (activeBtn.textContent.includes('بعذر')) st = 'بعذر';
+            }
+        }
+        if (st === 'حاضر') present++;
+        else if (st === 'غائب') absent++;
+        else if (st === 'متأخر') late++;
+        else if (st === 'بعذر' || st === 'مستأذن') excused++;
+    });
+
+    const pRate = (present / total * 100).toFixed(1);
+    const aRate = (absent / total * 100).toFixed(1);
+    const lRate = (late / total * 100).toFixed(1);
+    const eRate = (excused / total * 100).toFixed(1);
+
+    // Update Progress Bars UI
+    const elP = document.getElementById('barPresentPercent');
+    const elPF = document.getElementById('barPresentFill');
+    if (elP) elP.textContent = `${pRate}%`;
+    if (elPF) elPF.style.width = `${pRate}%`;
+
+    const elA = document.getElementById('barAbsentPercent');
+    const elAF = document.getElementById('barAbsentFill');
+    if (elA) elA.textContent = `${aRate}%`;
+    if (elAF) elAF.style.width = `${aRate}%`;
+
+    const elL = document.getElementById('barLatePercent');
+    const elLF = document.getElementById('barLateFill');
+    if (elL) elL.textContent = `${lRate}%`;
+    if (elLF) elLF.style.width = `${lRate}%`;
+
+    const elE = document.getElementById('barExcusedPercent');
+    const elEF = document.getElementById('barExcusedFill');
+    if (elE) elE.textContent = `${eRate}%`;
+    if (elEF) elEF.style.width = `${eRate}%`;
 }
 
 function updateStickySaveBarLabel() {
@@ -700,18 +752,25 @@ function savePageAttendanceBulk(slotId) {
     }
 
     const edits = window.pageAttendanceEdits || {};
-    const attendancePayload = Object.keys(edits).map(sid => ({
+    let attendancePayload = Object.keys(edits).map(sid => ({
         student_id: parseInt(sid),
         status: edits[sid]
     }));
 
     if (attendancePayload.length === 0) {
-        alert('لا توجد أي تعديلات غير محفوظة.');
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            updateStickySaveBarLabel();
-        }
-        return;
+        const rows = document.querySelectorAll('.page-att-row');
+        rows.forEach(r => {
+            const sid = r.getAttribute('data-sid');
+            const activeBtn = r.querySelector('.btn-att-chip.fw-bold');
+            if (sid && activeBtn) {
+                let st = 'غير مسجل';
+                if (activeBtn.textContent.includes('حاضر')) st = 'حاضر';
+                else if (activeBtn.textContent.includes('غائب')) st = 'غائب';
+                else if (activeBtn.textContent.includes('متأخر')) st = 'متأخر';
+                else if (activeBtn.textContent.includes('بعذر')) st = 'بعذر';
+                attendancePayload.push({ student_id: parseInt(sid), status: st });
+            }
+        });
     }
 
     fetch('/attendance/api/save', {

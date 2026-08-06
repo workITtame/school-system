@@ -260,19 +260,19 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between text-muted fw-bold mb-1">
                             <span>🟢 نسبة الحاضرين</span>
-                            <span class="font-monospace text-success fw-bold">{{ kpi.attendance_rate }}%</span>
+                            <span class="font-monospace text-success fw-bold" id="barPresentPercent">{{ kpi.present_rate or kpi.attendance_rate or 0 }}%</span>
                         </div>
                         <div class="progress rounded-pill" style="height: 10px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ kpi.attendance_rate }}%;"></div>
+                            <div class="progress-bar bg-success" id="barPresentFill" role="progressbar" style="width: {{ kpi.present_rate or kpi.attendance_rate or 0 }}%;"></div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between text-muted fw-bold mb-1">
                             <span>🔴 نسبة المتغيبين</span>
-                            <span class="font-monospace text-danger fw-bold">{{ kpi.absence_rate }}%</span>
+                            <span class="font-monospace text-danger fw-bold" id="barAbsentPercent">{{ kpi.absent_rate or kpi.absence_rate or 0 }}%</span>
                         </div>
                         <div class="progress rounded-pill" style="height: 10px;">
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ kpi.absence_rate }}%;"></div>
+                            <div class="progress-bar bg-danger" id="barAbsentFill" role="progressbar" style="width: {{ kpi.absent_rate or kpi.absence_rate or 0 }}%;"></div>
                         </div>
                     </div>
                 </div>
@@ -281,19 +281,19 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between text-muted fw-bold mb-1">
                             <span>🟡 نسبة المتأخرين</span>
-                            <span class="font-monospace text-warning fw-bold">10%</span>
+                            <span class="font-monospace text-warning fw-bold" id="barLatePercent">{{ kpi.late_rate or 0 }}%</span>
                         </div>
                         <div class="progress rounded-pill" style="height: 10px;">
-                            <div class="progress-bar bg-warning" role="progressbar" style="width: 10%;"></div>
+                            <div class="progress-bar bg-warning" id="barLateFill" role="progressbar" style="width: {{ kpi.late_rate or 0 }}%;"></div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between text-muted fw-bold mb-1">
                             <span>🔵 نسبة المستأذنين</span>
-                            <span class="font-monospace text-info fw-bold">5%</span>
+                            <span class="font-monospace text-info fw-bold" id="barExcusedPercent">{{ kpi.excused_rate or 0 }}%</span>
                         </div>
                         <div class="progress rounded-pill" style="height: 10px;">
-                            <div class="progress-bar bg-info" role="progressbar" style="width: 5%;"></div>
+                            <div class="progress-bar bg-info" id="barExcusedFill" role="progressbar" style="width: {{ kpi.excused_rate or 0 }}%;"></div>
                         </div>
                     </div>
                 </div>

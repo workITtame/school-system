@@ -108,19 +108,23 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     present_c = sum(1 for status in att_dict.values() if status in ['Present', 'حاضر'])
     absent_c = sum(1 for status in att_dict.values() if status in ['Absent', 'غائب'])
     late_c = sum(1 for status in att_dict.values() if status in ['Late', 'متأخر', 'تأخر'])
-    excused_c = sum(1 for status in att_dict.values() if status in ['Excused', 'مستأذن'])
+    excused_c = sum(1 for status in att_dict.values() if status in ['Excused', 'مستأذن', 'بعذر'])
     
     total_st = len(students)
-    if total_st == 0:
-        total_st = 28
-        present_c = 26
-        absent_c = 1
-        late_c = 1
-        excused_c = 2
+    if total_st > 0:
+        present_rate = round((present_c / total_st) * 100, 1)
+        absent_rate = round((absent_c / total_st) * 100, 1)
+        late_rate = round((late_c / total_st) * 100, 1)
+        excused_rate = round((excused_c / total_st) * 100, 1)
+    else:
+        present_rate = 0.0
+        absent_rate = 0.0
+        late_rate = 0.0
+        excused_rate = 0.0
 
-    att_rate = round(((present_c + late_c + excused_c) / total_st) * 100, 1)
-    abs_rate = round((absent_c / total_st) * 100, 1)
-    disc_score = round(((present_c * 1.0 + late_c * 0.8 + excused_c * 0.9) / total_st) * 100, 1)
+    att_rate = present_rate
+    abs_rate = absent_rate
+    disc_score = round(((present_c * 1.0 + late_c * 0.8 + excused_c * 0.9) / (total_st or 1)) * 100, 1)
 
     attendance_cards = []
     for idx, st in enumerate(students, start=1):
@@ -227,6 +231,10 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'absent_count': absent_c,
         'late_count': late_c,
         'excused_count': excused_c,
+        'present_rate': present_rate,
+        'absent_rate': absent_rate,
+        'late_rate': late_rate,
+        'excused_rate': excused_rate,
         'attendance_rate': att_rate,
         'absence_rate': abs_rate,
         'discipline_score': disc_score
