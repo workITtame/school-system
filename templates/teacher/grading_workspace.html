@@ -4,7 +4,7 @@
         <h6 class="offcanvas-title fw-bold mb-0" id="unifiedGradingDrawerTitle">
             <i class="fa-solid fa-star me-2"></i> مساحة التصحيح الموحدة (Unified Grading Workspace)
         </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close" onclick="confirmCloseGradingWorkspace(event)"></button>
     </div>
 
     <div class="offcanvas-body p-0 d-flex flex-column bg-light" id="unifiedGradingDrawerBody">
@@ -121,11 +121,12 @@
                             <!-- Numeric Input + Slider -->
                             <div class="col-12 col-md-5">
                                 <label class="form-label fw-bold text-dark extra-small">الدرجة الممنوحة (من <span id="ugwMaxGradeLabel">100</span>):</label>
-                                <div class="input-group input-group-sm mb-2">
-                                    <input type="number" id="ugwGradeInput" class="form-control font-monospace fw-bold fs-6 text-center" min="0" max="100" step="0.5" placeholder="0.0" oninput="autosaveGrading()">
+                                <div class="input-group input-group-sm mb-1">
+                                    <input type="number" id="ugwGradeInput" class="form-control font-monospace fw-bold fs-6 text-center" min="0" max="100" step="0.5" placeholder="0.0" oninput="onGradingFormChanged()">
                                     <span class="input-group-text bg-light text-muted font-monospace">/ <span id="ugwMaxGradeSuffix">100</span></span>
                                 </div>
-                                <input type="range" id="ugwGradeSlider" class="form-range" min="0" max="100" step="0.5" oninput="document.getElementById('ugwGradeInput').value=this.value; autosaveGrading();">
+                                <div class="invalid-feedback extra-small mb-2" id="ugwGradeValidationError">الدرجة يجب أن تكون برقم صحيح بين 0 والحد الأقصى.</div>
+                                <input type="range" id="ugwGradeSlider" class="form-range" min="0" max="100" step="0.5" oninput="document.getElementById('ugwGradeInput').value=this.value; onGradingFormChanged();">
                             </div>
 
                             <!-- Quick Grade Presets Buttons -->
@@ -146,7 +147,7 @@
                         <!-- Feedback Editor & Quick Feedback Chips -->
                         <div class="mb-3">
                             <label class="form-label fw-bold text-dark extra-small">الملاحظات والتغذية الراجعة للمعلم:</label>
-                            <textarea id="ugwFeedbackInput" class="form-control form-control-sm extra-small mb-2" rows="3" placeholder="أدخل الملاحظات والتوجيهات الأكاديمية للطالب..." onkeyup="autosaveGrading()"></textarea>
+                            <textarea id="ugwFeedbackInput" class="form-control form-control-sm extra-small mb-2" rows="3" placeholder="أدخل الملاحظات والتوجيهات الأكاديمية للطالب..." onkeyup="onGradingFormChanged()"></textarea>
 
                             <div class="d-flex align-items-center gap-1 flex-wrap extra-small">
                                 <span class="text-muted fw-bold me-1">قوالب سريعة:</span>
@@ -188,7 +189,7 @@
                     <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="exportGradingResults()">
                         <i class="fa-solid fa-file-export me-1"></i> تصدير النتائج
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas" onclick="confirmCloseGradingWorkspace(event)">
                         إغلاق مساحة العمل
                     </button>
                 </div>
@@ -206,11 +207,13 @@
     var ugwStudentsList = [];
     var ugwAutosaveTimer = null;
     var ugwMaxGrade = 100;
+    var ugwHasUnsavedChanges = false;
 
     // 1. Open Unified Grading Workspace Function
     window.openGradingWorkspace = function(sourceType, sourceId) {
         ugwCurrentSourceType = sourceType;
         ugwCurrentSourceId = sourceId;
+        ugwHasUnsavedChanges = false;
 
         var drawerEl = document.getElementById('unifiedGradingWorkspaceDrawer');
         var skeletonEl = document.getElementById('unifiedGradingSkeleton');
@@ -261,7 +264,13 @@
                 ugwStudentsList = data.students || [];
                 renderStudentRoster(ugwStudentsList);
 
-                if (ugwStudentsList.length > 0) {
+                // Session Recovery check
+                var savedStudentId = sessionStorage.getItem('ugw_last_student_' + sourceType + '_' + sourceId);
+                var targetStudent = ugwStudentsList.find(function(s) { return String(s.student_id) === String(savedStudentId); });
+
+                if (targetStudent) {
+                    loadGradingStudent(targetStudent.student_id);
+                } else if (ugwStudentsList.length > 0) {
                     loadGradingStudent(ugwStudentsList[0].student_id);
                 }
             })
@@ -289,8 +298,16 @@
     }
 
     window.loadGradingStudent = function(studentId) {
+        if (ugwHasUnsavedChanges && !confirm('لديك تغييرات غير محفوظة للطالب الحالي، هل تريد التخلي عنها والانتقال؟')) {
+            return;
+        }
+
         ugwCurrentStudentId = studentId;
+        ugwHasUnsavedChanges = false;
         renderStudentRoster(ugwStudentsList);
+
+        // Store last visited student for session recovery
+        sessionStorage.setItem('ugw_last_student_' + ugwCurrentSourceType + '_' + ugwCurrentSourceId, studentId);
 
         fetch('/grading/api/submission?source_type=' + ugwCurrentSourceType + '&source_id=' + ugwCurrentSourceId + '&student_id=' + studentId)
             .then(function(res) { return res.json(); })
@@ -304,16 +321,25 @@
                 var gradeSlider = document.getElementById('ugwGradeSlider');
                 var feedbackInput = document.getElementById('ugwFeedbackInput');
 
+                gradeInput.classList.remove('is-invalid');
+
+                var draftFeedback = sessionStorage.getItem('ugw_draft_feedback_' + studentId);
                 gradeInput.value = sub.grade !== null ? sub.grade : '';
                 gradeSlider.value = sub.grade !== null ? sub.grade : 0;
-                feedbackInput.value = sub.feedback || '';
+                feedbackInput.value = draftFeedback || sub.feedback || '';
 
                 var filesContainer = document.getElementById('ugwSubmissionFiles');
                 if (sub.attachments && sub.attachments.length > 0) {
                     var fHtml = '';
                     sub.attachments.forEach(function(f) {
+                        var fileIcon = 'fa-file-lines text-primary';
+                        if (f.type === 'pdf') fileIcon = 'fa-file-pdf text-danger';
+                        else if (f.type === 'image' || f.name.match(/\.(jpg|png|jpeg)$/i)) fileIcon = 'fa-file-image text-success';
+                        else if (f.type === 'docx' || f.name.match(/\.docx?$/i)) fileIcon = 'fa-file-word text-info';
+                        else if (f.type === 'zip' || f.name.match(/\.zip$/i)) fileIcon = 'fa-file-zipper text-warning';
+
                         fHtml += '<div class="d-flex align-items-center justify-content-between p-2 mb-1 bg-light rounded border">';
-                        fHtml += '<div><i class="fa-solid fa-file-pdf text-danger me-2 fs-5"></i><strong class="text-dark extra-small">' + f.name + '</strong> <small class="text-muted">(' + f.size + ')</small></div>';
+                        fHtml += '<div><i class="fa-solid ' + fileIcon + ' me-2 fs-5"></i><strong class="text-dark extra-small">' + f.name + '</strong> <small class="text-muted">(' + f.size + ')</small></div>';
                         fHtml += '<a href="' + f.url + '" class="btn btn-xs btn-outline-primary rounded-pill px-3" download><i class="fa-solid fa-download me-1"></i> تحميل</a>';
                         fHtml += '</div>';
                     });
@@ -322,6 +348,15 @@
                     filesContainer.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد ملفات مرفقة لهذا التسليم.</div>';
                 }
             });
+    };
+
+    window.onGradingFormChanged = function() {
+        ugwHasUnsavedChanges = true;
+        var feedbackVal = document.getElementById('ugwFeedbackInput').value;
+        if (ugwCurrentStudentId) {
+            sessionStorage.setItem('ugw_draft_feedback_' + ugwCurrentStudentId, feedbackVal);
+        }
+        autosaveGrading();
     };
 
     window.autosaveGrading = function() {
@@ -335,8 +370,21 @@
     };
 
     window.saveGradingGrade = function(navigateNext) {
-        var gradeVal = document.getElementById('ugwGradeInput').value;
+        var gradeInput = document.getElementById('ugwGradeInput');
+        var gradeVal = gradeInput.value;
         var feedbackVal = document.getElementById('ugwFeedbackInput').value;
+
+        // Validation Rule
+        if (gradeVal !== '') {
+            var g = parseFloat(gradeVal);
+            if (isNaN(g) || g < 0 || g > ugwMaxGrade) {
+                gradeInput.classList.add('is-invalid');
+                var indicator = document.getElementById('ugwAutoSaveIndicator');
+                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger me-1"></i> درجة غير صالحة';
+                return;
+            }
+        }
+        gradeInput.classList.remove('is-invalid');
 
         var payload = {
             source_type: ugwCurrentSourceType,
@@ -355,6 +403,11 @@
         .then(function(res) {
             var indicator = document.getElementById('ugwAutoSaveIndicator');
             if (res.success) {
+                ugwHasUnsavedChanges = false;
+                if (ugwCurrentStudentId) {
+                    sessionStorage.removeItem('ugw_draft_feedback_' + ugwCurrentStudentId);
+                }
+
                 if (indicator) indicator.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> تم الحفظ تلقائياً';
                 
                 var st = ugwStudentsList.find(function(s) { return String(s.student_id) === String(ugwCurrentStudentId); });
@@ -373,12 +426,23 @@
         });
     };
 
+    window.confirmCloseGradingWorkspace = function(e) {
+        if (ugwHasUnsavedChanges && !confirm('هناك تغييرات غير محفوظة، هل أنت تأكد من إغلاق مساحة التصحيح؟')) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return false;
+        }
+        return true;
+    };
+
     window.setQuickGrade = function(val) {
         var gradeInput = document.getElementById('ugwGradeInput');
         var gradeSlider = document.getElementById('ugwGradeSlider');
         gradeInput.value = val;
         gradeSlider.value = val;
-        autosaveGrading();
+        onGradingFormChanged();
     };
 
     window.addQuickFeedback = function(text) {
@@ -388,7 +452,7 @@
         } else {
             feedbackInput.value = text;
         }
-        autosaveGrading();
+        onGradingFormChanged();
     };
 
     window.nextGradingStudent = function() {
@@ -492,6 +556,13 @@
             previousGradingStudent();
         } else if (e.key === 'ArrowDown') {
             nextGradingStudent();
+        }
+    });
+
+    window.addEventListener('beforeunload', function(e) {
+        if (ugwHasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = '';
         }
     });
 })();
