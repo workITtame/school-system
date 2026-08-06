@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required
-from models import db, Homework, Subject, Classes, Sections, Student, Teacher, Terms
+from flask_login import login_required, current_user
+from models import db, Homework, Subject, Classes, Sections, Student, Teacher, Terms, SchoolTable
 from sqlalchemy import func
 from datetime import datetime
 from collections import defaultdict
@@ -111,9 +111,76 @@ def get_teacher_homework_data():
         'today': today_date.strftime('%Y-%m-%d')
     }
 
+from services.teacher_homework_service import (
+    get_teacher_homework_statistics,
+    get_teacher_homeworks,
+    get_homework_details,
+    create_teacher_homework,
+    update_teacher_homework,
+    publish_homework as service_publish_homework,
+    close_homework as service_close_homework,
+    delete_teacher_homework
+)
+
 @homework_bp.route('/')
 @login_required
 def index():
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        
+        teacher_class_ids = set()
+        teacher_section_ids = set()
+        if teacher:
+            slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+            for s in slots:
+                if s.CID: teacher_class_ids.add(s.CID)
+                if s.SectionID: teacher_section_ids.add(s.SectionID)
+
+        if not teacher_class_ids:
+            assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
+            for st in assigned_students:
+                if st.CID: teacher_class_ids.add(st.CID)
+                if st.SectionID: teacher_section_ids.add(st.SectionID)
+
+        classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
+        sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
+        subjects = teacher.subjects if (teacher and teacher.subjects) else Subject.query.filter_by(is_deleted=False).all()
+
+        class_id = request.args.get('class_id', type=int)
+        section_id = request.args.get('section_id', type=int)
+        subject_id = request.args.get('subject_id', type=int)
+        status = request.args.get('status')
+        due_date = request.args.get('due_date')
+        search_query = request.args.get('search')
+
+        if class_id and teacher_class_ids and class_id not in teacher_class_ids:
+            return jsonify({'error': 'Access to out-of-scope class forbidden'}), 403
+
+        kpi = get_teacher_homework_statistics(current_user.id)
+        homework_list = get_teacher_homeworks(
+            current_user.id,
+            class_id=class_id,
+            section_id=section_id,
+            subject_id=subject_id,
+            status=status,
+            due_date=due_date,
+            search_query=search_query
+        )
+
+        teacher_info = {
+            'TeacherName': teacher.TeacherName if teacher else current_user.name
+        }
+
+        return render_template('teacher/homeworks.html',
+                               teacher_info=teacher_info,
+                               kpi=kpi,
+                               homework_list=homework_list,
+                               classes=classes,
+                               sections=sections,
+                               subjects=subjects,
+                               today=today_str)
+
     data = get_teacher_homework_data()
     return render_template('homework/index.html',
                            homework_list=data['homework_list'],
@@ -388,3 +455,123 @@ def analytics():
         filter_date_from=filter_date_from,
         filter_date_to=filter_date_to,
     )
+
+# ----------------------------------------------------------------------
+# TEACHER HOMEWORK API ENDPOINTS
+# ----------------------------------------------------------------------
+
+@homework_bp.route('/api/list')
+@login_required
+def api_list_homeworks():
+    try:
+        class_id = request.args.get('class_id', type=int)
+        section_id = request.args.get('section_id', type=int)
+        subject_id = request.args.get('subject_id', type=int)
+        status = request.args.get('status')
+        due_date = request.args.get('due_date')
+        search_query = request.args.get('search')
+
+        data = get_teacher_homeworks(
+            current_user.id,
+            class_id=class_id,
+            section_id=section_id,
+            subject_id=subject_id,
+            status=status,
+            due_date=due_date,
+            search_query=search_query
+        )
+        return jsonify({'success': True, 'homeworks': data})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/details/<int:hw_id>')
+@login_required
+def api_homework_details(hw_id):
+    try:
+        details = get_homework_details(hw_id, current_user.id)
+        if not details:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify(details)
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/create', methods=['POST'])
+@login_required
+def api_create_homework():
+    try:
+        req_data = request.get_json() or request.form
+        title = req_data.get('title')
+        sub_id = req_data.get('sub_id')
+        class_id = req_data.get('class_id')
+        section_id = req_data.get('section_id')
+        due_date = req_data.get('due_date')
+        description = req_data.get('description')
+        status = req_data.get('status', 'منشور')
+
+        if not title or not sub_id or not class_id or not due_date:
+            return jsonify({'error': 'جميع الحقول الأساسية مطلوبة'}), 400
+
+        hw_id = create_teacher_homework(
+            user_id=current_user.id,
+            title=title,
+            sub_id=sub_id,
+            class_id=class_id,
+            section_id=section_id,
+            due_date=due_date,
+            description=description,
+            status=status
+        )
+        return jsonify({'success': True, 'homework_id': hw_id, 'message': 'تم إنشاء الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/update/<int:hw_id>', methods=['POST'])
+@login_required
+def api_update_homework(hw_id):
+    try:
+        req_data = request.get_json() or request.form
+        success = update_teacher_homework(hw_id, current_user.id, **req_data)
+        return jsonify({'success': success, 'message': 'تم تحديث الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/publish/<int:hw_id>', methods=['POST'])
+@login_required
+def api_publish_homework(hw_id):
+    try:
+        success = service_publish_homework(hw_id, current_user.id)
+        return jsonify({'success': success, 'message': 'تم نشر الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/close/<int:hw_id>', methods=['POST'])
+@login_required
+def api_close_homework(hw_id):
+    try:
+        success = service_close_homework(hw_id, current_user.id)
+        return jsonify({'success': success, 'message': 'تم إغلاق الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/delete/<int:hw_id>', methods=['DELETE', 'POST'])
+@login_required
+def api_delete_homework(hw_id):
+    try:
+        success = delete_teacher_homework(hw_id, current_user.id)
+        return jsonify({'success': success, 'message': 'تم حذف الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
