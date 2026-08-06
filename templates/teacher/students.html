@@ -66,11 +66,21 @@
         <div class="card-body p-3">
             <form method="GET" action="{{ url_for('students.home') }}" id="studentsFilterForm" class="row g-2 align-items-center extra-small">
                 <!-- Search Input -->
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                         <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." value="{{ search_query or '' }}">
                     </div>
+                </div>
+
+                <!-- Subject Filter -->
+                <div class="col-6 col-md-2">
+                    <select name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">جميع المواد</option>
+                        {% for sub in teacher_subjects %}
+                            <option value="{{ sub.SubID }}" {% if selected_subject_id == sub.SubID %}selected{% endif %}>{{ sub.SubName }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <!-- Class Filter -->
@@ -105,9 +115,9 @@
                 </div>
 
                 <!-- Reset Button -->
-                <div class="col-6 col-md-2 text-end">
-                    <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill extra-small">
-                        <i class="fa-solid fa-rotate-right me-1"></i> إعادة ضبط
+                <div class="col-6 col-md-1 text-end">
+                    <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill extra-small px-1">
+                        <i class="fa-solid fa-rotate-right me-1"></i> ضبط
                     </a>
                 </div>
             </form>
@@ -131,6 +141,7 @@
                         </th>
                         <th>الطالب</th>
                         <th>الرقم الأكاديمي</th>
+                        <th>المادة المسندة</th>
                         <th>الصف والشعبة</th>
                         <th>نسبة الحضور</th>
                         <th>معدل الدرجات</th>
@@ -156,6 +167,11 @@
                                     </div>
                                 </td>
                                 <td class="font-monospace text-muted">{{ st.academic_id }}</td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                                        <i class="fa-solid fa-book me-1"></i> {{ st.subjects_str }}
+                                    </span>
+                                </td>
                                 <td><span class="badge bg-light text-dark border">{{ st.full_class }}</span></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">

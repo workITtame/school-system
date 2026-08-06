@@ -205,6 +205,7 @@ def home():
         search_query = request.args.get('search', '').strip()
         class_id = request.args.get('class_id', type=int)
         section_id = request.args.get('section_id', type=int)
+        subject_id = request.args.get('subject_id', type=int)
         status_filter = request.args.get('status', '').strip()
         page = request.args.get('page', 1, type=int)
 
@@ -214,6 +215,7 @@ def home():
             search_query=search_query,
             class_id=class_id,
             section_id=section_id,
+            subject_id=subject_id,
             status_filter=status_filter,
             page=page
         )
@@ -223,15 +225,18 @@ def home():
 
         teacher_classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids)).all() if teacher_class_ids else Classes.query.filter_by(is_deleted=False).all()
         teacher_sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids)).all() if teacher_section_ids else Sections.query.filter_by(is_deleted=False).all()
+        teacher_subjects = teacher.subjects if (teacher and teacher.subjects) else Subject.query.filter_by(is_deleted=False).all()
 
         return render_template('teacher/students.html',
                                stats=stats,
                                paginated_students=paginated_students,
                                teacher_classes=teacher_classes,
                                teacher_sections=teacher_sections,
+                               teacher_subjects=teacher_subjects,
                                search_query=search_query,
                                selected_class_id=class_id,
                                selected_section_id=section_id,
+                               selected_subject_id=subject_id,
                                selected_status=status_filter)
     
     # Lookup data for Modals (Add / Edit) for Admin

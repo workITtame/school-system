@@ -130,7 +130,7 @@ def get_teacher_student_stats(user_id):
 def get_teacher_students_paginated(user_id, search_query=None, class_id=None, section_id=None, subject_id=None, status_filter=None, page=1, per_page=10):
     """
     Fetch paginated list of students belonging strictly to current teacher using real DB records.
-    Prevents N+1 queries using joinedload.
+    Filters by subject_id if specified. Prevents N+1 queries using joinedload.
     """
     try:
         teacher = get_teacher_by_user_id(user_id)
@@ -157,12 +157,20 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
             return {'students': [], 'total': 0, 'pages': 1, 'page': 1, 'per_page': per_page}
 
         student_ids = [st.SID for st in all_students]
-        subject_ids = [s.SubID for s in teacher.subjects] if (teacher and teacher.subjects) else []
+        teacher_subjects = teacher.subjects if (teacher and teacher.subjects) else []
+        subject_ids = [s.SubID for s in teacher_subjects] if teacher_subjects else []
+        subjects_str_default = " | ".join([s.SubName for s in teacher_subjects]) if teacher_subjects else 'المواد الدراسية'
+
+        if subject_id:
+            target_sub = Subject.query.get(subject_id)
+            if target_sub:
+                subjects_str_default = target_sub.SubName
 
         # Batch query marks & attendance (Zero N+1)
         all_marks = []
-        if student_ids and subject_ids:
-            all_marks = Marks.query.filter(Marks.SID.in_(student_ids), Marks.SubID.in_(subject_ids)).all()
+        filter_sub_ids = [subject_id] if subject_id else subject_ids
+        if student_ids and filter_sub_ids:
+            all_marks = Marks.query.filter(Marks.SID.in_(student_ids), Marks.SubID.in_(filter_sub_ids)).all()
         elif student_ids:
             all_marks = Marks.query.filter(Marks.SID.in_(student_ids)).all()
 
@@ -219,6 +227,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
                 'class_name': cls_name,
                 'section_name': sec_name,
                 'full_class': full_cls,
+                'subjects_str': subjects_str_default,
                 'attendance_rate': att_rate,
                 'avg_score': avg_score,
                 'absent_count': absent_cnt,
