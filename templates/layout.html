@@ -134,7 +134,7 @@
                     <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature text-danger me-2"></i> <span>الاختبارات</span></a>
                 </li>
                 <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
-                    <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>الدرجات</span></a>
+                    <a href="{{ url_for('grades_legacy.manage_grades') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>الدرجات</span></a>
                 </li>
                 <li class="{% if request.blueprint == 'reports' %}active{% endif %}">
                     <a href="{{ url_for('reports.index') }}"><i class="fa-solid fa-chart-column text-info me-2"></i> <span>التقارير</span></a>
