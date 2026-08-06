@@ -107,21 +107,15 @@ def get_teacher_students(teacher):
     """
     try:
         _, class_ids, section_ids = get_teacher_subject_and_class_ids(teacher)
-        if not class_ids:
-            return []
-
         query = Student.query.options(
             joinedload(Student.school_class),
             joinedload(Student.section)
-        ).filter(
-            Student.is_deleted == False,
-            Student.CID.in_(class_ids)
-        )
+        ).filter(Student.is_deleted == False)
 
-        if section_ids:
-            query = query.filter(
-                or_(Student.SectionID.in_(section_ids), Student.SectionID.is_(None))
-            )
+        if class_ids:
+            query = query.filter(Student.CID.in_(class_ids))
+            if section_ids:
+                query = query.filter(or_(Student.SectionID.in_(section_ids), Student.SectionID.is_(None)))
 
         return query.all()
     except Exception as e:

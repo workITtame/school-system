@@ -100,6 +100,14 @@
     padding: 1.25rem 1.5rem !important;
 }
 
+.hero-pill-badge {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
 /* KPI Summary Cards & Hover Effects */
 .kpi-card {
     background: var(--card-bg);
@@ -117,12 +125,44 @@
     box-shadow: var(--shadow-hover) !important;
 }
 
+.kpi-icon-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.kpi-icon-circle.primary {
+    background-color: #e0e7ff !important;
+    color: #4f46e5 !important;
+}
+
+.kpi-icon-circle.success {
+    background-color: #d1fae5 !important;
+    color: #10b981 !important;
+}
+
+.kpi-icon-circle.warning {
+    background-color: #fef3c7 !important;
+    color: #f59e0b !important;
+}
+
+.kpi-icon-circle.danger {
+    background-color: #ffe4e6 !important;
+    color: #f43f5e !important;
+}
+
 .kpi-card-icon-bg {
     position: absolute;
     left: -10px;
     bottom: -10px;
     font-size: 4rem;
-    opacity: 0.06;
+    opacity: 0.08 !important;
+    color: #94a3b8;
     pointer-events: none;
 }
 

@@ -221,8 +221,8 @@ def home():
         teacher = get_teacher_by_user_id(session['user_id'])
         _, teacher_class_ids, teacher_section_ids = get_teacher_subject_and_class_ids(teacher)
 
-        teacher_classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids)).all() if teacher_class_ids else []
-        teacher_sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids)).all() if teacher_section_ids else []
+        teacher_classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids)).all() if teacher_class_ids else Classes.query.filter_by(is_deleted=False).all()
+        teacher_sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids)).all() if teacher_section_ids else Sections.query.filter_by(is_deleted=False).all()
 
         return render_template('teacher/students.html',
                                stats=stats,
