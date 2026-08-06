@@ -45,19 +45,19 @@
         </div>
     </div>
 
-    <!-- 2. 4 KPI SUMMARY CARDS -->
+    <!-- 2. 4 KPI SUMMARY CARDS (Clickable for Instant Filtering) -->
     <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الواجبات اليومية">
-        <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("إجمالي الواجبات", kpi.total_count, "جميع الواجبات المسجلة", "fa-solid fa-book-open", "primary", "#homeworkRosterSection", "إجمالي الواجبات المضافة") }}
+        <div class="col-12 col-sm-6 col-xl-3" style="cursor: pointer;" onclick="applyQuickFilter('', document.getElementById('btnQuickAll'))">
+            {{ macros.render_kpi_card("إجمالي الواجبات", kpi.total_count, "جميع الواجبات المسجلة", "fa-solid fa-book-open", "primary", "javascript:applyQuickFilter('', document.getElementById('btnQuickAll'))", "إجمالي الواجبات المضافة - اضغط للتصفية") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("الواجبات النشطة", kpi.active_count, "مفتوحة للتسليم الآن", "fa-solid fa-clock-rotate-left", "warning", "#homeworkRosterSection", "عدد الواجبات الحالية") }}
+        <div class="col-12 col-sm-6 col-xl-3" style="cursor: pointer;" onclick="applyQuickFilter('منشور', document.getElementById('btnQuickActive'))">
+            {{ macros.render_kpi_card("الواجبات النشطة", kpi.active_count, "مفتوحة للتسليم الآن", "fa-solid fa-clock-rotate-left", "warning", "javascript:applyQuickFilter('منشور', document.getElementById('btnQuickActive'))", "عدد الواجبات الحالية - اضغط للتصفية") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("بانتظار التصحيح", kpi.pending_count, "تسليمات تتطلب المراجعة", "fa-solid fa-hourglass-half", "danger", "#homeworkRosterSection", "تسليمات معلقة للتصحيح") }}
+        <div class="col-12 col-sm-6 col-xl-3" style="cursor: pointer;" onclick="applyQuickFilter('بانتظار التصحيح', document.getElementById('btnQuickPending'))">
+            {{ macros.render_kpi_card("بانتظار التصحيح", kpi.pending_count, "تسليمات تتطلب المراجعة", "fa-solid fa-hourglass-half", "danger", "javascript:applyQuickFilter('بانتظار التصحيح', document.getElementById('btnQuickPending'))", "تسليمات معلقة للتصحيح - اضغط للتصفية") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("المنتهية والمكتملة", kpi.completed_count, "تم إغلاقها وتصحيحها", "fa-solid fa-circle-check", "success", "#homeworkRosterSection", "واجبات مكتملة بالكامل") }}
+        <div class="col-12 col-sm-6 col-xl-3" style="cursor: pointer;" onclick="applyQuickFilter('مكتمل', document.getElementById('btnQuickCompleted'))">
+            {{ macros.render_kpi_card("المنتهية والمكتملة", kpi.completed_count, "تم إغلاقها وتصحيحها", "fa-solid fa-circle-check", "success", "javascript:applyQuickFilter('مكتمل', document.getElementById('btnQuickCompleted'))", "واجبات مكتملة بالكامل - اضغط للتصفية") }}
         </div>
     </div>
 
@@ -67,10 +67,10 @@
             <!-- Quick Filter Pills -->
             <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom overflow-x-auto extra-small">
                 <span class="text-muted fw-bold me-1"><i class="fa-solid fa-filter text-primary me-1"></i> تصفية سريعة:</span>
-                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 extra-small fw-bold active" onclick="applyQuickFilter('', this)">جميع الواجبات ({{ kpi.total_count }})</button>
-                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('منشور', this)">🟢 النشطة ({{ kpi.active_count }})</button>
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('بانتظار التصحيح', this)">🟡 بانتظار التصحيح ({{ kpi.pending_count }})</button>
-                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('مكتمل', this)">🔵 المنتهية ({{ kpi.completed_count }})</button>
+                <button type="button" id="btnQuickAll" class="btn btn-sm btn-primary rounded-pill px-3 py-1 extra-small fw-bold active" onclick="applyQuickFilter('', this)">جميع الواجبات ({{ kpi.total_count }})</button>
+                <button type="button" id="btnQuickActive" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('منشور', this)">🟢 النشطة ({{ kpi.active_count }})</button>
+                <button type="button" id="btnQuickPending" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('بانتظار التصحيح', this)">🟡 بانتظار التصحيح ({{ kpi.pending_count }})</button>
+                <button type="button" id="btnQuickCompleted" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small fw-bold" onclick="applyQuickFilter('مكتمل', this)">🔵 المنتهية ({{ kpi.completed_count }})</button>
             </div>
 
             <!-- Full Toolbar Filters -->
@@ -115,7 +115,7 @@
 
                 <!-- Status Filter -->
                 <div class="col-6 col-md-2">
-                    <select name="status" id="homeworkStatusFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="status" id="homeworkStatusFilter" class="form-select form-select-sm" onchange="filterHomeworkListByStatus(this.value)">
                         <option value="">جميع الحالات</option>
                         <option value="مسودة" {% if request.args.get('status') == 'مسودة' %}selected{% endif %}>📝 مسودة</option>
                         <option value="منشور" {% if request.args.get('status') == 'منشور' %}selected{% endif %}>🟢 منشور</option>
@@ -221,7 +221,7 @@
                                 <td class="text-center">
                                     <!-- Refined Vertical Ellipsis Icon Dropdown (⋮) -->
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border rounded-circle extra-small p-2 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="خيارات الواجب">
+                                        <button class="btn btn-sm btn-light border rounded-circle extra-small p-2 shadow-sm" type="button" onclick="toggleHomeworkDropdown(event, this)" title="خيارات الواجب">
                                             <i class="fa-solid fa-ellipsis-vertical text-muted fs-6"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
@@ -231,18 +231,18 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2" type="button" onclick="publishHomework({{ hw.id }})">
-                                                    <i class="fa-solid fa-paper-plane text-success me-2"></i> 📢 نشر الواجب
+                                                <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openHomeworkGradingWorkspace({{ hw.id }})">
+                                                    <i class="fa-solid fa-star text-warning me-2"></i> 📝 بدء التصحيح (Phase 5.1)
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2" type="button" onclick="closeHomework({{ hw.id }})">
-                                                    <i class="fa-solid fa-lock text-warning me-2"></i> 🔒 إغلاق التسليم
+                                                <button class="dropdown-item py-2 text-success" type="button" onclick="publishHomework({{ hw.id }})">
+                                                    <i class="fa-solid fa-paper-plane me-2"></i> 📢 نشر الواجب
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2 text-primary" type="button" onclick="openHomeworkGradingWorkspace({{ hw.id }})">
-                                                    <i class="fa-solid fa-star me-2"></i> 📝 بدء التصحيح (Phase 5.1)
+                                                <button class="dropdown-item py-2 text-warning" type="button" onclick="closeHomework({{ hw.id }})">
+                                                    <i class="fa-solid fa-lock me-2"></i> 🔒 إغلاق التسليم
                                                 </button>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
@@ -254,7 +254,6 @@
                                         </ul>
                                     </div>
                                 </td>
-                            </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
@@ -398,17 +397,31 @@
 (function() {
     window.pageAttendanceEdits = window.pageAttendanceEdits || {};
 
-    // Quick Filters Action
-    window.applyQuickFilter = function(status, btnElement) {
-        var buttons = btnElement.parentElement.querySelectorAll('button');
-        buttons.forEach(function(b) {
-            b.classList.remove('btn-primary', 'btn-warning', 'btn-danger', 'btn-success', 'active', 'text-white');
-            b.classList.add('btn-outline-secondary');
+    // Toggle Dropdown Function
+    window.toggleHomeworkDropdown = function(e, btn) {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        var parent = btn.closest('.dropdown');
+        if (!parent) return;
+        var menu = parent.querySelector('.dropdown-menu');
+        if (!menu) return;
+
+        var isOpen = menu.classList.contains('show');
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+            m.classList.remove('show');
         });
 
-        btnElement.classList.remove('btn-outline-secondary');
-        btnElement.classList.add('btn-primary', 'active', 'text-white');
+        if (!isOpen) {
+            menu.classList.add('show');
+            menu.style.position = 'absolute';
+            menu.style.zIndex = '1090';
+        }
+    };
 
+    // Filter By Status Function
+    window.filterHomeworkListByStatus = function(status) {
         var rows = document.querySelectorAll('#homeworkPageTable tbody tr.homework-row');
         var visible = 0;
         rows.forEach(function(r) {
@@ -423,6 +436,27 @@
 
         var counter = document.getElementById('homeworkResultsCounter');
         if (counter) counter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' واجباً';
+    };
+
+    // Quick Filters Action
+    window.applyQuickFilter = function(status, btnElement) {
+        if (btnElement && btnElement.parentElement) {
+            var buttons = btnElement.parentElement.querySelectorAll('button');
+            buttons.forEach(function(b) {
+                b.classList.remove('btn-primary', 'btn-warning', 'btn-danger', 'btn-success', 'active', 'text-white');
+                b.classList.add('btn-outline-secondary');
+            });
+
+            btnElement.classList.remove('btn-outline-secondary');
+            btnElement.classList.add('btn-primary', 'active', 'text-white');
+        }
+
+        var statusSelect = document.getElementById('homeworkStatusFilter');
+        if (statusSelect) {
+            statusSelect.value = status;
+        }
+
+        window.filterHomeworkListByStatus(status);
     };
 
     // 1. Open Homework Drawer Function (760px / Header Meta Info / 4 Tabs)
