@@ -196,8 +196,45 @@ def get_teacher_students_data(user_id):
 def home():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+
+    from flask_login import current_user
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        from services.teacher_students_service import get_teacher_student_stats, get_teacher_students_paginated
+        from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+
+        search_query = request.args.get('search', '').strip()
+        class_id = request.args.get('class_id', type=int)
+        section_id = request.args.get('section_id', type=int)
+        status_filter = request.args.get('status', '').strip()
+        page = request.args.get('page', 1, type=int)
+
+        stats = get_teacher_student_stats(session['user_id'])
+        paginated_students = get_teacher_students_paginated(
+            session['user_id'],
+            search_query=search_query,
+            class_id=class_id,
+            section_id=section_id,
+            status_filter=status_filter,
+            page=page
+        )
+
+        teacher = get_teacher_by_user_id(session['user_id'])
+        _, teacher_class_ids, teacher_section_ids = get_teacher_subject_and_class_ids(teacher)
+
+        teacher_classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids)).all() if teacher_class_ids else []
+        teacher_sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids)).all() if teacher_section_ids else []
+
+        return render_template('teacher/students.html',
+                               stats=stats,
+                               paginated_students=paginated_students,
+                               teacher_classes=teacher_classes,
+                               teacher_sections=teacher_sections,
+                               search_query=search_query,
+                               selected_class_id=class_id,
+                               selected_section_id=section_id,
+                               selected_status=status_filter)
     
-    # Lookup data for Modals (Add / Edit)
+    # Lookup data for Modals (Add / Edit) for Admin
     countries = Country.query.all()
     governorates = Governorates.query.all()
     directorates = Directorate.query.all()
@@ -237,6 +274,20 @@ def home():
                            student_cards=scoped_data['student_cards'],
                            top_students=scoped_data['top_students'],
                            score_brackets=scoped_data['score_brackets'])
+
+@students_bp.route('/api/drawer/<int:student_id>')
+def student_drawer_api(student_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    from services.teacher_students_service import get_student_drawer_data
+    data = get_student_drawer_data(student_id, session['user_id'])
+    
+    if not data:
+        from flask import abort
+        return jsonify({'error': 'Student not found or access forbidden'}), 403
+        
+    return jsonify(data)
 
 @students_bp.route('/add', methods=['GET', 'POST'])
 @admin_required

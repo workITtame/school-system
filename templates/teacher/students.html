@@ -1,0 +1,219 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}مركز إدارة الطلاب | مساحة العمل الأكاديمية للمعلم{% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="teacherStudentsContainer">
+
+    <!-- DYNAMIC COMPACT HERO HEADER -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 62px; height: 62px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-user-graduate fs-3"></i>
+                    </div>
+
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo">
+                                👨‍🏫 طلابي — مركز إدارة وإرشادات الطلاب
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            إجمالي الطلاب: <span class="text-white fw-bold">{{ stats.total_students_count }}</span> | 
+                            الصفوف: <span class="text-white fw-bold">{{ stats.taught_classes_count }}</span> | 
+                            الشعب: <span class="text-white fw-bold">{{ stats.taught_sections_count }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta Quick Pills -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 border border-white-25">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> {{ stats.current_day_name }}، {{ stats.current_date_str }}
+                    </span>
+                    <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 border border-white-25">
+                        <i class="fa-solid fa-clock-rotate-left text-info me-1"></i> آخر تحديث: {{ stats.last_update_time }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الطلاب السريعة">
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("إجمالي الطلاب", stats.total_students_count, "لا يوجد طلاب مسجلون", "fa-solid fa-user-graduate", "primary", "#studentsTableSection", "إجمالي الطلاب في كافة صفوفك") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("الحاضرون اليوم", stats.present_today_count, "لم يسجل حضور اليوم", "fa-solid fa-user-check", "success", url_for('attendance.index'), "عدد الطلاب الحاضرين اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("المتغيبون اليوم", stats.absent_today_count, "لا يوجد غياب اليوم", "fa-solid fa-user-xmark", "danger", url_for('attendance.index'), "عدد الطلاب المتغيبين اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("طلاب يحتاجون متابعة", stats.needing_attention_count, "جميع الطلاب بحالة ممتازة", "fa-solid fa-triangle-exclamation", "warning", "#studentsTableSection", "عدد الطلاب بغياب متكرر أو درجات ضعيفة") }}
+        </div>
+    </div>
+
+    <!-- SMART SEARCH & FILTER TOOLBAR -->
+    <div class="card rounded-4 shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('students.home') }}" id="studentsFilterForm" class="row g-2 align-items-center extra-small">
+                <!-- Search Input -->
+                <div class="col-12 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." value="{{ search_query or '' }}">
+                    </div>
+                </div>
+
+                <!-- Class Filter -->
+                <div class="col-6 col-md-2">
+                    <select name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">جميع الصفوف</option>
+                        {% for c in teacher_classes %}
+                            <option value="{{ c.CID }}" {% if selected_class_id == c.CID %}selected{% endif %}>{{ c.CName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Section Filter -->
+                <div class="col-6 col-md-2">
+                    <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">جميع الشعب</option>
+                        {% for s in teacher_sections %}
+                            <option value="{{ s.SectionID }}" {% if selected_section_id == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-6 col-md-2">
+                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">جميع الحالات</option>
+                        <option value="excellent" {% if selected_status == 'excellent' %}selected{% endif %}>ممتاز 🌟</option>
+                        <option value="good" {% if selected_status == 'good' %}selected{% endif %}>جيد 👍</option>
+                        <option value="attention" {% if selected_status == 'attention' %}selected{% endif %}>يحتاج متابعة ⚠️</option>
+                        <option value="absent" {% if selected_status == 'absent' %}selected{% endif %}>متغيب ❌</option>
+                    </select>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="col-6 col-md-2 text-end">
+                    <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill extra-small">
+                        <i class="fa-solid fa-rotate-right me-1"></i> إعادة ضبط
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- STUDENT WORKSPACE TABLE -->
+    <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="studentsTableSection">
+        <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between">
+            <h6 class="fw-bold text-dark mb-0 font-cairo">
+                <i class="fa-solid fa-users text-primary me-2"></i> قائمة الطلاب الأكاديمية ({{ paginated_students.total }} طالب)
+            </h6>
+        </div>
+
+        <div class="sticky-table-container">
+            <table class="table table-hover align-middle mb-0 extra-small">
+                <thead class="bg-light text-muted">
+                    <tr>
+                        <th style="width: 40px;" class="text-center ps-3">
+                            <input type="checkbox" id="selectAllStudents" class="form-check-input" onchange="toggleSelectAllStudents(this)">
+                        </th>
+                        <th>الطالب</th>
+                        <th>الرقم الأكاديمي</th>
+                        <th>الصف والشعبة</th>
+                        <th>نسبة الحضور</th>
+                        <th>معدل الدرجات</th>
+                        <th class="text-center">الحالة الأكاديمية</th>
+                        <th class="text-center pe-3">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if paginated_students.students and paginated_students.students|length > 0 %}
+                        {% for st in paginated_students.students %}
+                            <tr>
+                                <td class="text-center ps-3">
+                                    <input type="checkbox" class="form-check-input student-select-checkbox" value="{{ st.SID }}" onchange="updateBulkToolbar()">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                                            {{ st.student_name[0] }}
+                                        </div>
+                                        <div>
+                                            <strong class="text-dark d-block mb-0">{{ st.student_name }}</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-monospace text-muted">{{ st.academic_id }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ st.full_class }}</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                            <div class="progress-bar {% if st.attendance_rate >= 90 %}bg-success{% elif st.attendance_rate >= 80 %}bg-info{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ st.attendance_rate }}%;"></div>
+                                        </div>
+                                        <span class="font-monospace fw-bold">{{ st.attendance_rate }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="font-monospace fw-bold text-dark">{{ st.avg_score }}%</span>
+                                </td>
+                                <td class="text-center">
+                                    {{ macros.render_student_status_badge(st.status_code) }}
+                                </td>
+                                <td class="text-center pe-3">
+                                    {{ macros.render_student_action_menu(st.SID) }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="p-0">
+                                {{ macros.render_empty_state("fa-solid fa-user-slash", "لا يوجد طلاب يطابقون خيارات البحث", "جرب اختيار صف أو شعبة أخرى أو اضغط إعادة ضبط الفلاتر.", "إعادة ضبط الفلاتر", url_for('students.home')) }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-white p-3 border-top">
+            {{ macros.render_pagination(paginated_students, "students.home") }}
+        </div>
+    </div>
+
+    <!-- BULK ACTIONS FLOATING TOOLBAR -->
+    {{ macros.render_bulk_toolbar() }}
+
+</div>
+
+<!-- STUDENT DETAILS SIDE DRAWER (OFFCANVAS) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="studentDetailDrawer" aria-labelledby="studentDetailDrawerLabel" style="width: 440px;">
+    <div class="offcanvas-header bg-primary text-white p-3">
+        <h6 class="offcanvas-title fw-bold mb-0" id="studentDetailDrawerLabel">
+            <i class="fa-solid fa-id-card me-2"></i> ملف الطالب الجانبي
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4" id="drawerBodyContent">
+        <!-- Spinner Placeholder -->
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="extra-small text-muted mt-2">جاري جلب بيانات الطالب...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

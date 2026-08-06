@@ -55,7 +55,7 @@
 </div>
 {% endmacro %}
 
-{# 4. Status Badge Macro #}
+{# 4. General Status Badge Macro #}
 {% macro render_status_badge(text, status_type) %}
 {% if status_type == 'ended' or status_type == 'completed' %}
     <span class="badge badge-status-ended rounded-pill px-2 py-1"><i class="fa-regular fa-circle-check me-1"></i> {{ text }}</span>
@@ -70,7 +70,81 @@
 {% endif %}
 {% endmacro %}
 
-{# 5. Empty State Macro #}
+{# 5. Student Status Badge Macro #}
+{% macro render_student_status_badge(status_code) %}
+{% if status_code == 'excellent' %}
+    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+        <i class="fa-solid fa-star me-1 text-warning"></i> ممتاز
+    </span>
+{% elif status_code == 'good' %}
+    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1">
+        <i class="fa-solid fa-check me-1"></i> جيد
+    </span>
+{% elif status_code == 'attention' %}
+    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1">
+        <i class="fa-solid fa-triangle-exclamation me-1"></i> يحتاج متابعة
+    </span>
+{% elif status_code == 'absent' %}
+    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">
+        <i class="fa-solid fa-user-xmark me-1"></i> متغيب
+    </span>
+{% else %}
+    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">منتظم</span>
+{% endif %}
+{% endmacro %}
+
+{# 6. Student Dropdown Action Menu Macro #}
+{% macro render_student_action_menu(student_id) %}
+<div class="dropdown">
+    <button class="btn btn-sm btn-light border rounded-pill px-3 extra-small dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        إجراءات <i class="fa-solid fa-chevron-down ms-1 extra-small"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
+        <li>
+            <button class="dropdown-item py-2" type="button" onclick="openStudentDrawer({{ student_id }})">
+                <i class="fa-regular fa-id-card text-primary me-2"></i> عرض الملف الجانبي
+            </button>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="{{ url_for('attendance.index') }}">
+                <i class="fa-solid fa-clipboard-user text-warning me-2"></i> تسجيل حضور
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="{{ url_for('grades.manage_grades') }}">
+                <i class="fa-solid fa-star text-warning me-2"></i> إدخال درجة
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="{{ url_for('messages.index') }}">
+                <i class="fa-regular fa-paper-plane text-info me-2"></i> إرسال رسالة
+            </a>
+        </li>
+    </ul>
+</div>
+{% endmacro %}
+
+{# 7. Bulk Actions Floating Bar Macro #}
+{% macro render_bulk_toolbar() %}
+<div id="bulkActionsToolbar" class="bulk-actions-toolbar card shadow-lg border-0 rounded-4 p-2 bg-dark text-white d-none position-fixed bottom-0 start-50 translate-middle-x mb-4 font-cairo extra-small" style="z-index: 1080; min-width: 450px;">
+    <div class="d-flex align-items-center justify-content-between px-3 py-1">
+        <div>
+            <i class="fa-solid fa-user-check text-warning me-2"></i>
+            تم تحديد <strong id="selectedStudentsCount" class="text-warning">0</strong> طلاب
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill extra-small" onclick="bulkSendMessage()">
+                <i class="fa-regular fa-paper-plane me-1"></i> رسالة جماعية
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill extra-small" onclick="clearBulkSelection()">
+                إلغاء التحديد
+            </button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# 8. Empty State Macro #}
 {% macro render_empty_state(icon_class, title, message, cta_text=None, cta_url=None) %}
 <div class="py-5 text-center text-muted extra-small">
     <i class="{{ icon_class }} text-primary opacity-25 fs-1 d-block mb-2"></i>
@@ -84,7 +158,31 @@
 </div>
 {% endmacro %}
 
-{# 6. Search Box Macro #}
+{# 9. Server-Side Pagination Macro #}
+{% macro render_pagination(paginated_data, endpoint="students.home") %}
+{% if paginated_data and paginated_data.pages > 1 %}
+<nav aria-label="تنقل الصفحات" class="d-flex align-items-center justify-content-between pt-3">
+    <small class="extra-small text-muted font-monospace">
+        عرض النتائج من {{ ((paginated_data.page - 1) * paginated_data.per_page) + 1 }} إلى {{ [paginated_data.page * paginated_data.per_page, paginated_data.total]|min }} من أصل {{ paginated_data.total }}
+    </small>
+    <ul class="pagination pagination-sm mb-0 extra-small font-monospace">
+        <li class="page-item {% if paginated_data.page <= 1 %}disabled{% endif %}">
+            <a class="page-item-link page-link rounded-circle text-dark me-1" href="{{ url_for(endpoint, page=paginated_data.page-1) }}">«</a>
+        </li>
+        {% for p in range(1, paginated_data.pages + 1) %}
+            <li class="page-item {% if p == paginated_data.page %}active{% endif %}">
+                <a class="page-link rounded-circle mx-1" href="{{ url_for(endpoint, page=p) }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+        <li class="page-item {% if paginated_data.page >= paginated_data.pages %}disabled{% endif %}">
+            <a class="page-link rounded-circle text-dark ms-1" href="{{ url_for(endpoint, page=paginated_data.page+1) }}">»</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# 10. Search Box Macro #}
 {% macro render_search_box(input_id, placeholder="بحث في الجدول...") %}
 <div class="d-flex align-items-center gap-2">
     <input type="text" id="{{ input_id }}" class="form-control form-control-sm extra-small rounded-pill" placeholder="{{ placeholder }}" style="max-width: 180px;" aria-label="{{ placeholder }}">

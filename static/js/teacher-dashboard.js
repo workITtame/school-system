@@ -40,14 +40,162 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Toast notification helper
-function showTeacherToast(message, type = 'info') {
-    const toastEl = document.getElementById('liveToast');
-    const toastMsg = document.getElementById('toastMessage');
-    if (toastEl && toastMsg) {
-        toastMsg.textContent = message;
-        toastEl.className = `toast align-items-center text-white border-0 shadow-lg bg-${type}`;
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
+// 4. Open Student Side Drawer Offcanvas
+function openStudentDrawer(studentId) {
+    const drawerEl = document.getElementById('studentDetailDrawer');
+    const drawerBody = document.getElementById('drawerBodyContent');
+    if (!drawerEl || !drawerBody) return;
+
+    const bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+    
+    // Show spinner loader
+    drawerBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="extra-small text-muted mt-2">جاري جلب بيانات الطالب...</p>
+        </div>
+    `;
+    bsDrawer.show();
+
+    // Fetch Student Drawer details via API
+    fetch(`/students/api/drawer/${studentId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('فشل جلب بيانات الطالب أو لا توجد صلاحيات.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            let marksHtml = '';
+            if (data.recent_marks && data.recent_marks.length > 0) {
+                marksHtml = data.recent_marks.map(m => `
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light mb-1 extra-small">
+                        <span><i class="fa-solid fa-book text-primary me-1"></i> ${m.subject_name}</span>
+                        <span class="font-monospace fw-bold text-dark">${m.score}%</span>
+                    </div>
+                `).join('');
+            } else {
+                marksHtml = '<p class="text-muted extra-small mb-0">لا توجد درجات مسجلة مؤخراً.</p>';
+            }
+
+            let attHtml = '';
+            if (data.recent_attendance && data.recent_attendance.length > 0) {
+                attHtml = data.recent_attendance.map(a => `
+                    <span class="badge ${a.status === 'غائب' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'} rounded-pill extra-small me-1 mb-1">
+                        ${a.date}: ${a.status}
+                    </span>
+                `).join('');
+            } else {
+                attHtml = '<p class="text-muted extra-small mb-0">لا يوجد سجل غياب مؤخراً.</p>';
+            }
+
+            drawerBody.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="rounded-circle bg-primary text-white fw-bold font-monospace fs-1 d-inline-flex align-items-center justify-content-center shadow mb-2" style="width: 72px; height: 72px;">
+                        ${data.student_name ? data.student_name[0] : 'ط'}
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">${data.student_name}</h5>
+                    <p class="text-muted extra-small mb-0">الرقم الأكاديمي: <span class="font-monospace fw-bold">${data.academic_id}</span></p>
+                    <span class="badge bg-light text-dark border rounded-pill mt-1 extra-small">${data.full_class}</span>
+                </div>
+
+                <!-- Performance Snapshot Cards -->
+                <div class="row g-2 mb-4 extra-small text-center">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 bg-light border">
+                            <span class="text-muted d-block mb-1">نسبة الحضور</span>
+                            <h5 class="fw-bold font-monospace text-primary mb-0">${data.attendance_rate}%</h5>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 bg-light border">
+                            <span class="text-muted d-block mb-1">معدل الدرجات</span>
+                            <h5 class="fw-bold font-monospace text-success mb-0">${data.avg_score}%</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Marks -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-star text-warning me-1"></i> آخر الدرجات المسجلة</h6>
+                    ${marksHtml}
+                </div>
+
+                <!-- Attendance History -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-user-clock text-info me-1"></i> آخر سجل الحضور والغياب</h6>
+                    <div>${attHtml}</div>
+                </div>
+
+                <!-- Parent Info & Notes -->
+                <div class="mb-4 p-3 rounded-3 bg-light border extra-small">
+                    <strong class="d-block text-dark mb-1"><i class="fa-solid fa-user-shield me-1"></i> ولي الأمر: ${data.parent_name}</strong>
+                    <small class="text-muted d-block font-monospace"><i class="fa-solid fa-phone me-1"></i> ${data.parent_number}</small>
+                    <hr class="my-2">
+                    <p class="text-secondary mb-0"><i class="fa-regular fa-comment-dots me-1"></i> ${data.notes}</p>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="d-grid gap-2 extra-small">
+                    <a href="/attendance/" class="btn btn-sm btn-primary rounded-pill py-2">
+                        <i class="fa-solid fa-clipboard-user me-1"></i> تسجيل حضور الطالب
+                    </a>
+                    <a href="/grades/manage" class="btn btn-sm btn-outline-secondary rounded-pill py-2">
+                        <i class="fa-solid fa-pen-to-square me-1"></i> إدخال درجات الطالب
+                    </a>
+                    <a href="/messages/" class="btn btn-sm btn-outline-info rounded-pill py-2">
+                        <i class="fa-regular fa-paper-plane me-1"></i> إرسال رسالة لولي الأمر
+                    </a>
+                </div>
+            `;
+        })
+        .catch(err => {
+            drawerBody.innerHTML = `
+                <div class="text-center py-5 text-danger extra-small">
+                    <i class="fa-solid fa-circle-exclamation fs-1 d-block mb-2"></i>
+                    <h6 class="fw-bold">حدث خطأ أثناء جلب ملف الطالب</h6>
+                    <p class="text-muted mb-0">${err.message}</p>
+                </div>
+            `;
+        });
+}
+
+// 5. Bulk selection & Floating toolbar functions
+function toggleSelectAllStudents(source) {
+    const checkboxes = document.querySelectorAll('.student-select-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+    updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+    const checkboxes = document.querySelectorAll('.student-select-checkbox:checked');
+    const toolbar = document.getElementById('bulkActionsToolbar');
+    const countEl = document.getElementById('selectedStudentsCount');
+    
+    if (toolbar && countEl) {
+        if (checkboxes.length > 0) {
+            countEl.textContent = checkboxes.length;
+            toolbar.classList.remove('d-none');
+        } else {
+            toolbar.classList.add('d-none');
+        }
     }
+}
+
+function clearBulkSelection() {
+    const checkboxes = document.querySelectorAll('.student-select-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    const selectAll = document.getElementById('selectAllStudents');
+    if (selectAll) selectAll.checked = false;
+    updateBulkToolbar();
+}
+
+function bulkSendMessage() {
+    const checkboxes = document.querySelectorAll('.student-select-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    if (ids.length === 0) return;
+    alert(`سيتم توجيهك إلى صفحة الرسائل لإرسال رسالة جماعية لـ ${ids.length} طلاب.`);
+    window.location.href = `/messages/?recipients=${ids.join(',')}`;
 }
