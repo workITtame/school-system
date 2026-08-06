@@ -59,21 +59,21 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         current_slot = today_slots_sorted[0]
 
     if current_slot:
-        cur_sub = current_slot.subject.SubName if current_slot.subject else 'الرياضيات'
-        cur_cls = current_slot.school_class.CName if current_slot.school_class else 'الصف الثالث الثانوي'
+        cur_sub = current_slot.subject.SubName if current_slot.subject else (sub_names[0] if sub_names else 'المادة الدراسية')
+        cur_cls = current_slot.school_class.CName if current_slot.school_class else 'الصف الأول'
         cur_sec = current_slot.section.SectionName if current_slot.section else 'شعبة أ'
         cur_st_time = current_slot.lesson.StartTime if (current_slot.lesson and current_slot.lesson.StartTime) else '09:30'
         cur_en_time = current_slot.lesson.EndTime if (current_slot.lesson and current_slot.lesson.EndTime) else '10:15'
         selected_cid = current_slot.CID
         selected_secid = current_slot.SectionID
     else:
-        cur_sub = sub_names[0] if sub_names else 'الرياضيات'
-        cur_cls = 'الصف الثالث الثانوي'
-        cur_sec = 'شعبة أ'
+        cur_sub = sub_names[0] if sub_names else 'المادة الدراسية'
         cur_st_time = '09:30'
         cur_en_time = '10:15'
         selected_cid = teacher_class_ids[0] if teacher_class_ids else None
         selected_secid = teacher_section_ids[0] if teacher_section_ids else None
+        cur_cls = 'الصف الأول'
+        cur_sec = 'شعبة أ'
 
     if class_id:
         try:
@@ -86,7 +86,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         except (ValueError, TypeError):
             pass
 
-    query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(Status='نشط', is_deleted=False)
+    query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None))
     if selected_cid:
         query = query.filter_by(CID=selected_cid)
     if selected_secid:
@@ -94,7 +94,12 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         
     students = query.all()
     if not students:
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(is_deleted=False).limit(28).all()
+        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
+
+    if students and students[0].school_class:
+        cur_cls = students[0].school_class.CName
+        if students[0].section:
+            cur_sec = students[0].section.SectionName
 
     student_ids = [s.SID for s in students]
     att_records = Attendance.query.filter(Attendance.SID.in_(student_ids), Attendance.Date == today).all() if student_ids else []
@@ -298,8 +303,22 @@ def index():
         active_slot_id = None
         if teacher:
             slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
-            if slot:
-                active_slot_id = slot.SchoolTableID
+            if not slot:
+                cls = Classes.query.filter_by(is_deleted=False).first()
+                sec = Sections.query.filter_by(is_deleted=False).first()
+                sub = teacher.subjects[0] if teacher.subjects else Subject.query.filter_by(is_deleted=False).first()
+                slot = SchoolTable(
+                    TeacherID=teacher.TeacherID,
+                    CID=cls.CID if cls else 1,
+                    SectionID=sec.SectionID if sec else 1,
+                    SubID=sub.SubID if sub else 1,
+                    DayID=1,
+                    LessonID=1,
+                    is_deleted=False
+                )
+                db.session.add(slot)
+                db.session.commit()
+            active_slot_id = slot.SchoolTableID
 
         return render_template('teacher/attendance.html',
                                classes=classes,
