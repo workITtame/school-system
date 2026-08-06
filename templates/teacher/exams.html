@@ -6,6 +6,9 @@
 {% block content %}
 <div class="fade-in font-cairo position-relative pb-5" id="teacherExamsPageContainer">
     
+    <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="examToastContainer"></div>
+
     <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
     <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
         <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
@@ -23,8 +26,8 @@
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
                             المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
-                            النشطة: <span class="text-white fw-bold">{{ kpi.active_count }}</span> | 
-                            بانتظار التصحيح: <span class="text-white fw-bold">{{ kpi.pending_grading }}</span> | 
+                            النشطة: <span class="text-white fw-bold" id="heroActiveCount">{{ kpi.active_count }}</span> | 
+                            بانتظار التصحيح: <span class="text-white fw-bold" id="heroPendingCount">{{ kpi.pending_grading }}</span> | 
                             متوسط النتائج: <span class="text-white fw-bold">{{ kpi.average_score }}%</span>
                         </h6>
                     </div>
@@ -74,18 +77,18 @@
             </div>
 
             <!-- Full Toolbar Filters Form -->
-            <form method="GET" action="{{ url_for('exams.index') }}" id="examFilterForm" class="row g-2 align-items-center extra-small">
+            <form method="GET" action="{{ url_for('exams.index') }}" id="examFilterForm" class="row g-2 align-items-center extra-small" onsubmit="event.preventDefault(); applyExamFilters();">
                 <!-- Live Search Input -->
                 <div class="col-12 col-md-3">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" name="search" id="examLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث بعنوان الاختبار..." value="{{ request.args.get('search', '') }}" onkeyup="filterExamListDebounced(this.value)">
+                        <input type="text" name="search" id="examLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث بعنوان الاختبار، المادة، الصف..." value="{{ request.args.get('search', '') }}" onkeyup="filterExamListDebounced(this.value)">
                     </div>
                 </div>
 
                 <!-- Subject Filter -->
                 <div class="col-6 col-md-2">
-                    <select name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="subject_id" id="examSubjectFilter" class="form-select form-select-sm" onchange="applyExamFilters()">
                         <option value="">جميع المواد</option>
                         {% for sub in subjects %}
                             <option value="{{ sub.SubID }}" {% if request.args.get('subject_id')|int == sub.SubID %}selected{% endif %}>{{ sub.SubName }}</option>
@@ -95,7 +98,7 @@
 
                 <!-- Class Filter -->
                 <div class="col-6 col-md-2">
-                    <select name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="class_id" id="examClassFilter" class="form-select form-select-sm" onchange="applyExamFilters()">
                         <option value="">جميع الصفوف</option>
                         {% for c in classes %}
                             <option value="{{ c.CID }}" {% if request.args.get('class_id')|int == c.CID %}selected{% endif %}>{{ c.CName }}</option>
@@ -105,7 +108,7 @@
 
                 <!-- Section Filter -->
                 <div class="col-6 col-md-2">
-                    <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="section_id" id="examSectionFilter" class="form-select form-select-sm" onchange="applyExamFilters()">
                         <option value="">جميع الشعب</option>
                         {% for sec in sections %}
                             <option value="{{ sec.SectionID }}" {% if request.args.get('section_id')|int == sec.SectionID %}selected{% endif %}>{{ sec.SectionName }}</option>
@@ -115,7 +118,7 @@
 
                 <!-- Status Filter -->
                 <div class="col-6 col-md-2">
-                    <select name="status" id="examStatusFilter" class="form-select form-select-sm" onchange="filterExamListByStatus(this.value)">
+                    <select name="status" id="examStatusFilter" class="form-select form-select-sm" onchange="applyExamFilters()">
                         <option value="">جميع الحالات</option>
                         <option value="مسودة" {% if request.args.get('status') == 'مسودة' %}selected{% endif %}>📝 مسودة</option>
                         <option value="منشور" {% if request.args.get('status') == 'منشور' %}selected{% endif %}>🟢 منشور</option>
@@ -123,15 +126,14 @@
                         <option value="جارٍ" {% if request.args.get('status') == 'جارٍ' %}selected{% endif %}>🟣 جارٍ</option>
                         <option value="بانتظار التصحيح" {% if request.args.get('status') == 'بانتظار التصحيح' %}selected{% endif %}>🟡 بانتظار التصحيح</option>
                         <option value="منتهي" {% if request.args.get('status') == 'منتهي' %}selected{% endif %}>⚫ منتهي</option>
-                        <option value="ملغي" {% if request.args.get('status') == 'ملغي' %}selected{% endif %}>🔴 ملغي</option>
                     </select>
                 </div>
 
                 <!-- Reset Button -->
                 <div class="col-12 col-md-1 text-end d-flex align-items-center gap-1 justify-content-end">
-                    <a href="{{ url_for('exams.index') }}" class="btn btn-sm btn-outline-secondary rounded-circle p-2 extra-small" data-bs-toggle="tooltip" title="إعادة ضبط الفلاتر">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-2 extra-small" onclick="resetExamFilters()" data-bs-toggle="tooltip" title="إعادة ضبط الفلاتر">
                         <i class="fa-solid fa-rotate-right"></i>
-                    </a>
+                    </button>
                 </div>
             </form>
         </div>
@@ -158,7 +160,7 @@
     <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="examRosterSection">
         <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h6 class="fw-bold text-dark mb-0 font-cairo">
-                <i class="fa-solid fa-file-signature text-primary me-2"></i> قائمة الاختبارات الأكاديمية ({{ exam_list|length }} اختبار)
+                <i class="fa-solid fa-file-signature text-primary me-2"></i> قائمة الاختبارات الأكاديمية (<span id="examRosterCountHeader">{{ exam_list|length }}</span> اختبار)
             </h6>
             <small class="text-muted font-monospace extra-small" id="examResultsCounter">
                 عرض {{ exam_list|length }} من أصل {{ pagination.total or exam_list|length }} اختباراً
@@ -183,16 +185,16 @@
                         <th class="text-center" style="width: 80px;">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="examTableBody">
                     {% if exam_list and exam_list|length > 0 %}
                         {% for ex in exam_list %}
-                            <tr class="exam-row" id="exam-row-{{ ex.id }}" data-status="{{ ex.status }}">
+                            <tr class="exam-row" id="exam-row-{{ ex.id }}" data-id="{{ ex.id }}" data-status="{{ ex.status }}" data-subject="{{ ex.subject_name }}" data-class="{{ ex.class_name }}" data-section="{{ ex.section_name }}">
                                 <td class="text-center ps-3">
                                     <input type="checkbox" class="form-check-input exam-select-checkbox" value="{{ ex.id }}" onclick="updateBulkActionsBar()">
                                 </td>
                                 <td>
                                     <div class="py-1">
-                                        <strong class="text-dark d-block mb-0 fs-6">{{ ex.title }}</strong>
+                                        <strong class="text-dark d-block mb-0 fs-6 exam-title-cell">{{ ex.title }}</strong>
                                         <small class="text-muted extra-small d-block font-monospace">
                                             <i class="fa-solid fa-tag text-muted me-1"></i>{{ ex.exam_type or 'تحريري رئيسي' }}
                                         </small>
@@ -213,7 +215,7 @@
                                     <span class="badge bg-success-subtle text-success border border-success-subtle me-1">حضر: {{ ex.attended_count }}</span>
                                     <span class="badge bg-info-subtle text-primary border border-info-subtle">صحح: {{ ex.graded_count }}</span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center status-cell">
                                     {% if ex.status == 'مسودة' %}
                                         <span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small">📝 مسودة</span>
                                     {% elif ex.status == 'منشور' %}
@@ -237,12 +239,17 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
                                             <li>
                                                 <button class="dropdown-item py-2" type="button" onclick="openExamWorkspace({{ ex.id }})">
-                                                    <i class="fa-regular fa-eye text-primary me-2"></i> 👁 عرض تفاصيل الاختبار
+                                                    <i class="fa-regular fa-eye text-primary me-2"></i> 👁 عرض التفاصيل
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openHomeworkGradingWorkspace({{ ex.id }})">
-                                                    <i class="fa-solid fa-star text-warning me-2"></i> 📝 بدء التصحيح (Unified Workspace)
+                                                <button class="dropdown-item py-2 text-primary" type="button" onclick="editExam({{ ex.id }})">
+                                                    <i class="fa-regular fa-pen-to-square text-primary me-2"></i> ✏️ تعديل الاختبار
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openGradingWorkspace('exam', {{ ex.id }})">
+                                                    <i class="fa-solid fa-star text-warning me-2"></i> ⭐ بدء التصحيح (Unified Workspace)
                                                 </button>
                                             </li>
                                             <li>
@@ -272,7 +279,7 @@
                             </tr>
                         {% endfor %}
                     {% else %}
-                        <tr>
+                        <tr id="emptyExamRow">
                             <td colspan="10">
                                 <!-- Enterprise Empty State Card -->
                                 <div class="text-center py-5">
@@ -324,7 +331,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 extra-small">
-                <form id="createExamForm">
+                <form id="createExamForm" onsubmit="event.preventDefault(); saveExamModal('منشور');">
                     <input type="hidden" name="exam_id" id="modalExamId" value="">
                     <div class="row g-3">
                         <div class="col-12 col-md-8">
@@ -412,9 +419,38 @@
     </div>
 </div>
 
-<!-- JAVASCRIPT HANDLERS -->
+<!-- JAVASCRIPT HANDLERS & ENTERPRISE PRODUCTION INTERACTION ENGINE -->
 <script>
 (function() {
+    // 0. Unified Toast Notification Component
+    window.showExamToast = function(message, type) {
+        var container = document.getElementById('examToastContainer');
+        if (!container) return;
+
+        var typeClass = 'bg-primary';
+        var icon = 'fa-circle-info';
+        if (type === 'success') { typeClass = 'bg-success'; icon = 'fa-circle-check'; }
+        else if (type === 'warning') { typeClass = 'bg-warning text-dark'; icon = 'fa-triangle-exclamation'; }
+        else if (type === 'error' || type === 'danger') { typeClass = 'bg-danger'; icon = 'fa-circle-xmark'; }
+
+        var toastId = 'toast-' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center text-white ' + typeClass + ' border-0 shadow-lg font-cairo extra-small mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex p-2">' +
+            '<div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid ' + icon + ' fs-6"></i> ' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        container.insertAdjacentHTML('beforeend', html);
+        var toastEl = document.getElementById(toastId);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            bsToast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function() { toastEl.remove(); }, 4000);
+        }
+    };
+
     window.toggleExamDropdown = function(e, btn) {
         if (e) {
             e.stopPropagation();
@@ -437,8 +473,16 @@
         }
     };
 
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                m.classList.remove('show');
+            });
+        }
+    });
+
     window.filterExamListByStatus = function(status) {
-        var rows = document.querySelectorAll('#examPageTable tbody tr.exam-row');
+        var rows = document.querySelectorAll('#examTableBody tr.exam-row');
         var visible = 0;
         rows.forEach(function(r) {
             var rowStatus = r.getAttribute('data-status') || '';
@@ -452,6 +496,8 @@
 
         var counter = document.getElementById('examResultsCounter');
         if (counter) counter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' اختباراً';
+        var headerCount = document.getElementById('examRosterCountHeader');
+        if (headerCount) headerCount.textContent = visible;
     };
 
     window.applyQuickExamFilter = function(status, btnElement) {
@@ -474,24 +520,48 @@
         window.filterExamListByStatus(status);
     };
 
+    window.applyExamFilters = function() {
+        var term = (document.getElementById('examLiveSearch').value || '').toLowerCase().trim();
+        var status = document.getElementById('examStatusFilter').value;
+        var subId = document.getElementById('examSubjectFilter').value;
+        var classId = document.getElementById('examClassFilter').value;
+
+        var rows = document.querySelectorAll('#examTableBody tr.exam-row');
+        var visible = 0;
+
+        rows.forEach(function(r) {
+            var text = r.textContent.toLowerCase();
+            var rowStatus = r.getAttribute('data-status') || '';
+
+            var matchSearch = !term || text.indexOf(term) !== -1;
+            var matchStatus = !status || rowStatus.indexOf(status) !== -1;
+
+            if (matchSearch && matchStatus) {
+                r.style.display = '';
+                visible++;
+            } else {
+                r.style.display = 'none';
+            }
+        });
+
+        var counter = document.getElementById('examResultsCounter');
+        if (counter) counter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' اختباراً';
+        var headerCount = document.getElementById('examRosterCountHeader');
+        if (headerCount) headerCount.textContent = visible;
+    };
+
+    window.resetExamFilters = function() {
+        document.getElementById('examFilterForm').reset();
+        window.applyQuickExamFilter('', document.getElementById('btnExamAll'));
+        window.applyExamFilters();
+        showExamToast('تم إعادة ضبط جميع الفلاتر بنجاح', 'info');
+    };
+
     var searchDebounceTimer = null;
     window.filterExamListDebounced = function(term) {
         clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(function() {
-            var rows = document.querySelectorAll('#examPageTable tbody tr.exam-row');
-            var visible = 0;
-            var lowerTerm = (term || '').toLowerCase().trim();
-            rows.forEach(function(r) {
-                var text = r.textContent.toLowerCase();
-                if (!lowerTerm || text.indexOf(lowerTerm) !== -1) {
-                    r.style.display = '';
-                    visible++;
-                } else {
-                    r.style.display = 'none';
-                }
-            });
-            var counter = document.getElementById('examResultsCounter');
-            if (counter) counter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' اختباراً';
+            window.applyExamFilters();
         }, 300);
     };
 
@@ -523,19 +593,20 @@
         if (selected.length === 0) return;
 
         var ids = Array.from(selected).map(function(cb) { return cb.value; });
-        if (action === 'delete' && !confirm('هل أنت تأكد من نقل الإختبارات المحددة للمحذوفات؟')) return;
+        if (action === 'delete' && !confirm('هل أنت تأكد من نقل الاختبارات المحددة للمحذوفات؟')) return;
 
-        alert('تم تنفيذ إجراء [' + action + '] على ' + ids.length + ' اختبارات بنجاح!');
-        location.reload();
+        showExamToast('تم تنفيذ الإجراء [' + action + '] على ' + ids.length + ' اختبارات بنجاح!', 'success');
+        setTimeout(function() { location.reload(); }, 800);
     };
 
-    window.openCreateExamModal = function(examId) {
+    window.openCreateExamModal = function() {
         var modalEl = document.getElementById('createExamModal');
         if (!modalEl) return;
         var form = document.getElementById('createExamForm');
         if (form) form.reset();
 
-        document.getElementById('modalExamId').value = examId || '';
+        document.getElementById('modalExamId').value = '';
+        document.getElementById('createExamModalLabel').innerHTML = '<i class="fa-solid fa-file-circle-plus me-2"></i> إنشاء اختبار أكاديمي جديد';
 
         var dateInput = document.getElementById('modalExamDate');
         if (dateInput && !dateInput.value) {
@@ -548,10 +619,39 @@
         }
     };
 
+    window.editExam = function(examId) {
+        fetch('/exams/api/details/' + examId)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var modalEl = document.getElementById('createExamModal');
+                if (!modalEl) return;
+
+                document.getElementById('modalExamId').value = data.id;
+                document.getElementById('createExamModalLabel').innerHTML = '<i class="fa-regular fa-pen-to-square me-2"></i> تعديل بيانات الاختبار الأكاديمي';
+
+                document.getElementById('modalExamTitle').value = data.title;
+                document.getElementById('modalExamSubject').value = data.subject_id;
+                document.getElementById('modalExamClass').value = data.class_id;
+                document.getElementById('modalExamSection').value = data.section_id;
+                document.getElementById('modalExamDate').value = data.exam_date;
+                document.getElementById('modalExamTime').value = data.exam_time;
+                document.getElementById('modalExamDuration').value = data.duration;
+                document.getElementById('modalExamDesc').value = data.description || '';
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    bsModal.show();
+                }
+            })
+            .catch(function(err) {
+                showExamToast('فشل جلب بيانات الاختبار للتعديل', 'danger');
+            });
+    };
+
     window.saveExamModal = function(status) {
         var title = document.getElementById('modalExamTitle').value.trim();
         if (!title) {
-            alert('يرجى كتابة عنوان الاختبار');
+            showExamToast('يرجى كتابة عنوان الاختبار الحقيقي', 'warning');
             return;
         }
 
@@ -583,9 +683,10 @@
                     var bsModal = bootstrap.Modal.getInstance(modalEl);
                     if (bsModal) bsModal.hide();
                 }
-                location.reload();
+                showExamToast(examId ? 'تم تعديل بيانات الاختبار بنجاح' : 'تم إضافة الاختبار الأكاديمي بنجاح 🚀', 'success');
+                setTimeout(function() { location.reload(); }, 600);
             } else {
-                alert('فشل حفظ البيانات: ' + (res.error || 'خطأ غير معروف'));
+                showExamToast('فشل حفظ البيانات: ' + (res.error || 'خطأ غير معروف'), 'danger');
             }
         });
     };
@@ -593,32 +694,57 @@
     window.publishExam = function(id) {
         fetch('/exams/api/publish/' + id, { method: 'POST' })
             .then(function(res) { return res.json(); })
-            .then(function(res) { if (res.success) location.reload(); });
+            .then(function(res) {
+                if (res.success) {
+                    showExamToast('تم نشر الاختبار للطلاب بنجاح 🟢', 'success');
+                    var row = document.getElementById('exam-row-' + id);
+                    if (row) {
+                        row.setAttribute('data-status', 'منشور');
+                        var badge = row.querySelector('.status-cell');
+                        if (badge) badge.innerHTML = '<span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small">🟢 منشور</span>';
+                    }
+                }
+            });
     };
 
     window.closeExam = function(id) {
         fetch('/exams/api/close/' + id, { method: 'POST' })
             .then(function(res) { return res.json(); })
-            .then(function(res) { if (res.success) location.reload(); });
+            .then(function(res) {
+                if (res.success) {
+                    showExamToast('تم إغلاق الاختبار 📥', 'warning');
+                    var row = document.getElementById('exam-row-' + id);
+                    if (row) {
+                        row.setAttribute('data-status', 'منتهي');
+                        var badge = row.querySelector('.status-cell');
+                        if (badge) badge.innerHTML = '<span class="badge bg-dark text-white rounded-pill px-3 py-1 extra-small">⚫ منتهي</span>';
+                    }
+                }
+            });
     };
 
     window.duplicateExam = function(id) {
         fetch('/exams/api/duplicate/' + id, { method: 'POST' })
             .then(function(res) { return res.json(); })
-            .then(function(res) { if (res.success) location.reload(); });
+            .then(function(res) {
+                if (res.success) {
+                    showExamToast('تم نسخ الاختبار بنجاح 📋', 'info');
+                    setTimeout(function() { location.reload(); }, 600);
+                }
+            });
     };
 
     window.deleteExam = function(id) {
-        if (!confirm('هل تأكد حذف هذا الاختبار؟')) return;
+        if (!confirm('هل أنت تأكد من حذف هذا الاختبار؟')) return;
         fetch('/exams/api/delete/' + id, { method: 'DELETE' })
             .then(function(res) { return res.json(); })
-            .then(function(res) { if (res.success) location.reload(); });
-    };
-
-    window.restoreExam = function(id) {
-        fetch('/exams/api/restore/' + id, { method: 'POST' })
-            .then(function(res) { return res.json(); })
-            .then(function(res) { if (res.success) location.reload(); });
+            .then(function(res) {
+                if (res.success) {
+                    showExamToast('تم حذف الاختبار بنجاح 🗑', 'danger');
+                    var row = document.getElementById('exam-row-' + id);
+                    if (row) row.remove();
+                }
+            });
     };
 
     window.openExamWorkspace = function(examId, defaultTab) {
@@ -678,7 +804,7 @@
 
                 // Tab 2: Students
                 html += '<div class="tab-pane fade" id="exTabStudents">';
-                html += '<div class="text-center py-4 bg-white rounded-4 shadow-sm"><p class="text-muted mb-0">جاري عرض رصد درجات وملاحظات الطلاب عبر Unified Grading Workspace...</p></div>';
+                html += '<div class="text-center py-4 bg-white rounded-4 shadow-sm"><p class="text-muted mb-0">عرض رصد درجات وملاحظات الطلاب عبر Unified Grading Workspace...</p></div>';
                 html += '</div>';
 
                 // Tab 3: Results
@@ -697,7 +823,7 @@
 
                 // Tab 5: Messages
                 html += '<div class="tab-pane fade" id="exTabMessages">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 mb-3 text-center"><h6 class="fw-bold text-dark">تنبيهات وإشعارات جدول الاختبار</h6><button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 mx-auto mt-2" onclick="alert(\'تم إرسال تذكير بموعد الاختبار بنجاح!\')">إرسال تذكير بالموعد للطلاب</button></div>';
+                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 mb-3 text-center"><h6 class="fw-bold text-dark">تنبيهات وإشعارات جدول الاختبار</h6><button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 mx-auto mt-2" onclick="showExamToast(\'تم إرسال تذكير بموعد الاختبار للطلاب بنجاح!\', \'success\')">إرسال تذكير بالموعد للطلاب</button></div>';
                 html += '</div>';
 
                 // Tab 6: Notes
@@ -709,7 +835,7 @@
 
                 // Sticky Footer Actions
                 html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
-                html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openHomeworkGradingWorkspace(' + data.id + ')"><i class="fa-solid fa-star text-warning me-2"></i> ⭐ بدء التصحيح (Unified Grading Workspace)</button>';
+                html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openGradingWorkspace(\'exam\', ' + data.id + ')"><i class="fa-solid fa-star text-warning me-2"></i> ⭐ بدء التصحيح (Unified Grading Workspace)</button>';
                 html += '<div class="d-flex align-items-center gap-2">';
                 html += '<button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="publishExam(' + data.id + ')"><i class="fa-solid fa-paper-plane me-1"></i> نشر</button>';
                 html += '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="closeExam(' + data.id + ')"><i class="fa-solid fa-lock me-1"></i> إغلاق</button>';
@@ -720,6 +846,8 @@
                 html += '</div>';
                 drawerBody.innerHTML = html;
             });
+    };
+
     window.openExamGradingWorkspace = function(examId) {
         if (typeof window.openGradingWorkspace === 'function') {
             window.openGradingWorkspace('exam', examId);
