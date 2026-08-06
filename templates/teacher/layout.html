@@ -45,8 +45,8 @@
             <li class="{% if request.blueprint == 'exams' %}active{% endif %}">
                 <a href="{{ url_for('exams.index') }}"><i class="fa-solid fa-file-signature text-danger me-2"></i> <span>الاختبارات</span></a>
             </li>
-            <li class="{% if request.blueprint == 'grades' %}active{% endif %}">
-                <a href="{{ url_for('grades.manage_grades') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>الدرجات</span></a>
+            <li class="{% if request.blueprint == 'gradebook' %}active{% endif %}">
+                <a href="{{ url_for('gradebook.index') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>سجل الدرجات</span></a>
             </li>
             <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
                 <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope text-primary me-2"></i> <span>الرسائل</span></a>

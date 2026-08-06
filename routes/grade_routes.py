@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from models import db, Student, Subject, Classes, Sections, Terms, TypeExams, DetailMarks, Marks, Teacher
 
-grades_bp = Blueprint('grades', __name__, url_prefix='/grades')
+grades_bp = Blueprint('grades_legacy', __name__, url_prefix='/grades_legacy')
 
 @grades_bp.route('/', methods=['GET'])
 def index():
