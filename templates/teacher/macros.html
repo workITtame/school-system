@@ -1,0 +1,92 @@
+{# Reusable Jinja Macros Design System for Teacher Workspace #}
+
+{# 1. Page Header Macro #}
+{% macro render_page_header(title, subtitle, icon_class="fa-solid fa-chalkboard-user") %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-extrabold text-dark mb-1 font-cairo">
+            <i class="{{ icon_class }} text-primary me-2"></i> {{ title }}
+        </h4>
+        {% if subtitle %}
+            <p class="text-muted extra-small mb-0">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# 2. Section Header Macro #}
+{% macro render_section_header(icon_class, title, theme_color="primary", action_url=None, action_text=None) %}
+<div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between">
+    <h6 class="fw-bold text-dark mb-0 font-cairo">
+        <i class="{{ icon_class }} text-{{ theme_color }} me-2"></i> {{ title }}
+    </h6>
+    {% if action_url and action_text %}
+        <a href="{{ action_url }}" class="text-decoration-none extra-small fw-bold text-{{ theme_color }}">
+            {{ action_text }}
+        </a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# 3. KPI Summary Card Macro #}
+{% macro render_kpi_card(title, count, zero_text, icon_class, theme_color, action_url, tooltip_text) %}
+<div class="kpi-card h-100 border-start border-4 border-{{ theme_color }} hover-lift"
+     data-bs-toggle="tooltip" data-bs-placement="top" title="{{ tooltip_text }}">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="extra-small text-muted fw-bold">{{ title }}</span>
+        <div class="rounded-circle p-2 bg-{{ theme_color }}-subtle text-{{ theme_color }} d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="{{ icon_class }} fs-5"></i>
+        </div>
+    </div>
+
+    <h2 class="fw-bold text-dark mb-1 font-monospace">{{ count }}</h2>
+
+    <small class="extra-small d-block">
+        {% if count > 0 %}
+            <a href="{{ action_url }}" class="text-decoration-none text-{{ theme_color }} fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> عرض التفاصيل
+            </a>
+        {% else %}
+            <span class="text-muted fw-bold"><i class="fa-regular fa-circle-check me-1 text-success"></i> {{ zero_text }}</span>
+        {% endif %}
+    </small>
+
+    <i class="{{ icon_class }} kpi-card-icon-bg"></i>
+</div>
+{% endmacro %}
+
+{# 4. Status Badge Macro #}
+{% macro render_status_badge(text, status_type) %}
+{% if status_type == 'ended' or status_type == 'completed' %}
+    <span class="badge badge-status-ended rounded-pill px-2 py-1"><i class="fa-regular fa-circle-check me-1"></i> {{ text }}</span>
+{% elif status_type == 'current' or status_type == 'pending' %}
+    <span class="badge badge-status-current rounded-pill px-2 py-1"><i class="fa-solid fa-spinner fa-spin me-1"></i> {{ text }}</span>
+{% elif status_type == 'upcoming' %}
+    <span class="badge badge-status-upcoming rounded-pill px-2 py-1"><i class="fa-regular fa-clock me-1"></i> {{ text }}</span>
+{% elif status_type == 'overdue' or status_type == 'danger' %}
+    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1"><i class="fa-solid fa-circle-exclamation me-1"></i> {{ text }}</span>
+{% else %}
+    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">{{ text }}</span>
+{% endif %}
+{% endmacro %}
+
+{# 5. Empty State Macro #}
+{% macro render_empty_state(icon_class, title, message, cta_text=None, cta_url=None) %}
+<div class="py-5 text-center text-muted extra-small">
+    <i class="{{ icon_class }} text-primary opacity-25 fs-1 d-block mb-2"></i>
+    <h6 class="fw-bold text-dark mb-1 extra-small">{{ title }}</h6>
+    <p class="text-muted mb-0 max-w-sm mx-auto">{{ message }}</p>
+    {% if cta_text and cta_url %}
+        <a href="{{ cta_url }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 mt-3 extra-small fw-bold">
+            {{ cta_text }}
+        </a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# 6. Search Box Macro #}
+{% macro render_search_box(input_id, placeholder="بحث في الجدول...") %}
+<div class="d-flex align-items-center gap-2">
+    <input type="text" id="{{ input_id }}" class="form-control form-control-sm extra-small rounded-pill" placeholder="{{ placeholder }}" style="max-width: 180px;" aria-label="{{ placeholder }}">
+</div>
+{% endmacro %}
