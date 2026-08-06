@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, make_response, send_file, current_app
-from flask_login import login_required
-from utils.decorators import admin_required
+from routes.auth_routes import login_required
 from models import db, Student, Classes, Sections, Marks, TypeExams, Subject
 from models.extensions import cache
 from utils.pdf_generator import generate_student_pdf
@@ -13,7 +12,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 reports_bp = Blueprint('reports', __name__)
 
 @reports_bp.route("/reports")
-@admin_required
+@login_required
 def index():
     from services.reports import get_reports_dashboard_metrics, get_reports_registry
     from models import Classes, Sections, Subject, Terms, Student

@@ -9,10 +9,6 @@ logger = logging.getLogger(__name__)
 def _get_teacher_scope(user_id):
     teacher = get_teacher_by_user_id(user_id)
     if not teacher:
-        user = User.query.get(user_id)
-        if user and getattr(user, 'role', None) == 'admin':
-            teacher = Teacher.query.filter_by(is_deleted=False).first()
-    if not teacher:
         raise PermissionError("Teacher not found")
     query, class_ids, section_ids = get_teacher_students_query(teacher)
     students = query.all()

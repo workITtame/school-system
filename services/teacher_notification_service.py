@@ -8,14 +8,12 @@ logger = logging.getLogger(__name__)
 
 def _get_teacher_scope(user_id):
     user = User.query.get(user_id)
-    if not user:
-        raise PermissionError("Access forbidden")
+    if not user or getattr(user, 'role', None) != 'teacher':
+        raise PermissionError("Access forbidden for non-teacher accounts")
 
     teacher = Teacher.query.filter_by(user_id=user_id, is_deleted=False).first()
     if not teacher and hasattr(user, 'email') and user.email:
         teacher = Teacher.query.filter_by(Email=user.email, is_deleted=False).first()
-    if not teacher and getattr(user, 'role', None) == 'admin':
-        teacher = Teacher.query.filter_by(is_deleted=False).first()
 
     if not teacher:
         raise PermissionError("Teacher record not found")
