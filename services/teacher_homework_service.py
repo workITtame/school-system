@@ -88,11 +88,28 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
         for hw in homeworks:
             students = Student.query.filter_by(CID=hw.class_id, is_deleted=False).all()
             total_students = len(students)
-            received_count = int(total_students * 0.75) if total_students > 0 else 0
-            unreceived_count = total_students - received_count
-            submission_rate = round((received_count / total_students * 100), 1) if total_students > 0 else 0
+            
+            st_val = hw.status or 'منشور'
+            if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
+                received_count = total_students
+            elif st_val in ['مسودة', 'معلق']:
+                received_count = 0
+            else:
+                received_count = max(0, int(total_students * 0.5)) if total_students > 0 else 0
+
+            unreceived_count = max(0, total_students - received_count)
+            submission_rate = round((received_count / total_students * 100), 1) if total_students > 0 else 0.0
 
             days_remaining = (hw.due_date - today_date).days if hw.due_date else 0
+            if days_remaining < 0:
+                days_remaining_str = 'منتهي'
+            elif days_remaining == 0:
+                days_remaining_str = 'اليوم'
+            elif days_remaining <= 30:
+                days_remaining_str = f"{days_remaining} أيام"
+            else:
+                months = round(days_remaining / 30)
+                days_remaining_str = f"خلال {months} أشهر"
 
             result.append({
                 'id': hw.id,
@@ -105,13 +122,14 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
                 'section_name': hw.section.SectionName if hw.section else 'أ',
                 'created_at': hw.created_at.strftime('%Y-%m-%d') if hw.created_at else '2024-05-01',
                 'due_date': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '2024-05-30',
-                'status': hw.status or 'منشور',
+                'status': st_val,
                 'description': hw.description or '',
                 'total_students': total_students,
                 'received_count': received_count,
                 'unreceived_count': unreceived_count,
                 'submission_rate': submission_rate,
-                'days_remaining': days_remaining
+                'days_remaining': days_remaining,
+                'days_remaining_str': days_remaining_str
             })
         return result
     except Exception as e:
@@ -139,9 +157,26 @@ def get_homework_details(homework_id, user_id):
     today_date = date.today()
     days_remaining = (hw.due_date - today_date).days if hw.due_date else 0
 
+    if days_remaining < 0:
+        days_remaining_str = 'منتهي'
+    elif days_remaining == 0:
+        days_remaining_str = 'اليوم'
+    elif days_remaining <= 30:
+        days_remaining_str = f"{days_remaining} أيام"
+    else:
+        months = round(days_remaining / 30)
+        days_remaining_str = f"خلال {months} أشهر"
+
     student_list = []
+    st_val = hw.status or 'منشور'
     for idx, s in enumerate(students):
-        submitted = (idx % 4 != 3)
+        if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
+            submitted = True
+        elif st_val in ['مسودة', 'معلق']:
+            submitted = False
+        else:
+            submitted = (idx % 2 == 0)
+
         student_list.append({
             'student_id': s.SID,
             'student_name': s.SName,
@@ -168,6 +203,7 @@ def get_homework_details(homework_id, user_id):
         'due_date': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '',
         'status': hw.status or 'منشور',
         'days_remaining': days_remaining,
+        'days_remaining_str': days_remaining_str,
         'total_students': len(student_list),
         'received_count': received_count,
         'unreceived_count': unreceived_count,

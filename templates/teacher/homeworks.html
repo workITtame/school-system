@@ -183,8 +183,10 @@
                                     <i class="fa-regular fa-clock text-warning me-1"></i> {{ hw.due_date }}
                                 </td>
                                 <td class="text-center font-monospace">
-                                    {% if hw.days_remaining > 0 %}
-                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle extra-small">{{ hw.days_remaining }} أيام</span>
+                                    {% if hw.days_remaining > 0 and hw.days_remaining <= 30 %}
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle extra-small">{{ hw.days_remaining_str }}</span>
+                                    {% elif hw.days_remaining > 30 %}
+                                        <span class="badge bg-info-subtle text-primary border border-info-subtle extra-small">{{ hw.days_remaining_str }}</span>
                                     {% elif hw.days_remaining == 0 %}
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle extra-small">اليوم</span>
                                     {% else %}
@@ -434,7 +436,7 @@
                 html += '</div>';
                 html += '<p class="text-white-50 extra-small mb-2">المادة: ' + data.subject_name + ' | الصف: ' + data.class_name + ' (' + data.section_name + ') | موعد التسليم: ' + data.due_date + '</p>';
                 html += '<div class="d-flex align-items-center gap-3 text-white-50 extra-small">';
-                html += '<span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> المتبقي: ' + data.days_remaining + ' أيام</span>';
+                html += '<span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> المتبقي: ' + (data.days_remaining_str || data.days_remaining + ' أيام') + '</span>';
                 html += '<span><i class="fa-solid fa-users-slash text-danger me-1"></i> غير المسلمين: ' + data.unreceived_count + ' طالب</span>';
                 html += '</div>';
                 html += '</div>';
@@ -457,7 +459,7 @@
                 html += '<p class="text-secondary mb-0">' + (data.description || 'لا يوجد وصف إضافي مكتوب لهذا الواجب.') + '</p>';
                 html += '</div>';
                 html += '<div class="row g-2 text-center mb-3">';
-                html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">الأيام المتبقية</small><strong class="fs-6 text-warning font-monospace">' + data.days_remaining + ' أيام</strong></div></div>';
+                html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">الأيام المتبقية</small><strong class="fs-6 text-warning font-monospace">' + (data.days_remaining_str || data.days_remaining + ' أيام') + '</strong></div></div>';
                 html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">تم التسليم</small><strong class="fs-6 text-success font-monospace">' + data.received_count + ' طالب</strong></div></div>';
                 html += '<div class="col-4"><div class="p-2 rounded bg-white border"><small class="text-muted d-block">لم يسلموا</small><strong class="fs-6 text-danger font-monospace">' + data.unreceived_count + ' طالب</strong></div></div>';
                 html += '</div>';
