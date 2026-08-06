@@ -1,0 +1,183 @@
+{% extends 'teacher/layout.html' %}
+{% import 'teacher/macros.html' as macros %}
+
+{% block title %}الجدول الدراسي والتشغيلي | مساحة العمل الأكاديمية للمعلم{% endblock %}
+
+{% block content %}
+<div class="fade-in font-cairo position-relative pb-5" id="teacherTimetableContainer">
+
+    <!-- DYNAMIC COMPACT HERO HEADER -->
+    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden">
+        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
+            <div class="col-12 col-md-7 col-xl-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
+                         style="width: 62px; height: 62px; border: 2px solid rgba(255,255,255,0.4);">
+                        <i class="fa-solid fa-calendar-days fs-3"></i>
+                    </div>
+
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-white mb-0 font-cairo">
+                                📅 جدولي الدراسي والتشغيلي اليومي
+                            </h4>
+                        </div>
+                        <h6 class="text-white-50 mb-0 extra-small">
+                            حصص اليوم: <span class="text-white fw-bold">{{ stats.today_classes_count }}</span> | 
+                            الحصص المتبقية: <span class="text-white fw-bold">{{ stats.remaining_classes_count }}</span> | 
+                            إجمالي حصص الأسبوع: <span class="text-white fw-bold">{{ stats.total_weekly_classes_count }}</span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Meta Quick Pills -->
+            <div class="col-12 col-md-5 col-xl-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> {{ stats.current_day_name }}، {{ stats.current_date_str }}
+                    </span>
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
+                        <i class="fa-solid fa-clock-rotate-left text-info me-1"></i> آخر تحديث: {{ stats.last_update_time }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الجدول اليومية">
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("حصص اليوم", stats.today_classes_count, "لا توجد حصص مجدولة اليوم", "fa-solid fa-calendar-day", "primary", "#timetableContentSection", "إجمالي الحصص المجدولة لك اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("الحصة الحالية", 1 if stats.current_lesson else 0, "لا توجد حصة جارية الآن", "fa-solid fa-play", "success", "#timetableContentSection", "حالة الحصة الحالية المباشرة") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("الحصص المتبقية اليوم", stats.remaining_classes_count, "انتهت جميع حصص اليوم", "fa-solid fa-clock-rotate-left", "warning", "#timetableContentSection", "عدد الحصص المتبقية لهذا اليوم") }}
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            {{ macros.render_kpi_card("إجمالي حصص الأسبوع", stats.total_weekly_classes_count, "لا يوجد جدول أسبوعي", "fa-solid fa-calendar-week", "purple", "#timetableContentSection", "مجموع الحصص في النصاب الأسبوعي") }}
+        </div>
+    </div>
+
+    <!-- CURRENT LESSON BANNER WIDGET -->
+    {{ macros.render_current_lesson_widget(stats.current_lesson, stats.upcoming_lesson) }}
+
+    <!-- VIEW MODE SWITCHER & TIMETABLE CONTENT SECTION -->
+    <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="timetableContentSection">
+        <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h6 class="fw-bold text-dark mb-0 font-cairo">
+                <i class="fa-solid fa-timeline text-primary me-2"></i> استعراض الجدول الدراسي
+            </h6>
+            <!-- View Nav Pills -->
+            <ul class="nav nav-pills nav-pills-custom extra-small" id="timetableTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill px-3 py-1 me-1" id="today-tab" data-bs-toggle="pill" data-bs-target="#todayTimelineView" type="button" role="tab" aria-controls="todayTimelineView" aria-selected="true" onclick="switchTimetableTab('today')">
+                        <i class="fa-solid fa-list-check me-1"></i> عرض اليوم (Timeline)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-3 py-1" id="week-tab" data-bs-toggle="pill" data-bs-target="#weeklyCalendarView" type="button" role="tab" aria-controls="weeklyCalendarView" aria-selected="false" onclick="switchTimetableTab('week')">
+                        <i class="fa-solid fa-calendar-week me-1"></i> عرض الأسبوع (Calendar)
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-4 tab-content" id="timetableTabContent">
+
+            <!-- 1. TODAY TIMELINE VIEW -->
+            <div class="tab-pane fade show active" id="todayTimelineView" role="tabpanel" aria-labelledby="today-tab">
+                {% if today_schedule and today_schedule|length > 0 %}
+                    <div class="timeline-vertical position-relative">
+                        {% for slot in today_schedule %}
+                            <div class="timeline-item p-3 mb-3 rounded-4 border border-start-0 border-end-0 shadow-sm border-start-4 {% if slot.status_code == 'current' %}border-start-success bg-success-subtle bg-opacity-10{% elif slot.status_code == 'upcoming' %}border-start-info bg-light{% else %}border-start-secondary bg-light opacity-75{% endif %}">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle p-2 bg-primary-subtle text-primary font-monospace fw-bold fs-5 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                            {{ slot.period_num }}
+                                        </div>
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="fw-bold text-dark mb-0 font-cairo fs-6">{{ slot.subject_name }}</h6>
+                                                <span class="badge bg-light text-dark border extra-small">{{ slot.full_class }}</span>
+                                                {{ macros.render_lesson_status_badge(slot.status_code) }}
+                                            </div>
+                                            <small class="text-muted font-monospace extra-small">
+                                                <i class="fa-regular fa-clock me-1 text-primary"></i> {{ slot.start_time }} - {{ slot.end_time }} | 
+                                                <i class="fa-solid fa-users me-1 text-success"></i> {{ slot.students_count }} طالب
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="button" class="btn btn-sm {% if slot.status_code == 'current' %}btn-success{% else %}btn-outline-primary{% endif %} rounded-pill px-3 extra-small" onclick="openLessonDrawer({{ slot.TableID }})">
+                                            <i class="fa-solid fa-chalkboard-user me-1"></i> {% if slot.status_code == 'current' %}بدء الحصة المباشرة{% else %}إدارة الحصة{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ macros.render_empty_state("fa-solid fa-mug-hot", "لا توجد حصص مجدولة اليوم", "يمكنك استغلال الوقت في التحضير للدروس أو متابعة واجبات الطلاب.") }}
+                {% endif %}
+            </div>
+
+            <!-- 2. WEEKLY CALENDAR VIEW -->
+            <div class="tab-pane fade" id="weeklyCalendarView" role="tabpanel" aria-labelledby="week-tab">
+                <div class="row g-3">
+                    {% for day_name in ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] %}
+                        <div class="col-12 col-md-4 col-xl-2">
+                            <div class="card rounded-3 border shadow-sm h-100 bg-light">
+                                <div class="card-header bg-white p-2 border-bottom text-center">
+                                    <strong class="extra-small font-cairo text-dark {% if day_name == stats.current_day_name %}text-primary fw-extrabold{% endif %}">
+                                        {{ day_name }} {% if day_name == stats.current_day_name %}(اليوم){% endif %}
+                                    </strong>
+                                </div>
+                                <div class="card-body p-2 d-flex flex-column gap-2">
+                                    {% if weekly_schedule[day_name] and weekly_schedule[day_name]|length > 0 %}
+                                        {% for slot in weekly_schedule[day_name] %}
+                                            <div class="p-2 rounded bg-white border extra-small hover-lift" onclick="openLessonDrawer({{ slot.TableID }})" style="cursor: pointer;">
+                                                <strong class="d-block text-dark mb-1 text-truncate">{{ slot.subject_name }}</strong>
+                                                <small class="text-muted d-block extra-small">{{ slot.full_class }}</small>
+                                                <small class="text-primary font-monospace extra-small"><i class="fa-regular fa-clock me-1"></i> {{ slot.start_time }}</small>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="py-4 text-center text-muted extra-small">
+                                            <span class="opacity-50">— لا توجد حصص —</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- LESSON WORKSPACE SIDE DRAWER (OFFCANVAS) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="lessonDetailDrawer" aria-labelledby="lessonDetailDrawerLabel" style="width: 460px;">
+    <div class="offcanvas-header bg-primary text-white p-3">
+        <h6 class="offcanvas-title fw-bold mb-0" id="lessonDetailDrawerLabel">
+            <i class="fa-solid fa-chalkboard-user me-2"></i> مساحة إدارة الحصة الدراسية (Lesson Hub)
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4" id="lessonDrawerBodyContent">
+        <!-- Spinner Loader -->
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="extra-small text-muted mt-2">جاري تجهيز مساحة عمل الحصة...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

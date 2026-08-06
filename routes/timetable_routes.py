@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_required, current_user
 from models import db, SchoolTable, Classes, Sections, Subject, Teacher, Days, Lessons, Terms, Student, Attendance, Homework, ExamSchedule, Marks
 from sqlalchemy.orm import joinedload
@@ -9,16 +9,31 @@ timetable_bp = Blueprint('timetable', __name__, url_prefix='/timetable')
 @timetable_bp.route('/')
 @login_required
 def index():
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        from services.teacher_timetable_service import (
+            get_teacher_timetable_stats,
+            get_teacher_today_schedule,
+            get_teacher_weekly_schedule
+        )
+
+        stats = get_teacher_timetable_stats(current_user.id)
+        today_schedule = get_teacher_today_schedule(current_user.id)
+        weekly_schedule = get_teacher_weekly_schedule(current_user.id)
+
+        return render_template('teacher/timetable.html',
+                               stats=stats,
+                               today_schedule=today_schedule,
+                               weekly_schedule=weekly_schedule)
+
+    # Admin Timetable View
     today = datetime.now().date()
     now_time_str = datetime.now().strftime('%H:%M')
     arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
     today_day_name = arabic_days[today.weekday()]
     
-    # 1. Fetch Teacher Info for Current User
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=current_user.id).first()
     
     if not teacher:
-        teacher_id = None
         teacher_name = current_user.name
         teacher_title = 'إدارة النظام'
         teacher_status = 'نشط'
@@ -60,27 +75,11 @@ def index():
         'term_name': 'الفصل الدراسي الثاني - 2025/2026'
     }
 
-    # 2. Extract Teacher Classes & Sections
     teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
     teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
     
-    # Calculate Total Taught Students
-    if teacher_class_ids:
-        if teacher_section_ids:
-            total_students = Student.query.filter(
-                Student.is_deleted == False,
-                Student.CID.in_(teacher_class_ids),
-                Student.SectionID.in_(teacher_section_ids)
-            ).count()
-        else:
-            total_students = Student.query.filter(
-                Student.is_deleted == False,
-                Student.CID.in_(teacher_class_ids)
-            ).count()
-    else:
-        total_students = Student.query.filter(Student.is_deleted == False).count() if current_user.role == 'admin' else 0
+    total_students = Student.query.filter(Student.is_deleted == False).count()
 
-    # 3. Filter Today's Slots
     today_slots = [s for s in slots if s.day and s.day.DName == today_day_name]
     today_slots_sorted = sorted(
         today_slots, 
@@ -90,14 +89,12 @@ def index():
     today_lessons_count = len(today_slots_sorted)
     today_classes_count = len(set([s.CID for s in today_slots_sorted if s.CID]))
     
-    # 4. Status determination for Today's Slots, Current Lesson, and Next Lesson
     current_lesson = {}
     next_lesson = {}
     current_slot_num = None
     current_slot_time = None
     next_slot_num = None
     next_slot_time = None
-    
     daily_timeline = []
     finished_count = 0
     
@@ -111,12 +108,7 @@ def index():
         room_name = getattr(slot, 'RoomNo', None) or f"قاعة {200 + idx}"
         time_range = f"{start_t} - {end_t}"
         
-        st_count = Student.query.filter(
-            Student.is_deleted == False,
-            Student.CID == slot.CID,
-            Student.SectionID == slot.SectionID
-        ).count() if (slot.CID and slot.SectionID) else 30
-        
+        st_count = 30
         is_current = False
         is_next = False
         
@@ -171,7 +163,6 @@ def index():
             'is_next': is_next
         })
 
-    # If no current lesson active, default to first today slot or fallback
     if not current_lesson and today_slots_sorted:
         first_s = today_slots_sorted[0]
         start_t = first_s.lesson.StartTime if (first_s.lesson and first_s.lesson.StartTime) else '08:55'
@@ -193,7 +184,6 @@ def index():
 
     occupancy_rate = min(100, round((today_lessons_count / 6.0) * 100)) if today_lessons_count > 0 else 0
 
-    # 5. Weekly Timetable Matrix Building (Saturday to Thursday)
     week_days = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
     weekly_matrix = {}
     for day in week_days:
@@ -214,7 +204,6 @@ def index():
                 'room': room_name
             })
 
-    # 6. Today Summary Data
     today_present = Attendance.query.filter(Attendance.Date == today, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
     today_absent = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'غائب').count()
     total_att = today_present + today_absent
@@ -249,3 +238,12 @@ def index():
                            today_summary=today_summary,
                            today_date=today.strftime('%Y-%m-%d'),
                            today_day_name=today_day_name)
+
+@timetable_bp.route('/api/drawer/<int:slot_id>')
+@login_required
+def lesson_drawer_api(slot_id):
+    from services.teacher_timetable_service import get_lesson_drawer_data
+    data = get_lesson_drawer_data(slot_id, current_user.id)
+    if not data:
+        return jsonify({'error': 'Lesson not found or access forbidden'}), 403
+    return jsonify(data)

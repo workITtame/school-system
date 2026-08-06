@@ -93,7 +93,63 @@
 {% endif %}
 {% endmacro %}
 
-{# 6. Student Dropdown Action Menu Macro #}
+{# 6. Lesson Status Badge Macro #}
+{% macro render_lesson_status_badge(status_code) %}
+{% if status_code == 'ended' %}
+    <span class="badge badge-status-ended rounded-pill px-2 py-1"><i class="fa-regular fa-circle-check me-1"></i> انتهت</span>
+{% elif status_code == 'current' %}
+    <span class="badge badge-status-current rounded-pill px-2 py-1"><i class="fa-solid fa-spinner fa-spin me-1"></i> جارية الآن</span>
+{% else %}
+    <span class="badge badge-status-upcoming rounded-pill px-2 py-1"><i class="fa-regular fa-clock me-1"></i> قادمة</span>
+{% endif %}
+{% endmacro %}
+
+{# 7. Current Lesson Banner Widget Macro #}
+{% macro render_current_lesson_widget(current_lesson, upcoming_lesson) %}
+{% if current_lesson %}
+<div class="card rounded-4 shadow-sm border-0 bg-gradient-primary text-white p-3 mb-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 10;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-white text-success fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" style="width: 54px; height: 54px;">
+                <i class="fa-solid fa-play"></i>
+            </div>
+            <div>
+                <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-1">
+                    <i class="fa-solid fa-circle-dot fa-beat text-danger me-1"></i> الحصة الجارية الآن
+                </span>
+                <h5 class="fw-bold text-white mb-0">{{ current_lesson.subject_name }} — {{ current_lesson.full_class }}</h5>
+                <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1"></i> الوقت: {{ current_lesson.start_time }} - {{ current_lesson.end_time }}</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-light text-success fw-bold rounded-pill px-4 py-2 shadow-sm extra-small" onclick="openLessonDrawer({{ current_lesson.TableID }})">
+                <i class="fa-solid fa-chalkboard-user me-1"></i>▶ بدء الحصة المباشرة
+            </button>
+        </div>
+    </div>
+</div>
+{% elif upcoming_lesson %}
+<div class="card rounded-4 shadow-sm border-0 p-3 mb-4 bg-light border-start border-4 border-info">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-3 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="fa-regular fa-clock fs-4"></i>
+            </div>
+            <div>
+                <span class="badge bg-info-subtle text-info rounded-pill px-3 py-1 extra-small mb-1">الحصة القادمة اليوم</span>
+                <h6 class="fw-bold text-dark mb-0">{{ upcoming_lesson.subject_name }} — {{ upcoming_lesson.full_class }}</h6>
+                <small class="text-muted font-monospace"><i class="fa-regular fa-clock me-1"></i> تبدأ الساعة: {{ upcoming_lesson.start_time }}</small>
+            </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 extra-small" onclick="openLessonDrawer({{ upcoming_lesson.TableID }})">
+            عرض تحضير الحصة
+        </button>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# 8. Student Dropdown Action Menu Macro #}
 {% macro render_student_action_menu(student_id) %}
 <div class="dropdown">
     <button class="btn btn-sm btn-light border rounded-pill px-3 extra-small dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -124,7 +180,7 @@
 </div>
 {% endmacro %}
 
-{# 7. Bulk Actions Floating Bar Macro #}
+{# 9. Bulk Actions Floating Bar Macro #}
 {% macro render_bulk_toolbar() %}
 <div id="bulkActionsToolbar" class="bulk-actions-toolbar card shadow-lg border-0 rounded-4 p-2 bg-dark text-white d-none position-fixed bottom-0 start-50 translate-middle-x mb-4 font-cairo extra-small" style="z-index: 1080; min-width: 450px;">
     <div class="d-flex align-items-center justify-content-between px-3 py-1">
@@ -144,7 +200,7 @@
 </div>
 {% endmacro %}
 
-{# 8. Empty State Macro #}
+{# 10. Empty State Macro #}
 {% macro render_empty_state(icon_class, title, message, cta_text=None, cta_url=None) %}
 <div class="py-5 text-center text-muted extra-small">
     <i class="{{ icon_class }} text-primary opacity-25 fs-1 d-block mb-2"></i>
@@ -158,7 +214,7 @@
 </div>
 {% endmacro %}
 
-{# 9. Server-Side Pagination Macro #}
+{# 11. Server-Side Pagination Macro #}
 {% macro render_pagination(paginated_data, endpoint="students.home") %}
 {% if paginated_data and paginated_data.pages > 1 %}
 <nav aria-label="تنقل الصفحات" class="d-flex align-items-center justify-content-between pt-3">
@@ -175,14 +231,14 @@
             </li>
         {% endfor %}
         <li class="page-item {% if paginated_data.page >= paginated_data.pages %}disabled{% endif %}">
-            <a class="page-link rounded-circle text-dark ms-1" href="{{ url_for(endpoint, page=paginated_data.page+1) }}">»</a>
+            <a class="page-link rounded-circle text-dark ms-1" href="{{ url_for(endpoint, page=p) }}">»</a>
         </li>
     </ul>
 </nav>
 {% endif %}
 {% endmacro %}
 
-{# 10. Search Box Macro #}
+{# 12. Search Box Macro #}
 {% macro render_search_box(input_id, placeholder="بحث في الجدول...") %}
 <div class="d-flex align-items-center gap-2">
     <input type="text" id="{{ input_id }}" class="form-control form-control-sm extra-small rounded-pill" placeholder="{{ placeholder }}" style="max-width: 180px;" aria-label="{{ placeholder }}">
