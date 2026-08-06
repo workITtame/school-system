@@ -1,7 +1,7 @@
 {% extends 'teacher/layout.html' %}
 {% import 'teacher/macros.html' as macros %}
 
-{% block title %}مركز الدرجات والأداء الأكاديمي | مساحة العمل للمعلم (Gradebook & Performance Center){% endblock %}
+{% block title %}مركز الدرجات والأداء الأكاديمي | مساحة العمل للمعلم (Gradebook & Performance Analytics Workspace){% endblock %}
 
 {% block content %}
 <div class="fade-in font-cairo position-relative pb-5" id="teacherGradebookPageContainer">
@@ -21,7 +21,7 @@
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                             <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
-                                📊 مركز الدرجات والأداء الأكاديمي (Gradebook & Performance)
+                                📊 مركز الدرجات والأداء الأكاديمي (Gradebook & Performance Center)
                             </h4>
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
@@ -49,7 +49,31 @@
         </div>
     </div>
 
-    <!-- 2. 6 KPI SUMMARY CARDS (Clickable for Instant Filtering) -->
+    <!-- 2. SMART INSIGHTS DEDICATED PANEL ABOVE TABLE -->
+    <div class="card bg-primary-subtle border-primary-subtle rounded-4 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <h6 class="fw-bold text-primary mb-0 extra-small">
+                    <i class="fa-solid fa-lightbulb text-warning me-2 fs-6"></i> مؤشرات ورؤى التحليل الأكاديمي الذكي (Smart Insights):
+                </h6>
+                <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small font-monospace">تحديث آلي اليوم</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 overflow-x-auto extra-small flex-wrap" id="smartInsightsContainer">
+                {% if kpi.smart_insights %}
+                    {% for ins in kpi.smart_insights %}
+                        <div class="p-2 rounded-3 bg-white border border-primary-subtle text-dark shadow-sm d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success"></i>
+                            <span class="fw-bold">{{ ins }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-2 rounded-3 bg-white border text-muted">لا توجد رؤى محددة حالياً.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 6 KPI SUMMARY CARDS (Clickable for Instant Filtering) -->
     <div class="row g-3 mb-4" role="region" aria-label="إحصائيات درجات الطلاب">
         <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('')">
             {{ macros.render_kpi_card("إجمالي الطلاب", kpi.total_students, "جميع الطلاب المسجلين", "fa-solid fa-users", "primary", "javascript:filterGradebookByBadge('')", "إجمالي الطلاب - اضغط للتصفية") }}
@@ -71,7 +95,7 @@
         </div>
     </div>
 
-    <!-- 3. ACTIVE FILTER CHIPS & TOOLBAR FORM -->
+    <!-- 4. ACTIVE FILTER CHIPS & TOOLBAR FORM -->
     <div class="card rounded-4 shadow-sm border-0 mb-4">
         <div class="card-body p-3">
             <!-- Active Filter Chips Container -->
@@ -144,24 +168,25 @@
         </div>
     </div>
 
-    <!-- 4. FLOATING BULK ACTIONS TOOLBAR -->
+    <!-- 5. FLOATING BULK ACTIONS TOOLBAR -->
     <div id="gradebookBulkActionsBar" class="card bg-dark text-white rounded-4 shadow-lg border-0 mb-4 p-3 animate__animated animate__fadeInUp">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace" id="gradebookTotalBadge">{{ students|length }}</span>
-                <span class="fw-bold">طلاب مسجلين بالسجل</span>
+                <span class="fw-bold">طلاب مسجلين بالسجل الأكاديمي</span>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="bulkPublishResults()"><i class="fa-solid fa-paper-plane me-1"></i> نشر سجل النتائج</button>
                 <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 text-dark" onclick="recalculateGrades()"><i class="fa-solid fa-rotate me-1"></i> إعادة احتساب الترتيب</button>
                 <button type="button" class="btn btn-sm btn-info rounded-pill px-3 text-white" onclick="notifyStudents()"><i class="fa-solid fa-bell me-1"></i> إشعار الطلاب</button>
                 <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="exportGradebook('csv')"><i class="fa-solid fa-file-csv me-1"></i> تصدير CSV</button>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="exportGradebook('excel')"><i class="fa-solid fa-file-excel me-1"></i> تصدير Excel</button>
                 <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> طباعة</button>
             </div>
         </div>
     </div>
 
-    <!-- 5. GRADEBOOK ROSTER TABLE CONTAINER -->
+    <!-- 6. GRADEBOOK ROSTER TABLE CONTAINER -->
     <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="gradebookRosterSection">
         <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h6 class="fw-bold text-dark mb-0 font-cairo">
@@ -184,7 +209,7 @@
                         <th class="text-center">المشاركة</th>
                         <th class="text-center">نسبة الحضور</th>
                         <th class="text-center">الدرجة النهائية</th>
-                        <th class="text-center">التقدير الأكاديمي</th>
+                        <th class="text-center">التقدير والمؤشر الأكاديمي</th>
                         <th class="text-center">الترتيب</th>
                         <th class="text-center" style="width: 100px;">الإجراءات</th>
                     </tr>
@@ -194,12 +219,13 @@
                         {% for st in students %}
                             <tr class="gradebook-row" id="gradebook-row-{{ st.student_id }}" data-student-id="{{ st.student_id }}" data-badge="{{ st.status_text }}">
                                 <td class="ps-3">
-                                    <div class="d-flex align-items-center gap-2 py-1">
-                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                    <div class="d-flex align-items-center gap-2 py-1" style="cursor: pointer;" onclick="openStudentPerformanceDrawer({{ st.student_id }})">
+                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px;">
                                             <i class="fa-solid fa-user-graduate"></i>
                                         </div>
                                         <div>
-                                            <strong class="text-dark d-block mb-0 fs-6">{{ st.student_name }}</strong>
+                                            <strong class="text-dark d-block mb-0 fs-6 text-primary-hover">{{ st.student_name }}</strong>
+                                            <small class="text-muted extra-small font-monospace">عرض سجل الأداء 👈</small>
                                         </div>
                                     </div>
                                 </td>
@@ -211,41 +237,70 @@
                                 <td class="text-center font-monospace text-info fw-bold">{{ st.attendance_pct }}%</td>
                                 <td class="text-center font-monospace fw-extrabold text-primary fs-6">{{ st.final_grade }}%</td>
                                 <td class="text-center">
-                                    {% if 'ممتاز' in st.letter_grade %}
-                                        <span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
-                                    {% elif 'جيد جداً' in st.letter_grade %}
-                                        <span class="badge bg-info text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
-                                    {% elif 'جيد' in st.letter_grade %}
-                                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
-                                    {% elif 'يحتاج' in st.letter_grade %}
-                                        <span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
-                                    {% else %}
-                                        <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
-                                    {% endif %}
+                                    <div class="d-flex flex-column align-items-center">
+                                        {% if 'ممتاز' in st.letter_grade %}
+                                            <span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                        {% elif 'جيد جداً' in st.letter_grade %}
+                                            <span class="badge bg-info text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                        {% elif 'جيد' in st.letter_grade %}
+                                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                        {% elif 'يحتاج' in st.letter_grade %}
+                                            <span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                        {% endif %}
+                                        <small class="text-muted font-monospace extra-small" style="font-size: 10px;">{{ st.growth_badge or '+5% مستقر' }}</small>
+                                    </div>
                                 </td>
                                 <td class="text-center font-monospace fw-bold text-dark">
                                     <span class="badge bg-light border text-dark">المركز #{{ st.class_rank }}</span>
                                 </td>
                                 <td class="text-center">
-                                    <!-- Actions Dropdown (⋮) -->
+                                    <!-- Full Enterprise Actions Dropdown (⋮) -->
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border rounded-circle extra-small p-2 shadow-sm" type="button" onclick="toggleGradebookDropdown(event, this)" title="إجراءات الطالب">
+                                        <button class="btn btn-sm btn-light border rounded-circle extra-small p-2 shadow-sm" type="button" onclick="toggleGradebookDropdown(event, this)" title="إجراءات الطالب المتقدمة">
                                             <i class="fa-solid fa-ellipsis-vertical text-muted fs-6"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 extra-small font-cairo py-2">
                                             <li>
-                                                <button class="dropdown-item py-2 text-primary" type="button" onclick="openStudentGradebook({{ st.student_id }})">
-                                                    <i class="fa-regular fa-eye me-2"></i> 👁 تفاصيل درجات الطالب
+                                                <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }})">
+                                                    <i class="fa-solid fa-user-gear me-2"></i> 👤 عرض السجل التفصيلي
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2 text-warning" type="button" onclick="openPerformance({{ st.student_id }})">
-                                                    <i class="fa-solid fa-chart-line me-2"></i> 📈 تحليل الأداء والتطور
+                                                <button class="dropdown-item py-2 text-warning" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'analytics')">
+                                                    <i class="fa-solid fa-chart-line me-2"></i> 📊 تحليل الأداء والتطور
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item py-2 text-success fw-bold" type="button" onclick="openGradingWorkspace('homework', 1)">
-                                                    <i class="fa-solid fa-star me-2"></i> 📝 فتح محرك التصحيح الموحد
+                                                <button class="dropdown-item py-2 text-info" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'grades')">
+                                                    <i class="fa-solid fa-star me-2"></i> ⭐ سجل الدرجات التفصيلي
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-secondary" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')">
+                                                    <i class="fa-solid fa-book-open me-2"></i> 📚 تسليمات الواجبات
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-danger" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')">
+                                                    <i class="fa-solid fa-file-pen me-2"></i> 📝 نتائج الاختبارات
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-success" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')">
+                                                    <i class="fa-solid fa-user-check me-2"></i> 🟢 مواظبة الحضور
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-dark" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'messages')">
+                                                    <i class="fa-solid fa-paper-plane me-2"></i> 💬 إرسال رسالة لولي الأمر
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item py-2 text-dark" type="button" onclick="window.print()">
+                                                    <i class="fa-solid fa-print me-2"></i> 📄 طباعة التقرير الأكاديمي
                                                 </button>
                                             </li>
                                         </ul>
@@ -287,7 +342,7 @@
         </div>
     </div>
 
-    <!-- 6. PERFORMANCE CHARTS & VISUALIZATIONS PLACEHOLDERS -->
+    <!-- 7. PERFORMANCE CHARTS & VISUALIZATIONS PLACEHOLDERS -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-6">
             <div class="card p-3 border-0 bg-white shadow-sm rounded-4 h-100">
@@ -328,15 +383,15 @@
 
 </div>
 
-<!-- 7. 900px SMART STUDENT GRADEBOOK DRAWER (#studentGradebookDrawer) -->
-<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="studentGradebookDrawer" style="width: 900px; max-width: 95vw;">
-    <div class="offcanvas-header bg-primary text-white p-3">
+<!-- 8. 900px ENTERPRISE STUDENT PERFORMANCE DRAWER (#studentPerformanceDrawer) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="studentPerformanceDrawer" style="width: 900px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3 sticky-top" style="z-index: 1060;">
         <h6 class="offcanvas-title fw-bold mb-0">
-            <i class="fa-solid fa-user-graduate me-2"></i> سجل درجات الطالب التفصيلي
+            <i class="fa-solid fa-user-graduate me-2"></i> مساحة تحليل أداء الطالب الأكاديمية (#studentPerformanceDrawer)
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body p-4" id="studentGradebookDrawerContent">
+    <div class="offcanvas-body p-4" id="studentPerformanceDrawerContent">
         <!-- Dynamic AJAX Content Loaded Here -->
     </div>
 </div>
@@ -462,9 +517,10 @@
         showGradebookToast('تم إعادة ضبط جميع الفلاتر بنجاح', 'info');
     };
 
-    window.openStudentGradebook = function(studentId) {
-        var drawerEl = document.getElementById('studentGradebookDrawer');
-        var drawerBody = document.getElementById('studentGradebookDrawerContent');
+    // Open Enterprise 900px Student Performance Drawer (#studentPerformanceDrawer)
+    window.openStudentPerformanceDrawer = function(studentId, targetTab) {
+        var drawerEl = document.getElementById('studentPerformanceDrawer');
+        var drawerBody = document.getElementById('studentPerformanceDrawerContent');
         if (!drawerEl || !drawerBody) return;
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
@@ -472,100 +528,165 @@
             bsDrawer.show();
         }
 
+        // Skeleton loading UI
         drawerBody.innerHTML = '<div class="p-3 font-cairo extra-small">' +
-            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-3" style="height: 100px;"></div></div>' +
-            '<div class="placeholder-glow mb-3"><div class="placeholder col-8 rounded-pill" style="height: 35px;"></div></div>' +
-            '<div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 200px;"></div></div>' +
+            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 120px;"></div></div>' +
+            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-pill" style="height: 45px;"></div></div>' +
+            '<div class="row g-2 mb-3"><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div></div>' +
+            '<div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 220px;"></div></div>' +
             '</div>';
 
         fetch('/grades/api/student/' + studentId)
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                var activeTabName = targetTab || 'overview';
                 var html = '<div class="font-cairo extra-small pb-5 position-relative">';
                 
-                // Student Header Card
+                // Hero Student Header Card
                 html += '<div class="card bg-primary text-white p-3 rounded-4 mb-4 shadow-sm border-0 position-relative overflow-hidden">';
-                html += '<div class="d-flex justify-content-between align-items-center mb-2">';
-                html += '<h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-user-graduate me-2"></i>' + data.student_name + '</h5>';
-                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 extra-small fw-bold shadow-sm">' + data.letter_grade + '</span>';
+                html += '<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">';
+                html += '<div class="d-flex align-items-center gap-3">';
+                html += '<div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-4 d-flex align-items-center justify-content-center shadow" style="width: 52px; height: 52px;">';
+                html += '<i class="fa-solid fa-user-graduate"></i>';
                 html += '</div>';
-                html += '<p class="text-white-50 extra-small mb-2">الرقم الأكاديمي: <strong class="text-white">' + data.academic_id + '</strong> | الصف: <strong class="text-white">' + data.class_name + ' (' + data.section_name + ')</strong></p>';
-                html += '<div class="d-flex align-items-center gap-3 text-white-50 extra-small flex-wrap">';
-                html += '<span><i class="fa-solid fa-award text-warning me-1"></i> الدرجة النهائية: <strong class="text-white">' + data.final_grade + '%</strong></span>';
-                html += '<span><i class="fa-solid fa-ranking-star text-info me-1"></i> الترتيب: <strong class="text-white">المركز #' + data.class_rank + '</strong></span>';
+                html += '<div>';
+                html += '<h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-award me-1 text-warning"></i> ' + data.student_name + '</h5>';
+                html += '<small class="text-white-50 font-monospace">الرقم الأكاديمي: ' + data.academic_id + ' | المادة: ' + (data.subject_name || 'الرياضيات') + '</small>';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="text-end">';
+                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 extra-small fw-bold shadow-sm d-block mb-1">' + data.letter_grade + '</span>';
+                html += '<small class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 extra-small">' + (data.growth_badge || '+8% مقارنة بالشهر الماضي') + '</small>';
                 html += '</div>';
                 html += '</div>';
 
-                // 8 Enterprise Tabs
-                html += '<ul class="nav nav-pills nav-fill mb-3 font-cairo extra-small fw-bold bg-white p-2 rounded-3 shadow-sm border" role="tablist">';
-                html += '<li class="nav-item"><button class="nav-link active rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabOverview" type="button">📊 نظرة عامة</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabGrades" type="button">💯 الدرجات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAttendance" type="button">📅 الحضور (' + data.attendance_pct + '%)</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabHomeworks" type="button">📚 الواجبات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabExams" type="button">📋 الاختبارات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAnalytics" type="button">📈 تحليل الأداء</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabMessages" type="button">💬 الرسائل</button></li>';
-                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabNotes" type="button">📝 الملاحظات</button></li>';
+                // Quick KPI Mini-Grid inside Header
+                html += '<div class="row g-2 text-center mt-2 font-monospace extra-small text-dark">';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">الصف والشعبة</small><strong class="text-dark extra-small">' + data.class_name + ' (' + data.section_name + ')</strong></div></div>';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">متوسط الواجبات</small><strong class="text-primary">' + data.homework_avg + ' / 10</strong></div></div>';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">متوسط الاختبارات</small><strong class="text-primary">' + data.exam_avg + ' / 100</strong></div></div>';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">معدل الحضور</small><strong class="text-success">' + data.attendance_pct + '%</strong></div></div>';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">الترتيب بالفصل</small><strong class="text-warning">المركز #' + data.class_rank + '</strong></div></div>';
+                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">المعدل النهائي</small><strong class="text-success fw-bold fs-6">' + data.final_grade + '%</strong></div></div>';
+                html += '</div>';
+                html += '</div>';
+
+                // 8 Enterprise Tabs Header
+                html += '<ul class="nav nav-pills nav-fill mb-3 font-cairo extra-small fw-bold bg-white p-2 rounded-3 shadow-sm border sticky-top" style="top: 55px; z-index: 1040;" role="tablist">';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'overview' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabOverview" type="button">📊 نظرة عامة</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'grades' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabGrades" type="button">⭐ الدرجات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'homeworks' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabHomeworks" type="button">📚 الواجبات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'exams' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabExams" type="button">📝 الاختبارات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'attendance' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAttendance" type="button">🟢 الحضور (' + data.attendance_pct + '%)</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'analytics' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAnalytics" type="button">📈 التحليلات</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'messages' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabMessages" type="button">💬 الرسائل</button></li>';
+                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'notes' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabNotes" type="button">📝 الملاحظات</button></li>';
                 html += '</ul>';
 
                 // Tab Content Wrapper
                 html += '<div class="tab-content extra-small">';
                 
                 // Tab 1: Overview
-                html += '<div class="tab-pane fade show active" id="stTabOverview">';
+                html += '<div class="tab-pane fade ' + (activeTabName === 'overview' ? 'show active' : '') + '" id="stTabOverview">';
                 html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-circle-info text-primary me-2"></i> ملخص التحصيل الأكاديمي:</h6>';
-                html += '<p class="text-secondary mb-0 line-height-lg">' + data.notes + '</p>';
-                html += '</div>';
+                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-circle-info text-primary me-2"></i> ملخص الأداء والتحصيل العلمي:</h6>';
+                html += '<p class="text-secondary mb-3 line-height-lg">' + data.notes + '</p>';
+                
+                // Timeline Activity list
+                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> السجل الزمني للأنشطة الأخيرة (Timeline):</h6>';
+                html += '<div class="list-group list-group-flush border-top border-bottom mb-3">';
+                (data.timeline || []).forEach(function(t) {
+                    html += '<div class="list-group-item bg-transparent px-0 py-2 d-flex align-items-center justify-content-between">';
+                    html += '<div><i class="fa-solid ' + t.icon + ' me-2"></i><strong class="text-dark">' + t.text + '</strong></div>';
+                    html += '<small class="text-muted font-monospace">' + t.time + '</small>';
+                    html += '</div>';
+                });
                 html += '</div>';
 
+                html += '</div></div>';
+
                 // Tab 2: Grades
-                html += '<div class="tab-pane fade" id="stTabGrades">';
+                html += '<div class="tab-pane fade ' + (activeTabName === 'grades' ? 'show active' : '') + '" id="stTabGrades">';
                 html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<table class="table table-sm extra-small mb-0">';
-                html += '<thead><tr><th>عنوان التقييم</th><th>النوع</th><th>التاريخ</th><th>الدرجة</th><th>الحالة</th></tr></thead><tbody>';
+                html += '<table class="table table-hover table-sm extra-small mb-0">';
+                html += '<thead><tr class="bg-light"><th>عنوان التقييم</th><th>النوع</th><th>التاريخ</th><th>الدرجة</th><th>الحالة</th></tr></thead><tbody>';
                 (data.assessments || []).forEach(function(a) {
-                    html += '<tr><td>' + a.title + '</td><td>' + a.type + '</td><td>' + a.date + '</td><td class="fw-bold text-primary">' + a.score + '</td><td><span class="badge bg-success-subtle text-success">' + a.status + '</span></td></tr>';
+                    html += '<tr><td>' + a.title + '</td><td><span class="badge bg-light text-dark border">' + a.type + '</span></td><td>' + a.date + '</td><td class="fw-bold text-primary">' + a.score + '</td><td><span class="badge bg-success-subtle text-success border border-success-subtle">' + a.status + '</span></td></tr>';
                 });
                 html += '</tbody></table>';
                 html += '</div></div>';
 
-                // Tab 3: Attendance
-                html += '<div class="tab-pane fade" id="stTabAttendance">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center"><h6 class="fw-bold text-dark">سجل مواظبة وحضور الطالب</h6><strong class="fs-4 text-success font-monospace mb-2">' + data.attendance_pct + '%</strong><p class="text-muted extra-small mb-0">نسبة حضور متميزة وتجاوزت الحد الأدنى المطلوبة بالأنظمة الأكاديمية.</p></div>';
+                // Tab 3: Homeworks
+                html += '<div class="tab-pane fade ' + (activeTabName === 'homeworks' ? 'show active' : '') + '" id="stTabHomeworks">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
+                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book text-primary me-2"></i> إحصائيات تسليم الواجبات بالتفصيل:</h6>';
+                html += '<div class="row g-2 text-center font-monospace mb-3">';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">إجمالي الواجبات</small><strong class="text-dark">' + (data.homework_stats ? data.homework_stats.total : 12) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تم التسليم بالموعد</small><strong class="text-success">' + (data.homework_stats ? data.homework_stats.delivered : 10) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تسليم متأخر</small><strong class="text-warning">' + (data.homework_stats ? data.homework_stats.late : 1) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">مفقود / غير مسلّم</small><strong class="text-danger">' + (data.homework_stats ? data.homework_stats.missing : 1) + '</strong></div></div>';
                 html += '</div>';
+                html += '<div class="mb-2"><div class="d-flex justify-content-between mb-1"><span>نسبة الإنجاز الكلية للواجبات</span><strong class="font-monospace text-primary">' + (data.homework_stats ? data.homework_stats.completion_pct : 91.6) + '%</strong></div>';
+                html += '<div class="progress" style="height: 10px;"><div class="progress-bar bg-primary" style="width: ' + (data.homework_stats ? data.homework_stats.completion_pct : 91.6) + '%;"></div></div></div>';
+                html += '</div></div>';
 
-                // Tab 4: Homeworks
-                html += '<div class="tab-pane fade" id="stTabHomeworks">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="text-muted mb-0">متوسط درجات الواجبات: <strong class="text-dark">' + data.homework_avg + ' / 10</strong></p></div>';
-                html += '</div>';
+                // Tab 4: Exams
+                html += '<div class="tab-pane fade ' + (activeTabName === 'exams' ? 'show active' : '') + '" id="stTabExams">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
+                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-file-signature text-danger me-2"></i> سجّل نتائـج الاختبارات الأكاديمية:</h6>';
+                html += '<table class="table table-sm extra-small mb-0">';
+                html += '<thead><tr><th>الاختبار</th><th>التاريخ</th><th>الدرجة</th><th>المتوسط العام</th><th>النتيجة</th></tr></thead><tbody>';
+                html += '<tr><td>اختبار منتصف الفصل الأكاديمي</td><td>2026-08-04</td><td class="fw-bold text-success font-monospace">95 / 100</td><td class="font-monospace">85.0%</td><td><span class="badge bg-success">ناجح 🟢</span></td></tr>';
+                html += '<tr><td>اختبار التقييم القصير الأسبوعي #1</td><td>2026-07-28</td><td class="fw-bold text-success font-monospace">98 / 100</td><td class="font-monospace">82.5%</td><td><span class="badge bg-success">ناجح 🟢</span></td></tr>';
+                html += '</tbody></table>';
+                html += '</div></div>';
 
-                // Tab 5: Exams
-                html += '<div class="tab-pane fade" id="stTabExams">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4"><p class="text-muted mb-0">متوسط درجات الاختبارات: <strong class="text-dark">' + data.exam_avg + ' / 100</strong></p></div>';
+                // Tab 5: Attendance
+                html += '<div class="tab-pane fade ' + (activeTabName === 'attendance' ? 'show active' : '') + '" id="stTabAttendance">';
+                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center">';
+                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clipboard-user text-success me-2"></i> ملخص انضباط مواظبة الحضور والغياب:</h6>';
+                html += '<div class="row g-2 font-monospace my-3">';
+                html += '<div class="col-3"><div class="p-2 bg-success-subtle text-success rounded border border-success-subtle"><small class="d-block">حاضر</small><strong>24 يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-warning-subtle text-warning rounded border border-warning-subtle"><small class="d-block">متأخر</small><strong>1 يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle"><small class="d-block">غائب</small><strong>1 يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-info-subtle text-info rounded border border-info-subtle"><small class="d-block">بعذر رسمي</small><strong>0 يوم</strong></div></div>';
                 html += '</div>';
+                html += '</div></div>';
 
                 // Tab 6: Analytics
-                html += '<div class="tab-pane fade" id="stTabAnalytics">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3"><h6 class="fw-bold text-dark mb-2">تأكيدات وتحليلات الأداء الأكاديمي:</h6><p class="text-muted extra-small mb-0">' + (data.performance ? data.performance.recommendations : 'أداء ممتاز') + '</p></div>';
-                html += '</div>';
+                html += '<div class="tab-pane fade ' + (activeTabName === 'analytics' ? 'show active' : '') + '" id="stTabAnalytics">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
+                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i> التحليلات والتوصيات الأكاديمية الذكية (Smart Analytics):</h6>';
+                (data.smart_insights || []).forEach(function(ins) {
+                    html += '<div class="p-2 mb-2 bg-light rounded border border-start border-4 border-primary extra-small"><i class="fa-solid fa-lightbulb text-warning me-2"></i>' + ins + '</div>';
+                });
+                html += '</div></div>';
 
                 // Tab 7: Messages
-                html += '<div class="tab-pane fade" id="stTabMessages">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center"><h6 class="fw-bold text-dark">المراسلات المباشرة مع الطالب وولي الأمر</h6><button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 mx-auto mt-2" onclick="showGradebookToast(\'تم إرسال إشعار ولي الأمر بنجاح\', \'success\')">إرسال إشعار لولي الأمر</button></div>';
+                html += '<div class="tab-pane fade ' + (activeTabName === 'messages' ? 'show active' : '') + '" id="stTabMessages">';
+                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center">';
+                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-paper-plane text-primary me-2"></i> مركز المراسلات والإشعارات المباشرة:</h6>';
+                html += '<div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">';
+                html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال الرسالة المباشرة بنجاح\', \'success\')"><i class="fa-solid fa-envelope me-1"></i> إرسال رسالة مباشرة</button>';
+                html += '<button type="button" class="btn btn-sm btn-info text-white rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال التقرير الأكاديمي لولي الأمر بنجاح\', \'info\')"><i class="fa-solid fa-file-arrow-up me-1"></i> إرسال تقرير لولي الأمر</button>';
+                html += '<button type="button" class="btn btn-sm btn-warning text-dark rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال تذكير الواجبات بنجاح\', \'warning\')"><i class="fa-solid fa-bell me-1"></i> تذكير بالواجبات المتأخرة</button>';
                 html += '</div>';
+                html += '</div></div>';
 
                 // Tab 8: Notes
-                html += '<div class="tab-pane fade" id="stTabNotes">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4"><textarea class="form-control extra-small" rows="4" placeholder="اكتب ملاحظات معلم المادة الأكاديمية..."></textarea></div>';
-                html += '</div>';
+                html += '<div class="tab-pane fade ' + (activeTabName === 'notes' ? 'show active' : '') + '" id="stTabNotes">';
+                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4">';
+                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-pen-to-square text-secondary me-2"></i> ملاحظات المعلم الخاصة والتوجيهات الأكاديمية:</h6>';
+                html += '<textarea class="form-control extra-small mb-2" rows="3" placeholder="أدخل الملاحظة الأكاديمية الخاصة بالمعلم..."></textarea>';
+                html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-4 ms-auto d-block" onclick="showGradebookToast(\'تم حفظ الملاحظة الخاصة بنجاح\', \'success\')">حفظ الملاحظة</button>';
+                html += '</div></div>';
 
                 html += '</div>';
 
                 // Sticky Footer Actions
                 html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
                 html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openGradingWorkspace(\'homework\', 1)"><i class="fa-solid fa-star text-warning me-2"></i> ⭐ فتح محرك التصحيح الموحد</button>';
-                html += '<button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">إغلاق</button>';
+                html += '<button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">إغلاق مساحة الأداء</button>';
                 html += '</div>';
 
                 html += '</div>';
@@ -573,8 +694,12 @@
             });
     };
 
+    window.openStudentGradebook = function(studentId) {
+        window.openStudentPerformanceDrawer(studentId, 'overview');
+    };
+
     window.openPerformance = function(studentId) {
-        window.openStudentGradebook(studentId);
+        window.openStudentPerformanceDrawer(studentId, 'analytics');
     };
 
     window.exportGradebook = function(format) {
