@@ -1,9 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Initialize Bootstrap Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // 1. Initialize Bootstrap Tooltips (with safety guard)
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            try {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            } catch (e) {
+                return null;
+            }
+        });
+    }
 
     // 2. Sidebar collapse toggle
     const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
@@ -161,7 +167,14 @@ function openLessonDrawer(slotId) {
     const drawerBody = document.getElementById('lessonDrawerBodyContent');
     if (!drawerEl || !drawerBody) return;
 
-    const bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+    if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+        const bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+        bsDrawer.show();
+    } else {
+        drawerEl.classList.add('show');
+        drawerEl.style.display = 'block';
+        drawerEl.removeAttribute('aria-hidden');
+    }
     
     drawerBody.innerHTML = `
         <div class="text-center py-5">
@@ -171,7 +184,6 @@ function openLessonDrawer(slotId) {
             <p class="extra-small text-muted mt-2">جاري تحميل مساحة عمل الحصة الموحدة...</p>
         </div>
     `;
-    bsDrawer.show();
 
     fetch(`/timetable/api/drawer/${slotId}`)
         .then(response => {
@@ -885,7 +897,7 @@ window.bulkSendMessage = bulkSendMessage;
 
 // Document-level event delegation to guarantee 100% button execution across all browsers & Turbo page transitions
 document.addEventListener('click', function (e) {
-    const target = e.target.closest('[data-action], .btn-att-chip, [data-bs-toggle="dropdown"], .dropdown-toggle');
+    const target = e.target.closest('[data-action], .btn-att-chip, [data-bs-toggle="dropdown"], .dropdown-toggle, #stickyPageSaveBtn');
     if (!target) return;
 
     const action = target.getAttribute('data-action');
@@ -896,23 +908,38 @@ document.addEventListener('click', function (e) {
             window.openLessonDrawer(parseInt(slotId));
         }
     }
-    else if (action === 'set-status') {
-        const sid = target.getAttribute('data-sid');
-        const status = target.getAttribute('data-status');
+    else if (action === 'set-status' || target.classList.contains('btn-att-chip')) {
+        const sid = target.getAttribute('data-sid') || target.closest('[data-sid]')?.getAttribute('data-sid');
+        const status = target.getAttribute('data-status') || (
+            target.textContent.includes('حاضر') ? 'حاضر' :
+            target.textContent.includes('غائب') ? 'غائب' :
+            target.textContent.includes('متأخر') ? 'متأخر' :
+            target.textContent.includes('بعذر') ? 'بعذر' : ''
+        );
         if (sid && status && window.setPageStudentAttendance) {
             window.setPageStudentAttendance(parseInt(sid), status);
         }
     }
-    else if (action === 'save-attendance' || target.id === 'stickyPageSaveBtn') {
-        const slotId = target.getAttribute('data-slot-id') || 1;
+    else if (action === 'save-attendance' || target.id === 'stickyPageSaveBtn' || target.closest('#stickyPageSaveBtn')) {
+        const saveBtn = target.closest('#stickyPageSaveBtn') || target;
+        const slotId = saveBtn.getAttribute('data-slot-id') || 1;
         if (window.savePageAttendanceBulk) {
             window.savePageAttendanceBulk(parseInt(slotId));
         }
     }
-    else if (target.matches('[data-bs-toggle="dropdown"], .dropdown-toggle')) {
-        if (window.bootstrap && window.bootstrap.Dropdown) {
-            const dropdown = window.bootstrap.Dropdown.getOrCreateInstance(target);
-            dropdown.toggle();
+    else if (target.matches('[data-bs-toggle="dropdown"], .dropdown-toggle') || target.closest('.dropdown-toggle')) {
+        const dropdownBtn = target.closest('.dropdown-toggle') || target;
+        const parent = dropdownBtn.closest('.dropdown');
+        if (parent) {
+            const menu = parent.querySelector('.dropdown-menu');
+            if (menu) {
+                const isShown = menu.classList.contains('show');
+                document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+                if (!isShown) {
+                    menu.classList.add('show');
+                }
+                e.stopPropagation();
+            }
         }
     }
 });
