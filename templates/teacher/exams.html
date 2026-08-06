@@ -720,7 +720,12 @@
                 html += '</div>';
                 drawerBody.innerHTML = html;
             });
+    window.openExamGradingWorkspace = function(examId) {
+        if (typeof window.openGradingWorkspace === 'function') {
+            window.openGradingWorkspace('exam', examId);
+        }
     };
 })();
 </script>
+{% include 'teacher/grading_workspace.html' %}
 {% endblock %}

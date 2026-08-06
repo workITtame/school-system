@@ -1076,11 +1076,12 @@
 
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
-            if (currentGradingHwId && currentGradingStudentId) {
-                saveStudentGrade(currentGradingHwId, currentGradingStudentId, false);
-            }
+    window.openHomeworkGradingWorkspace = function(hwId) {
+        if (typeof window.openGradingWorkspace === 'function') {
+            window.openGradingWorkspace('homework', hwId);
         }
-    });
+    };
 })();
 </script>
+{% include 'teacher/grading_workspace.html' %}
 {% endblock %}

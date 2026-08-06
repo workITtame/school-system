@@ -1,0 +1,498 @@
+<!-- UNIFIED TEACHER GRADING WORKSPACE DRAWER (1000px Shared Component for Homework, Exams, Projects, Assignments) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="unifiedGradingWorkspaceDrawer" style="width: 1000px; max-width: 95vw;">
+    <div class="offcanvas-header bg-primary text-white p-3">
+        <h6 class="offcanvas-title fw-bold mb-0" id="unifiedGradingDrawerTitle">
+            <i class="fa-solid fa-star me-2"></i> مساحة التصحيح الموحدة (Unified Grading Workspace)
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body p-0 d-flex flex-column bg-light" id="unifiedGradingDrawerBody">
+        <!-- Skeleton Loading State -->
+        <div class="p-4 font-cairo" id="unifiedGradingSkeleton">
+            <div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 110px;"></div></div>
+            <div class="row g-2 mb-3">
+                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
+                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
+                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 380px;"></div></div></div>
+                <div class="col-8"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 380px;"></div></div></div>
+            </div>
+        </div>
+
+        <!-- Real Workspace Container (Populated via AJAX) -->
+        <div class="d-none flex-grow-1 flex-column" id="unifiedGradingContent">
+            <!-- Header Section -->
+            <div class="p-3 bg-white border-bottom shadow-sm">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="badge bg-primary rounded-pill px-3 py-1 extra-small mb-1" id="ugwTypeBadge">واجب أكاديمي</span>
+                        <h5 class="fw-bold text-dark mb-0 font-cairo" id="ugwTitle">عنوان التقييم</h5>
+                        <small class="text-muted extra-small" id="ugwMeta">المادة: -- | الصف: -- | التاريخ: --</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 font-monospace extra-small" id="ugwStatusBadge">🟢 نشط</span>
+                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold extra-small" onclick="publishGradingGrades()">
+                            <i class="fa-solid fa-paper-plane me-1"></i> نشر جميع الدرجات
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6 KPI Summary Mini Cards -->
+                <div class="row g-2 text-center extra-small mt-1 font-monospace">
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">إجمالي الطلاب</small><strong class="text-dark" id="ugwKpiTotal">0</strong></div></div>
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">تم التسليم</small><strong class="text-info" id="ugwKpiSubmitted">0</strong></div></div>
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">بانتظار التصحيح</small><strong class="text-warning" id="ugwKpiPending">0</strong></div></div>
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">تم التصحيح</small><strong class="text-success" id="ugwKpiGraded">0</strong></div></div>
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">متوسط الدرجات</small><strong class="text-primary" id="ugwKpiAvg">0.0</strong></div></div>
+                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">أعلى درجة</small><strong class="text-success" id="ugwKpiHighest">0.0</strong></div></div>
+                </div>
+            </div>
+
+            <!-- Main Split Body (Left Roster Sidebar + Right Submission & Grading) -->
+            <div class="row g-0 flex-grow-1 overflow-hidden">
+                <!-- Left Panel: Student Roster -->
+                <div class="col-12 col-md-4 bg-white border-end d-flex flex-column h-100 p-3">
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" id="ugwStudentSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب..." onkeyup="searchGradingStudents(this.value)">
+                        </div>
+                        <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small pb-1">
+                            <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 active" onclick="filterGradingStudents('', this)">الكل</button>
+                            <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="filterGradingStudents('بانتظار التصحيح', this)">🟡 بانتظار</button>
+                            <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="filterGradingStudents('تم التصحيح', this)">🟢 تم</button>
+                            <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="filterGradingStudents('لم يسلم', this)">🔴 لم يسلم</button>
+                        </div>
+                    </div>
+
+                    <div class="flex-grow-1 overflow-y-auto list-group list-group-flush extra-small pe-1" id="ugwStudentList">
+                        <!-- Dynamically populated student items -->
+                    </div>
+                </div>
+
+                <!-- Right Panel: Submission Viewer & Grading Panel -->
+                <div class="col-12 col-md-8 p-3 overflow-y-auto d-flex flex-column gap-3">
+                    <!-- Student Header Card -->
+                    <div class="card p-3 border-0 bg-white shadow-sm rounded-4">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa-solid fa-user-graduate fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 fs-6" id="ugwCurrentStudentName">اختر طالباً للبدء</h6>
+                                    <small class="text-muted font-monospace extra-small" id="ugwCurrentStudentCode">الرقم الأكاديمي: --</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 extra-small" id="ugwSubmissionStatus">تم التسليم</span>
+                                <small class="text-muted font-monospace extra-small" id="ugwSubmissionTime">--</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submission Viewer & Attachments Section -->
+                    <div class="card p-3 border-0 bg-white shadow-sm rounded-4">
+                        <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-paperclip text-primary me-2"></i> مرفقات وإجابة الطالب:</h6>
+                        <div id="ugwSubmissionFiles" class="mb-3">
+                            <div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد مرفقات معروضة.</div>
+                        </div>
+
+                        <!-- Submission Activity Timeline -->
+                        <div class="border-top pt-2 mt-2">
+                            <small class="fw-bold text-dark d-block mb-1 extra-small"><i class="fa-solid fa-clock-rotate-left text-warning me-1"></i> السجل الزمني للتسليم والتعديل:</small>
+                            <div class="d-flex align-items-center gap-3 extra-small text-muted font-monospace overflow-x-auto" id="ugwTimelineContainer">
+                                <span><i class="fa-solid fa-circle-check text-success me-1"></i> تم التسليم</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grading & Feedback Editor Panel -->
+                    <div class="card p-3 border-0 bg-white shadow-sm rounded-4 border-start border-4 border-primary">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-star text-warning me-2"></i> إدخال الدرجة والتغذية الراجعة:</h6>
+                            <span class="extra-small font-monospace text-muted" id="ugwAutoSaveIndicator"><i class="fa-solid fa-check text-success me-1"></i> تم الحفظ</span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <!-- Numeric Input + Slider -->
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-bold text-dark extra-small">الدرجة الممنوحة (من <span id="ugwMaxGradeLabel">100</span>):</label>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="number" id="ugwGradeInput" class="form-control font-monospace fw-bold fs-6 text-center" min="0" max="100" step="0.5" placeholder="0.0" oninput="autosaveGrading()">
+                                    <span class="input-group-text bg-light text-muted font-monospace">/ <span id="ugwMaxGradeSuffix">100</span></span>
+                                </div>
+                                <input type="range" id="ugwGradeSlider" class="form-range" min="0" max="100" step="0.5" oninput="document.getElementById('ugwGradeInput').value=this.value; autosaveGrading();">
+                            </div>
+
+                            <!-- Quick Grade Presets Buttons -->
+                            <div class="col-12 col-md-7">
+                                <label class="form-label fw-bold text-dark extra-small">درجات سريعة جاهزة:</label>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(100)">100</button>
+                                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(95)">95</button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(90)">90</button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(80)">80</button>
+                                    <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(70)">70</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(60)">60</button>
+                                    <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(0)">0</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Editor & Quick Feedback Chips -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark extra-small">الملاحظات والتغذية الراجعة للمعلم:</label>
+                            <textarea id="ugwFeedbackInput" class="form-control form-control-sm extra-small mb-2" rows="3" placeholder="أدخل الملاحظات والتوجيهات الأكاديمية للطالب..." onkeyup="autosaveGrading()"></textarea>
+
+                            <div class="d-flex align-items-center gap-1 flex-wrap extra-small">
+                                <span class="text-muted fw-bold me-1">قوالب سريعة:</span>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('عمل ممتاز وإجابة دقيقة متكاملة 👏')">ممتاز</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('أداء جيد جداً مع مراعاة التفاصيل الأكاديمية 👍')">جيد جداً</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('يرجى إعادة مراجعة الخطوات وتدقيق الإجابة ⚠️')">يحتاج تحسين</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('التسليم غير مكتمل ويرجى استكمال باقي الفقرات 🔴')">غير مكتمل</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel Bottom Buttons -->
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-top pt-3">
+                            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 extra-small" onclick="reopenGradingSubmission()">
+                                <i class="fa-solid fa-rotate-left me-1"></i> إعادة فتح التسليم للطالب
+                            </button>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold extra-small shadow-sm" onclick="saveGradingGrade(true)">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> حفظ والانتقال للطالب التالي ←
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Sticky Navigation & Footer Actions -->
+            <div class="p-3 bg-white border-top shadow-lg d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="previousGradingStudent()">
+                        <i class="fa-solid fa-arrow-right me-1"></i> الطالب السابق
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="nextGradingStudent()">
+                        الطالب التالي <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="exportGradingResults()">
+                        <i class="fa-solid fa-file-export me-1"></i> تصدير النتائج
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">
+                        إغلاق مساحة العمل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- UNIFIED GRADING WORKSPACE GLOBAL JAVASCRIPT HANDLERS -->
+<script>
+(function() {
+    var ugwCurrentSourceType = null;
+    var ugwCurrentSourceId = null;
+    var ugwCurrentStudentId = null;
+    var ugwStudentsList = [];
+    var ugwAutosaveTimer = null;
+    var ugwMaxGrade = 100;
+
+    // 1. Open Unified Grading Workspace Function
+    window.openGradingWorkspace = function(sourceType, sourceId) {
+        ugwCurrentSourceType = sourceType;
+        ugwCurrentSourceId = sourceId;
+
+        var drawerEl = document.getElementById('unifiedGradingWorkspaceDrawer');
+        var skeletonEl = document.getElementById('unifiedGradingSkeleton');
+        var contentEl = document.getElementById('unifiedGradingContent');
+
+        if (!drawerEl) return;
+
+        if (skeletonEl) skeletonEl.classList.remove('d-none');
+        if (contentEl) contentEl.classList.add('d-none');
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+            bsDrawer.show();
+        } else {
+            drawerEl.classList.add('show');
+            drawerEl.style.display = 'block';
+            drawerEl.style.visibility = 'visible';
+        }
+
+        // Fetch Workspace Meta Data via AJAX
+        fetch('/grading/workspace/' + sourceType + '/' + sourceId)
+            .then(function(res) {
+                if (!res.ok) throw new Error('فشل جلب مساحة التصحيح الموحدة');
+                return res.json();
+            })
+            .then(function(data) {
+                if (skeletonEl) skeletonEl.classList.add('d-none');
+                if (contentEl) {
+                    contentEl.classList.remove('d-none');
+                    contentEl.classList.add('d-flex');
+                }
+
+                document.getElementById('ugwTitle').textContent = data.title;
+                document.getElementById('ugwTypeBadge').textContent = sourceType === 'homework' ? 'واجب أكاديمي' : 'اختبار أكاديمي';
+                document.getElementById('ugwMeta').textContent = 'المادة: ' + data.subject_name + ' | الصف: ' + data.class_name + ' (' + data.section_name + ') | الموعد: ' + data.due_date;
+                
+                ugwMaxGrade = data.max_grade || (sourceType === 'homework' ? 10 : 100);
+                document.getElementById('ugwMaxGradeLabel').textContent = ugwMaxGrade;
+                document.getElementById('ugwMaxGradeSuffix').textContent = ugwMaxGrade;
+
+                document.getElementById('ugwKpiTotal').textContent = data.total_students;
+                document.getElementById('ugwKpiSubmitted').textContent = data.total_submissions;
+                document.getElementById('ugwKpiPending').textContent = data.pending_grading;
+                document.getElementById('ugwKpiGraded').textContent = data.graded_count;
+                document.getElementById('ugwKpiAvg').textContent = data.average_grade;
+                document.getElementById('ugwKpiHighest').textContent = data.highest_grade;
+
+                ugwStudentsList = data.students || [];
+                renderStudentRoster(ugwStudentsList);
+
+                if (ugwStudentsList.length > 0) {
+                    loadGradingStudent(ugwStudentsList[0].student_id);
+                }
+            })
+            .catch(function(err) {
+                if (skeletonEl) skeletonEl.innerHTML = '<div class="alert alert-danger p-3 extra-small">حدث خطأ أثناء الاتصال: ' + err.message + '</div>';
+            });
+    };
+
+    function renderStudentRoster(students) {
+        var container = document.getElementById('ugwStudentList');
+        if (!container) return;
+
+        var html = '';
+        students.forEach(function(s) {
+            var activeClass = (String(s.student_id) === String(ugwCurrentStudentId)) ? 'bg-primary-subtle border-primary' : 'bg-light border-0';
+            var gradeText = (s.grade !== null && s.grade !== undefined) ? (s.grade + ' / ' + ugwMaxGrade) : 'لم ترصد';
+            var statusBadge = s.submission_status === 'تم التسليم' ? 'bg-success' : 'bg-danger-subtle text-danger';
+
+            html += '<button type="button" class="list-group-item list-group-item-action p-2 mb-1 rounded-3 d-flex align-items-center justify-content-between text-start ' + activeClass + '" onclick="loadGradingStudent(' + s.student_id + ')">';
+            html += '<div><strong class="d-block text-dark">' + s.student_name + '</strong><small class="text-muted font-monospace">درجة: ' + gradeText + '</small></div>';
+            html += '<span class="badge ' + statusBadge + ' rounded-pill px-2 py-1 extra-small">' + s.submission_status + '</span>';
+            html += '</button>';
+        });
+        container.innerHTML = html;
+    }
+
+    window.loadGradingStudent = function(studentId) {
+        ugwCurrentStudentId = studentId;
+        renderStudentRoster(ugwStudentsList);
+
+        fetch('/grading/api/submission?source_type=' + ugwCurrentSourceType + '&source_id=' + ugwCurrentSourceId + '&student_id=' + studentId)
+            .then(function(res) { return res.json(); })
+            .then(function(sub) {
+                document.getElementById('ugwCurrentStudentName').textContent = sub.student_name;
+                document.getElementById('ugwCurrentStudentCode').textContent = 'الرقم الأكاديمي: ' + sub.academic_id;
+                document.getElementById('ugwSubmissionStatus').textContent = sub.submission_status;
+                document.getElementById('ugwSubmissionTime').textContent = sub.submission_date;
+
+                var gradeInput = document.getElementById('ugwGradeInput');
+                var gradeSlider = document.getElementById('ugwGradeSlider');
+                var feedbackInput = document.getElementById('ugwFeedbackInput');
+
+                gradeInput.value = sub.grade !== null ? sub.grade : '';
+                gradeSlider.value = sub.grade !== null ? sub.grade : 0;
+                feedbackInput.value = sub.feedback || '';
+
+                var filesContainer = document.getElementById('ugwSubmissionFiles');
+                if (sub.attachments && sub.attachments.length > 0) {
+                    var fHtml = '';
+                    sub.attachments.forEach(function(f) {
+                        fHtml += '<div class="d-flex align-items-center justify-content-between p-2 mb-1 bg-light rounded border">';
+                        fHtml += '<div><i class="fa-solid fa-file-pdf text-danger me-2 fs-5"></i><strong class="text-dark extra-small">' + f.name + '</strong> <small class="text-muted">(' + f.size + ')</small></div>';
+                        fHtml += '<a href="' + f.url + '" class="btn btn-xs btn-outline-primary rounded-pill px-3" download><i class="fa-solid fa-download me-1"></i> تحميل</a>';
+                        fHtml += '</div>';
+                    });
+                    filesContainer.innerHTML = fHtml;
+                } else {
+                    filesContainer.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد ملفات مرفقة لهذا التسليم.</div>';
+                }
+            });
+    };
+
+    window.autosaveGrading = function() {
+        var indicator = document.getElementById('ugwAutoSaveIndicator');
+        if (indicator) indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-warning me-1"></i> جاري الحفظ تلقائياً...';
+
+        clearTimeout(ugwAutosaveTimer);
+        ugwAutosaveTimer = setTimeout(function() {
+            saveGradingGrade(false);
+        }, 800);
+    };
+
+    window.saveGradingGrade = function(navigateNext) {
+        var gradeVal = document.getElementById('ugwGradeInput').value;
+        var feedbackVal = document.getElementById('ugwFeedbackInput').value;
+
+        var payload = {
+            source_type: ugwCurrentSourceType,
+            source_id: ugwCurrentSourceId,
+            student_id: ugwCurrentStudentId,
+            grade: gradeVal,
+            feedback: feedbackVal
+        };
+
+        fetch('/grading/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            var indicator = document.getElementById('ugwAutoSaveIndicator');
+            if (res.success) {
+                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> تم الحفظ تلقائياً';
+                
+                var st = ugwStudentsList.find(function(s) { return String(s.student_id) === String(ugwCurrentStudentId); });
+                if (st) {
+                    st.grade = gradeVal !== '' ? parseFloat(gradeVal) : null;
+                    st.submission_status = 'تم التسليم';
+                    renderStudentRoster(ugwStudentsList);
+                }
+
+                if (navigateNext) {
+                    nextGradingStudent();
+                }
+            } else {
+                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> فشل الحفظ';
+            }
+        });
+    };
+
+    window.setQuickGrade = function(val) {
+        var gradeInput = document.getElementById('ugwGradeInput');
+        var gradeSlider = document.getElementById('ugwGradeSlider');
+        gradeInput.value = val;
+        gradeSlider.value = val;
+        autosaveGrading();
+    };
+
+    window.addQuickFeedback = function(text) {
+        var feedbackInput = document.getElementById('ugwFeedbackInput');
+        if (feedbackInput.value) {
+            feedbackInput.value += ' ' + text;
+        } else {
+            feedbackInput.value = text;
+        }
+        autosaveGrading();
+    };
+
+    window.nextGradingStudent = function() {
+        if (!ugwStudentsList.length) return;
+        var idx = ugwStudentsList.findIndex(function(s) { return String(s.student_id) === String(ugwCurrentStudentId); });
+        if (idx !== -1 && idx + 1 < ugwStudentsList.length) {
+            loadGradingStudent(ugwStudentsList[idx + 1].student_id);
+        }
+    };
+
+    window.previousGradingStudent = function() {
+        if (!ugwStudentsList.length) return;
+        var idx = ugwStudentsList.findIndex(function(s) { return String(s.student_id) === String(ugwCurrentStudentId); });
+        if (idx > 0) {
+            loadGradingStudent(ugwStudentsList[idx - 1].student_id);
+        }
+    };
+
+    window.publishGradingGrades = function() {
+        fetch('/grading/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_type: ugwCurrentSourceType, source_id: ugwCurrentSourceId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                alert('تم نشر جميع الدرجات بنجاح!');
+                location.reload();
+            }
+        });
+    };
+
+    window.reopenGradingSubmission = function() {
+        fetch('/grading/api/reopen', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_type: ugwCurrentSourceType, source_id: ugwCurrentSourceId, student_id: ugwCurrentStudentId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                alert('تم إعادة فتح التسليم للطالب بنجاح');
+                loadGradingStudent(ugwCurrentStudentId);
+            }
+        });
+    };
+
+    window.exportGradingResults = function() {
+        fetch('/grading/api/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_type: ugwCurrentSourceType, source_id: ugwCurrentSourceId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.success) {
+                alert('تم تصدير نتائج التقييم بنجاح!');
+            }
+        });
+    };
+
+    window.searchGradingStudents = function(term) {
+        var lower = (term || '').toLowerCase();
+        var filtered = ugwStudentsList.filter(function(s) {
+            return s.student_name.toLowerCase().indexOf(lower) !== -1 || String(s.academic_id).indexOf(lower) !== -1;
+        });
+        renderStudentRoster(filtered);
+    };
+
+    window.filterGradingStudents = function(status, btn) {
+        if (btn && btn.parentElement) {
+            btn.parentElement.querySelectorAll('button').forEach(function(b) { b.classList.remove('btn-primary', 'active'); b.classList.add('btn-outline-secondary'); });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-primary', 'active');
+        }
+
+        if (!status) {
+            renderStudentRoster(ugwStudentsList);
+            return;
+        }
+
+        var filtered = ugwStudentsList.filter(function(s) {
+            return s.submission_status === status || s.grading_status === status;
+        });
+        renderStudentRoster(filtered);
+    };
+
+    // Global Keyboard Shortcuts (Ctrl+S, Ctrl+Enter, ArrowUp, ArrowDown, Esc)
+    document.addEventListener('keydown', function(e) {
+        var drawerEl = document.getElementById('unifiedGradingWorkspaceDrawer');
+        if (!drawerEl || (!drawerEl.classList.contains('show') && drawerEl.style.display !== 'block')) return;
+
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            saveGradingGrade(false);
+        } else if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            saveGradingGrade(true);
+        } else if (e.key === 'ArrowUp') {
+            previousGradingStudent();
+        } else if (e.key === 'ArrowDown') {
+            nextGradingStudent();
+        }
+    });
+})();
+</script>
