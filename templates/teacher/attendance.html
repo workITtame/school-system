@@ -81,7 +81,7 @@
                 <span><i class="fa-solid fa-users text-success me-1"></i> {{ current_lesson.students_count }} طالب مسجل</span>
                 <span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> {{ current_lesson.remaining_minutes or '25 دقيقة متبقية' }}</span>
                 {% if active_slot_id %}
-                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 fw-bold extra-small" data-action="open-lesson-drawer" data-slot-id="{{ active_slot_id }}" onclick="openLessonDrawer({{ active_slot_id }})">
+                    <button type="button" id="btnOpenLessonDrawer" class="btn btn-sm btn-light text-primary rounded-pill px-3 fw-bold extra-small" data-action="open-lesson-drawer" data-slot-id="{{ active_slot_id }}" onclick="openLessonDrawer({{ active_slot_id }})">
                         <i class="fa-solid fa-chalkboard-user me-1"></i> فتح Lesson Workspace
                     </button>
                 {% endif %}
@@ -146,7 +146,7 @@
 
                     <!-- Primary Actions Dropdown -->
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-primary rounded-pill px-3 extra-small dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button id="btnActionsDropdown" class="btn btn-sm btn-primary rounded-pill px-3 extra-small dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             الإجراءات <i class="fa-solid fa-chevron-down ms-1 extra-small"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
@@ -314,4 +314,82 @@
         </button>
     </div>
 </div>
+
+<script>
+(function() {
+    function initAttendancePageInteractivity() {
+        // 1. Open Lesson Workspace Drawer
+        const workspaceBtn = document.getElementById('btnOpenLessonDrawer');
+        if (workspaceBtn) {
+            workspaceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
+                if (typeof window.openLessonDrawer === 'function') {
+                    window.openLessonDrawer(parseInt(slotId));
+                } else {
+                    const drawerEl = document.getElementById('lessonDetailDrawer');
+                    if (drawerEl) {
+                        drawerEl.classList.add('show');
+                        drawerEl.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        // 2. Dropdown Actions Toggle
+        const dropdownBtn = document.getElementById('btnActionsDropdown');
+        if (dropdownBtn) {
+            dropdownBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const parent = this.closest('.dropdown');
+                if (parent) {
+                    const menu = parent.querySelector('.dropdown-menu');
+                    if (menu) {
+                        menu.classList.toggle('show');
+                    }
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        // 3. Status Chips Toggle
+        const chipButtons = document.querySelectorAll('.btn-att-chip');
+        chipButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sid = this.getAttribute('data-sid');
+                const status = this.getAttribute('data-status');
+                if (sid && status && typeof window.setPageStudentAttendance === 'function') {
+                    window.setPageStudentAttendance(parseInt(sid), status);
+                }
+            });
+        });
+
+        // 4. Sticky Bulk Save Button
+        const saveBtn = document.getElementById('stickyPageSaveBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
+                if (typeof window.savePageAttendanceBulk === 'function') {
+                    window.savePageAttendanceBulk(parseInt(slotId));
+                }
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAttendancePageInteractivity);
+    } else {
+        initAttendancePageInteractivity();
+    }
+})();
+</script>
 {% endblock %}
