@@ -155,7 +155,7 @@ function openStudentDrawer(studentId) {
         });
 }
 
-// 5. Open Lesson Workspace Side Drawer Offcanvas
+// 5. Open Enterprise Lesson Workspace Shell Drawer Offcanvas
 function openLessonDrawer(slotId) {
     const drawerEl = document.getElementById('lessonDetailDrawer');
     const drawerBody = document.getElementById('lessonDrawerBodyContent');
@@ -168,7 +168,7 @@ function openLessonDrawer(slotId) {
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">جاري التحميل...</span>
             </div>
-            <p class="extra-small text-muted mt-2">جاري تجهيز مساحة عمل الحصة...</p>
+            <p class="extra-small text-muted mt-2">جاري تحميل مساحة عمل الحصة الموحدة...</p>
         </div>
     `;
     bsDrawer.show();
@@ -176,72 +176,212 @@ function openLessonDrawer(slotId) {
     fetch(`/timetable/api/drawer/${slotId}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('فشل تحميل مساحة الحصة أو لا توجد صلاحيات.');
+                throw new Error('فشل تحميل مساحة عمل الحصة أو لا توجد صلاحيات.');
             }
             return response.json();
         })
         .then(data => {
-            let studentsHtml = '';
+            // Build Status Badge HTML
+            let statusBadgeHtml = '';
+            if (data.status_code === 'current') {
+                statusBadgeHtml = '<span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small"><i class="fa-solid fa-spinner fa-spin me-1"></i> جارية الآن</span>';
+            } else if (data.status_code === 'ended') {
+                statusBadgeHtml = '<span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small"><i class="fa-regular fa-circle-check me-1"></i> منتهية</span>';
+            } else {
+                statusBadgeHtml = '<span class="badge bg-info text-white rounded-pill px-3 py-1 extra-small"><i class="fa-regular fa-clock me-1"></i> قادمة</span>';
+            }
+
+            // Build Students List HTML for Students Tab
+            let studentsListHtml = '';
             if (data.students && data.students.length > 0) {
-                studentsHtml = data.students.map(s => `
-                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light mb-1 extra-small">
-                        <span><i class="fa-solid fa-user-graduate text-primary me-1"></i> ${s.SName}</span>
-                        <span class="badge bg-success-subtle text-success rounded-pill extra-small">حاضر</span>
+                studentsListHtml = data.students.map(s => `
+                    <div class="card rounded-3 border-0 bg-light p-2 mb-2 student-workspace-item">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                                    ${s.SName ? s.SName[0] : 'ط'}
+                                </div>
+                                <div>
+                                    <strong class="text-dark d-block extra-small mb-0">${s.SName}</strong>
+                                    <small class="text-muted font-monospace extra-small">الرقم الأكاديمي: ${s.academic_id}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap extra-small">
+                                <span class="badge ${s.attendance_status === 'حاضر' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} rounded-pill">
+                                    ${s.attendance_status}
+                                </span>
+                                <span class="badge bg-white text-dark border font-monospace">درجة: ${s.latest_score}%</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light border rounded-circle extra-small p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="إجراءات الطالب">
+                                        <i class="fa-solid fa-ellipsis-vertical text-muted"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
+                                        <li>
+                                            <button class="dropdown-item py-1" type="button" onclick="alert('تسجيل حضور الطالب: ${s.SName}')">
+                                                <i class="fa-solid fa-clipboard-user text-warning me-2"></i> تسجيل حضور
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item py-1" type="button" onclick="alert('إدخال درجة الطالب: ${s.SName}')">
+                                                <i class="fa-solid fa-star text-warning me-2"></i> إدخال درجة
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item py-1" type="button" onclick="alert('إرسال رسالة للطالب: ${s.SName}')">
+                                                <i class="fa-regular fa-paper-plane text-info me-2"></i> إرسال رسالة
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `).join('');
             } else {
-                studentsHtml = '<p class="text-muted extra-small mb-0">لا يوجد طلاب مسجلون بهذه الشعبة.</p>';
+                studentsListHtml = `
+                    <div class="py-4 text-center text-muted extra-small">
+                        <i class="fa-solid fa-users-slash text-primary opacity-25 fs-1 d-block mb-2"></i>
+                        <p class="mb-0">لا يوجد طلاب مسجلون بهذه الحصة حالياً.</p>
+                    </div>
+                `;
             }
 
+            // Helper macro for Coming Soon tabs empty state
+            const renderComingSoonTab = (iconClass, title, moduleName) => `
+                <div class="card rounded-4 border-0 bg-light py-5 px-3 text-center my-3">
+                    <i class="${iconClass} text-primary opacity-25 fs-1 d-block mb-3"></i>
+                    <h6 class="fw-bold text-dark mb-1 extra-small">${title}</h6>
+                    <p class="text-muted extra-small max-w-sm mx-auto mb-3">سيتم تفعيل قسم ${moduleName} المباشر للحصة وتطويره بالكامل في المرحلة القادمة.</p>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill max-w-fit mx-auto px-3 py-2 extra-small">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i> قريباً في المرحلة القادمة (Coming Soon)
+                    </span>
+                </div>
+            `;
+
             drawerBody.innerHTML = `
-                <div class="text-center mb-4">
-                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace fs-2 d-inline-flex align-items-center justify-content-center shadow-sm mb-2" style="width: 64px; height: 64px;">
-                        <i class="fa-solid fa-chalkboard-user"></i>
+                <!-- WORKSPACE HEADER -->
+                <div class="p-3 rounded-4 bg-primary-subtle border border-primary-subtle mb-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white rounded-pill px-3 py-1 font-cairo extra-small">
+                                📚 ${data.subject_name}
+                            </span>
+                            ${statusBadgeHtml}
+                        </div>
+                        <small class="text-muted font-monospace extra-small">
+                            <i class="fa-regular fa-clock text-primary me-1"></i> ${data.start_time} - ${data.end_time}
+                        </small>
                     </div>
-                    <h5 class="fw-bold text-dark mb-1">${data.subject_name}</h5>
-                    <span class="badge bg-light text-dark border rounded-pill extra-small">${data.full_class}</span>
-                    <p class="text-muted extra-small mt-2 mb-0"><i class="fa-regular fa-clock text-primary me-1"></i> التوقيت: <span class="font-monospace fw-bold">${data.start_time} - ${data.end_time}</span></p>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <h6 class="fw-bold text-dark mb-0 font-cairo">🏫 ${data.full_class}</h6>
+                        <small class="text-secondary extra-small fw-bold"><i class="fa-solid fa-users text-success me-1"></i> ${data.total_students} طلاب مسجلون</small>
+                    </div>
                 </div>
 
-                <!-- Lesson Performance Summary -->
-                <div class="row g-2 mb-4 extra-small text-center">
+                <!-- QUICK STATISTICS BAR (5 KPI Cards) -->
+                <div class="row g-2 mb-3 extra-small text-center">
                     <div class="col-4">
-                        <div class="p-2 rounded bg-light border">
-                            <span class="text-muted d-block extra-small">عدد الطلاب</span>
-                            <strong class="font-monospace fs-6 text-dark">${data.total_students}</strong>
+                        <div class="p-2 rounded-3 bg-light border">
+                            <span class="text-muted d-block extra-small">الطلاب</span>
+                            <strong class="font-monospace text-dark fs-6">${data.total_students}</strong>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-2 rounded bg-light border">
+                        <div class="p-2 rounded-3 bg-light border">
                             <span class="text-muted d-block extra-small">الحاضرون</span>
-                            <strong class="font-monospace fs-6 text-success">${data.present_count}</strong>
+                            <strong class="font-monospace text-success fs-6">${data.present_count}</strong>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-2 rounded bg-light border">
-                            <span class="text-muted d-block extra-small">المتغيبون</span>
-                            <strong class="font-monospace fs-6 text-danger">${data.absent_count}</strong>
+                        <div class="p-2 rounded-3 bg-light border">
+                            <span class="text-muted d-block extra-small">الغائبون</span>
+                            <strong class="font-monospace text-danger fs-6">${data.absent_count}</strong>
                         </div>
                     </div>
                 </div>
 
-                <!-- Enrolled Students Roster -->
-                <div class="mb-4">
-                    <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-users text-primary me-1"></i> قائمة طلاب الحصة</h6>
-                    <div style="max-height: 180px; overflow-y: auto;">${studentsHtml}</div>
-                </div>
+                <!-- WORKSPACE NAVIGATION (7 TABS) -->
+                <ul class="nav nav-tabs nav-tabs-workspace mb-3 extra-small font-cairo" id="workspaceTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill px-3 py-1 me-1" id="ws-students-tab" data-bs-toggle="tab" data-bs-target="#ws-students" type="button" role="tab" aria-controls="ws-students" aria-selected="true">
+                            <i class="fa-solid fa-users me-1 text-primary"></i> الطلاب (${data.total_students})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 me-1" id="ws-attendance-tab" data-bs-toggle="tab" data-bs-target="#ws-attendance" type="button" role="tab" aria-controls="ws-attendance" aria-selected="false">
+                            <i class="fa-solid fa-clipboard-user me-1 text-warning"></i> الحضور
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 me-1" id="ws-grades-tab" data-bs-toggle="tab" data-bs-target="#ws-grades" type="button" role="tab" aria-controls="ws-grades" aria-selected="false">
+                            <i class="fa-solid fa-star me-1 text-warning"></i> الدرجات
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 me-1" id="ws-homework-tab" data-bs-toggle="tab" data-bs-target="#ws-homework" type="button" role="tab" aria-controls="ws-homework" aria-selected="false">
+                            <i class="fa-solid fa-book-open me-1 text-info"></i> الواجبات
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 me-1" id="ws-exams-tab" data-bs-toggle="tab" data-bs-target="#ws-exams" type="button" role="tab" aria-controls="ws-exams" aria-selected="false">
+                            <i class="fa-solid fa-file-signature me-1 text-danger"></i> الاختبارات
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1 me-1" id="ws-messages-tab" data-bs-toggle="tab" data-bs-target="#ws-messages" type="button" role="tab" aria-controls="ws-messages" aria-selected="false">
+                            <i class="fa-regular fa-paper-plane me-1 text-info"></i> الرسائل
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1" id="ws-notes-tab" data-bs-toggle="tab" data-bs-target="#ws-notes" type="button" role="tab" aria-controls="ws-notes" aria-selected="false">
+                            <i class="fa-regular fa-note-sticky me-1 text-secondary"></i> الملاحظات
+                        </button>
+                    </li>
+                </ul>
 
-                <!-- Quick Action Buttons -->
-                <div class="d-grid gap-2 extra-small">
-                    <a href="/attendance/" class="btn btn-sm btn-primary rounded-pill py-2">
-                        <i class="fa-solid fa-clipboard-user me-1"></i> تسجيل حضور الحصة المباشرة
-                    </a>
-                    <a href="/grades/manage" class="btn btn-sm btn-outline-secondary rounded-pill py-2">
-                        <i class="fa-solid fa-star me-1"></i> إدخال درجات الحصة
-                    </a>
-                    <a href="/messages/" class="btn btn-sm btn-outline-info rounded-pill py-2">
-                        <i class="fa-regular fa-paper-plane me-1"></i> إرسال تنبيه لشعبة الحصة
-                    </a>
+                <!-- TAB PANELS CONTENT CONTAINER -->
+                <div class="tab-content" id="workspaceTabContent">
+
+                    <!-- 1. STUDENTS TAB (FULLY FUNCTIONAL) -->
+                    <div class="tab-pane fade show active" id="ws-students" role="tabpanel" aria-labelledby="ws-students-tab">
+                        <div class="mb-2">
+                            <input type="text" id="workspaceStudentSearch" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="filterWorkspaceStudents(this.value)">
+                        </div>
+                        <div id="workspaceStudentsListContainer" style="max-height: 360px; overflow-y: auto;">
+                            ${studentsListHtml}
+                        </div>
+                    </div>
+
+                    <!-- 2. ATTENDANCE TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-attendance" role="tabpanel" aria-labelledby="ws-attendance-tab">
+                        ${renderComingSoonTab("fa-solid fa-clipboard-user", "وحدة تسجيل الحضور المباشر للحصة", "الحضور والغياب")}
+                    </div>
+
+                    <!-- 3. GRADES TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-grades" role="tabpanel" aria-labelledby="ws-grades-tab">
+                        ${renderComingSoonTab("fa-solid fa-star", "وحدة إدخال وتتبع درجات الحصة", "الدرجات والتقييمات")}
+                    </div>
+
+                    <!-- 4. HOMEWORK TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-homework" role="tabpanel" aria-labelledby="ws-homework-tab">
+                        ${renderComingSoonTab("fa-solid fa-book-open", "وحدة متابعة وإضافة واجبات الحصة", "الواجبات التفاعلية")}
+                    </div>
+
+                    <!-- 5. EXAMS TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-exams" role="tabpanel" aria-labelledby="ws-exams-tab">
+                        ${renderComingSoonTab("fa-solid fa-file-signature", "وحدة اختبارات وتقييمات الحصة", "الاختبارات الأكاديمية")}
+                    </div>
+
+                    <!-- 6. MESSAGES TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-messages" role="tabpanel" aria-labelledby="ws-messages-tab">
+                        ${renderComingSoonTab("fa-regular fa-paper-plane", "وحدة الرسائل والتنبيهات المباشرة", "الرسائل والإشعارات")}
+                    </div>
+
+                    <!-- 7. NOTES TAB (COMING SOON EMPTY STATE) -->
+                    <div class="tab-pane fade" id="ws-notes" role="tabpanel" aria-labelledby="ws-notes-tab">
+                        ${renderComingSoonTab("fa-regular fa-note-sticky", "وحدة ملاحظات وتحضير الحصة", "الملاحظات الأكاديمية")}
+                    </div>
+
                 </div>
             `;
         })
@@ -249,7 +389,7 @@ function openLessonDrawer(slotId) {
             drawerBody.innerHTML = `
                 <div class="text-center py-5 text-danger extra-small">
                     <i class="fa-solid fa-circle-exclamation fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold">حدث خطأ أثناء تحميل الحصة</h6>
+                    <h6 class="fw-bold">حدث خطأ أثناء تحميل مساحة عمل الحصة</h6>
                     <p class="text-muted mb-0">${err.message}</p>
                 </div>
             `;
