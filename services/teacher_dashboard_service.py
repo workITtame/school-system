@@ -110,7 +110,7 @@ def get_teacher_students(teacher):
         query = Student.query.options(
             joinedload(Student.school_class),
             joinedload(Student.section)
-        ).filter(Student.is_deleted == False)
+        ).filter(Student.is_deleted == False, Student.CID.isnot(None))
 
         if class_ids:
             query = query.filter(Student.CID.in_(class_ids))

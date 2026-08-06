@@ -12,18 +12,18 @@ logger = logging.getLogger(__name__)
 def get_teacher_students_query(teacher):
     """
     Returns base Student query for teacher.
+    Filters out deleted students and unassigned test rows (CID IS NULL).
     If timetable SchoolTable has slots for teacher, filters by taught CID/SectionID.
-    If SchoolTable has no slots, falls back to all active students in the school.
     """
     if not teacher:
-        return Student.query.filter(Student.is_deleted == False), [], []
+        return Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)), [], []
 
     subject_ids, class_ids, section_ids = get_teacher_subject_and_class_ids(teacher)
 
     query = Student.query.options(
         joinedload(Student.school_class),
         joinedload(Student.section)
-    ).filter(Student.is_deleted == False)
+    ).filter(Student.is_deleted == False, Student.CID.isnot(None))
 
     if class_ids:
         query = query.filter(Student.CID.in_(class_ids))
