@@ -68,6 +68,8 @@ class TestTeacherProfilePhase11(unittest.TestCase):
             self.assertEqual(upd_res.status_code, 200)
 
             # 8. POST /profile/api/password
+            teacher_user.set_password('old_password')
+            db.session.commit()
             pass_res = self.client.post('/profile/api/password', json={
                 'current_password': 'old_password',
                 'new_password': 'new_secure_password_123'

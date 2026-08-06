@@ -50,23 +50,23 @@
 
     <!-- 2. 6 KPI SUMMARY CARDS -->
     <div class="row g-3 mb-4" role="region" aria-label="إحصائيات الملف الشخصي والأمان">
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("مكتمل الحساب", profile.completion_pct, "نسبة اكتمال الملف الشخصي", "fa-solid fa-chart-pie", "primary", "javascript:void(0)", "مكتمل الحساب") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('info')">
+            {{ macros.render_kpi_card("مكتمل الحساب", profile.completion_pct, "نسبة اكتمال الملف الشخصي", "fa-solid fa-chart-pie", "primary", "javascript:switchProfileTab('info')", "عرض المعلومات الشخصية") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("مستوى الأمان", 98, "تأمين الجلسات وكلمة السر", "fa-solid fa-shield-halved", "success", "javascript:void(0)", "مستوى الأمان") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('security')">
+            {{ macros.render_kpi_card("مستوى الأمان", 98, "تأمين الجلسات وكلمة السر", "fa-solid fa-shield-halved", "success", "javascript:switchProfileTab('security')", "عرض خيارات الأمان") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("الإشعارات", 3, "إشعارات النظام غير المقروءة", "fa-solid fa-bell", "info", "javascript:void(0)", "الإشعارات") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('notifications')">
+            {{ macros.render_kpi_card("الإشعارات", 3, "إشعارات النظام غير المقروءة", "fa-solid fa-bell", "info", "javascript:switchProfileTab('notifications')", "عرض تفضيلات الإشعارات") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("الجلسات النشطة", sessions|length, "أجهزة متصلة بحسابك", "fa-solid fa-laptop-code", "warning", "javascript:void(0)", "الجلسات النشطة") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('sessions')">
+            {{ macros.render_kpi_card("الجلسات النشطة", sessions|length, "أجهزة متصلة بحسابك", "fa-solid fa-laptop-code", "warning", "javascript:switchProfileTab('sessions')", "عرض الأجهزة والجلسات") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("تسجيلات الدخول", 5, "تسجيلات الدخول هذا الأسبوع", "fa-solid fa-clock-rotate-left", "secondary", "javascript:void(0)", "تسجيلات الدخول") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('history')">
+            {{ macros.render_kpi_card("تسجيلات الدخول", 5, "تسجيلات الدخول هذا الأسبوع", "fa-solid fa-clock-rotate-left", "secondary", "javascript:switchProfileTab('history')", "عرض سجل النشاط") }}
         </div>
-        <div class="col-12 col-sm-6 col-xl-2">
-            {{ macros.render_kpi_card("حالة الحساب", 1, "حساب موثق ومعتمد بنجاح", "fa-solid fa-user-check", "success", "javascript:void(0)", "حالة الحساب") }}
+        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="switchProfileTab('info')">
+            {{ macros.render_kpi_card("حالة الحساب", 1, "حساب موثق ومعتمد بنجاح", "fa-solid fa-user-check", "success", "javascript:switchProfileTab('info')", "حالة الحساب المعتمدة") }}
         </div>
     </div>
 
@@ -245,21 +245,21 @@
                         <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-palette text-primary me-2"></i> تخصيص الثيم والمظهر العام للوحة المعلم:</h6>
                         <div class="row g-3 extra-small">
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light border-primary" onclick="showProfileToast('تم التبديل للنمط الفاتح', 'success')">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light border-primary hover-scale" onclick="applyThemeMode('light')">
                                     <i class="fa-solid fa-sun fs-2 text-warning mb-2"></i>
                                     <strong class="d-block text-dark mb-1">النمط الفاتح (Light Mode)</strong>
                                     <small class="text-muted">الوضع الافتراضي النهاري المريح</small>
                                 </div>
                             </div>
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-dark text-white" onclick="showProfileToast('تم التبديل للنمط الليلي الداكن 🌙', 'info')">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-dark text-white hover-scale" onclick="applyThemeMode('dark')">
                                     <i class="fa-solid fa-moon fs-2 text-info mb-2"></i>
                                     <strong class="d-block text-white mb-1">النمط الداكن (Dark Mode)</strong>
                                     <small class="text-white-50">مناسب للعمل في الإضاءة المنخفضة</small>
                                 </div>
                             </div>
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light" onclick="showProfileToast('مزامنة مظهر النظام التلقائي', 'info')">
+                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light hover-scale" onclick="applyThemeMode('system')">
                                     <i class="fa-solid fa-desktop fs-2 text-secondary mb-2"></i>
                                     <strong class="d-block text-dark mb-1">حسب مظهر النظام (System)</strong>
                                     <small class="text-muted">المزامنة مع إعدادات جهازك</small>
@@ -393,6 +393,28 @@
         }
     };
 
+    window.switchProfileTab = function(tabName) {
+        var btn = document.getElementById('tab-btn-' + tabName);
+        if (btn && typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+            var bsTab = bootstrap.Tab.getOrCreateInstance(btn);
+            bsTab.show();
+        }
+    };
+
+    window.applyThemeMode = function(mode) {
+        if (mode === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            showProfileToast('تم تفعيل النمط الداكن 🌙 بنجاح', 'info');
+        } else if (mode === 'light') {
+            document.documentElement.removeAttribute('data-bs-theme');
+            showProfileToast('تم التبديل للنمط الفاتح النهاري ☀️', 'success');
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
+            showProfileToast('تمت المزامنة التلقائية مع مظهر الجهاز 💻', 'info');
+        }
+        localStorage.setItem('teacher_theme_mode', mode);
+    };
+
     window.saveProfile = function() {
         var name = document.getElementById('profNameInput').value;
         var phone = document.getElementById('profPhoneInput').value;
@@ -505,8 +527,21 @@
     };
 
     window.exportProfile = function(format) {
-        window.open('/profile/api/export?format=' + (format || 'json'), '_blank');
-        showProfileToast('جاري تحضير وتنزيل ملفك الشخصي 📄', 'info');
+        var fmt = format || 'json';
+        fetch('/profile/api/export?format=' + fmt)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var str = JSON.stringify(data, null, 2);
+                var blob = new Blob([str], { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'teacher_profile_archive_' + Date.now() + '.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                showProfileToast('تم تصدير وتنزيل الملف الشخصي بنجاح 📄', 'success');
+            });
     };
 })();
 </script>

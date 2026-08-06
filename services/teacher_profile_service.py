@@ -25,24 +25,40 @@ def _get_teacher_scope(user_id):
     students = query.all()
     return teacher, students, class_ids, section_ids
 
+def _calculate_completion(teacher, user):
+    fields = [
+        teacher.TeacherName or (user.name if user else None),
+        teacher.Email or (user.email if user and hasattr(user, 'email') else None),
+        getattr(teacher, 'Phone', None),
+        getattr(teacher, 'Specialization', None),
+        getattr(teacher, 'Bio', None),
+        getattr(teacher, 'Qualification', None),
+        getattr(teacher, 'OfficeHours', None),
+        getattr(teacher, 'Avatar', None)
+    ]
+    filled = [f for f in fields if f and str(f).strip()]
+    return int((len(filled) / len(fields)) * 100)
+
 def get_teacher_profile(user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
     user = User.query.get(user_id)
+
+    completion_pct = _calculate_completion(teacher, user)
 
     return {
         'teacher_id': teacher.TeacherID,
         'user_id': user_id,
         'name': teacher.TeacherName or user.name,
-        'email': teacher.Email or user.username + '@school.edu',
-        'phone': getattr(teacher, 'Phone', '0501234567'),
+        'email': teacher.Email or (user.username + '@school.edu' if user else 'teacher@school.edu'),
+        'phone': getattr(teacher, 'Phone', None) or '0501234567',
         'specialization': getattr(teacher, 'Specialization', None) or 'الرياضيات والعلوم الأكاديمية',
-        'bio': getattr(teacher, 'Bio', 'معلم تخصصي متميز وشغوف بالتطوير الأكاديمي والتعليمي.'),
-        'qualification': getattr(teacher, 'Qualification', 'بكالوريوس تربية وعلم نفس أصول تدريس'),
-        'office_hours': getattr(teacher, 'OfficeHours', 'الأحد والثلاثاء: 10:00 ص - 12:00 م'),
+        'bio': getattr(teacher, 'Bio', None) or 'معلم تخصصي متميز وشغوف بالتطوير الأكاديمي والتعليمي.',
+        'qualification': getattr(teacher, 'Qualification', None) or 'بكالوريوس تربية وعلم نفس أصول تدريس',
+        'office_hours': getattr(teacher, 'OfficeHours', None) or 'الأحد والثلاثاء: 10:00 ص - 12:00 م',
         'avatar': getattr(teacher, 'Avatar', None),
         'member_since': '2023-09-01',
-        'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else datetime.now().strftime('%Y-%m-%d %H:%M'),
-        'completion_pct': 95,
+        'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if user and user.last_login else datetime.now().strftime('%Y-%m-%d %H:%M'),
+        'completion_pct': completion_pct,
         'security_score': 'A+ (98%)',
         'account_status': 'نشط 🟢'
     }
@@ -53,7 +69,8 @@ def update_teacher_profile(user_id, data):
 
     if 'name' in data and data['name']:
         teacher.TeacherName = data['name']
-        user.name = data['name']
+        if user:
+            user.name = data['name']
     if 'phone' in data:
         teacher.Phone = data['phone']
     if 'bio' in data:
@@ -75,8 +92,11 @@ def update_password(user_id, current_password, new_password):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
     user = User.query.get(user_id)
 
+    if not current_password or not user.check_password(current_password):
+        raise ValueError("كلمة المرور الحالية غير صحيحة، يرجى التأكد وإعادة المحاولة")
+
     if not new_password or len(new_password) < 6:
-        raise ValueError("Password must be at least 6 characters")
+        raise ValueError("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل")
 
     user.set_password(new_password)
     try:
