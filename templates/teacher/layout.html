@@ -54,6 +54,12 @@
             <li class="{% if request.blueprint == 'notifications' %}active{% endif %}">
                 <a href="{{ url_for('notifications.index') }}"><i class="fa-regular fa-bell text-danger me-2"></i> <span>الإشعارات</span></a>
             </li>
+            <li class="{% if request.blueprint == 'admin_teacher' %}active{% endif %}">
+                <a href="{{ url_for('admin_teacher.index') }}"><i class="fa-solid fa-building-columns text-secondary me-2"></i> <span>الاتصالات الإدارية</span></a>
+            </li>
+            <li class="{% if request.blueprint == 'profile' %}active{% endif %}">
+                <a href="{{ url_for('profile.index') }}"><i class="fa-solid fa-user-gear text-primary me-2"></i> <span>حسابي والملف الشخصي</span></a>
+            </li>
         </ul>
     </nav>
 
@@ -79,7 +85,7 @@
                             <span class="font-cairo fw-bold extra-small d-none d-md-inline">{{ current_user.name or 'المعلم' }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 font-cairo extra-small" aria-labelledby="teacherUserDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user me-2 text-primary"></i>الملف الشخصي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile.index') }}"><i class="fa-regular fa-user me-2 text-primary"></i>الملف الشخصي وحسابي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>تسجيل الخروج</a></li>
                         </ul>
