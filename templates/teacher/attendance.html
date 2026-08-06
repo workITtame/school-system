@@ -317,70 +317,237 @@
 
 <script>
 (function() {
-    function initAttendancePageInteractivity() {
-        // 1. Open Lesson Workspace Drawer
-        const workspaceBtn = document.getElementById('btnOpenLessonDrawer');
-        if (workspaceBtn) {
-            workspaceBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
-                if (typeof window.openLessonDrawer === 'function') {
-                    window.openLessonDrawer(parseInt(slotId));
-                } else {
-                    const drawerEl = document.getElementById('lessonDetailDrawer');
-                    if (drawerEl) {
-                        drawerEl.classList.add('show');
-                        drawerEl.style.display = 'block';
-                    }
+    window.pageAttendanceEdits = window.pageAttendanceEdits || {};
+
+    // 1. Open Lesson Workspace Drawer Function
+    window.openLessonDrawer = function(slotId) {
+        var drawerEl = document.getElementById('lessonDetailDrawer');
+        var drawerBody = document.getElementById('lessonDrawerBodyContent');
+        if (!drawerEl || !drawerBody) return;
+        
+        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+            bsDrawer.show();
+        } else {
+            drawerEl.classList.add('show');
+            drawerEl.style.display = 'block';
+            drawerEl.style.visibility = 'visible';
+            drawerEl.removeAttribute('aria-hidden');
+        }
+
+        drawerBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="extra-small text-muted mt-2">جاري تحميل مساحة العمل...</p></div>';
+
+        fetch('/timetable/api/drawer/' + (slotId || 1))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var html = '<div class="font-cairo p-2"><div class="card bg-primary text-white p-3 rounded-3 mb-3">';
+                html += '<h5 class="fw-bold mb-1"><i class="fa-solid fa-chalkboard-user me-2"></i>' + (data.subject_name || 'المادة الدراسية') + ' — ' + (data.class_name || 'الصف') + ' (' + (data.section_name || 'أ') + ')</h5>';
+                html += '<small class="text-white-50">عدد الطلاب المسجلين: <strong class="text-white">' + (data.students ? data.students.length : 0) + ' طالباً</strong></small></div>';
+
+                if (data.students && data.students.length > 0) {
+                    html += '<h6 class="fw-bold text-dark mb-2">كشف طلاب الحصة:</h6><div class="list-group extra-small mb-3">';
+                    data.students.forEach(function(s) {
+                        html += '<div class="list-group-item d-flex align-items-center justify-content-between p-2 rounded mb-1 bg-light border-0">';
+                        html += '<div><strong class="d-block text-dark">' + s.SName + '</strong><small class="text-muted">الرقم الأكاديمي: ' + (s.academic_id || '---') + '</small></div>';
+                        html += '<span class="badge ' + (s.attendance_status === 'حاضر' ? 'bg-success' : 'bg-danger') + ' rounded-pill">' + s.attendance_status + '</span></div>';
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+                drawerBody.innerHTML = html;
+            })
+            .catch(function(err) {
+                drawerBody.innerHTML = '<div class="alert alert-danger p-3 extra-small">فشل تحميل مساحة عمل الحصة: ' + err.message + '</div>';
+            });
+    };
+
+    // 2. Set Student Attendance Status Function
+    window.setPageStudentAttendance = function(sid, newStatus) {
+        window.pageAttendanceEdits[sid] = newStatus;
+
+        var row = document.getElementById('page-att-row-' + sid);
+        if (row) {
+            row.classList.add('modified-row');
+            row.style.borderRight = '4px solid #f59e0b';
+            row.style.backgroundColor = 'rgba(254, 243, 199, 0.4)';
+
+            var chips = row.querySelectorAll('.btn-att-chip');
+            chips.forEach(function(btn) {
+                btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-secondary';
+                var btnStatus = btn.getAttribute('data-status') || btn.textContent;
+                if (btnStatus.indexOf(newStatus) !== -1 || (newStatus === 'بعذر' && (btnStatus.indexOf('بعذر') !== -1 || btnStatus.indexOf('مستأذن') !== -1))) {
+                    if (newStatus === 'حاضر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold active';
+                    else if (newStatus === 'غائب') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold active';
+                    else if (newStatus === 'متأخر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold active';
+                    else if (newStatus === 'بعذر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold active';
                 }
             });
         }
 
-        // 2. Dropdown Actions Toggle
-        const dropdownBtn = document.getElementById('btnActionsDropdown');
+        var unsavedCount = Object.keys(window.pageAttendanceEdits).length;
+        var label = document.getElementById('stickySaveBtnLabel');
+        if (label) {
+            label.textContent = unsavedCount > 0 ? 'حفظ سجل الحضور (' + unsavedCount + ' تعديل)' : 'حفظ سجل الحضور';
+        }
+
+        // Recalculate Live Progress Bar Metrics
+        var allRows = document.querySelectorAll('.page-att-row');
+        var total = allRows.length;
+        if (total > 0) {
+            var p = 0, a = 0, l = 0, e = 0;
+            allRows.forEach(function(r) {
+                var sId = r.getAttribute('data-sid');
+                var st = window.pageAttendanceEdits[sId];
+                if (!st) {
+                    var activeBtn = r.querySelector('.btn-att-chip.active, .btn-att-chip.btn-success, .btn-att-chip.btn-danger, .btn-att-chip.btn-warning, .btn-att-chip.btn-info');
+                    if (activeBtn) {
+                        var txt = activeBtn.textContent;
+                        if (txt.indexOf('حاضر') !== -1) st = 'حاضر';
+                        else if (txt.indexOf('غائب') !== -1) st = 'غائب';
+                        else if (txt.indexOf('متأخر') !== -1) st = 'متأخر';
+                        else if (txt.indexOf('بعذر') !== -1) st = 'بعذر';
+                    }
+                }
+                if (st === 'حاضر') p++;
+                else if (st === 'غائب') a++;
+                else if (st === 'متأخر') l++;
+                else if (st === 'بعذر' || st === 'مستأذن') e++;
+            });
+
+            var pRate = Math.round((p / total) * 100);
+            var aRate = Math.round((a / total) * 100);
+            var lRate = Math.round((l / total) * 100);
+            var eRate = Math.round((e / total) * 100);
+
+            var elP = document.getElementById('barPresentPercent'); if (elP) elP.textContent = pRate + '%';
+            var elPF = document.getElementById('barPresentFill'); if (elPF) elPF.style.width = pRate + '%';
+            var elA = document.getElementById('barAbsentPercent'); if (elA) elA.textContent = aRate + '%';
+            var elAF = document.getElementById('barAbsentFill'); if (elAF) elAF.style.width = aRate + '%';
+            var elL = document.getElementById('barLatePercent'); if (elL) elL.textContent = lRate + '%';
+            var elLF = document.getElementById('barLateFill'); if (elLF) elLF.style.width = lRate + '%';
+            var elE = document.getElementById('barExcusedPercent'); if (elE) elE.textContent = eRate + '%';
+            var elEF = document.getElementById('barExcusedFill'); if (elEF) elEF.style.width = eRate + '%';
+        }
+    };
+
+    // 3. Save Page Attendance Bulk Function
+    window.savePageAttendanceBulk = function(slotId) {
+        var saveBtn = document.getElementById('stickyPageSaveBtn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+        }
+
+        var edits = window.pageAttendanceEdits || {};
+        var payload = [];
+        Object.keys(edits).forEach(function(sid) {
+            payload.push({ student_id: parseInt(sid), status: edits[sid] });
+        });
+
+        if (payload.length === 0) {
+            document.querySelectorAll('.page-att-row').forEach(function(r) {
+                var sid = r.getAttribute('data-sid');
+                var activeBtn = r.querySelector('.btn-att-chip.active, .btn-att-chip.btn-success, .btn-att-chip.btn-danger, .btn-att-chip.btn-warning, .btn-att-chip.btn-info');
+                if (sid && activeBtn) {
+                    var st = 'غير مسجل';
+                    var txt = activeBtn.textContent;
+                    if (txt.indexOf('حاضر') !== -1) st = 'حاضر';
+                    else if (txt.indexOf('غائب') !== -1) st = 'غائب';
+                    else if (txt.indexOf('متأخر') !== -1) st = 'متأخر';
+                    else if (txt.indexOf('بعذر') !== -1) st = 'بعذر';
+                    payload.push({ student_id: parseInt(sid), status: st });
+                }
+            });
+        }
+
+        fetch('/attendance/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slot_id: slotId || 1, attendance: payload })
+        })
+        .then(function(res) {
+            if (!res.ok) throw new Error('فشل حفظ السجلات.');
+            return res.json();
+        })
+        .then(function(resData) {
+            window.pageAttendanceEdits = {};
+            document.querySelectorAll('.page-att-row').forEach(function(r) {
+                r.classList.remove('modified-row');
+                r.style.borderRight = '';
+                r.style.backgroundColor = '';
+            });
+
+            var label = document.getElementById('stickySaveBtnLabel');
+            if (label) label.textContent = 'حفظ سجل الحضور';
+
+            var now = new Date();
+            var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            var ind = document.getElementById('lastSaveTimeIndicator');
+            if (ind) ind.textContent = timeStr;
+
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> <span id="stickySaveBtnLabel">حفظ سجل الحضور</span>';
+            }
+            alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
+        })
+        .catch(function(err) {
+            alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> <span id="stickySaveBtnLabel">حفظ سجل الحضور</span>';
+            }
+        });
+    };
+
+    // Initialize Event Listeners
+    function initAttendancePageInteractivity() {
+        var workspaceBtn = document.getElementById('btnOpenLessonDrawer');
+        if (workspaceBtn) {
+            workspaceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
+                window.openLessonDrawer(parseInt(slotId));
+            });
+        }
+
+        var dropdownBtn = document.getElementById('btnActionsDropdown');
         if (dropdownBtn) {
             dropdownBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                const parent = this.closest('.dropdown');
+                var parent = this.closest('.dropdown');
                 if (parent) {
-                    const menu = parent.querySelector('.dropdown-menu');
-                    if (menu) {
-                        menu.classList.toggle('show');
-                    }
+                    var menu = parent.querySelector('.dropdown-menu');
+                    if (menu) menu.classList.toggle('show');
                 }
             });
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+                document.querySelectorAll('.dropdown-menu.show').forEach(function(m) { m.classList.remove('show'); });
             }
         });
 
-        // 3. Status Chips Toggle
-        const chipButtons = document.querySelectorAll('.btn-att-chip');
-        chipButtons.forEach(btn => {
+        var chipButtons = document.querySelectorAll('.btn-att-chip');
+        chipButtons.forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const sid = this.getAttribute('data-sid');
-                const status = this.getAttribute('data-status');
-                if (sid && status && typeof window.setPageStudentAttendance === 'function') {
+                var sid = this.getAttribute('data-sid');
+                var status = this.getAttribute('data-status');
+                if (sid && status) {
                     window.setPageStudentAttendance(parseInt(sid), status);
                 }
             });
         });
 
-        // 4. Sticky Bulk Save Button
-        const saveBtn = document.getElementById('stickyPageSaveBtn');
+        var saveBtn = document.getElementById('stickyPageSaveBtn');
         if (saveBtn) {
             saveBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
-                if (typeof window.savePageAttendanceBulk === 'function') {
-                    window.savePageAttendanceBulk(parseInt(slotId));
-                }
+                var slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
+                window.savePageAttendanceBulk(parseInt(slotId));
             });
         }
     }
