@@ -74,7 +74,8 @@ def get_teacher_timetable_stats(user_id):
             st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 25
 
             item = {
-                'TableID': slot.TableID,
+                'TableID': slot.SchoolTableID,
+                'SchoolTableID': slot.SchoolTableID,
                 'period_num': slot.lesson.LessonID if slot.lesson else 1,
                 'subject_name': sub_name,
                 'class_name': cls_name,
@@ -171,7 +172,8 @@ def get_teacher_today_schedule(user_id):
                 status_code = 'upcoming'
 
             result.append({
-                'TableID': slot.TableID,
+                'TableID': slot.SchoolTableID,
+                'SchoolTableID': slot.SchoolTableID,
                 'period_num': slot.lesson.LessonID if slot.lesson else 1,
                 'subject_name': sub_name,
                 'class_name': cls_name,
@@ -224,7 +226,8 @@ def get_teacher_weekly_schedule(user_id):
                 st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 25
 
                 weekly[d_name].append({
-                    'TableID': slot.TableID,
+                    'TableID': slot.SchoolTableID,
+                    'SchoolTableID': slot.SchoolTableID,
                     'period_num': slot.lesson.LessonID if slot.lesson else 1,
                     'subject_name': sub_name,
                     'class_name': cls_name,
@@ -322,7 +325,7 @@ def get_lesson_drawer_data(slot_id, user_id):
         absent_cnt = len(student_list) - present_cnt
 
         return {
-            'slot_id': slot.TableID,
+            'slot_id': slot.SchoolTableID,
             'subject_name': sub_name,
             'class_name': cls_name,
             'section_name': sec_name,

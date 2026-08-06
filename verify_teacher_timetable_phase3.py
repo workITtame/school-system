@@ -34,8 +34,8 @@ class TestTeacherTimetablePhase3(unittest.TestCase):
             if teacher:
                 slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
                 if slot:
-                    drawer_res = self.client.get(f'/timetable/api/drawer/{slot.TableID}')
-                    print(f"GET /timetable/api/drawer/{slot.TableID} status code: {drawer_res.status_code}")
+                    drawer_res = self.client.get(f'/timetable/api/drawer/{slot.SchoolTableID}')
+                    print(f"GET /timetable/api/drawer/{slot.SchoolTableID} status code: {drawer_res.status_code}")
                     self.assertEqual(drawer_res.status_code, 200)
 
 if __name__ == '__main__':

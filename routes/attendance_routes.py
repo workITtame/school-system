@@ -1,9 +1,11 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
+from flask_login import login_required, current_user
 from datetime import date, datetime
 from sqlalchemy.orm import joinedload
 from models import db, Student, Classes, Sections, Teacher, SchoolTable
 from models.student import Attendance
 from utils.decorators import admin_required
+from services.teacher_attendance_service import get_lesson_attendance, save_lesson_attendance
 
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 
@@ -252,6 +254,32 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'selected_cid': selected_cid,
         'selected_secid': selected_secid
     }
+
+@attendance_bp.route('/api/lesson/<int:slot_id>')
+@login_required
+def get_lesson_attendance_api(slot_id):
+    date_str = request.args.get('date')
+    data = get_lesson_attendance(slot_id, current_user.id, date_str=date_str)
+    if not data:
+        return jsonify({'error': 'Lesson attendance not found or access forbidden'}), 403
+    return jsonify(data)
+
+@attendance_bp.route('/api/save', methods=['POST'])
+@login_required
+def save_lesson_attendance_api():
+    payload = request.json or {}
+    slot_id = payload.get('slot_id')
+    attendance_list = payload.get('attendance', [])
+    date_str = payload.get('date_str')
+
+    if not slot_id or not isinstance(attendance_list, list):
+        return jsonify({'error': 'Invalid request payload'}), 400
+
+    res = save_lesson_attendance(slot_id, current_user.id, attendance_list, date_str=date_str)
+    if not res:
+        return jsonify({'error': 'Failed to save attendance or access forbidden'}), 403
+
+    return jsonify(res)
 
 @attendance_bp.route('/')
 def index():

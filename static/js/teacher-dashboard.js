@@ -258,6 +258,17 @@ function openLessonDrawer(slotId) {
                 </div>
             `;
 
+            // Store current lesson slot data globally for Attendance Module
+            window.currentLessonWorkspaceData = data;
+            window.lessonAttendanceState = {};
+            window.hasUnsavedAttendanceChanges = false;
+
+            if (data.students) {
+                data.students.forEach(s => {
+                    window.lessonAttendanceState[s.SID] = s.attendance_status || 'غير مسجل';
+                });
+            }
+
             drawerBody.innerHTML = `
                 <!-- WORKSPACE HEADER -->
                 <div class="p-3 rounded-4 bg-primary-subtle border border-primary-subtle mb-3">
@@ -352,9 +363,11 @@ function openLessonDrawer(slotId) {
                         </div>
                     </div>
 
-                    <!-- 2. ATTENDANCE TAB (COMING SOON EMPTY STATE) -->
+                    <!-- 2. ATTENDANCE TAB (FULLY FUNCTIONAL ENTERPRISE MODULE) -->
                     <div class="tab-pane fade" id="ws-attendance" role="tabpanel" aria-labelledby="ws-attendance-tab">
-                        ${renderComingSoonTab("fa-solid fa-clipboard-user", "وحدة تسجيل الحضور المباشر للحصة", "الحضور والغياب")}
+                        <div id="attendanceModuleContainer">
+                            <!-- Attendance Module populated dynamically -->
+                        </div>
                     </div>
 
                     <!-- 3. GRADES TAB (COMING SOON EMPTY STATE) -->
@@ -385,6 +398,9 @@ function openLessonDrawer(slotId) {
                 </div>
             `;
         })
+            // Initialize Attendance Module inside Tab
+            renderWorkspaceAttendanceTab();
+        })
         .catch(err => {
             drawerBody.innerHTML = `
                 <div class="text-center py-5 text-danger extra-small">
@@ -394,6 +410,234 @@ function openLessonDrawer(slotId) {
                 </div>
             `;
         });
+}
+
+// Render Attendance Module Tab Content
+function renderWorkspaceAttendanceTab() {
+    const container = document.getElementById('attendanceModuleContainer');
+    if (!container || !window.currentLessonWorkspaceData) return;
+
+    const data = window.currentLessonWorkspaceData;
+    const students = data.students || [];
+    const state = window.lessonAttendanceState || {};
+
+    // Calculate dynamic stats from local client state
+    let present = 0, absent = 0, late = 0, excused = 0, unregistered = 0;
+    students.forEach(s => {
+        const st = state[s.SID] || 'غير مسجل';
+        if (st === 'حاضر') present++;
+        elif_check: if (st === 'غائب') absent++;
+        else if (st === 'متأخر') late++;
+        else if (st === 'بعذر') excused++;
+        else unregistered++;
+    });
+
+    const hasUnsaved = window.hasUnsavedAttendanceChanges;
+
+    let studentsRowsHtml = '';
+    if (students.length > 0) {
+        studentsRowsHtml = students.map(s => {
+            const currentSt = state[s.SID] || 'غير مسجل';
+
+            const chipClass = (stName) => {
+                return currentSt === stName ? 'btn-primary active fw-bold shadow-sm' : 'btn-outline-secondary';
+            };
+
+            return `
+                <div class="card rounded-3 border-0 bg-light p-2 mb-2 att-student-item">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
+                                ${s.SName ? s.SName[0] : 'ط'}
+                            </div>
+                            <div>
+                                <strong class="text-dark d-block extra-small mb-0">${s.SName}</strong>
+                                <small class="text-muted font-monospace extra-small">${s.academic_id}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chips Toggle -->
+                        <div class="btn-group btn-group-sm extra-small font-cairo" role="group" aria-label="تحديد حالة الحضور">
+                            <button type="button" class="btn ${currentSt === 'حاضر' ? 'btn-success text-white fw-bold' : 'btn-outline-success'} extra-small py-1 px-2" onclick="setStudentAttendanceStatus(${s.SID}, 'حاضر')">🟢 حاضر</button>
+                            <button type="button" class="btn ${currentSt === 'غائب' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'} extra-small py-1 px-2" onclick="setStudentAttendanceStatus(${s.SID}, 'غائب')">🔴 غائب</button>
+                            <button type="button" class="btn ${currentSt === 'متأخر' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning'} extra-small py-1 px-2" onclick="setStudentAttendanceStatus(${s.SID}, 'متأخر')">🟡 متأخر</button>
+                            <button type="button" class="btn ${currentSt === 'بعذر' ? 'btn-info text-white fw-bold' : 'btn-outline-info'} extra-small py-1 px-2" onclick="setStudentAttendanceStatus(${s.SID}, 'بعذر')">🔵 بعذر</button>
+                            <button type="button" class="btn ${currentSt === 'غير مسجل' ? 'btn-secondary text-white fw-bold' : 'btn-outline-secondary'} extra-small py-1 px-2" onclick="setStudentAttendanceStatus(${s.SID}, 'غير مسجل')">⚪ غير مسجل</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        studentsRowsHtml = `
+            <div class="py-4 text-center text-muted extra-small">
+                <i class="fa-solid fa-users-slash text-primary opacity-25 fs-1 d-block mb-2"></i>
+                <p class="mb-0">لا يوجد طلاب مسجلون بهذه الحصة.</p>
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        <!-- UNSAVED CHANGES BANNER -->
+        ${hasUnsaved ? `
+            <div class="alert alert-warning border-warning d-flex align-items-center justify-content-between p-2 mb-3 rounded-3 extra-small">
+                <span><i class="fa-solid fa-triangle-exclamation me-1"></i> لديك تغييرات غير محفوظة في سجل الحضور!</span>
+                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill extra-small px-3" onclick="saveLessonAttendanceBulk(${data.slot_id})">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الآن
+                </button>
+            </div>
+        ` : ''}
+
+        <!-- SUMMARY METRICS BAR -->
+        <div class="row g-2 mb-3 extra-small text-center">
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-muted d-block extra-small">الكل</span>
+                    <strong class="font-monospace text-dark fs-6">${students.length}</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-success d-block extra-small">🟢 حاضر</span>
+                    <strong class="font-monospace text-success fs-6">${present}</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-danger d-block extra-small">🔴 غائب</span>
+                    <strong class="font-monospace text-danger fs-6">${absent}</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-warning d-block extra-small">🟡 متأخر</span>
+                    <strong class="font-monospace text-warning fs-6">${late}</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-info d-block extra-small">🔵 بعذر</span>
+                    <strong class="font-monospace text-info fs-6">${excused}</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="p-2 rounded bg-light border">
+                    <span class="text-secondary d-block extra-small">⚪ غير مسجل</span>
+                    <strong class="font-monospace text-secondary fs-6">${unregistered}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- BULK ACTIONS & SEARCH TOOLBAR -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 extra-small">
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 extra-small" onclick="markAllAttendanceBulk('حاضر')">
+                    تحديد الجميع حاضر
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 extra-small" onclick="markAllAttendanceBulk('غائب')">
+                    تحديد الجميع غائب
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-1 extra-small" onclick="markAllAttendanceBulk('متأخر')">
+                    تحديد الجميع متأخر
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 extra-small" onclick="markAllAttendanceBulk('غير مسجل')">
+                    إعادة تعيين
+                </button>
+            </div>
+            <button type="button" id="saveAttendanceBtn" class="btn btn-sm btn-primary rounded-pill px-4 py-1 extra-small fw-bold shadow-sm" onclick="saveLessonAttendanceBulk(${data.slot_id})">
+                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ سجل الحضور
+            </button>
+        </div>
+
+        <!-- SEARCH INPUT -->
+        <div class="mb-2">
+            <input type="text" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="filterAttendanceStudents(this.value)">
+        </div>
+
+        <!-- STUDENTS ATTENDANCE ROSTER -->
+        <div id="attendanceStudentsListContainer" style="max-height: 340px; overflow-y: auto;">
+            ${studentsRowsHtml}
+        </div>
+    `;
+}
+
+// Set individual student status
+function setStudentAttendanceStatus(studentId, newStatus) {
+    if (!window.lessonAttendanceState) window.lessonAttendanceState = {};
+    window.lessonAttendanceState[studentId] = newStatus;
+    window.hasUnsavedAttendanceChanges = true;
+    renderWorkspaceAttendanceTab();
+}
+
+// Bulk mark all students
+function markAllAttendanceBulk(status) {
+    if (!window.currentLessonWorkspaceData) return;
+    const students = window.currentLessonWorkspaceData.students || [];
+    students.forEach(s => {
+        window.lessonAttendanceState[s.SID] = status;
+    });
+    window.hasUnsavedAttendanceChanges = true;
+    renderWorkspaceAttendanceTab();
+}
+
+// Filter attendance students roster
+function filterAttendanceStudents(query) {
+    const filter = query.toLowerCase().trim();
+    const items = document.querySelectorAll('.att-student-item');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Save bulk attendance via AJAX POST
+function saveLessonAttendanceBulk(slotId) {
+    const saveBtn = document.getElementById('saveAttendanceBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+    }
+
+    const state = window.lessonAttendanceState || {};
+    const attendancePayload = Object.keys(state).map(sid => ({
+        student_id: parseInt(sid),
+        status: state[sid]
+    }));
+
+    fetch('/attendance/api/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            slot_id: slotId,
+            attendance: attendancePayload
+        })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('فشل حفظ سجل الحضور أو لا توجد صلاحيات.');
+        return res.json();
+    })
+    .then(resData => {
+        window.hasUnsavedAttendanceChanges = false;
+        if (window.currentLessonWorkspaceData) {
+            window.currentLessonWorkspaceData.present_count = resData.stats.present_count || 0;
+            window.currentLessonWorkspaceData.absent_count = resData.stats.absent_count || 0;
+        }
+        renderWorkspaceAttendanceTab();
+        alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
+    })
+    .catch(err => {
+        alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> حفظ سجل الحضور';
+        }
+    });
 }
 
 // 6. Timetable View Switcher (Today Timeline vs Weekly Calendar)
