@@ -882,3 +882,37 @@ window.toggleSelectAllStudents = toggleSelectAllStudents;
 window.updateBulkToolbar = updateBulkToolbar;
 window.clearBulkSelection = clearBulkSelection;
 window.bulkSendMessage = bulkSendMessage;
+
+// Document-level event delegation to guarantee 100% button execution across all browsers & Turbo page transitions
+document.addEventListener('click', function (e) {
+    const target = e.target.closest('[data-action], .btn-att-chip, [data-bs-toggle="dropdown"], .dropdown-toggle');
+    if (!target) return;
+
+    const action = target.getAttribute('data-action');
+
+    if (action === 'open-lesson-drawer' || (target.getAttribute('onclick') && target.getAttribute('onclick').includes('openLessonDrawer'))) {
+        const slotId = target.getAttribute('data-slot-id') || 1;
+        if (window.openLessonDrawer) {
+            window.openLessonDrawer(parseInt(slotId));
+        }
+    }
+    else if (action === 'set-status') {
+        const sid = target.getAttribute('data-sid');
+        const status = target.getAttribute('data-status');
+        if (sid && status && window.setPageStudentAttendance) {
+            window.setPageStudentAttendance(parseInt(sid), status);
+        }
+    }
+    else if (action === 'save-attendance' || target.id === 'stickyPageSaveBtn') {
+        const slotId = target.getAttribute('data-slot-id') || 1;
+        if (window.savePageAttendanceBulk) {
+            window.savePageAttendanceBulk(parseInt(slotId));
+        }
+    }
+    else if (target.matches('[data-bs-toggle="dropdown"], .dropdown-toggle')) {
+        if (window.bootstrap && window.bootstrap.Dropdown) {
+            const dropdown = window.bootstrap.Dropdown.getOrCreateInstance(target);
+            dropdown.toggle();
+        }
+    }
+});

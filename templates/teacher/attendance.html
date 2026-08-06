@@ -81,7 +81,7 @@
                 <span><i class="fa-solid fa-users text-success me-1"></i> {{ current_lesson.students_count }} طالب مسجل</span>
                 <span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> {{ current_lesson.remaining_minutes or '25 دقيقة متبقية' }}</span>
                 {% if active_slot_id %}
-                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 fw-bold extra-small" onclick="openLessonDrawer({{ active_slot_id }})">
+                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 fw-bold extra-small" data-action="open-lesson-drawer" data-slot-id="{{ active_slot_id }}" onclick="openLessonDrawer({{ active_slot_id }})">
                         <i class="fa-solid fa-chalkboard-user me-1"></i> فتح Lesson Workspace
                     </button>
                 {% endif %}
@@ -224,10 +224,10 @@
                                 <td class="text-center">
                                     <!-- Interactive Enlarged Status Chips -->
                                     <div class="btn-group btn-group-sm extra-small font-cairo shadow-sm rounded-pill p-1 bg-light border" role="group" aria-label="تحديد حالة حضور الطالب">
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'حاضر' %}btn-success text-white fw-bold{% else %}btn-outline-success{% endif %} extra-small py-1 px-3 rounded-pill" onclick="setPageStudentAttendance({{ st.SID }}, 'حاضر')">🟢 حاضر</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'غائب' %}btn-danger text-white fw-bold{% else %}btn-outline-danger{% endif %} extra-small py-1 px-3 rounded-pill" onclick="setPageStudentAttendance({{ st.SID }}, 'غائب')">🔴 غائب</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'متأخر' %}btn-warning text-dark fw-bold{% else %}btn-outline-warning{% endif %} extra-small py-1 px-3 rounded-pill" onclick="setPageStudentAttendance({{ st.SID }}, 'متأخر')">🟡 متأخر</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'مستأذن' or st.status == 'بعذر' %}btn-info text-white fw-bold{% else %}btn-outline-info{% endif %} extra-small py-1 px-3 rounded-pill" onclick="setPageStudentAttendance({{ st.SID }}, 'بعذر')">🔵 بعذر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'حاضر' %}btn-success text-white fw-bold{% else %}btn-outline-success{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="حاضر" onclick="setPageStudentAttendance({{ st.SID }}, 'حاضر')">🟢 حاضر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'غائب' %}btn-danger text-white fw-bold{% else %}btn-outline-danger{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="غائب" onclick="setPageStudentAttendance({{ st.SID }}, 'غائب')">🔴 غائب</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'متأخر' %}btn-warning text-dark fw-bold{% else %}btn-outline-warning{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="متأخر" onclick="setPageStudentAttendance({{ st.SID }}, 'متأخر')">🟡 متأخر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'مستأذن' or st.status == 'بعذر' %}btn-info text-white fw-bold{% else %}btn-outline-info{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="بعذر" onclick="setPageStudentAttendance({{ st.SID }}, 'بعذر')">🔵 بعذر</button>
                                     </div>
                                 </td>
                                 <td class="text-center font-monospace text-muted extra-small">
@@ -309,7 +309,7 @@
         <small class="text-white-50 extra-small">
             <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> آخر حفظ: <span id="lastSaveTimeIndicator">تم الحفظ الآن</span>
         </small>
-        <button type="button" id="stickyPageSaveBtn" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm extra-small" onclick="savePageAttendanceBulk({{ active_slot_id or 1 }})">
+        <button type="button" id="stickyPageSaveBtn" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm extra-small" data-action="save-attendance" data-slot-id="{{ active_slot_id or 1 }}" onclick="savePageAttendanceBulk({{ active_slot_id or 1 }})">
             <i class="fa-solid fa-floppy-disk me-1"></i> <span id="stickySaveBtnLabel">حفظ سجل الحضور</span>
         </button>
     </div>
