@@ -98,18 +98,33 @@ def subjects():
     from models.academic import ClassSubject, TeacherSubject
     
     total_classes = len(classes)
-    linked_classes_count = db.session.query(ClassSubject.c.CID).distinct().count()
-    assigned_teachers_count = db.session.query(TeacherSubject.c.TeacherID).distinct().count()
+    linked_classes_count = db.session.query(ClassSubject.c.CID)\
+        .join(Classes, ClassSubject.c.CID == Classes.CID)\
+        .filter(Classes.is_deleted == False).distinct().count()
+        
+    assigned_teachers_count = db.session.query(TeacherSubject.c.TeacherID)\
+        .join(Teacher, TeacherSubject.c.TeacherID == Teacher.TeacherID)\
+        .filter(Teacher.is_deleted == False).distinct().count()
     
-    total_links = db.session.query(ClassSubject).count()
-    avg_subjects_per_class = round(total_links / total_classes, 1) if total_classes > 0 else 0.0
+    total_valid_links = db.session.query(ClassSubject)\
+        .join(Classes, ClassSubject.c.CID == Classes.CID)\
+        .join(Subject, ClassSubject.c.SubID == Subject.SubID)\
+        .filter(Classes.is_deleted == False, Subject.is_deleted == False).count()
+        
+    avg_subjects_per_class = round(total_valid_links / total_classes, 1) if total_classes > 0 else 0.0
     
     for s in subjects_list:
         s.linked_classes = [c for c in s.classes if not getattr(c, 'is_deleted', False)]
         s.linked_classes_count = len(s.linked_classes)
         
-        t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID).filter(TeacherSubject.c.SubID == s.SubID).distinct().all() if t[0]]
-        t_ids_st = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).distinct().all() if t[0]]
+        t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID)\
+            .join(Teacher, TeacherSubject.c.TeacherID == Teacher.TeacherID)\
+            .filter(TeacherSubject.c.SubID == s.SubID, Teacher.is_deleted == False).distinct().all() if t[0]]
+            
+        t_ids_st = [t[0] for t in db.session.query(SchoolTable.TeacherID)\
+            .join(Teacher, SchoolTable.TeacherID == Teacher.TeacherID)\
+            .filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False, Teacher.is_deleted == False).distinct().all() if t[0]]
+            
         s.assigned_teachers_count = len(set(t_ids_ts + t_ids_st))
         
         class_ids = [c.CID for c in s.linked_classes]
