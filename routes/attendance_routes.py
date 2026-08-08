@@ -93,13 +93,13 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         query = query.filter_by(SectionID=selected_secid)
         
     students = query.all()
-    if not students:
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
 
-    if students and students[0].school_class:
-        cur_cls = students[0].school_class.CName
-        if students[0].section:
-            cur_sec = students[0].section.SectionName
+    if selected_cid:
+        cls_obj = Classes.query.filter_by(CID=selected_cid).first()
+        if cls_obj: cur_cls = cls_obj.CName
+    if selected_secid:
+        sec_obj = Sections.query.filter_by(SectionID=selected_secid).first()
+        if sec_obj: cur_sec = sec_obj.SectionName
 
     student_ids = [s.SID for s in students]
     att_records = Attendance.query.filter(Attendance.SID.in_(student_ids), Attendance.Date == today).all() if student_ids else []
@@ -362,26 +362,35 @@ def index():
                                alerts=data['alerts'],
                                active_slot_id=active_slot_id)
 
-    classes = Classes.query.all()
-    sections = Sections.query.all()
-    today_date = date.today()
+    classes = Classes.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
     
     class_id = request.args.get('class_id')
     section_id = request.args.get('section_id')
+    date_str = request.args.get('date')
+
+    target_date = date.today()
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            target_date = date.today()
     
     user_id = session.get('user_id', current_user.id if current_user.is_authenticated else 1)
-    data = get_teacher_attendance_data(user_id, class_id=class_id, section_id=section_id)
+    data = get_teacher_attendance_data(user_id, class_id=class_id, section_id=section_id, target_date=target_date)
         
     return render_template('attendance.html',
                            classes=classes,
                            sections=sections,
-                           today=today_date.strftime('%Y-%m-%d'),
+                           today=target_date.strftime('%Y-%m-%d'),
                            teacher_info=data['teacher_info'],
                            current_lesson=data['current_lesson'],
                            kpi=data['kpi'],
                            attendance_cards=data['attendance_cards'],
                            most_absent=data['most_absent'],
                            alerts=data['alerts'],
+                           selected_cid=data['selected_cid'],
+                           selected_secid=data['selected_secid'],
                            total_students=data['kpi']['total_students'],
                            present=data['kpi']['present_count'],
                            absent=data['kpi']['absent_count'],
@@ -424,13 +433,29 @@ def get_students():
 
 @attendance_bp.route('/api/mark', methods=['POST'])
 def mark_attendance():
+    if 'user_id' not in session and not current_user.is_authenticated:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+        
     data = request.json or {}
     sid = data.get('sid')
-    target_date = data.get('date', date.today().strftime('%Y-%m-%d'))
+    target_date_str = data.get('date', date.today().strftime('%Y-%m-%d'))
     status = data.get('status')
     
-    if not all([sid, target_date, status]):
-        return jsonify({'success': False, 'message': 'بيانات ناقصة'})
+    if not all([sid, target_date_str, status]):
+        return jsonify({'success': False, 'message': 'بيانات ناقصة'}), 400
+        
+    try:
+        sid = int(sid)
+        target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'بيانات غير صالحة'}), 400
+
+    if target_date > date.today():
+        return jsonify({'success': False, 'message': 'لا يمكن تسجيل الحضور بتاريخ مستقبلي.'}), 400
+
+    student = Student.query.filter_by(SID=sid, is_deleted=False).first()
+    if not student:
+        return jsonify({'success': False, 'message': 'الطالب غير موجود في النظام'}), 404
         
     att = Attendance.query.filter_by(SID=sid, Date=target_date).first()
     if att:
@@ -441,10 +466,10 @@ def mark_attendance():
         
     try:
         db.session.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'message': f'تم تسجيل الطالب كـ {status}'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @attendance_bp.route('/export')
 def export_attendance():
