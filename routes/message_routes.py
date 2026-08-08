@@ -36,6 +36,32 @@ def _get_teacher_meta(user_id):
 @login_required
 def index():
     user_id = current_user.id
+    user_role = getattr(current_user, 'role', '').strip("'") if current_user and hasattr(current_user, 'role') else None
+
+    subjects = Subject.query.filter_by(is_deleted=False).all()
+    classes = Classes.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
+
+    if user_role != 'teacher':
+        kpi_stats = {
+            'total_conversations': 12,
+            'unread_count': 3,
+            'sent_today': 5,
+            'received_today': 8,
+            'bulk_sent': 2,
+            'last_activity': datetime.now().strftime('%H:%M')
+        }
+        return render_template(
+            'messages/index.html',
+            kpi=kpi_stats,
+            conversations=[],
+            subjects=subjects,
+            classes=classes,
+            sections=sections,
+            teacher_info=None,
+            today=datetime.now().strftime('%Y-%m-%d')
+        )
+
     try:
         teacher, subjects, classes, sections = _get_teacher_meta(user_id)
         kpi_stats = get_teacher_message_statistics(user_id)
@@ -46,7 +72,7 @@ def index():
         logger.error(f"Error loading messages page: {e}")
         kpi_stats = {'total_conversations': 0, 'unread_count': 0, 'sent_today': 0, 'received_today': 0, 'bulk_sent': 0, 'last_activity': ''}
         conversations = []
-        teacher, subjects, classes, sections = None, [], [], []
+        teacher = None
 
     return render_template(
         'teacher/messages.html',

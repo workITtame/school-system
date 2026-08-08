@@ -35,6 +35,34 @@ def _get_teacher_meta(user_id):
 @login_required
 def index():
     user_id = current_user.id
+    user_role = getattr(current_user, 'role', '').strip("'") if current_user and hasattr(current_user, 'role') else None
+
+    subjects = Subject.query.filter_by(is_deleted=False).all()
+    classes = Classes.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
+
+    if user_role != 'teacher':
+        profile = {
+            'name': getattr(current_user, 'name', 'مدير النظام'),
+            'email': getattr(current_user, 'username', 'admin'),
+            'role': 'مدير النظام',
+            'phone': '770000000',
+            'address': 'الإدارة العامة'
+        }
+        return render_template(
+            'profile.html',
+            profile=profile,
+            notif_prefs={},
+            dash_prefs={},
+            sessions=[],
+            login_history=[],
+            subjects=subjects,
+            classes=classes,
+            sections=sections,
+            teacher_info=None,
+            today=datetime.now().strftime('%Y-%m-%d')
+        )
+
     try:
         teacher, subjects, classes, sections = _get_teacher_meta(user_id)
         profile = get_teacher_profile(user_id)
@@ -48,7 +76,7 @@ def index():
         logger.error(f"Error loading profile center: {e}")
         profile = {}
         notif_prefs, dash_prefs, sessions, history = {}, {}, [], []
-        teacher, subjects, classes, sections = None, [], [], []
+        teacher = None
 
     return render_template(
         'teacher/profile.html',

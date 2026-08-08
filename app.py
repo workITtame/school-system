@@ -43,7 +43,7 @@ def create_app(config_class=Config):
     from routes.academic_routes import academic_bp
     from routes.timetable_routes import timetable_bp
     from routes.exam_routes import exams_bp
-    from routes.grade_routes import grades_bp
+    from routes.grade_routes import grades_bp, grades_legacy_bp
     from routes.report_routes import reports_bp
     from routes.api_routes import api_bp
     from routes.attendance_routes import attendance_bp
@@ -81,6 +81,7 @@ def create_app(config_class=Config):
     app.register_blueprint(teacher_bp)
     app.register_blueprint(timetable_bp)
     app.register_blueprint(grades_bp)
+    app.register_blueprint(grades_legacy_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(api_bp)

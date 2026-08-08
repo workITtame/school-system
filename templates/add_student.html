@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
-{% block title %}إضافة طالب جديد - Enterprise SaaS Edition{% endblock %}
-{% block page_title %}إضافة طالب جديد{% endblock %}
+{% block title %}إضافة بيانات طالب جديد | Unified Student Workspace{% endblock %}
+{% block page_title %}إضافة بيانات طالب جديد{% endblock %}
 {% block page_subtitle %}الرئيسية / إدارة الطلاب / إضافة طالب جديد{% endblock %}
 
 {% block content %}
@@ -127,7 +127,7 @@
 }
 .input-with-icon:focus {
     border-color: #2563eb !important;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
 }
 .sticky-form-footer {
     position: sticky;
@@ -145,24 +145,24 @@
 }
 </style>
 
-<div class="fade-in px-1">
+<div class="fade-in px-1 font-cairo">
 
-    <!-- Hero Header -->
+    <!-- Hero Header matching Edit Reference -->
     <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 border-start border-4 border-primary">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace" style="font-size: 0.82rem;">
-                        <i class="fa-solid fa-house me-1"></i> الرئيسية / إدارة الطلاب / إضافة جديد
+                        <i class="fa-solid fa-house me-1"></i> الرئيسية / إدارة الطلاب / إضافة بيانات طالب جديد
                     </span>
                 </div>
-                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-user-plus text-primary"></i> إضافة طالب جديد للمنظومة
+                <h4 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2 font-cairo">
+                    <i class="fa-solid fa-user-plus text-primary"></i> إضافة بيانات طالب جديد
                 </h4>
             </div>
 
             <div class="d-flex align-items-center gap-2 no-print">
-                <a href="{{ url_for('students.home') }}" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                <a href="{{ url_for('students.home') }}" class="btn btn-outline-secondary rounded-pill px-3 fw-bold font-monospace extra-small">
                     <i class="fa-solid fa-arrow-right me-1"></i> العودة للقائمة
                 </a>
             </div>
@@ -170,12 +170,12 @@
     </div>
 
     <!-- Stepper Progress Bar & Card Form Container -->
-    <div class="card border-0 shadow-lg rounded-4 bg-white p-4 overflow-hidden">
+    <div class="card border-0 shadow-lg rounded-4 bg-white p-4 overflow-hidden mb-5">
         
         <!-- Progress Bar & Indicator -->
         <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold text-dark small"><i class="fa-solid fa-chart-line text-primary me-1"></i> نسبة اكتمال نموذج البيانات:</span>
+            <div class="d-flex justify-content-between align-items-center mb-2 font-monospace extra-small">
+                <span class="fw-bold text-dark"><i class="fa-solid fa-chart-line text-primary me-1"></i> نسبة اكتمال نموذج الإنشاء:</span>
                 <span class="badge bg-primary-subtle text-primary font-monospace fw-bold rounded-pill px-3 py-1" id="wizardProgressPercent">20%</span>
             </div>
             <div class="progress rounded-pill" style="height: 8px;">
@@ -183,8 +183,8 @@
             </div>
         </div>
 
-        <!-- Interactive 5-Step Bar with ARIA -->
-        <div class="stepper-steps-bar" role="tablist" aria-label="خطوات تسجيل الطالب">
+        <!-- Interactive 5-Step Bar matching Edit Student -->
+        <div class="stepper-steps-bar font-monospace extra-small" role="tablist" aria-label="خطوات إضافة طالب جديد">
             <div class="stepper-step-item active" data-step="0" role="tab" aria-selected="true" aria-controls="paneStep0" tabindex="0">
                 <div class="stepper-icon-circle"><i class="fa-solid fa-user"></i></div>
                 <span class="stepper-step-title">1. البيانات الشخصية</span>
@@ -208,27 +208,26 @@
         </div>
 
         <!-- Main Form -->
-        <form method="POST" action="{{ url_for('students.add_student') }}" enctype="multipart/form-data" id="studentForm" data-turbo="false" class="needs-validation" novalidate>
+        <form method="POST" action="{{ url_for('students.add_student') }}" enctype="multipart/form-data" id="studentCreateForm" class="needs-validation" novalidate>
             
-            <!-- STEP 1: Personal Information -->
+            <!-- STEP 1: Personal Information & Photo -->
             <div class="form-step-pane active" id="paneStep0" role="tabpanel">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
                     <span><i class="fa-solid fa-id-card me-2"></i> البيانات الشخصية والصورة</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 1 من 5</span>
                 </h5>
 
-                <div class="row g-4">
+                <div class="row g-4 font-monospace extra-small">
                     <!-- Fields Column -->
                     <div class="col-lg-8">
                         <div class="mb-3 position-relative">
                             <label class="form-label fw-bold text-dark d-flex align-items-center gap-1">
                                 اسم الطالب الرباعي بالكامل <span class="text-danger">*</span>
-                                <i class="fa-solid fa-circle-info text-muted small ms-auto" data-bs-toggle="tooltip" title="يرجى كتابة اسم الطالب رباعياً حسب وثيقة الهوية الرسمية"></i>
                             </label>
                             <div class="position-relative">
                                 <i class="fa-solid fa-user input-icon-prepend"></i>
                                 <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="name" id="inputName" required placeholder="أدخل اسم الطالب رباعياً">
-                                <div class="invalid-feedback">يرجى إدخال اسم الطالب الرباعي بالكامل</div>
+                                <div class="invalid-feedback">يرجى إدخال اسم الطالب الرباعي</div>
                             </div>
                         </div>
 
@@ -246,33 +245,38 @@
                                 <div class="position-relative">
                                     <i class="fa-solid fa-venus-mars input-icon-prepend"></i>
                                     <select class="form-select form-select-lg input-with-icon rounded-3" name="gender" id="inputGender" required>
-                                        <option value="">اختر الجنس</option>
-                                        <option value="Male">ذكر</option>
-                                        <option value="Female">أنثى</option>
+                                        <option value="ذكر">ذكر</option>
+                                        <option value="أنثى">أنثى</option>
                                     </select>
-                                    <div class="invalid-feedback">يرجى اختيار الجنس</div>
+                                    <div class="invalid-feedback">يرجى تحديد الجنس</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark">رقم الهوية الوطنية / إقامة الطالب</label>
+                        <div class="mb-3 position-relative">
+                            <label class="form-label fw-bold text-dark">الرقم الوطني / الإقامة</label>
                             <div class="position-relative">
-                                <i class="fa-solid fa-id-badge input-icon-prepend"></i>
-                                <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="identity_number" id="inputIdentity" placeholder="رقم الهوية الوطنية أو الإقامة">
+                                <i class="fa-solid fa-address-card input-icon-prepend"></i>
+                                <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="national_id" placeholder="أدخل الرقم الوطني أو رقم الإقامة">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Photo Upload Box Column -->
+                    <!-- Photo Drag & Drop Column -->
                     <div class="col-lg-4">
                         <label class="form-label fw-bold text-dark mb-2">صورة الطالب الشخصية</label>
-                        <div class="drag-drop-avatar-box shadow-sm" id="avatarDropZone">
-                            <i class="fa-solid fa-cloud-arrow-up fs-1 text-primary mb-2"></i>
-                            <h6 class="fw-bold text-dark mb-1">اسحب الصورة هنا أو اضغط للرفع</h6>
-                            <p class="small text-muted mb-0">JPG, PNG (الحد الأقصى 2MB)</p>
-                            <input type="file" name="photo" accept="image/*" id="photoInput">
-                            <img id="photoPreview" alt="معاينة الصورة" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
+                        <div class="drag-drop-avatar-box" id="avatarDropZone">
+                            <input type="file" name="photo" id="avatarFileInput" accept="image/*" onchange="previewAvatar(this)">
+                            <div id="avatarPreviewContainer" class="d-none mb-2">
+                                <img src="" id="avatarPreviewImg" class="rounded-circle shadow-sm border border-3 border-primary" style="width: 100px; height: 100px; object-fit: cover;">
+                            </div>
+                            <div id="avatarPlaceholder">
+                                <div class="rounded-circle bg-primary-subtle text-primary p-3 d-inline-flex mb-2">
+                                    <i class="fa-solid fa-cloud-arrow-up fs-3"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">اسحب الصورة الجديدة هنا</h6>
+                                <p class="text-muted extra-small mb-0">JPG, PNG (الحد الأقصى 2MB)</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -280,20 +284,20 @@
 
             <!-- STEP 2: Academic Information -->
             <div class="form-step-pane" id="paneStep1" role="tabpanel">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
-                    <span><i class="fa-solid fa-graduation-cap me-2"></i> القيد الأكاديمي والصف</span>
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
+                    <span><i class="fa-solid fa-graduation-cap me-2"></i> البيانات الأكاديمية والقيد</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 2 من 5</span>
                 </h5>
 
-                <div class="row g-4">
+                <div class="row g-4 font-monospace extra-small">
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-dark">الصف الدراسي <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <i class="fa-solid fa-school input-icon-prepend"></i>
                             <select class="form-select form-select-lg input-with-icon rounded-3" name="class_id" id="inputClass" required>
-                                <option value="">اختر الصف الدراسي</option>
+                                <option value="">اختر الصف الدراسي...</option>
                                 {% for c in classes %}
-                                <option value="{{ c.CID }}">{{ c.CName }}</option>
+                                    <option value="{{ c.CID }}">{{ c.CName }}</option>
                                 {% endfor %}
                             </select>
                             <div class="invalid-feedback">يرجى اختيار الصف الدراسي</div>
@@ -301,55 +305,54 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">الشعبة <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark">الشعبة الدراسية <span class="text-danger">*</span></label>
                         <div class="position-relative">
-                            <i class="fa-solid fa-cubes input-icon-prepend"></i>
+                            <i class="fa-solid fa-users-rectangle input-icon-prepend"></i>
                             <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required>
-                                <option value="">اختر الشعبة</option>
+                                <option value="">اختر الشعبة...</option>
                                 {% for s in sections %}
-                                <option value="{{ s.SectionID }}" data-class-id="{{ s.CID }}">{{ s.SectionName }}</option>
+                                    <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="invalid-feedback">يرجى اختيار الشعبة</div>
+                            <div class="invalid-feedback">يرجى اختيار الشعبة الدراسية</div>
                         </div>
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">حالة القيد بالمنظومة</label>
+                        <label class="form-label fw-bold text-dark">حالة الطالب بالنظام</label>
                         <div class="position-relative">
-                            <i class="fa-solid fa-user-shield input-icon-prepend"></i>
-                            <select class="form-select form-select-lg input-with-icon rounded-3" name="status">
-                                <option value="نشط" selected>نشط (منتظم)</option>
-                                <option value="غير نشط">غير نشط / موقف</option>
+                            <i class="fa-solid fa-user-check input-icon-prepend"></i>
+                            <select class="form-select form-select-lg input-with-icon rounded-3" name="status" id="inputStatus">
+                                <option value="نشط" selected>🟢 نشط / منتظم</option>
+                                <option value="غير نشط">⚪ غير نشط / منقطع</option>
+                                <option value="يحتاج متابعة">🟠 يحتاج متابعة أكاديمية</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- STEP 3: Parent Information & Residence Address -->
+            <!-- STEP 3: Parent & Contact Details -->
             <div class="form-step-pane" id="paneStep2" role="tabpanel">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
                     <span><i class="fa-solid fa-user-shield me-2"></i> بيانات ولي الأمر والعنوان السكني</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 3 من 5</span>
                 </h5>
 
-                <div class="row g-4 mb-4">
+                <div class="row g-4 font-monospace extra-small">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">اسم ولي الأمر <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark">اسم ولي الأمر بالكامل</label>
                         <div class="position-relative">
                             <i class="fa-solid fa-user-tie input-icon-prepend"></i>
-                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_name" id="inputParentName" required placeholder="أدخل اسم ولي الأمر">
-                            <div class="invalid-feedback">يرجى إدخال اسم ولي الأمر</div>
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_name" id="inputParentName" placeholder="اسم ولي الأمر">
                         </div>
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">رقم هاتف ولي الأمر <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark">رقم هاتف ولي الأمر</label>
                         <div class="position-relative">
                             <i class="fa-solid fa-phone input-icon-prepend"></i>
-                            <input type="tel" class="form-control form-control-lg input-with-icon rounded-3 font-monospace" name="parent_number" id="inputParentPhone" required placeholder="مثال: 0555123456">
-                            <div class="invalid-feedback">يرجى إدخال رقم هاتف ولي الأمر</div>
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_number" id="inputParentNumber" placeholder="05xxxxxxxx">
                         </div>
                     </div>
 
@@ -357,232 +360,224 @@
                         <label class="form-label fw-bold text-dark">مهنة / عمل ولي الأمر</label>
                         <div class="position-relative">
                             <i class="fa-solid fa-briefcase input-icon-prepend"></i>
-                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_work" placeholder="وظيفة أو عمل ولي الأمر">
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="parent_work" id="inputParentWork" placeholder="الوظيفة أو المهنة">
                         </div>
                     </div>
-                </div>
 
-                <h6 class="fw-bold text-secondary mb-3 border-top pt-3"><i class="fa-solid fa-location-dot me-1"></i> بيانات السكن والإقامة</h6>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-muted small">الدولة</label>
-                        <input type="text" class="form-control rounded-3" name="country_name" list="countryList" placeholder="اليمن">
-                        <datalist id="countryList">
-                            {% for c in countries %}<option value="{{ c.Country_Name }}"></option>{% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-muted small">المحافظة</label>
-                        <input type="text" class="form-control rounded-3" name="g_name" list="gList" placeholder="صنعاء">
-                        <datalist id="gList">
-                            {% for g in governorates %}<option value="{{ g.G_Name }}"></option>{% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-muted small">المديرية</label>
-                        <input type="text" class="form-control rounded-3" name="directorate_name" list="dirList" placeholder="السبعين">
-                        <datalist id="dirList">
-                            {% for d in directorates %}<option value="{{ d.Disc_Name }}"></option>{% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-muted small">الحي / المنطقة</label>
-                        <input type="text" class="form-control rounded-3" name="neighborhood" placeholder="اسم الحي أو الشارع">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">الحي السكني والعنوان</label>
+                        <div class="position-relative">
+                            <i class="fa-solid fa-location-dot input-icon-prepend"></i>
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="neighborhood" id="inputNeighborhood" placeholder="اسم الحي أو العنوان">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- STEP 4: Attachments -->
             <div class="form-step-pane" id="paneStep3" role="tabpanel">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
-                    <span><i class="fa-solid fa-folder-open me-2"></i> المرفقات والوثائق</span>
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
+                    <span><i class="fa-solid fa-folder-open me-2"></i> المستندات والمرفقات الرسمية</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 4 من 5</span>
                 </h5>
 
-                <div class="row g-4">
+                <div class="row g-3 font-monospace extra-small">
                     <div class="col-md-6">
-                        <div class="card border-dashed p-4 text-center rounded-4 bg-light">
-                            <i class="fa-solid fa-id-card fs-1 text-primary mb-2"></i>
-                            <h6 class="fw-bold mb-1">صورة الهوية الوطنية / إقامة الطالب</h6>
-                            <p class="small text-muted mb-3">صيغة PDF أو صورة (الحد الأقصى 5MB)</p>
-                            <input type="file" class="form-control rounded-3">
+                        <div class="card border rounded-3 p-3 bg-light text-center">
+                            <i class="fa-solid fa-file-pdf text-danger fs-3 mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">شهادة الميلاد / الهوية</h6>
+                            <p class="text-muted extra-small mb-2">PDF أو صورة (Max 5MB)</p>
+                            <input type="file" name="doc_birth" class="form-control form-control-sm">
                         </div>
                     </div>
-
                     <div class="col-md-6">
-                        <div class="card border-dashed p-4 text-center rounded-4 bg-light">
-                            <i class="fa-solid fa-file-medical fs-1 text-success mb-2"></i>
-                            <h6 class="fw-bold mb-1">الشهادة الصحية أو السجل الطبي</h6>
-                            <p class="small text-muted mb-3">صيغة PDF أو صورة (الحد الأقصى 5MB)</p>
-                            <input type="file" class="form-control rounded-3">
+                        <div class="card border rounded-3 p-3 bg-light text-center">
+                            <i class="fa-solid fa-file-contract text-primary fs-3 mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">السجل السابـق / السيرة الأكاديمية</h6>
+                            <p class="text-muted extra-small mb-2">PDF أو صورة (Max 5MB)</p>
+                            <input type="file" name="doc_academic" class="form-control form-control-sm">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- STEP 5: Review & Submit Summary -->
+            <!-- STEP 5: Review & Submit -->
             <div class="form-step-pane" id="paneStep4" role="tabpanel">
-                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between">
-                    <span><i class="fa-solid fa-check-double me-2"></i> مراجعة البيانات قبل التسجيل</span>
+                <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
+                    <span><i class="fa-solid fa-check-double me-2"></i> مراجعة البيانات والحفظ النهائي</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 5 من 5</span>
                 </h5>
 
-                <div class="card border-0 bg-primary-subtle text-primary rounded-4 p-4 mb-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="fa-solid fa-circle-check fs-1 text-primary"></i>
-                        <div>
-                            <h5 class="fw-bold mb-1">اكتمل إدخال بيانات الطالب</h5>
-                            <p class="mb-0 small text-primary-emphasis">يرجى تأكيد مراجعة البيانات والضغط على "حفظ البيانات والتسجيل" لإتمام العملية.</p>
+                <div class="card border-0 bg-light rounded-4 p-4 font-monospace extra-small mb-4 border-start border-4 border-primary">
+                    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check text-primary me-2"></i> ملخص بيانات الطالب الجديد</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>اسم الطالب:</strong> <span id="summaryName" class="text-primary fw-bold">—</span></p>
+                            <p class="mb-2"><strong>الجنس:</strong> <span id="summaryGender">—</span></p>
+                            <p class="mb-2"><strong>تاريخ الميلاد:</strong> <span id="summaryDob">—</span></p>
                         </div>
-                    </div>
-                </div>
-
-                <div class="row g-3 bg-light rounded-4 p-4 text-start">
-                    <div class="col-md-4">
-                        <small class="text-muted d-block fw-bold mb-1">اسم الطالب الرباعي:</small>
-                        <span id="reviewName" class="fw-bold text-dark fs-6">-</span>
-                    </div>
-                    <div class="col-md-4">
-                        <small class="text-muted d-block fw-bold mb-1">اسم ولي الأمر:</small>
-                        <span id="reviewParent" class="fw-bold text-dark fs-6">-</span>
-                    </div>
-                    <div class="col-md-4">
-                        <small class="text-muted d-block fw-bold mb-1">هاتف ولي الأمر:</small>
-                        <span id="reviewPhone" class="fw-bold text-dark fs-6 font-monospace">-</span>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>الصف الدراسي:</strong> <span id="summaryClass" class="fw-bold">—</span></p>
+                            <p class="mb-2"><strong>الشعبة:</strong> <span id="summarySection" class="fw-bold">—</span></p>
+                            <p class="mb-2"><strong>ولي الأمر:</strong> <span id="summaryParent">—</span></p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sticky Form Navigation Action Footer -->
-            <div class="sticky-form-footer d-flex justify-content-between align-items-center shadow-sm">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" id="prevBtn" style="display: none;">
-                    <i class="fa-solid fa-arrow-right me-1"></i> الخطوة السابقة
+            <!-- Sticky Footer Controls -->
+            <div class="sticky-form-footer d-flex justify-content-between align-items-center font-monospace extra-small">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold d-none" id="btnPrevStep" onclick="navigateStep(-1)">
+                    <i class="fa-solid fa-arrow-right me-1"></i> السابق
                 </button>
-                <div></div>
-                <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="nextBtn">
-                    الخطوة التالية <i class="fa-solid fa-arrow-left ms-1"></i>
-                </button>
-                <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow" id="submitBtn" style="display: none;">
-                    <i class="fa-solid fa-check me-1"></i> حفظ البيانات والتسجيل
-                </button>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" id="btnNextStep" onclick="navigateStep(1)">
+                        <span>التالي</span> <i class="fa-solid fa-arrow-left ms-1"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold d-none" id="btnSubmitForm">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الطالب
+                    </button>
+                </div>
             </div>
 
         </form>
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/student_form_ux.js') }}"></script>
 <script>
-document.addEventListener("DOMContentLoaded", initFormWizard);
-document.addEventListener("turbo:load", initFormWizard);
+let currentStepIndex = 0;
+const totalStepsCount = 5;
 
-function initFormWizard() {
-    const stepItems = document.querySelectorAll('.stepper-step-item');
-    const stepPanes = document.querySelectorAll('.form-step-pane');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const progressPercentEl = document.getElementById('wizardProgressPercent');
-    const progressBarEl = document.getElementById('wizardProgressBar');
-    let currentStep = 0;
+function updateStepperUI() {
+    const progressPercent = Math.round(((currentStepIndex + 1) / totalStepsCount) * 100);
+    const progressText = document.getElementById('wizardProgressPercent');
+    const progressBar = document.getElementById('wizardProgressBar');
+    if (progressText) progressText.innerText = `${progressPercent}%`;
+    if (progressBar) progressBar.style.width = `${progressPercent}%`;
 
-    function updateProgress(index) {
-        const percent = Math.round(((index + 1) / stepPanes.length) * 100);
-        if (progressPercentEl) progressPercentEl.textContent = percent + '%';
-        if (progressBarEl) progressBarEl.style.width = percent + '%';
-    }
-
-    function showStep(index) {
-        stepItems.forEach((item, i) => {
-            const isActive = i === index;
-            item.classList.toggle('active', isActive);
-            item.classList.toggle('completed', i < index);
-            item.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            item.setAttribute('tabindex', isActive ? '0' : '-1');
-        });
-
-        stepPanes.forEach((pane, i) => {
-            pane.classList.toggle('active', i === index);
-        });
-
-        updateProgress(index);
-
-        prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
-        
-        if (index === stepPanes.length - 1) {
-            nextBtn.style.display = 'none';
-            submitBtn.style.display = 'inline-block';
-            populateReviewSummary();
-        } else {
-            nextBtn.style.display = 'inline-block';
-            submitBtn.style.display = 'none';
+    document.querySelectorAll('.stepper-step-item').forEach((item, index) => {
+        item.classList.remove('active', 'completed');
+        if (index < currentStepIndex) {
+            item.classList.add('completed');
+        } else if (index === currentStepIndex) {
+            item.classList.add('active');
         }
-        currentStep = index;
-
-        // Auto Focus first input of pane
-        const firstInput = stepPanes[index].querySelector('input, select');
-        if (firstInput) firstInput.focus();
-    }
-
-    function populateReviewSummary() {
-        document.getElementById('reviewName').textContent = document.getElementById('inputName').value || '—';
-        document.getElementById('reviewParent').textContent = document.getElementById('inputParentName').value || '—';
-        document.getElementById('reviewPhone').textContent = document.getElementById('inputParentPhone').value || '—';
-    }
-
-    stepItems.forEach((item, i) => {
-        item.addEventListener('click', () => showStep(i));
     });
 
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            const currentPane = stepPanes[currentStep];
-            const inputs = currentPane.querySelectorAll('input[required], select[required]');
-            let valid = true;
+    document.querySelectorAll('.form-step-pane').forEach((pane, index) => {
+        pane.classList.remove('active');
+        if (index === currentStepIndex) {
+            pane.classList.add('active');
+        }
+    });
 
-            inputs.forEach(input => {
-                if (!input.checkValidity()) {
-                    input.classList.add('is-invalid');
-                    input.reportValidity();
-                    valid = false;
-                } else {
-                    input.classList.remove('is-invalid');
-                    input.classList.add('is-valid');
-                }
-            });
+    const btnPrev = document.getElementById('btnPrevStep');
+    const btnNext = document.getElementById('btnNextStep');
+    const btnSubmit = document.getElementById('btnSubmitForm');
 
-            if (!valid && window.scrollToFirstError) {
-                window.scrollToFirstError(currentPane);
-            } else if (valid && currentStep < stepPanes.length - 1) {
-                showStep(currentStep + 1);
-            }
-        });
+    if (btnPrev) {
+        if (currentStepIndex === 0) btnPrev.classList.add('d-none');
+        else btnPrev.classList.remove('d-none');
     }
 
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentStep > 0) showStep(currentStep - 1);
-        });
-    }
-
-    // Photo Live Preview
-    const photoInput = document.getElementById('photoInput');
-    const photoPreview = document.getElementById('photoPreview');
-    if (photoInput && photoPreview) {
-        photoInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    photoPreview.src = e.target.result;
-                    photoPreview.style.display = 'block';
-                }
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+    if (btnNext && btnSubmit) {
+        if (currentStepIndex === totalStepsCount - 1) {
+            btnNext.classList.add('d-none');
+            btnSubmit.classList.remove('d-none');
+            populateReviewSummary();
+        } else {
+            btnNext.classList.remove('d-none');
+            btnSubmit.classList.add('d-none');
+        }
     }
 }
+
+function validateCurrentStep() {
+    const currentPane = document.getElementById(`paneStep${currentStepIndex}`);
+    if (!currentPane) return true;
+
+    const requiredInputs = currentPane.querySelectorAll('input[required], select[required]');
+    let isValid = true;
+
+    for (let i = 0; i < requiredInputs.length; i++) {
+        const input = requiredInputs[i];
+        if (!input.value || !input.value.trim()) {
+            input.classList.add('is-invalid');
+            if (input.reportValidity) input.reportValidity();
+            isValid = false;
+            break;
+        } else {
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+        }
+    }
+
+    return isValid;
+}
+
+function navigateStep(direction) {
+    if (direction === 1) {
+        if (!validateCurrentStep()) {
+            return;
+        }
+    }
+
+    currentStepIndex += direction;
+    if (currentStepIndex < 0) currentStepIndex = 0;
+    if (currentStepIndex >= totalStepsCount) currentStepIndex = totalStepsCount - 1;
+
+    updateStepperUI();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function populateReviewSummary() {
+    const summaryName = document.getElementById('summaryName');
+    const summaryGender = document.getElementById('summaryGender');
+    const summaryDob = document.getElementById('summaryDob');
+    const summaryClass = document.getElementById('summaryClass');
+    const summarySection = document.getElementById('summarySection');
+    const summaryParent = document.getElementById('summaryParent');
+
+    if (summaryName) summaryName.innerText = document.getElementById('inputName')?.value || '—';
+    if (summaryGender) summaryGender.innerText = document.getElementById('inputGender')?.value || '—';
+    if (summaryDob) summaryDob.innerText = document.getElementById('inputDob')?.value || '—';
+
+    const classSelect = document.getElementById('inputClass');
+    if (summaryClass && classSelect) summaryClass.innerText = classSelect.options[classSelect.selectedIndex]?.text || '—';
+
+    const sectionSelect = document.getElementById('inputSection');
+    if (summarySection && sectionSelect) summarySection.innerText = sectionSelect.options[sectionSelect.selectedIndex]?.text || '—';
+
+    if (summaryParent) summaryParent.innerText = document.getElementById('inputParentName')?.value || '—';
+}
+
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.getElementById('avatarPreviewImg');
+            const previewContainer = document.getElementById('avatarPreviewContainer');
+            const placeholder = document.getElementById('avatarPlaceholder');
+
+            if (img) img.src = e.target.result;
+            if (previewContainer) previewContainer.classList.remove('d-none');
+            if (placeholder) placeholder.classList.add('d-none');
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+document.querySelectorAll('.stepper-step-item').forEach((item, index) => {
+    item.addEventListener('click', () => {
+        if (index < currentStepIndex || validateCurrentStep()) {
+            currentStepIndex = index;
+            updateStepperUI();
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateStepperUI();
+});
 </script>
 {% endblock %}

@@ -15,7 +15,7 @@ from services.teacher_gradebook_service import (
 
 logger = logging.getLogger(__name__)
 
-gradebook_bp = Blueprint('gradebook', __name__, url_prefix='/grades')
+gradebook_bp = Blueprint('gradebook', __name__, url_prefix='/gradebook')
 
 def _get_teacher_meta(user_id):
     teacher = Teacher.query.filter_by(user_id=user_id).first()

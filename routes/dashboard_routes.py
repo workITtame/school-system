@@ -622,6 +622,60 @@ def get_admin_dashboard_data():
             'time': time_str or 'مؤخراً'
         })
 
+    # 10. Smart Attention Center Items
+    smart_attention_items = []
+    if late_homework_count > 0:
+        smart_attention_items.append({
+            'icon': 'fa-book-bookmark',
+            'title': 'واجبات متأخرة التسليم',
+            'count': late_homework_count,
+            'priority': 'عالية',
+            'color': 'danger',
+            'url': url_for('homework.index')
+        })
+
+    if upcoming_exams_count > 0:
+        smart_attention_items.append({
+            'icon': 'fa-file-signature',
+            'title': 'امتحانات قريبة في الجدول',
+            'count': upcoming_exams_count,
+            'priority': 'متوسطة',
+            'color': 'warning',
+            'url': url_for('exams.index')
+        })
+
+    if attendance_rate < 85 and total_students > 0:
+        smart_attention_items.append({
+            'icon': 'fa-triangle-exclamation',
+            'title': 'انخفاض في نسبة الحضور العامة',
+            'count': f"{attendance_rate}%",
+            'priority': 'عالية',
+            'color': 'danger',
+            'url': url_for('attendance.index')
+        })
+
+    if unread_messages_count > 0:
+        smart_attention_items.append({
+            'icon': 'fa-envelope',
+            'title': 'رسائل واردة غير مقروءة',
+            'count': unread_messages_count,
+            'priority': 'عادية',
+            'color': 'info',
+            'url': url_for('messages.index')
+        })
+
+    if locked_accounts_count > 0:
+        smart_attention_items.append({
+            'icon': 'fa-lock',
+            'title': 'حسابات مستخدمين مقفلة مؤقتاً',
+            'count': locked_accounts_count,
+            'priority': 'عالية',
+            'color': 'danger',
+            'url': url_for('dashboard.settings')
+        })
+
+    last_updated_time = datetime.now().strftime('%H:%M:%S')
+
     return {
         'total_students': total_students,
         'total_teachers': total_teachers,
@@ -662,7 +716,9 @@ def get_admin_dashboard_data():
         'latest_activities': latest_activities,
         'top_students': top_students,
         'top_teachers': top_teachers,
-        'latest_messages': latest_messages_list
+        'latest_messages': latest_messages_list,
+        'smart_attention_items': smart_attention_items,
+        'last_updated_time': last_updated_time
     }
 
 

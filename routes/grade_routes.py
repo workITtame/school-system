@@ -1,18 +1,28 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask_login import login_required, current_user
 from models import db, Student, Subject, Classes, Sections, Terms, TypeExams, DetailMarks, Marks, Teacher
 
-grades_bp = Blueprint('grades_legacy', __name__, url_prefix='/grades_legacy')
+grades_bp = Blueprint('grades', __name__, url_prefix='/grades')
+grades_legacy_bp = Blueprint('grades_legacy', __name__, url_prefix='/grades_legacy')
 
 @grades_bp.route('/', methods=['GET'])
+@grades_legacy_bp.route('/', methods=['GET'])
 def index():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated and 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    user_role = getattr(current_user, 'role', '').strip("'") if current_user and hasattr(current_user, 'role') else None
+    if user_role == 'teacher':
+        return redirect(url_for('gradebook.index'))
     return redirect(url_for('grades.manage_grades'))
 
 @grades_bp.route('/manage', methods=['GET'])
+@grades_legacy_bp.route('/manage', methods=['GET'])
 def manage_grades():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated and 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    user_role = getattr(current_user, 'role', '').strip("'") if current_user and hasattr(current_user, 'role') else None
+    if user_role == 'teacher':
+        return redirect(url_for('gradebook.index'))
         
     total_students = Student.query.filter_by(is_deleted=False).count()
     total_exams = TypeExams.query.filter_by(is_deleted=False).count()
@@ -66,6 +76,7 @@ def manage_grades():
                            all_students=all_students)
 
 @grades_bp.route('/report', methods=['GET'])
+@grades_legacy_bp.route('/report', methods=['GET'])
 def student_report_page():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
@@ -74,7 +85,6 @@ def student_report_page():
     terms = Terms.query.all()
     exams = TypeExams.query.all()
     
-    # Optional logic to fetch a specific student report if parameters are provided
     student_id = request.args.get('student_id')
     term_id = request.args.get('term_id')
     exam_id = request.args.get('exam_id')
@@ -94,3 +104,21 @@ def student_report_page():
                            terms=terms, 
                            exams=exams, 
                            report_data=report_data)
+
+@grades_bp.route('/add_exam', methods=['POST'])
+@grades_legacy_bp.route('/add_exam', methods=['POST'])
+def add_exam():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    exam_name = request.form.get('exam_name') or request.form.get('ExamName')
+    if exam_name:
+        try:
+            new_type = TypeExams(ExamName=exam_name)
+            db.session.add(new_type)
+            db.session.commit()
+            flash('تم إضافة نوع الاختبار بنجاح', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ عند الإضافة: {e}', 'danger')
+    return redirect(url_for('grades.manage_grades'))
+
