@@ -51,10 +51,12 @@ def index():
 
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
+    class_id = request.args.get('class_id', type=int)
     from models import Qualifications, Teacher, SchoolTable, Classes, db
     from models.academic import TeacherSubject
     
     qualifications = Qualifications.query.all()
+    selected_class = Classes.query.get(class_id) if class_id else None
     
     total_teachers = Teacher.query.filter_by(is_deleted=False).count()
     male_teachers = Teacher.query.filter(Teacher.is_deleted == False, Teacher.Gender.in_(['ذكر', 'Male'])).count()
@@ -78,7 +80,9 @@ def index():
                            fulltime_teachers=fulltime_teachers,
                            assigned_subjects_count=assigned_subjects_count,
                            avg_weekly_slots=avg_weekly_slots,
-                           taught_classes_count=taught_classes_count)
+                           taught_classes_count=taught_classes_count,
+                           selected_class=selected_class,
+                           selected_class_id=class_id)
 
 @teacher_bp.route('/view/<int:id>')
 def view_teacher(id):
