@@ -404,22 +404,97 @@
             <!-- STEP 5: Review & Submit -->
             <div class="form-step-pane" id="paneStep4" role="tabpanel">
                 <h5 class="fw-extrabold text-primary mb-4 pb-2 border-bottom d-flex align-items-center justify-content-between font-cairo">
-                    <span><i class="fa-solid fa-check-double me-2"></i> مراجعة البيانات والحفظ النهائي</span>
+                    <span><i class="fa-solid fa-check-double me-2"></i> المراجعة والحفظ النهائي</span>
                     <span class="badge bg-light text-muted border rounded-pill font-monospace small">الخطوة 5 من 5</span>
                 </h5>
 
-                <div class="card border-0 bg-light rounded-4 p-4 font-monospace extra-small mb-4 border-start border-4 border-primary">
-                    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check text-primary me-2"></i> ملخص بيانات الطالب الجديد</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <p class="mb-2"><strong>اسم الطالب:</strong> <span id="summaryName" class="text-primary fw-bold">—</span></p>
-                            <p class="mb-2"><strong>الجنس:</strong> <span id="summaryGender">—</span></p>
-                            <p class="mb-2"><strong>تاريخ الميلاد:</strong> <span id="summaryDob">—</span></p>
+                <!-- Status & Progress Overview Bar -->
+                <div class="card border-0 bg-primary-subtle rounded-4 p-3 mb-4 font-monospace extra-small border border-primary-subtle">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle p-2 bg-primary text-white"><i class="fa-solid fa-clipboard-check fs-5"></i></div>
+                            <div>
+                                <h6 class="fw-bold text-dark font-cairo mb-1">ملخص حالة نموذج الطالب الجديد</h6>
+                                <span class="badge bg-success text-white rounded-pill me-1"><i class="fa-solid fa-check me-1"></i> البيانات مكتملة</span>
+                                <span class="badge bg-light text-dark border rounded-pill me-1" id="reviewMissingCount">الحقول المطلوبة الناقصة: 0</span>
+                                <span class="badge bg-light text-dark border rounded-pill" id="reviewFileCount">المرفقات المضافة: 0</span>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p class="mb-2"><strong>الصف الدراسي:</strong> <span id="summaryClass" class="fw-bold">—</span></p>
-                            <p class="mb-2"><strong>الشعبة:</strong> <span id="summarySection" class="fw-bold">—</span></p>
-                            <p class="mb-2"><strong>ولي الأمر:</strong> <span id="summaryParent">—</span></p>
+                        <div class="text-end">
+                            <span class="d-block text-muted">نسبة اكتمال النموذج</span>
+                            <strong class="text-primary fs-5 font-monospace">100%</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 font-monospace extra-small">
+                    <!-- Card 1: البيانات الشخصية -->
+                    <div class="col-12 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-primary position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark font-cairo mb-0"><i class="fa-solid fa-id-card text-primary me-2"></i> أ. البيانات الشخصية</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 extra-small" onclick="jumpToStep(0)">
+                                    <i class="fa-solid fa-pen me-1"></i> تعديل
+                                </button>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div id="summaryAvatarBox">
+                                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; font-size: 1.2rem;" id="summaryAvatarInitial">
+                                        ط
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 font-cairo" id="summaryName">—</h6>
+                                    <small class="text-muted" id="summaryNationalId">الرقم الوطني / الإقامة: —</small>
+                                </div>
+                            </div>
+                            <p class="mb-2"><strong>تاريخ الميلاد:</strong> <span id="summaryDob">—</span></p>
+                            <p class="mb-0"><strong>الجنس:</strong> <span id="summaryGender">—</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: البيانات الأكاديمية -->
+                    <div class="col-12 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-info position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark font-cairo mb-0"><i class="fa-solid fa-graduation-cap text-info me-2"></i> ب. البيانات الأكاديمية والقيد</h6>
+                                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 extra-small" onclick="jumpToStep(1)">
+                                    <i class="fa-solid fa-pen me-1"></i> تعديل
+                                </button>
+                            </div>
+                            <p class="mb-2"><strong>الصف الدراسي:</strong> <span id="summaryClass" class="fw-bold text-dark">—</span></p>
+                            <p class="mb-2"><strong>الشعبة الدراسية:</strong> <span id="summarySection" class="fw-bold text-dark">—</span></p>
+                            <p class="mb-0"><strong>حالة الطالب:</strong> <span id="summaryStatus" class="badge bg-success-subtle text-success border">—</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: بيانات ولي الأمر والعنوان -->
+                    <div class="col-12 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-success position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark font-cairo mb-0"><i class="fa-solid fa-user-shield text-success me-2"></i> ج. بيانات ولي الأمر والتواصل</h6>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small" onclick="jumpToStep(2)">
+                                    <i class="fa-solid fa-pen me-1"></i> تعديل
+                                </button>
+                            </div>
+                            <p class="mb-2"><strong>اسم ولي الأمر:</strong> <span id="summaryParentName">—</span></p>
+                            <p class="mb-2"><strong>رقم الهاتف:</strong> <span id="summaryParentNumber">—</span></p>
+                            <p class="mb-2"><strong>المهنة / العمل:</strong> <span id="summaryParentWork">—</span></p>
+                            <p class="mb-0"><strong>الحي السكني:</strong> <span id="summaryNeighborhood">—</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: المرفقات والمستندات -->
+                    <div class="col-12 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-warning position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark font-cairo mb-0"><i class="fa-solid fa-folder-open text-warning me-2"></i> د. المرفقات والمستندات الرسمية</h6>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 extra-small" onclick="jumpToStep(3)">
+                                    <i class="fa-solid fa-pen me-1"></i> تعديل
+                                </button>
+                            </div>
+                            <p class="mb-2"><strong>شهادة الميلاد / الهوية:</strong> <span id="summaryDocBirth">غير مرفق</span></p>
+                            <p class="mb-0"><strong>السجل الأكاديمي:</strong> <span id="summaryDocAcademic">غير مرفق</span></p>
                         </div>
                     </div>
                 </div>
@@ -492,6 +567,12 @@ function updateStepperUI() {
     }
 }
 
+function jumpToStep(stepIdx) {
+    currentStepIndex = stepIdx;
+    updateStepperUI();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function validateCurrentStep() {
     const currentPane = document.getElementById(`paneStep${currentStepIndex}`);
     if (!currentPane) return true;
@@ -531,24 +612,57 @@ function navigateStep(direction) {
 }
 
 function populateReviewSummary() {
-    const summaryName = document.getElementById('summaryName');
-    const summaryGender = document.getElementById('summaryGender');
-    const summaryDob = document.getElementById('summaryDob');
-    const summaryClass = document.getElementById('summaryClass');
-    const summarySection = document.getElementById('summarySection');
-    const summaryParent = document.getElementById('summaryParent');
+    const nameVal = document.getElementById('inputName')?.value || '—';
+    const dobVal = document.getElementById('inputDob')?.value || '—';
+    const genderVal = document.getElementById('inputGender')?.value || '—';
+    const nationalIdVal = document.querySelector('input[name="national_id"]')?.value || '—';
 
-    if (summaryName) summaryName.innerText = document.getElementById('inputName')?.value || '—';
-    if (summaryGender) summaryGender.innerText = document.getElementById('inputGender')?.value || '—';
-    if (summaryDob) summaryDob.innerText = document.getElementById('inputDob')?.value || '—';
+    document.getElementById('summaryName').innerText = nameVal;
+    document.getElementById('summaryDob').innerText = dobVal;
+    document.getElementById('summaryGender').innerText = genderVal;
+    document.getElementById('summaryNationalId').innerText = `الرقم الوطني / الإقامة: ${nationalIdVal}`;
+    document.getElementById('summaryAvatarInitial').innerText = nameVal ? nameVal[0] : 'ط';
 
     const classSelect = document.getElementById('inputClass');
-    if (summaryClass && classSelect) summaryClass.innerText = classSelect.options[classSelect.selectedIndex]?.text || '—';
+    if (classSelect && classSelect.selectedIndex >= 0) {
+        document.getElementById('summaryClass').innerText = classSelect.options[classSelect.selectedIndex]?.text || '—';
+    }
 
     const sectionSelect = document.getElementById('inputSection');
-    if (summarySection && sectionSelect) summarySection.innerText = sectionSelect.options[sectionSelect.selectedIndex]?.text || '—';
+    if (sectionSelect && sectionSelect.selectedIndex >= 0) {
+        document.getElementById('summarySection').innerText = sectionSelect.options[sectionSelect.selectedIndex]?.text || '—';
+    }
 
-    if (summaryParent) summaryParent.innerText = document.getElementById('inputParentName')?.value || '—';
+    const statusSelect = document.getElementById('inputStatus');
+    if (statusSelect && statusSelect.selectedIndex >= 0) {
+        document.getElementById('summaryStatus').innerText = statusSelect.options[statusSelect.selectedIndex]?.text || 'نشط';
+    }
+
+    document.getElementById('summaryParentName').innerText = document.getElementById('inputParentName')?.value || '—';
+    document.getElementById('summaryParentNumber').innerText = document.getElementById('inputParentNumber')?.value || '—';
+    document.getElementById('summaryParentWork').innerText = document.getElementById('inputParentWork')?.value || '—';
+    document.getElementById('summaryNeighborhood').innerText = document.getElementById('inputNeighborhood')?.value || '—';
+
+    // File attachments status
+    const docBirthInput = document.querySelector('input[name="doc_birth"]');
+    const docAcademicInput = document.querySelector('input[name="doc_academic"]');
+    
+    let fileCount = 0;
+    if (docBirthInput && docBirthInput.files && docBirthInput.files.length > 0) {
+        document.getElementById('summaryDocBirth').innerHTML = `<span class="badge bg-success-subtle text-success border">🟢 تم المرفق (${docBirthInput.files[0].name})</span>`;
+        fileCount++;
+    } else {
+        document.getElementById('summaryDocBirth').innerHTML = `<span class="badge bg-light text-muted border">⚪ غير مرفق</span>`;
+    }
+
+    if (docAcademicInput && docAcademicInput.files && docAcademicInput.files.length > 0) {
+        document.getElementById('summaryDocAcademic').innerHTML = `<span class="badge bg-success-subtle text-success border">🟢 تم المرفق (${docAcademicInput.files[0].name})</span>`;
+        fileCount++;
+    } else {
+        document.getElementById('summaryDocAcademic').innerHTML = `<span class="badge bg-light text-muted border">⚪ غير مرفق</span>`;
+    }
+
+    document.getElementById('reviewFileCount').innerText = `المرفقات المضافة: ${fileCount}`;
 }
 
 function previewAvatar(input) {
@@ -574,6 +688,18 @@ document.querySelectorAll('.stepper-step-item').forEach((item, index) => {
             updateStepperUI();
         }
     });
+});
+
+document.getElementById('studentCreateForm')?.addEventListener('submit', function(e) {
+    if (!validateCurrentStep()) {
+        e.preventDefault();
+        return false;
+    }
+    const btnSubmit = document.getElementById('btnSubmitForm');
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري حفظ الطالب...`;
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
