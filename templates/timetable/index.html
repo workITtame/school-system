@@ -522,7 +522,9 @@
 
 <script>
     function exportTimetableExcel() {
-        Swal.fire('تصدير Excel', 'جاري تجهيز وتصدير جدول الحصص الأسبوعي بصيغة Excel...', 'info');
+        const classId = "{{ selected_class_id or '' }}";
+        const url = classId ? `/timetable/export/excel?class_id=${classId}` : '/timetable/export/excel';
+        window.location.href = url;
     }
 </script>
 {% endblock %}

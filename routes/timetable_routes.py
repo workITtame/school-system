@@ -274,3 +274,76 @@ def lesson_drawer_api(slot_id):
     if not data:
         return jsonify({'error': 'Lesson not found or access forbidden'}), 403
     return jsonify(data)
+
+@timetable_bp.route('/export/excel')
+@login_required
+def export_timetable_excel():
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    import io
+    from flask import send_file
+
+    class_id = request.args.get('class_id', type=int)
+    selected_class = Classes.query.filter_by(CID=class_id, is_deleted=False).first() if class_id else None
+
+    query = SchoolTable.query.options(
+        joinedload(SchoolTable.subject),
+        joinedload(SchoolTable.school_class),
+        joinedload(SchoolTable.section),
+        joinedload(SchoolTable.day),
+        joinedload(SchoolTable.lesson)
+    ).filter(SchoolTable.is_deleted == False)
+
+    if class_id:
+        query = query.filter(SchoolTable.CID == class_id)
+
+    slots = query.all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "الجدول الدراسي"
+    ws.views.sheetView[0].rightToLeft = True
+
+    # Title Banner
+    title_text = f"الجدول الدراسي الأسبوعي - {selected_class.CName}" if selected_class else "الجدول الدراسي الشامل للمدرسة"
+    ws.merge_cells('A1:F1')
+    title_cell = ws['A1']
+    title_cell.value = title_text
+    title_cell.font = Font(name='Arial', size=15, bold=True, color='FFFFFF')
+    title_cell.fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
+    title_cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    headers = ['اليوم', 'الحصة / الوقت', 'المادة الدراسية', 'الصف الدراسي', 'الشعبة', 'القاعة / المكان']
+    ws.append([])
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+    header_font = Font(name='Arial', size=11, bold=True, color='FFFFFF')
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    for slot in slots:
+        day_name = slot.day.DName if slot.day else 'غير محدد'
+        lesson_str = f"{slot.lesson.LessonName} ({slot.lesson.StartTime} - {slot.lesson.EndTime})" if slot.lesson else 'غير محدد'
+        sub_name = slot.subject.SubName if slot.subject else 'غير محدد'
+        cls_name = slot.school_class.CName if slot.school_class else 'غير محدد'
+        sec_name = slot.section.SectionName if slot.section else 'جميع الشعب'
+        room_name = getattr(slot, 'RoomNo', None) or 'قاعة دراسية'
+
+        ws.append([day_name, lesson_str, sub_name, cls_name, sec_name, room_name])
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 16)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    filename = f"timetable_class_{class_id}.xlsx" if class_id else "timetable_full.xlsx"
+    return send_file(stream, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
