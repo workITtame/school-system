@@ -628,6 +628,53 @@
     </div>
 </div>
 
+<!-- Manage Sections Enterprise Modal -->
+<div class="modal fade" id="manageSectionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
+            <div class="modal-hero-header p-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
+                <div class="d-flex align-items-center justify-content-between position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="modal-icon-box bg-white text-info rounded-4 shadow-sm d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-extrabold mb-1" id="manageSectionsTitle">إدارة شعب الصف</h4>
+                            <p class="mb-0 text-white-50 small" id="manageSectionsSubtitle">عرض وإضافة وتعديل وحذف الشعب التابعة للصف</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 bg-light-subtle">
+                <!-- Add Section Inline Bar -->
+                <div class="card border rounded-4 p-3 mb-4 bg-white shadow-xs">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-plus-circle text-info me-1"></i> إضافة شعبة جديدة لهذا الصف:</h6>
+                    <div class="input-group">
+                        <input type="text" id="newSectionNameInput" class="form-control form-control-modern" placeholder="ادخل اسم الشعبة (مثال: شعبة أ / شعبة 1)" required>
+                        <button type="button" class="btn btn-info text-white fw-bold px-4 rounded-start-pill" onclick="addNewSectionToClass()">
+                            <i class="fa-solid fa-plus me-1"></i> إضافة الشعبة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sections List Container -->
+                <div id="sectionsListContainer">
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-spinner fa-spin fs-3 mb-2 text-info"></i>
+                        <p class="mb-0">جاري تحميل شعب الصف...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white border-top p-3 d-flex justify-content-end">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 3. Add Section Enterprise SaaS Modal -->
 <div class="modal fade" id="addSectionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">

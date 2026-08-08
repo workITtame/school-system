@@ -361,6 +361,207 @@ function openEditClassModal(id, name, stage) {
     bsModal.show();
 }
 
+let currentManagingClassId = null;
+
+function openManageSectionsModal(classId) {
+    currentManagingClassId = classId;
+    const modalEl = document.getElementById('manageSectionsModal');
+    if (!modalEl) return;
+
+    fetch(`/academic/class/${classId}/sections`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('manageSectionsTitle').textContent = `إدارة شعب الصف: ${data.class.name}`;
+                document.getElementById('manageSectionsSubtitle').textContent = `الصف الدراسي: ${data.class.name} (${data.class.stage})`;
+                renderSectionsList(data.sections, data.class.name);
+                
+                const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                bsModal.show();
+            } else {
+                showToast(data.message || 'حدث خطأ أثناء جلب الشعب', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('حدث خطأ في الاتصال بالخادم', 'error');
+        });
+}
+
+function renderSectionsList(sections, className) {
+    const container = document.getElementById('sectionsListContainer');
+    if (!container) return;
+
+    if (!sections || sections.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5 text-muted bg-white rounded-4 border">
+                <i class="fa-solid fa-layer-group fs-1 opacity-25 d-block mb-2 text-info"></i>
+                <h6 class="fw-bold text-dark mb-1">لا توجد شعب مضافة لهذا الصف.</h6>
+                <small class="text-muted font-monospace">يمكنك إضافة شعبة جديدة للصف باستخدام النموذج أعلاه.</small>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="table-responsive bg-white rounded-4 border">
+            <table class="table table-hover align-middle text-center mb-0 extra-small font-monospace">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="text-start">اسم الشعبة</th>
+                        <th>عدد الطلاب</th>
+                        <th>الحصص المجدولة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sections.map(sec => `
+                        <tr>
+                            <td class="text-start fw-bold text-dark">
+                                <i class="fa-solid fa-users-rectangle text-info me-2"></i>
+                                <span>${sec.name}</span>
+                            </td>
+                            <td><span class="badge bg-primary-subtle text-primary font-monospace">${sec.studentsCount} طالب</span></td>
+                            <td><span class="badge bg-success-subtle text-success font-monospace">${sec.timetableCount} حصة</span></td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-circle p-1 px-2 me-1" title="تعديل اسم الشعبة" onclick="promptEditSection(${sec.id}, '${sec.name}')">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-1 px-2" title="حذف الشعبة" onclick="confirmDeleteSection(${currentManagingClassId}, ${sec.id}, '${sec.name}', ${sec.studentsCount}, ${sec.timetableCount})">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function addNewSectionToClass() {
+    if (!currentManagingClassId) return;
+    const input = document.getElementById('newSectionNameInput');
+    const name = input ? input.value.trim() : '';
+
+    if (!name) {
+        showToast('يرجى كتابة اسم الشعبة أولاً', 'warning');
+        return;
+    }
+
+    fetch(`/academic/class/${currentManagingClassId}/sections/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            if (input) input.value = '';
+            openManageSectionsModal(currentManagingClassId);
+        } else {
+            showToast(data.message || 'تعذر إضافة الشعبة', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('حدث خطأ في الاتصال بالخادم', 'error');
+    });
+}
+
+function promptEditSection(secId, oldName) {
+    Swal.fire({
+        title: 'تعديل اسم الشعبة',
+        input: 'text',
+        inputValue: oldName,
+        inputPlaceholder: 'اسم الشعبة الجديد',
+        showCancelButton: true,
+        confirmButtonText: 'تحديث',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#2563eb',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'يرجى كتابة اسم الشعبة';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            fetch(`/academic/section/${secId}/edit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: result.value.trim() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    openManageSectionsModal(currentManagingClassId);
+                } else {
+                    showToast(data.message || 'حدث خطأ أثناء التعديل', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('حدث خطأ في الاتصال بالخادم', 'error');
+            });
+        }
+    });
+}
+
+function confirmDeleteSection(classId, secId, secName, studentsCount, timetableCount) {
+    if (studentsCount > 0 || timetableCount > 0) {
+        let reasons = [];
+        if (studentsCount > 0) reasons.push(`${studentsCount} طلاب مسجلين`);
+        if (timetableCount > 0) reasons.push(`${timetableCount} حصص بالجدول`);
+        
+        Swal.fire({
+            title: 'لا يمكن حذف الشعبة',
+            text: `تعذر حذف الشعبة "${secName}" لأنها مرتبطة بـ (${reasons.join(' و ')}). يرجى فك الارتباط أو نقل الطلاب أولاً.`,
+            icon: 'warning',
+            confirmButtonText: 'فهمت ذلك',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'تأكيد حذف الشعبة',
+        text: `هل أنت متأكد من حذف الشعبة "${secName}" من هذا الصف؟`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، احذف الشعبة',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#dc2626'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/academic/class/${classId}/section/${secId}/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    openManageSectionsModal(currentManagingClassId);
+                } else {
+                    Swal.fire({
+                        title: 'تعذر الحذف',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'حسناً',
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('حدث خطأ في الاتصال بالخادم', 'error');
+            });
+        }
+    });
+}
+
 function openAddSectionModal(classId) {
     const modalEl = document.getElementById('addSectionModal');
     if (!modalEl) return;

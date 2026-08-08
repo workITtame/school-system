@@ -222,6 +222,125 @@ def add_section():
         
     return redirect(url_for('academic.classes'))
 
+@academic_bp.route('/class/<int:id>/sections', methods=['GET'])
+def get_class_sections_api(id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    from models import SchoolTable, ClassesSections
+    c = Classes.query.get_or_404(id)
+    
+    raw_sections = db.session.query(Sections).join(ClassesSections, Sections.SectionID == ClassesSections.c.SectionID)\
+        .filter(ClassesSections.c.CID == id).all()
+    sections_list = []
+    
+    for sec in raw_sections:
+        if not getattr(sec, 'is_deleted', False):
+            st_count = Student.query.filter(Student.SectionID == sec.SectionID, Student.CID == c.CID, Student.is_deleted == False).count()
+            tb_count = SchoolTable.query.filter(SchoolTable.SectionID == sec.SectionID, SchoolTable.CID == c.CID, SchoolTable.is_deleted == False).count()
+            sections_list.append({
+                'id': sec.SectionID,
+                'name': sec.SectionName,
+                'maxStudents': sec.MaxStudents or 40,
+                'studentsCount': st_count,
+                'timetableCount': tb_count
+            })
+            
+    return jsonify({
+        'success': True,
+        'class': {
+            'id': c.CID,
+            'name': c.CName,
+            'stage': c.Stage or 'المرحلة العامة'
+        },
+        'sections': sections_list
+    })
+
+@academic_bp.route('/class/<int:id>/sections/add', methods=['POST'])
+def add_class_section_api(id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    c = Classes.query.get_or_404(id)
+    data = request.get_json() or {}
+    name = data.get('name', '').strip()
+    
+    if not name:
+        return jsonify({'success': False, 'message': 'يرجى كتابة اسم الشعبة'}), 400
+        
+    existing_sections = c.sections.all() if hasattr(c.sections, 'all') else c.sections
+    for sec in existing_sections:
+        if not getattr(sec, 'is_deleted', False) and sec.SectionName.lower() == name.lower():
+            return jsonify({'success': False, 'message': f'الشعبة "{name}" موجودة بالفعل لصف {c.CName}'}), 400
+            
+    try:
+        from models.academic import ClassesSections
+        new_sec = Sections(SectionName=name)
+        db.session.add(new_sec)
+        db.session.flush()
+        db.session.execute(ClassesSections.insert().values(CID=c.CID, SectionID=new_sec.SectionID))
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'تمت إضافة الشعبة "{name}" بنجاح للصف "{c.CName}"',
+            'section': {
+                'id': new_sec.SectionID,
+                'name': new_sec.SectionName,
+                'studentsCount': 0,
+                'timetableCount': 0
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ أثناء إضافة الشعبة: {str(e)}'}), 500
+
+@academic_bp.route('/section/<int:sec_id>/edit', methods=['POST'])
+def edit_section_api(sec_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    sec = Sections.query.get_or_404(sec_id)
+    data = request.get_json() or {}
+    name = data.get('name', '').strip()
+    
+    if not name:
+        return jsonify({'success': False, 'message': 'اسم الشعبة لا يمكن أن يكون فارغاً'}), 400
+        
+    sec.SectionName = name
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تحديث اسم الشعبة بنجاح إلى "{name}"'})
+
+@academic_bp.route('/class/<int:class_id>/section/<int:sec_id>/delete', methods=['POST'])
+def delete_section_api(class_id, sec_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    from models import SchoolTable, Homework, ExamSchedule
+    c = Classes.query.get_or_404(class_id)
+    sec = Sections.query.get_or_404(sec_id)
+    
+    students_count = Student.query.filter(Student.SectionID == sec.SectionID, Student.CID == c.CID, Student.is_deleted == False).count()
+    timetable_count = SchoolTable.query.filter(SchoolTable.SectionID == sec.SectionID, SchoolTable.CID == c.CID, SchoolTable.is_deleted == False).count()
+    homework_count = Homework.query.filter(Homework.section_id == sec.SectionID).count() if hasattr(Homework, 'section_id') else 0
+    exams_count = ExamSchedule.query.filter(ExamSchedule.SectionID == sec.SectionID).count() if hasattr(ExamSchedule, 'SectionID') else 0
+
+    linked_deps = []
+    if students_count > 0: linked_deps.append(f"{students_count} طلاب")
+    if timetable_count > 0: linked_deps.append(f"{timetable_count} حصص بالجدول")
+    if homework_count > 0: linked_deps.append(f"{homework_count} واجبات")
+    if exams_count > 0: linked_deps.append(f"{exams_count} امتحانات")
+
+    if linked_deps:
+        return jsonify({
+            'success': False,
+            'message': f'تعذر حذف الشعبة "{sec.SectionName}" لارتباطها بـ ({", ".join(linked_deps)}) لصف {c.CName}.'
+        }), 400
+
+    from models.academic import ClassesSections
+    db.session.execute(ClassesSections.delete().where(ClassesSections.c.CID == class_id, ClassesSections.c.SectionID == sec_id))
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم حذف الشعبة "{sec.SectionName}" بنجاح من صف {c.CName}'})
+
 @academic_bp.route('/add_subject', methods=['POST'])
 def add_subject():
     if 'user_id' not in session:
