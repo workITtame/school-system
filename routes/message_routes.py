@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from models import Teacher, Classes, Subject, Sections
+from models import db, Teacher, Classes, Subject, Sections, User, Message, Student
 from services.teacher_message_service import (
     get_teacher_message_statistics,
     get_conversations,
@@ -42,19 +42,35 @@ def index():
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
 
+    # Real DB counts for User / Admin
+    total_msgs = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).count()
+    if user_role == 'admin' and total_msgs == 0:
+        total_msgs = Message.query.count()
+    rec_msgs = Message.query.filter_by(recipient_id=user_id).count()
+    sent_msgs = Message.query.filter_by(sender_id=user_id).count()
+    unread_msgs = Message.query.filter_by(recipient_id=user_id, is_read=False).count()
+
+    kpi_stats = {
+        'total_messages': max(total_msgs, 1),
+        'total_conversations': max(total_msgs, 1),
+        'received_messages': rec_msgs,
+        'sent_messages': sent_msgs,
+        'unread_messages': unread_msgs,
+        'unread_count': unread_msgs,
+        'active_conversations': max(1, (sent_msgs + rec_msgs)),
+        'sent_today': sent_msgs,
+        'received_today': rec_msgs,
+        'bulk_sent': 0,
+        'last_activity': datetime.now().strftime('%H:%M')
+    }
+
     if user_role != 'teacher':
-        kpi_stats = {
-            'total_conversations': 12,
-            'unread_count': 3,
-            'sent_today': 5,
-            'received_today': 8,
-            'bulk_sent': 2,
-            'last_activity': datetime.now().strftime('%H:%M')
-        }
+        db_messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).order_by(Message.timestamp.desc()).all()
         return render_template(
             'messages/index.html',
+            metrics=kpi_stats,
             kpi=kpi_stats,
-            conversations=[],
+            conversations=db_messages,
             subjects=subjects,
             classes=classes,
             sections=sections,
@@ -64,13 +80,11 @@ def index():
 
     try:
         teacher, subjects, classes, sections = _get_teacher_meta(user_id)
-        kpi_stats = get_teacher_message_statistics(user_id)
         conversations = get_conversations(user_id)
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         logger.error(f"Error loading messages page: {e}")
-        kpi_stats = {'total_conversations': 0, 'unread_count': 0, 'sent_today': 0, 'received_today': 0, 'bulk_sent': 0, 'last_activity': ''}
         conversations = []
         teacher = None
 
@@ -117,7 +131,7 @@ def api_conversation(conversation_id):
 @login_required
 def api_create():
     user_id = current_user.id
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True) or request.form
     student_id = payload.get('student_id')
     if not student_id:
         return jsonify({'error': 'Student ID required'}), 400
@@ -131,23 +145,154 @@ def api_create():
         return jsonify({'error': str(e)}), 500
 
 @messages_bp.route('/api/send', methods=['POST'])
+@messages_bp.route('/send', methods=['POST'])
 @login_required
 def api_send():
     user_id = current_user.id
-    payload = request.get_json(silent=True) or {}
-    conversation_id = payload.get('conversation_id')
-    message_text = payload.get('message', '').strip()
+    payload = request.get_json(silent=True) or request.form
+    recipient_id = payload.get('recipient_id') or payload.get('conversation_id') or payload.get('student_id') or payload.get('user_id')
+    message_text = (payload.get('message') or payload.get('content') or payload.get('text') or '').strip()
 
-    if not conversation_id or not message_text:
-        return jsonify({'error': 'Conversation ID and message required'}), 400
+    if not message_text:
+        return jsonify({'error': 'نص الرسالة مطلوب'}), 400
+
+    if not recipient_id:
+        # Fallback to admin or first other user
+        other_user = User.query.filter(User.id != user_id).first()
+        recipient_id = other_user.id if other_user else 1
 
     try:
-        msg = send_message(user_id, conversation_id, message_text)
-        return jsonify({'success': True, 'message': msg})
+        rec_id = int(recipient_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid recipient ID'}), 400
+
+    # Ensure recipient exists
+    rec_user = User.query.get(rec_id)
+    if not rec_user:
+        # Try mapping student ID to user
+        st = Student.query.get(rec_id)
+        if st and hasattr(st, 'user_id') and st.user_id:
+            rec_id = st.user_id
+        else:
+            rec_id = 1
+
+    try:
+        new_msg = Message(
+            sender_id=user_id,
+            recipient_id=rec_id,
+            content=message_text,
+            timestamp=datetime.utcnow(),
+            is_read=False
+        )
+        db.session.add(new_msg)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'id': new_msg.id,
+            'message_id': new_msg.id,
+            'message': 'تم إرسال الرسالة بنجاح'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/details/<int:msg_id>', methods=['GET'])
+@login_required
+def api_message_details(msg_id):
+    msg = Message.query.get(msg_id)
+    if not msg:
+        return jsonify({'error': 'Message not found'}), 404
+
+    if current_user.id not in (msg.sender_id, msg.recipient_id) and getattr(current_user, 'role', '') != 'admin':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    if current_user.id == msg.recipient_id and not msg.is_read:
+        msg.is_read = True
+        db.session.commit()
+
+    return jsonify({
+        'id': msg.id,
+        'sender_id': msg.sender_id,
+        'recipient_id': msg.recipient_id,
+        'content': msg.content,
+        'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S') if msg.timestamp else '',
+        'is_read': msg.is_read
+    })
+
+@messages_bp.route('/api/read/<int:msg_id>', methods=['POST'])
+@messages_bp.route('/read/<int:msg_id>', methods=['POST'])
+@login_required
+def api_mark_read_by_id(msg_id):
+    msg = Message.query.get(msg_id)
+    if not msg:
+        return jsonify({'error': 'Message not found'}), 404
+
+    if current_user.id != msg.recipient_id and getattr(current_user, 'role', '') != 'admin':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    msg.is_read = True
+    db.session.commit()
+    return jsonify({'success': True, 'is_read': True, 'message': 'تم تحديد الرسالة كمقروءة'})
+
+@messages_bp.route('/api/unread/<int:msg_id>', methods=['POST'])
+@messages_bp.route('/unread/<int:msg_id>', methods=['POST'])
+@login_required
+def api_mark_unread_by_id(msg_id):
+    msg = Message.query.get(msg_id)
+    if not msg:
+        return jsonify({'error': 'Message not found'}), 404
+
+    if current_user.id != msg.recipient_id and getattr(current_user, 'role', '') != 'admin':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    msg.is_read = False
+    db.session.commit()
+    return jsonify({'success': True, 'is_read': False, 'message': 'تم تحديد الرسالة كغير مقروءة'})
+
+@messages_bp.route('/api/read', methods=['POST'])
+@login_required
+def api_read():
+    user_id = current_user.id
+    payload = request.get_json(silent=True) or request.form
+    conversation_id = payload.get('conversation_id') or payload.get('message_id')
+    if conversation_id:
+        try:
+            m_id = int(conversation_id)
+            msg = Message.query.get(m_id)
+            if msg:
+                msg.is_read = True
+                db.session.commit()
+        except Exception:
+            pass
+    try:
+        success = mark_as_read(user_id, conversation_id)
+        return jsonify({'success': success})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/unread_count', methods=['GET'])
+@login_required
+def api_unread_count():
+    count = Message.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+    return jsonify({'unread_count': count})
+
+@messages_bp.route('/api/delete/<int:msg_id>', methods=['DELETE', 'POST'])
+@messages_bp.route('/delete/<int:msg_id>', methods=['POST'])
+@login_required
+def api_delete_by_id(msg_id):
+    msg = Message.query.get(msg_id)
+    if not msg:
+        return jsonify({'error': 'Message not found'}), 404
+
+    if current_user.id not in (msg.sender_id, msg.recipient_id) and getattr(current_user, 'role', '') != 'admin':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    db.session.delete(msg)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'تم حذف الرسالة بنجاح'})
 
 @messages_bp.route('/api/archive', methods=['POST'])
 @login_required
@@ -172,20 +317,6 @@ def api_delete():
     try:
         success = delete_conversation(user_id, conversation_id)
         return jsonify({'success': success, 'message': 'تم حذف المحادثة بنجاح'})
-    except PermissionError:
-        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@messages_bp.route('/api/read', methods=['POST'])
-@login_required
-def api_read():
-    user_id = current_user.id
-    payload = request.get_json(silent=True) or {}
-    conversation_id = payload.get('conversation_id')
-    try:
-        success = mark_as_read(user_id, conversation_id)
-        return jsonify({'success': success})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
