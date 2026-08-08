@@ -437,37 +437,37 @@
                         <!-- Action Buttons -->
                         <td class="text-nowrap px-2">
                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                <!-- Subject Profile View Button -->
-                                <button type="button" class="saas-action-btn btn-profile text-primary" title="عرض الملف الشخصي للمادة"
+                                <!-- 1. عرض المادة -->
+                                <button type="button" class="saas-action-btn btn-profile text-primary" data-bs-toggle="tooltip" title="عرض المادة"
                                         onclick="openSubjectProfileModal({{ s.SubID }})">
-                                    <i class="fa-solid fa-address-card"></i>
+                                    <i class="fa-solid fa-eye text-primary"></i>
                                 </button>
 
-                                <!-- Details / Edit Modal -->
-                                <button type="button" class="saas-action-btn btn-view" title="تعديل بيانات المادة"
-                                        onclick='openEditSubjectModal({{ s.SubID }}, "{{ s.SubName }}", "{{ s.Type or "أساسية" }}", "{{ s.Department or "جميع المراحل" }}", {{ s.WeeklyHours or 0 }}, "{{ s.Status or "نشط" }}", "{{ s.Color or "#2563eb" }}", {{ s.linked_classes|map(attribute="CID")|list|tojson }})'>
-                                    <i class="fa-solid fa-pen-to-square"></i>
+                                <!-- 2. تعديل المادة -->
+                                <button type="button" class="saas-action-btn btn-view text-warning" data-bs-toggle="tooltip" title="تعديل المادة"
+                                        onclick='openEditSubjectModal({{ s.SubID }}, "{{ s.SubName }}", "{{ s.Type or "أساسية" }}", "{{ s.Department or "جميع المراحل" }}", {{ s.WeeklyHours or 0 }}, "{{ s.Status or "نشط" }}", "{{ s.Color or "#2563eb" }}", {{ s.linked_classes|map(attribute="CID")|list|tojson }}, {{ (s.teachers.all() if s.teachers and s.teachers.all() else [])|map(attribute="TeacherID")|list|tojson }})'>
+                                    <i class="fa-solid fa-pen-to-square text-warning"></i>
                                 </button>
 
-                                <!-- Target Link 1: Enrolled Students -->
-                                <a href="{{ url_for('students.home', class_id=s.linked_classes[0].CID) if s.linked_classes else url_for('students.home') }}" data-turbo="false" class="saas-action-btn btn-students" title="عرض طلاب المادة">
-                                    <i class="fa-solid fa-users"></i>
+                                <!-- 3. إدارة الصفوف -->
+                                <a href="{{ url_for('students.home', class_id=s.linked_classes[0].CID) if s.linked_classes else url_for('students.home') }}" data-turbo="false" class="saas-action-btn btn-students text-info" data-bs-toggle="tooltip" title="إدارة الصفوف">
+                                    <i class="fa-solid fa-graduation-cap text-info"></i>
                                 </a>
 
-                                <!-- Target Link 2: Assigned Teachers -->
-                                <a href="{{ url_for('teacher.index') }}" data-turbo="false" class="saas-action-btn btn-teachers" title="عرض معلمين المادة">
-                                    <i class="fa-solid fa-user-tie"></i>
+                                <!-- 4. إدارة المعلمين -->
+                                <a href="{{ url_for('teacher.index') }}" data-turbo="false" class="saas-action-btn btn-teachers text-purple" data-bs-toggle="tooltip" title="إدارة المعلمين">
+                                    <i class="fa-solid fa-chalkboard-user text-purple"></i>
                                 </a>
 
-                                <!-- Target Link 3: Timetable Slots -->
-                                <a href="{{ url_for('timetable.index') }}" data-turbo="false" class="saas-action-btn btn-timetable" title="جدول حصص المادة">
-                                    <i class="fa-solid fa-calendar-days"></i>
+                                <!-- 5. الجدول الدراسي -->
+                                <a href="{{ url_for('timetable.index') }}" data-turbo="false" class="saas-action-btn btn-timetable text-secondary" data-bs-toggle="tooltip" title="الجدول الدراسي">
+                                    <i class="fa-solid fa-calendar-days text-secondary"></i>
                                 </a>
 
-                                <!-- Delete Action -->
-                                <button type="button" class="saas-action-btn btn-delete" title="حذف المادة"
+                                <!-- 6. حذف المادة -->
+                                <button type="button" class="saas-action-btn btn-delete text-danger" data-bs-toggle="tooltip" title="حذف المادة"
                                         onclick="confirmDeleteSubject({{ s.SubID }}, '{{ s.SubName }}', {{ s.weekly_slots_count }})">
-                                    <i class="fa-solid fa-trash"></i>
+                                    <i class="fa-solid fa-trash-can text-danger"></i>
                                 </button>
                             </div>
                         </td>
@@ -690,37 +690,31 @@
                                 <input type="text" id="add-teacher-search" class="form-control form-control-modern rounded-pill ps-4" placeholder="بحث سريع عن معلم بالاسم أو التخصص..." onkeyup="filterWizardTeachers('add')">
                             </div>
                             <div>
-                                <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="add-selected-teachers-count" style="background:#7c3aed; color:#fff;">2 معلمين محددين</span>
+                                <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="add-selected-teachers-count" style="background:#7c3aed; color:#fff;">0 معلمين محددين</span>
                             </div>
                         </div>
 
                         <div class="row g-3" id="add-teachers-grid">
+                            {% for t in teachers %}
                             <div class="col-md-6">
-                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                <label class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between cursor-pointer hover-scale h-100 mb-0">
                                     <div class="d-flex align-items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%85%D8%AD%D9%85%D9%88%D8%AF&background=2563eb&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <img src="{{ url_for('static', filename=t.Image) if t.Image else 'https://ui-avatars.com/api/?name=' ~ t.TeacherName ~ '&background=2563eb&color=fff' }}" class="rounded-circle border shadow-sm" style="width:48px; height:48px; object-fit:cover;">
                                         <div>
-                                            <h6 class="fw-bold text-dark mb-0">أ. أحمد محمود علي</h6>
-                                            <small class="text-muted d-block font-monospace">معلم أول • تخصص رياضيات</small>
-                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;">متاح - 14/24 حصة</span>
+                                            <h6 class="fw-bold text-dark mb-0">{{ t.TeacherName }}</h6>
+                                            <small class="text-muted d-block font-monospace">{{ t.TeacherTitle or 'معلم أكاديمي' }}</small>
+                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;"><i class="fa-solid fa-check-circle me-1"></i> كادر تعليمي {{ t.Status or 'نشط' }}</span>
                                         </div>
                                     </div>
-                                    <input type="checkbox" class="form-check-input fs-5" checked>
-                                </div>
+                                    <input type="checkbox" name="teacher_ids" value="{{ t.TeacherID }}" class="form-check-input fs-5 add-teacher-checkbox" onchange="updateWizardTeachersPreview('add')">
+                                </label>
                             </div>
-                            <div class="col-md-6">
-                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%B3%D8%A7%D8%B1%D8%A9+%D8%AE%D8%A7%D9%84%D8%AF&background=0284c7&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
-                                        <div>
-                                            <h6 class="fw-bold text-dark mb-0">أ. سارة خالد العتيبي</h6>
-                                            <small class="text-muted d-block font-monospace">معلم مادة متقدم</small>
-                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;">متاح - 10/24 حصة</span>
-                                        </div>
-                                    </div>
-                                    <input type="checkbox" class="form-check-input fs-5" checked>
-                                </div>
+                            {% else %}
+                            <div class="col-12 text-center py-4 text-muted font-monospace">
+                                <i class="fa-solid fa-chalkboard-user opacity-50 fs-2 mb-2 d-block"></i>
+                                لا يوجد معلمون مسجلون حالياً في قاعدة البيانات.
                             </div>
+                            {% endfor %}
                         </div>
                     </div>
 
@@ -1027,27 +1021,32 @@
                             <div class="flex-grow-1 me-3">
                                 <input type="text" id="edit-teacher-search" class="form-control form-control-modern rounded-pill ps-4" placeholder="بحث سريع عن معلم..." onkeyup="filterWizardTeachers('edit')">
                             </div>
-                            <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="edit-selected-teachers-count" style="background:#7c3aed; color:#fff;">2 معلمين محددين</span>
+                            <span class="badge rounded-pill px-3 py-2 fs-6 font-monospace" id="edit-selected-teachers-count" style="background:#7c3aed; color:#fff;">0 معلمين محددين</span>
                         </div>
 
                         <div class="row g-3" id="edit-teachers-grid">
+                            {% for t in teachers %}
                             <div class="col-md-6">
-                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
+                                <label class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between cursor-pointer hover-scale h-100 mb-0">
                                     <div class="d-flex align-items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%A3%D8%AD%D9%85%D8%AF+%D9%85%D8%AD%D9%85%D9%88%D8%AF&background=2563eb&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
+                                        <img src="{{ url_for('static', filename=t.Image) if t.Image else 'https://ui-avatars.com/api/?name=' ~ t.TeacherName ~ '&background=2563eb&color=fff' }}" class="rounded-circle border shadow-sm" style="width:48px; height:48px; object-fit:cover;">
                                         <div>
-                                            <h6 class="fw-bold text-dark mb-0">أ. أحمد محمود علي</h6>
-                                            <small class="text-muted d-block font-monospace">معلم أول قدير</small>
+                                            <h6 class="fw-bold text-dark mb-0">{{ t.TeacherName }}</h6>
+                                            <small class="text-muted d-block font-monospace">{{ t.TeacherTitle or 'معلم أكاديمي' }}</small>
+                                            <span class="badge bg-success-subtle text-success rounded-pill font-monospace" style="font-size:0.75rem;"><i class="fa-solid fa-check-circle me-1"></i> كادر تعليمي {{ t.Status or 'نشط' }}</span>
                                         </div>
                                     </div>
-                                    <input type="checkbox" class="form-check-input fs-5" checked>
-                                </div>
+                                    <input type="checkbox" name="teacher_ids" value="{{ t.TeacherID }}" id="edit_teacher_cb_{{ t.TeacherID }}" class="form-check-input fs-5 edit-teacher-checkbox" onchange="updateWizardTeachersPreview('edit')">
+                                </label>
                             </div>
-                            <div class="col-md-6">
-                                <div class="p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name=%D8%A3.+%D8%B3%D8%A7%D8%B1%D8%A9+%D8%AE%D8%A7%D9%84%D8%AF&background=0284c7&color=fff" class="rounded-circle border shadow-sm" style="width:50px; height:50px;">
-                                        <div>
+                            {% else %}
+                            <div class="col-12 text-center py-4 text-muted font-monospace">
+                                <i class="fa-solid fa-chalkboard-user opacity-50 fs-2 mb-2 d-block"></i>
+                                لا يوجد معلمون مسجلون حالياً في قاعدة البيانات.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                                             <h6 class="fw-bold text-dark mb-0">أ. سارة خالد العتيبي</h6>
                                             <small class="text-muted d-block font-monospace">معلم مادة متقدم</small>
                                         </div>

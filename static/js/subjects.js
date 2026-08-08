@@ -330,7 +330,7 @@ function bulkDelete() {
     });
 }
 
-function openEditSubjectModal(id, name, type, dept, hours, status, color, classIdsJson) {
+function openEditSubjectModal(id, name, type, dept, hours, status, color, classIdsJson, teacherIdsJson) {
     const modalEl = document.getElementById('editSubjectModal');
     if (!modalEl) return;
     const form = modalEl.querySelector('form');
@@ -356,9 +356,20 @@ function openEditSubjectModal(id, name, type, dept, hours, status, color, classI
             classIds = typeof classIdsJson === 'string' ? JSON.parse(classIdsJson) : classIdsJson;
         } catch(e) {}
     }
-    const editCheckboxes = document.querySelectorAll('.edit-class-checkbox');
-    editCheckboxes.forEach(cb => {
+    const editClassCheckboxes = document.querySelectorAll('.edit-class-checkbox');
+    editClassCheckboxes.forEach(cb => {
         cb.checked = classIds.includes(parseInt(cb.value));
+    });
+
+    let teacherIds = [];
+    if (teacherIdsJson) {
+        try {
+            teacherIds = typeof teacherIdsJson === 'string' ? JSON.parse(teacherIdsJson) : teacherIdsJson;
+        } catch(e) {}
+    }
+    const editTeacherCheckboxes = document.querySelectorAll('.edit-teacher-checkbox');
+    editTeacherCheckboxes.forEach(cb => {
+        cb.checked = teacherIds.includes(parseInt(cb.value));
     });
 
     goToSubjectWizardStep(1, 'edit');
@@ -488,6 +499,7 @@ function updateWizardPreviews(wizardType = 'add') {
     if (sumHours) sumHours.textContent = `${hoursVal} حصص أسبوعية`;
 
     updateWizardClassesPreview(wizardType);
+    updateWizardTeachersPreview(wizardType);
 }
 
 function updateWizardClassesPreview(wizardType = 'add') {
@@ -502,6 +514,17 @@ function updateWizardClassesPreview(wizardType = 'add') {
     if (countBadge) countBadge.textContent = `${selectedCount} صفوف مختارة`;
     if (sectionsBadge) sectionsBadge.textContent = `${estimatedSections} شعب مشمولة`;
     if (sumClasses) sumClasses.textContent = selectedCount > 0 ? `${selectedCount} صفوف دراسية` : 'جميع الصفوف المشمولة';
+}
+
+function updateWizardTeachersPreview(wizardType = 'add') {
+    const checkboxes = document.querySelectorAll(`.${wizardType}-teacher-checkbox:checked`);
+    const countBadge = document.getElementById(`${wizardType}-selected-teachers-count`);
+    const sumTeachers = document.getElementById(`${wizardType}-sum-teachers`);
+
+    const selectedCount = checkboxes.length;
+
+    if (countBadge) countBadge.textContent = `${selectedCount} معلمين محددين`;
+    if (sumTeachers) sumTeachers.textContent = selectedCount > 0 ? `${selectedCount} معلمين مسندين` : 'لا يوجد معلمون مسندون';
 }
 
 function filterWizardTeachers(wizardType = 'add') {

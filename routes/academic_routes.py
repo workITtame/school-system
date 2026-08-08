@@ -74,8 +74,10 @@ def classes():
 def subjects():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
+    from models.teacher import Teacher
     class_id = request.args.get('class_id', type=int)
     classes = Classes.query.filter_by(is_deleted=False).all()
+    teachers_list = Teacher.query.filter_by(is_deleted=False).all()
     
     query = Subject.query
     if hasattr(Subject, 'is_deleted'):
@@ -123,6 +125,7 @@ def subjects():
     return render_template('academic/subjects.html', 
                            subjects=subjects_list,
                            classes=classes,
+                           teachers=teachers_list,
                            selected_class_id=class_id,
                            selected_class=selected_class,
                            total_subjects=total_subjects,
@@ -209,10 +212,15 @@ def add_subject():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
+    from models.teacher import Teacher
     name = request.form.get('name', '').strip()
-    sub_type = request.form.get('type')
-    department = request.form.get('department')
+    sub_type = request.form.get('type', 'أساسية')
+    department = request.form.get('department', 'جميع المراحل')
+    weekly_hours = request.form.get('weekly_hours', type=int) or 4
     status = request.form.get('status', 'نشط')
+    color = request.form.get('color', '#2563eb')
+    class_ids = request.form.getlist('class_ids')
+    teacher_ids = request.form.getlist('teacher_ids')
     
     if not name:
         flash('يرجى إدخال اسم المادة الدراسية', 'warning')
@@ -222,24 +230,40 @@ def add_subject():
     if existing_subject:
         if getattr(existing_subject, 'is_deleted', False):
             existing_subject.is_deleted = False
-            if sub_type: existing_subject.Type = sub_type
-            if department: existing_subject.Department = department
+            existing_subject.Type = sub_type
+            existing_subject.Department = department
+            existing_subject.WeeklyHours = weekly_hours
             existing_subject.Status = status
-            try:
-                db.session.commit()
-                flash(f'تم إعادة تفعيل المادة "{name}" بنجاح', 'success')
-            except Exception:
-                db.session.rollback()
-                flash('حدث خطأ أثناء تفعيل المادة', 'danger')
+            existing_subject.Color = color
+            subject_obj = existing_subject
         else:
             flash(f'المادة الدراسية "{name}" موجودة بالفعل في النظام', 'warning')
-        return redirect(url_for('academic.subjects'))
-        
+            return redirect(url_for('academic.subjects'))
+    else:
+        subject_obj = Subject(
+            SubName=name, 
+            Type=sub_type, 
+            Department=department, 
+            WeeklyHours=weekly_hours, 
+            Status=status, 
+            Color=color
+        )
+        db.session.add(subject_obj)
+        db.session.flush()
+
+    if class_ids:
+        subject_obj.classes = []
+        target_classes = Classes.query.filter(Classes.CID.in_([int(cid) for cid in class_ids])).all()
+        subject_obj.classes.extend(target_classes)
+
+    if teacher_ids:
+        subject_obj.teachers = []
+        target_teachers = Teacher.query.filter(Teacher.TeacherID.in_([int(tid) for tid in teacher_ids])).all()
+        subject_obj.teachers.extend(target_teachers)
+
     try:
-        new_subject = Subject(SubName=name, Type=sub_type, Department=department, Status=status)
-        db.session.add(new_subject)
         db.session.commit()
-        flash(f'تمت إضافة المادة "{name}" بنجاح', 'success')
+        flash(f'تمت إضافة المادة "{name}" وتخصيص الصفوف والمعلمين بنجاح', 'success')
     except IntegrityError:
         db.session.rollback()
         flash(f'المادة الدراسية "{name}" موجودة بالفعل أو حدث تعارض في البيانات', 'warning')
@@ -591,14 +615,16 @@ def edit_subject(id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
+    from models.teacher import Teacher
     subject = Subject.query.get_or_404(id)
-    name = request.form.get('name')
+    name = request.form.get('name', '').strip()
     sub_type = request.form.get('type')
     department = request.form.get('department')
     weekly_hours = request.form.get('weekly_hours', type=int) or 0
     status = request.form.get('status', 'نشط')
     color = request.form.get('color')
     class_ids = request.form.getlist('class_ids')
+    teacher_ids = request.form.getlist('teacher_ids')
     
     if name:
         subject.SubName = name
@@ -615,6 +641,12 @@ def edit_subject(id):
                 target_classes = Classes.query.filter(Classes.CID.in_([int(cid) for cid in class_ids])).all()
                 subject.classes.extend(target_classes)
                 
+        if teacher_ids is not None:
+            subject.teachers = []
+            if teacher_ids:
+                target_teachers = Teacher.query.filter(Teacher.TeacherID.in_([int(tid) for tid in teacher_ids])).all()
+                subject.teachers.extend(target_teachers)
+
         db.session.commit()
         flash('تم تحديث بيانات المادة بنجاح', 'success')
     return redirect(url_for('academic.subjects'))
