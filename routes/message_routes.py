@@ -66,11 +66,15 @@ def index():
 
     if user_role != 'teacher':
         db_messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).order_by(Message.timestamp.desc()).all()
+        other_users = User.query.filter(User.id != user_id).all()
+        students_list = Student.query.filter_by(is_deleted=False).limit(30).all()
         return render_template(
             'messages/index.html',
             metrics=kpi_stats,
             kpi=kpi_stats,
             conversations=db_messages,
+            other_users=other_users,
+            students=students_list,
             subjects=subjects,
             classes=classes,
             sections=sections,
@@ -463,3 +467,79 @@ def api_search():
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/export/excel', methods=['GET'])
+@login_required
+def export_excel():
+    import io, csv
+    from flask import Response
+    user_id = current_user.id
+    messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).order_by(Message.timestamp.desc()).all()
+    if not messages and getattr(current_user, 'role', '') == 'admin':
+        messages = Message.query.order_by(Message.timestamp.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Sender', 'Recipient', 'Content', 'Date', 'Status'])
+    for m in messages:
+        sender_name = m.sender.name if m.sender and hasattr(m.sender, 'name') and m.sender.name else f"User {m.sender_id}"
+        rec_name = m.recipient.name if m.recipient and hasattr(m.recipient, 'name') and m.recipient.name else f"User {m.recipient_id}"
+        status = 'مقروءة' if m.is_read else 'غير مقروءة'
+        writer.writerow([m.id, sender_name, rec_name, m.content, m.timestamp.strftime('%Y-%m-%d %H:%M:%S') if m.timestamp else '', status])
+    
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=messages_report.csv'}
+    )
+
+@messages_bp.route('/export/pdf', methods=['GET'])
+@login_required
+def export_pdf():
+    user_id = current_user.id
+    messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).order_by(Message.timestamp.desc()).all()
+    if not messages and getattr(current_user, 'role', '') == 'admin':
+        messages = Message.query.order_by(Message.timestamp.desc()).all()
+
+    rows = ""
+    for idx, m in enumerate(messages, 1):
+        sender_name = m.sender.name if m.sender and hasattr(m.sender, 'name') and m.sender.name else f"User {m.sender_id}"
+        rec_name = m.recipient.name if m.recipient and hasattr(m.recipient, 'name') and m.recipient.name else f"User {m.recipient_id}"
+        status = 'مقروءة' if m.is_read else 'غير مقروءة'
+        date_str = m.timestamp.strftime('%Y-%m-%d %H:%M') if m.timestamp else ''
+        rows += f"<tr><td>{idx}</td><td>{sender_name}</td><td>{rec_name}</td><td>{m.content}</td><td>{date_str}</td><td>{status}</td></tr>"
+
+    html_content = f"""<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>تقرير سجل الرسائل</title>
+    <style>
+        body {{ font-family: sans-serif; margin: 30px; }}
+        h2 {{ color: #2563eb; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 10px; text-align: right; }}
+        th {{ background-color: #f8fafc; font-weight: bold; }}
+    </style>
+</head>
+<body onload="window.print()">
+    <h2>تقرير مركز الرسائل والتواصل الأكاديمي</h2>
+    <p>تاريخ التقرير: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>المرسل</th>
+                <th>المستلم</th>
+                <th>نص الرسالة</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows}
+        </tbody>
+    </table>
+</body>
+</html>"""
+    return html_content

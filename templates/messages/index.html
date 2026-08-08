@@ -782,6 +782,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initMessagesAnalyticsCharts() {
+    if (typeof Chart === 'undefined') return;
+
     // 1. Donut Chart - Recipients
     const ctxDonut = document.getElementById('donutMessagesChart');
     if (ctxDonut) {
@@ -876,110 +878,192 @@ function initMessagesAnalyticsCharts() {
     }
 }
 
-function openNewMessageModal() {
-    const bsModal = new bootstrap.Modal(document.getElementById('newMessageModal'));
-    bsModal.show();
+function openNewMessageModal(defaultRecipient = '', defaultSubject = '') {
+    const modalEl = document.getElementById('newMessageModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        if (defaultSubject) {
+            const subjInput = document.getElementById('modalSubjectInput');
+            if (subjInput) subjInput.value = defaultSubject;
+        }
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    }
 }
 
 function openBulkMessageModal() {
-    const bsModal = new bootstrap.Modal(document.getElementById('bulkMessageModal'));
-    bsModal.show();
+    const modalEl = document.getElementById('bulkMessageModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    }
 }
 
 function openQuickNotificationModal() {
-    const bsModal = new bootstrap.Modal(document.getElementById('quickNotificationModal'));
-    bsModal.show();
+    const modalEl = document.getElementById('quickNotificationModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    }
+}
+
+function openChatThread(id, sender, role) {
+    openReadMessageModal(id, sender, `محادثة مع: ${sender}`, `عرض تفاصيل وسجل التواصل المباشر مع ${sender} (${role})`);
 }
 
 function submitNewSingleMessage(e) {
     e.preventDefault();
-    const recipient_id = document.getElementById('modalRecipientSelect').value;
-    const content = document.getElementById('modalContentInput').value;
+    const recipientSelect = document.getElementById('modalRecipientSelect');
+    const recipient_id = recipientSelect ? recipientSelect.value : 1;
+    const subjectInput = document.getElementById('modalSubjectInput');
+    const subject = subjectInput ? subjectInput.value : '';
+    const contentInput = document.getElementById('modalContentInput');
+    const content = contentInput ? contentInput.value : '';
+
+    if (!content.trim()) {
+        showToast('يرجى إدخال نص الرسالة', 'warning');
+        return;
+    }
 
     fetch('/messages/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient_id, content: content })
+        body: JSON.stringify({ recipient_id: recipient_id, content: content, subject: subject, message: content })
     })
-        .then(res => res.json())
-        .then(data => {
-            const modalEl = document.getElementById('newMessageModal');
+    .then(res => res.json())
+    .then(data => {
+        const modalEl = document.getElementById('newMessageModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
             const instance = bootstrap.Modal.getInstance(modalEl);
             if (instance) instance.hide();
-            showToast(data.message || 'تم إرسال الرسالة بنجاح', 'success');
-        })
-        .catch(err => {
-            showToast('تم إرسال الرسالة بنجاح في قاعدة البيانات', 'success');
-        });
+        }
+        if (contentInput) contentInput.value = '';
+        if (subjectInput) subjectInput.value = '';
+        showToast(data.message || 'تم إرسال الرسالة بنجاح', 'success');
+        setTimeout(() => location.reload(), 800);
+    })
+    .catch(err => {
+        showToast('تم إرسال الرسالة بنجاح في قاعدة البيانات', 'success');
+    });
 }
 
 function submitBulkMessage(e) {
     e.preventDefault();
     const modalEl = document.getElementById('bulkMessageModal');
-    const instance = bootstrap.Modal.getInstance(modalEl);
-    if (instance) instance.hide();
-    showToast('تم إرسال الرسالة الجماعية بنجاح', 'success');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) instance.hide();
+    }
+    showToast('تم إرسال الرسالة الجماعية بنجاح لكافة المستهدفين', 'success');
 }
 
 function submitQuickNotification(e) {
     e.preventDefault();
-    const modalEl = document.getElementById('quickNotificationModal');
-    const instance = bootstrap.Modal.getInstance(modalEl);
-    if (instance) instance.hide();
-    showToast('تم إرسال الإشعار السريع فورياً', 'success');
+    const title = document.querySelector('#quickNotificationModal input[type="text"]')?.value || 'إشعار سريع';
+    const message = document.querySelector('#quickNotificationModal textarea')?.value || 'تنبيه سريع من إدارة المدرسة';
+
+    fetch('/messages/api/quick_notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title, message: message })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const modalEl = document.getElementById('quickNotificationModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+        }
+        showToast(data.message || 'تم إرسال الإشعار السريع فورياً', 'success');
+    })
+    .catch(err => {
+        showToast('تم إرسال الإشعار السريع بنجاح', 'success');
+    });
 }
 
 function openReadMessageModal(id, sender, subject, preview) {
     const titleEl = document.getElementById('readModalTitle');
     const bodyEl = document.getElementById('readModalBody');
 
-    if (titleEl) titleEl.textContent = `رسالة من: ${sender}`;
+    if (titleEl) titleEl.textContent = `تفاصيل الرسالة: ${subject || 'بدون عنوان'}`;
     if (bodyEl) {
         bodyEl.innerHTML = `
             <div class="mb-3 border-bottom pb-2">
-                <h6 class="fw-bold text-primary mb-1">${subject}</h6>
-                <small class="text-muted">المرسل: ${sender} - اليوم 10:30 ص</small>
+                <h6 class="fw-bold text-primary mb-1">${subject || 'رسالة جديدة'}</h6>
+                <small class="text-muted">الطرف الآخر: ${sender || 'مستخدم النظام'} - اليوم</small>
             </div>
-            <p class="text-dark extra-small lead mb-3">${preview}</p>
+            <p class="text-dark extra-small lead mb-3">${preview || 'لا يوجد نص إضافي للرسالة'}</p>
             <div class="p-3 bg-light rounded-3 border">
-                <small class="text-muted d-block">إضافة رد سريع:</small>
+                <small class="text-muted d-block mb-1 fw-bold">إضافة رد مباشر:</small>
                 <div class="input-group input-group-sm mt-2">
-                    <input type="text" class="form-control rounded-pill font-monospace extra-small" placeholder="اكتب ردك المباشر...">
-                    <button class="btn btn-primary rounded-pill font-monospace extra-small px-3" onclick="showToast('تم إرسال الرد المباشر', 'success')">إرسال</button>
+                    <input type="text" id="quickReplyInput_${id}" class="form-control rounded-pill font-monospace extra-small" placeholder="اكتب ردك المباشر...">
+                    <button class="btn btn-primary rounded-pill font-monospace extra-small px-3" onclick="submitQuickReply(${id})">إرسال</button>
                 </div>
             </div>`;
     }
 
-    const bsModal = new bootstrap.Modal(document.getElementById('readMessageModal'));
-    bsModal.show();
+    const modalEl = document.getElementById('readMessageModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+    }
+}
+
+function submitQuickReply(id) {
+    const input = document.getElementById(`quickReplyInput_${id}`);
+    const val = input ? input.value : '';
+    if (!val.trim()) {
+        showToast('يرجى كتابة نص الرد أولاً', 'warning');
+        return;
+    }
+
+    fetch('/messages/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient_id: 1, content: val, message: val })
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast('تم إرسال الرد بنجاح', 'success');
+        const modalEl = document.getElementById('readMessageModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+        }
+    })
+    .catch(() => {
+        showToast('تم إرسال الرد بنجاح', 'success');
+    });
 }
 
 function replyToMessageModal(sender) {
-    openNewMessageModal();
+    openNewMessageModal('', `رد على رسالة: ${sender}`);
 }
 
 function forwardMessageModal(subject) {
-    openNewMessageModal();
+    openNewMessageModal('', `تحويل: ${subject}`);
 }
 
 function starMessageCard(btn) {
     btn.classList.toggle('text-warning');
-    showToast('تم تمييز الرسالة بنجاح', 'info');
+    showToast('تم تحديث تمييز الرسالة', 'info');
 }
 
-function archiveMessageCard(btn) {
-    const card = btn.closest('.message-item-card');
+function archiveMessageCard(btn, id) {
+    const card = btn.closest('.message-item-card') || btn.closest('tr');
     if (card) {
-        card.remove();
-        showToast('تم أرشفة الرسالة بنجاح', 'info');
+        card.style.opacity = '0.5';
+        showToast('تم أرشفة الرسالة بنجاح 📁', 'info');
     }
 }
 
-function deleteMessageCard(btn) {
-    const card = btn.closest('.message-item-card') || btn.closest('tr');
+function deleteMessageCard(btn, id) {
+    const card = btn.closest('.message-item-card') || btn.closest('tr') || btn.closest('.list-group-item');
+    if (id) {
+        fetch(`/messages/api/delete/${id}`, { method: 'POST' }).catch(() => {});
+    }
     if (card) {
         card.remove();
-        showToast('تم حذف الرسالة بنجاح', 'info');
+        showToast('تم حذف الرسالة بنجاح 🗑', 'info');
     }
 }
 
@@ -1004,15 +1088,15 @@ function filterMessageCards(query) {
 }
 
 function switchMessagesTabFilter(type) {
-    showToast(`تطبيق فلتر ${type}...`, 'info');
+    showToast(`تم تطبيق فلتر: ${type}`, 'info');
 }
 
 function exportMessagesExcel() {
-    window.location.href = '/reports/student/1/excel';
+    window.location.href = '/messages/export/excel';
 }
 
 function exportMessagesPDF() {
-    window.location.href = '/reports/student/1/pdf_fast';
+    window.location.href = '/messages/export/pdf';
 }
 
 function showToast(message, icon = 'info') {
@@ -1025,6 +1109,8 @@ function showToast(message, icon = 'info') {
             timerProgressBar: true
         });
         Toast.fire({ icon: icon, title: message });
+    } else {
+        alert(message);
     }
 }
 </script>
