@@ -722,7 +722,7 @@
                             <h4 class="fw-extrabold mb-0 font-cairo" id="viewClassName">اسم الصف الدراسي</h4>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close" onclick="closeViewClassModal()"></button>
                 </div>
             </div>
 
@@ -775,7 +775,7 @@
 
             <!-- Footer Quick Access Buttons -->
             <div class="modal-footer bg-white border-top p-3 d-flex justify-content-between font-monospace extra-small">
-                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal" onclick="closeViewClassModal()">إغلاق</button>
                 <div class="d-flex align-items-center gap-2">
                     <a href="#" id="viewBtnStudents" class="btn btn-outline-info rounded-pill px-3 fw-bold">
                         <i class="fa-solid fa-users me-1"></i> إدارة الطلاب
@@ -793,6 +793,16 @@
 </div>
 
 <script>
+let viewClassModalInstance = null;
+
+function closeViewClassModal() {
+    const viewModalEl = document.getElementById('viewClassModal');
+    const modalInst = bootstrap.Modal.getInstance(viewModalEl) || viewClassModalInstance;
+    if (modalInst) {
+        modalInst.hide();
+    }
+}
+
 function openViewClassModal(cid, name, stage, status, studentsCount, sectionsCount, teachersCount, subjectsCount, occupancy) {
     document.getElementById('viewClassName').textContent = name;
     document.getElementById('viewClassCode').textContent = 'CLS-' + cid;
@@ -805,16 +815,15 @@ function openViewClassModal(cid, name, stage, status, studentsCount, sectionsCou
     document.getElementById('viewClassOccupancy').textContent = (occupancy >= 0 ? occupancy + '%' : 'غير محددة');
 
     document.getElementById('viewBtnEdit').onclick = function() {
-        const viewModalEl = document.getElementById('viewClassModal');
-        const modalInstance = bootstrap.Modal.getInstance(viewModalEl);
-        if (modalInstance) modalInstance.hide();
+        closeViewClassModal();
         openEditClassModal(cid, name, stage);
     };
     document.getElementById('viewBtnStudents').href = `/students/?class_id=${cid}`;
     document.getElementById('viewBtnTeachers').href = `/teacher/?class_id=${cid}`;
 
-    const viewModal = new bootstrap.Modal(document.getElementById('viewClassModal'));
-    viewModal.show();
+    const viewModalEl = document.getElementById('viewClassModal');
+    viewClassModalInstance = bootstrap.Modal.getInstance(viewModalEl) || new bootstrap.Modal(viewModalEl);
+    viewClassModalInstance.show();
 }
 </script>
 

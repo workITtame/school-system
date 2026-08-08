@@ -247,7 +247,11 @@ def home():
     sections = Sections.query.all()
     
     # Calculate real DB statistics for Admin Workspace
+    class_id = request.args.get('class_id', type=int)
     all_students_query = Student.query.filter(Student.is_deleted == False)
+    if class_id:
+        all_students_query = all_students_query.filter(Student.CID == class_id)
+
     total_students = all_students_query.count()
     active_students = all_students_query.filter(or_(Student.Status == 'نشط', Student.Status == 'منتظم', Student.Status.is_(None), Student.Status == '')).count()
     inactive_students = all_students_query.filter(Student.Status == 'غير نشط').count()
@@ -257,7 +261,10 @@ def home():
     new_students = all_students_query.filter(Student.created_at >= (datetime.utcnow() - timedelta(days=30))).count()
 
     from models.grade import Marks
-    avg_score_val = db.session.query(func.avg(Marks.Score)).scalar()
+    if class_id:
+        avg_score_val = db.session.query(func.avg(Marks.Score)).join(Student, Marks.SID == Student.SID).filter(Student.CID == class_id, Student.is_deleted == False).scalar()
+    else:
+        avg_score_val = db.session.query(func.avg(Marks.Score)).scalar()
     avg_score = round(float(avg_score_val), 1) if avg_score_val is not None else 85.0
 
     kpi_dict = {
@@ -272,10 +279,15 @@ def home():
     total_sections_count = Sections.query.count()
     total_parents_count = db.session.query(func.count(func.distinct(Student.Parent_Name))).filter(Student.is_deleted == False, Student.Parent_Name.isnot(None), Student.Parent_Name != '').scalar() or 0
 
-    student_items = Student.query.options(
+    student_items_query = Student.query.options(
         joinedload(Student.school_class),
         joinedload(Student.section)
-    ).filter(Student.is_deleted == False).order_by(Student.SID.desc()).all()
+    ).filter(Student.is_deleted == False)
+
+    if class_id:
+        student_items_query = student_items_query.filter(Student.CID == class_id)
+
+    student_items = student_items_query.order_by(Student.SID.desc()).all()
 
     student_cards = []
     for st in student_items:
@@ -327,6 +339,7 @@ def home():
                            student_cards=student_cards,
                            top_students=[],
                            score_brackets={},
+                           selected_class_id=class_id,
                            last_updated_time=last_updated_time)
 
 @students_bp.route('/api/list')

@@ -182,9 +182,9 @@
             <!-- Filters -->
             <div class="col-6 col-md-2">
                 <select class="form-select bg-light font-monospace extra-small" id="filterClass" onchange="fetchStudentsList(1)">
-                    <option value="">جميع الصفوف</option>
+                    <option value="" {% if not selected_class_id %}selected{% endif %}>جميع الصفوف</option>
                     {% for c in classes %}
-                        <option value="{{ c.CID }}">{{ c.CName }}</option>
+                        <option value="{{ c.CID }}" {% if selected_class_id and selected_class_id == c.CID %}selected{% endif %}>{{ c.CName }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -1026,6 +1026,12 @@ function renderDrawerActivity(data) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlClassId = urlParams.get('class_id');
+    const filterClassSelect = document.getElementById('filterClass');
+    if (urlClassId && filterClassSelect) {
+        filterClassSelect.value = urlClassId;
+    }
     fetchStudentsList(1);
 });
 </script>
