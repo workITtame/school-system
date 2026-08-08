@@ -378,20 +378,17 @@ def add_subject():
         flash('يرجى إدخال اسم المادة الدراسية', 'warning')
         return redirect(url_for('academic.subjects'))
         
-    existing_subject = Subject.query.filter_by(SubName=name).first()
+    from sqlalchemy import func
+    from sqlalchemy.exc import IntegrityError
+    existing_subject = Subject.query.filter(
+        func.lower(Subject.SubName) == name.lower(),
+        Subject.is_deleted == False if hasattr(Subject, 'is_deleted') else True
+    ).first()
     if existing_subject:
-        if getattr(existing_subject, 'is_deleted', False):
-            existing_subject.is_deleted = False
-            existing_subject.Type = sub_type
-            existing_subject.Department = department
-            existing_subject.WeeklyHours = weekly_hours
-            existing_subject.Status = status
-            existing_subject.Color = color
-            subject_obj = existing_subject
-        else:
-            flash(f'المادة الدراسية "{name}" موجودة بالفعل في النظام', 'warning')
-            return redirect(url_for('academic.subjects'))
-    else:
+        flash(f'المادة الدراسية "{name}" موجودة بالفعل في النظام', 'warning')
+        return redirect(url_for('academic.subjects'))
+        
+    try:
         subject_obj = Subject(
             SubName=name, 
             Type=sub_type, 
@@ -401,7 +398,12 @@ def add_subject():
             Color=color
         )
         db.session.add(subject_obj)
-        db.session.flush()
+        db.session.commit()
+        flash(f'تمت إضافة المادة الدراسية "{name}" بنجاح', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'المادة الدراسية "{name}" موجودة بالفعل في النظام', 'warning')
+        return redirect(url_for('academic.subjects'))
 
     if class_ids:
         subject_obj.classes = []
@@ -828,9 +830,9 @@ def delete_subject(id):
 
 @academic_bp.route('/subject/<int:id>/data')
 def get_subject_data_api(id):
+    from flask import jsonify
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
-    from flask import jsonify
     from models.teacher import Teacher
     from models.grade import Marks
     subject = Subject.query.get_or_404(id)
