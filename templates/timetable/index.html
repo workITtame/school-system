@@ -19,21 +19,43 @@
                     <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
                         <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i
                                     class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">جدولي الدراسي</li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('academic.classes') }}" class="text-white text-decoration-none">إدارة الصفوف والشعب</a></li>
+                        <li class="breadcrumb-item active text-white opacity-75" aria-current="page">الجدول الدراسي</li>
                     </ol>
                 </nav>
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <h2 class="fw-bold text-white mb-0 font-monospace">جدولي الدراسي</h2>
-                    <span
-                        class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">Teacher
-                        Timetable Workspace</span>
+                    <h2 class="fw-bold text-white mb-0 font-monospace">
+                        الجدول الدراسي
+                        {% if selected_class %}
+                            - {{ selected_class.CName }}
+                        {% endif %}
+                    </h2>
+                    {% if selected_class %}
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace extra-small fw-bold border border-warning shadow-sm">
+                            <i class="fa-solid fa-school me-1"></i> {{ selected_class.CName }} ({{ selected_class.Stage or 'المرحلة العامة' }})
+                        </span>
+                    {% else %}
+                        <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">
+                            جدول المدرسة الشامل
+                        </span>
+                    {% endif %}
                 </div>
                 <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
-                    عرض وإدارة جدول حصصك اليومية والأسبوعية ومتابعة الحصص الحالية والقادمة فورياً.
+                    {% if selected_class %}
+                        عرض وإدارة الجدول الدراسي الخاص بـ ({{ selected_class.CName }}) ومتابعة الحصص والمواد المسندة للصف.
+                    {% else %}
+                        عرض وإدارة جدول الحصص اليومية والأسبوعية ومتابعة الحصص الحالية والقادمة فورياً.
+                    {% endif %}
                 </p>
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap position-relative" style="z-index: 10;">
+                {% if selected_class or selected_class_id %}
+                <a href="{{ url_for('academic.classes') }}"
+                    class="btn btn-warning rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 text-dark">
+                    <i class="fa-solid fa-arrow-right fs-6"></i> <span>العودة إلى الصفوف والشعب</span>
+                </a>
+                {% endif %}
                 <button type="button"
                     class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2"
                     onclick="document.getElementById('weeklyTimetableCard')?.scrollIntoView({behavior: 'smooth'})">
@@ -55,6 +77,31 @@
                     style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-arrows-rotate fs-6"></i>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar for Class Selection -->
+    <div class="glass-panel-card p-3 rounded-4 shadow-sm bg-white border-0 mb-4 no-print">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-filter text-primary fs-5"></i>
+                <h6 class="fw-bold text-dark mb-0 font-monospace">تصفية الجدول حسب الصف الدراسي:</h6>
+            </div>
+            <div class="d-flex align-items-center gap-2" style="min-width: 280px;">
+                <select id="timetableClassFilterSelect" class="form-select rounded-pill px-3 fw-bold font-monospace border-primary" onchange="window.location.href=this.value;">
+                    <option value="{{ url_for('timetable.index') }}" {% if not selected_class_id %}selected{% endif %}>--- كافة الصفوف الدراسية (الجدول العام) ---</option>
+                    {% for c in all_classes %}
+                    <option value="{{ url_for('timetable.index') }}?class_id={{ c.CID }}" {% if selected_class_id == c.CID %}selected{% endif %}>
+                        {{ c.CName }} ({% if c.Stage %}{{ c.Stage }}{% else %}عام{% endif %})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if selected_class_id %}
+                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border rounded-circle p-2 text-danger" title="إلغاء تصفية الصف">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -450,19 +497,19 @@
                         إجراءات سريعة</h6>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('attendance.index') }}"
+                    <a href="{{ url_for('attendance.index') }}{% if selected_class_id %}?class_id={{ selected_class_id }}{% endif %}"
                         class="btn btn-outline-success rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-clipboard-user me-1"></i> رصد الحضور
                     </a>
-                    <a href="{{ url_for('grades_legacy.manage_grades') }}"
+                    <a href="{{ url_for('grades_legacy.manage_grades') }}{% if selected_class_id %}?class_id={{ selected_class_id }}{% endif %}"
                         class="btn btn-outline-warning rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-star me-1"></i> رصد الدرجات
                     </a>
-                    <a href="{{ url_for('homework.index') }}"
+                    <a href="{{ url_for('homework.index') }}{% if selected_class_id %}?class_id={{ selected_class_id }}{% endif %}"
                         class="btn btn-outline-primary rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-book-bookmark me-1"></i> إضافة واجب
                     </a>
-                    <a href="{{ url_for('reports.student_report') }}"
+                    <a href="{{ url_for('reports.index') }}{% if selected_class_id %}?class_id={{ selected_class_id }}{% endif %}"
                         class="btn btn-outline-info rounded-pill px-3 py-2 font-monospace extra-small fw-bold flex-grow-1 text-center">
                         <i class="fa-solid fa-chart-column me-1"></i> التقارير
                     </a>

@@ -91,7 +91,13 @@ def index():
     teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
     teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
     
-    total_students = Student.query.filter(Student.is_deleted == False).count()
+    all_classes = Classes.query.filter_by(is_deleted=False).order_by(Classes.CID).all()
+    selected_class = Classes.query.filter_by(CID=class_id, is_deleted=False).first() if class_id else None
+
+    if class_id:
+        total_students = Student.query.filter(Student.CID == class_id, Student.is_deleted == False).count()
+    else:
+        total_students = Student.query.filter(Student.is_deleted == False).count()
 
     today_slots = [s for s in slots if s.day and s.day.DName == today_day_name]
     today_slots_sorted = sorted(
@@ -121,7 +127,7 @@ def index():
         room_name = getattr(slot, 'RoomNo', None) or f"قاعة {200 + idx}"
         time_range = f"{start_t} - {end_t}"
         
-        st_count = 30
+        st_count = Student.query.filter(Student.CID == slot.CID, Student.is_deleted == False).count() if slot.CID else 30
         is_current = False
         is_next = False
         
@@ -217,8 +223,13 @@ def index():
                 'room': room_name
             })
 
-    today_present = Attendance.query.filter(Attendance.Date == today, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
-    today_absent = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'غائب').count()
+    if class_id:
+        today_present = Attendance.query.join(Student, Attendance.SID == Student.SID).filter(Attendance.Date == today, Student.CID == class_id, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
+        today_absent = Attendance.query.join(Student, Attendance.SID == Student.SID).filter(Attendance.Date == today, Student.CID == class_id, Attendance.Status == 'غائب').count()
+    else:
+        today_present = Attendance.query.filter(Attendance.Date == today, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
+        today_absent = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'غائب').count()
+        
     total_att = today_present + today_absent
     att_rate = round((today_present / total_att * 100), 1) if total_att > 0 else 90.0
     
@@ -250,7 +261,10 @@ def index():
                            week_days=week_days,
                            today_summary=today_summary,
                            today_date=today.strftime('%Y-%m-%d'),
-                           today_day_name=today_day_name)
+                           today_day_name=today_day_name,
+                           all_classes=all_classes,
+                           selected_class=selected_class,
+                           selected_class_id=class_id)
 
 @timetable_bp.route('/api/drawer/<int:slot_id>')
 @login_required
