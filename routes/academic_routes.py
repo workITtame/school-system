@@ -695,27 +695,79 @@ def get_subject_data_api(id):
         return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
     from flask import jsonify
     from models.teacher import Teacher
+    from models.grade import Marks
     subject = Subject.query.get_or_404(id)
     
     class_objs = subject.classes.all() if hasattr(subject.classes, 'all') else subject.classes
-    linked_classes = [{'id': c.CID, 'name': c.CName, 'stage': c.Stage or 'المرحلة العامة'} for c in class_objs if not getattr(c, 'is_deleted', False)]
+    linked_classes = []
+    for c in class_objs:
+        if not getattr(c, 'is_deleted', False):
+            c_students = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+            c_sections = len([sec for sec in c.sections if not getattr(sec, 'is_deleted', False)])
+            c_occ = round((c_students / c.MaxStudents) * 100, 1) if c.MaxStudents and c.MaxStudents > 0 else None
+            linked_classes.append({
+                'id': c.CID,
+                'name': c.CName,
+                'stage': c.Stage or 'المرحلة العامة',
+                'sectionsCount': c_sections,
+                'studentsCount': c_students,
+                'maxStudents': c.MaxStudents or 0,
+                'occupancy': c_occ
+            })
+
     teacher_objs = subject.teachers.all() if hasattr(subject.teachers, 'all') else subject.teachers
-    assigned_teachers = [{'id': t.TeacherID, 'name': t.TeacherName, 'title': t.TeacherTitle or 'معلم قدير'} for t in teacher_objs if not getattr(t, 'is_deleted', False)]
+    assigned_teachers = [{'id': t.TeacherID, 'name': t.TeacherName, 'title': t.TeacherTitle or 'معلم قدير', 'email': t.Email or 'غير محدد', 'phone': t.Phone or 'غير محدد', 'status': t.Status or 'نشط', 'image': t.Image or ''} for t in teacher_objs if not getattr(t, 'is_deleted', False)]
     
+    marks = Marks.query.filter_by(SubID=subject.SubID).all()
+    if marks:
+        valid_scores = [float(m.Score) for m in marks if m.Score is not None]
+        avg_score = round(sum(valid_scores) / len(valid_scores), 1) if valid_scores else None
+        passed_marks = [m for m in marks if m.Score is not None and (float(m.Score) / float(m.MaxScore or 100)) >= 0.5]
+        pass_rate = round((len(passed_marks) / len(valid_scores)) * 100, 1) if valid_scores else None
+    else:
+        avg_score = None
+        pass_rate = None
+
+    class_ids = [c['id'] for c in linked_classes]
+    students_count = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).count() if class_ids else 0
+    weekly_slots_count = SchoolTable.query.filter_by(SubID=subject.SubID, is_deleted=False).count()
+    sections_count = sum(c['sectionsCount'] for c in linked_classes)
+
+    # Real timetable slots from SchoolTable
+    timetable_records = SchoolTable.query.filter_by(SubID=subject.SubID, is_deleted=False).all()
+    slots_list = []
+    for slot in timetable_records:
+        slots_list.append({
+            'day': slot.day.DName if slot.day else 'غير محدد',
+            'lesson': slot.lesson.LessonName if slot.lesson else 'غير محدد',
+            'className': slot.school_class.CName if slot.school_class else 'غير محدد',
+            'sectionName': slot.section.SectionName if slot.section else ''
+        })
+
     return jsonify({
         'success': True,
         'subject': {
             'id': subject.SubID,
+            'code': f"SUB-{subject.SubID}",
             'name': subject.SubName,
             'type': subject.Type or 'أساسية',
             'department': subject.Department or 'جميع المراحل',
             'weeklyHours': subject.WeeklyHours or 4,
             'status': subject.Status or 'نشط',
             'color': subject.Color or '#2563eb',
+            'studentsCount': students_count,
+            'teachersCount': len(assigned_teachers),
+            'classesCount': len(linked_classes),
+            'sectionsCount': sections_count,
+            'weeklySlotsCount': weekly_slots_count,
+            'avgScore': avg_score,
+            'passRate': pass_rate,
             'classes': linked_classes,
+            'linkedClasses': linked_classes,
             'teachers': assigned_teachers,
-            'classIds': [c['id'] for c in linked_classes],
-            'teacherIds': [t['id'] for t in assigned_teachers]
+            'classIds': class_ids,
+            'teacherIds': [t['id'] for t in assigned_teachers],
+            'timetableSlots': slots_list
         }
     })
 

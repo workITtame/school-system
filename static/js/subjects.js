@@ -886,7 +886,7 @@ function loadSubjectProfile(data) {
     }
 
     // Lead Teacher
-    const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers[0].name : 'أ. أحمد محمود علي';
+    const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers[0].name : 'غير معين';
     if (heroTeacher) heroTeacher.textContent = mainTeacherName;
 
     // Basic Info Card
@@ -903,7 +903,7 @@ function loadSubjectProfile(data) {
     if (infoType) infoType.textContent = data.type || 'أساسية';
     if (infoDept) infoDept.textContent = data.department || 'جميع المراحل';
     if (infoStatus) infoStatus.textContent = data.status || 'نشط';
-    if (infoDate) infoDate.textContent = data.createdAt || '2024-09-01';
+    if (infoDate) infoDate.textContent = data.createdAt || 'سجل المادة المعتمد';
     if (infoDesc) infoDesc.textContent = data.description || 'مادة دراسية مقرة ضمن الخطة الأكاديمية للتعليم.';
 
     // Render Sub-components
@@ -946,9 +946,17 @@ function renderSubjectKPIs(data) {
     if (kpiStudents) kpiStudents.textContent = data.studentsCount || 0;
     if (kpiTeachers) kpiTeachers.textContent = data.teachersCount || (data.teachers ? data.teachers.length : 0);
     if (kpiClasses) kpiClasses.textContent = data.classesCount || (data.linkedClasses ? data.linkedClasses.length : 0);
-    if (kpiSections) kpiSections.textContent = data.sectionsCount || Math.max(1, (data.classesCount || 1) * 2);
+    if (kpiSections) kpiSections.textContent = data.sectionsCount || 0;
     if (kpiHours) kpiHours.textContent = data.weeklyHours || 4;
-    if (kpiSuccess) kpiSuccess.textContent = `${data.avgSuccess || 88.5}%`;
+    
+    if (kpiSuccess) {
+        kpiSuccess.textContent = (data.passRate !== null && data.passRate !== undefined) ? `${data.passRate}%` : 'غير محدد';
+    }
+
+    const chartAvg = document.getElementById('sp-chart-avg');
+    const chartPass = document.getElementById('sp-chart-pass');
+    if (chartAvg) chartAvg.textContent = (data.avgScore !== null && data.avgScore !== undefined) ? `${data.avgScore} / 100` : 'غير متاح';
+    if (chartPass) chartPass.textContent = (data.passRate !== null && data.passRate !== undefined) ? `${data.passRate}%` : 'غير محدد';
 }
 
 function renderClasses(classes) {
@@ -969,7 +977,7 @@ function renderClasses(classes) {
     }
 
     container.innerHTML = classes.map(c => {
-        const occ = c.occupancy || 75;
+        const occ = c.occupancy !== null && c.occupancy !== undefined ? c.occupancy : 0;
         const colorClass = occ < 70 ? 'bg-success' : (occ <= 90 ? 'bg-warning' : 'bg-danger');
         return `
             <div class="col-md-6">
@@ -980,8 +988,8 @@ function renderClasses(classes) {
                             <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace small">${c.stage}</span>
                         </div>
                         <div class="d-flex justify-content-between text-muted small font-monospace mb-2">
-                            <span>الشعب: ${c.sectionsCount} شعب</span>
-                            <span>الطلاب: ${c.studentsCount} / ${c.maxStudents}</span>
+                            <span>الشعب: ${c.sectionsCount || 0} شعب</span>
+                            <span>الطلاب: ${c.studentsCount || 0} / ${c.maxStudents || 0}</span>
                         </div>
                         <div class="progress rounded-pill mb-1" style="height: 6px;">
                             <div class="progress-bar ${colorClass}" style="width: ${occ}%;"></div>
@@ -1002,12 +1010,18 @@ function renderTeachers(teachers) {
     const badge = document.getElementById('sp-teachers-count-badge');
     if (!container) return;
 
-    const list = (teachers && teachers.length > 0) ? teachers : [
-        { id: 101, name: "أ. أحمد محمود علي", title: "معلم أول - قدير", email: "ahmed.ali@school.edu", phone: "+966 50 123 4567", status: "نشط" },
-        { id: 102, name: "أ. سارة خالد العتيبي", title: "معلم مادة متقدم", email: "sara.k@school.edu", phone: "+966 55 987 6543", status: "نشط" }
-    ];
-
+    const list = teachers || [];
     if (badge) badge.textContent = `${list.length} معلمين`;
+
+    if (!list || list.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4 text-muted">
+                <i class="fa-solid fa-chalkboard-user fs-1 opacity-50 mb-2"></i>
+                <p class="mb-0">لا يوجد معلمون كادر أكاديمي مسندون لهذه المادة حالياً.</p>
+            </div>
+        `;
+        return;
+    }
 
     container.innerHTML = list.map(t => {
         const avatarSrc = t.image ? `/static/${t.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=2563eb&color=fff`;
@@ -1018,9 +1032,9 @@ function renderTeachers(teachers) {
                         <img src="${avatarSrc}" class="rounded-circle border shadow-sm flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover;" alt="${t.name}">
                         <div class="overflow-hidden">
                             <a href="/teacher/view/${t.id}" data-turbo="false" class="fw-bold text-dark mb-0 text-truncate d-block text-decoration-none text-primary-hover">${t.name}</a>
-                            <small class="text-muted d-block small mb-1">${t.title || 'معلم قدير'}</small>
+                            <small class="text-muted d-block small mb-1">${t.title || 'معلم أكاديمي'}</small>
                             <div class="d-flex align-items-center gap-2 font-monospace text-muted" style="font-size: 0.75rem;">
-                                <span><i class="fa-solid fa-envelope me-1"></i>${t.email}</span>
+                                <span><i class="fa-solid fa-envelope me-1"></i>${t.email || 'غير محدد'}</span>
                             </div>
                         </div>
                     </div>
@@ -1043,19 +1057,29 @@ function renderTimetable(data) {
     if (!tbody) return;
 
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
-    const sampleClasses = (data.linkedClasses && data.linkedClasses.length > 0) 
-        ? data.linkedClasses.map(c => c.name) 
-        : ['الصف الأول الثانوي', 'الصف الثاني الثانوي', 'الصف الثالث الثانوي'];
+    const slots = data.timetableSlots || [];
 
-    tbody.innerHTML = days.map((day, idx) => {
+    if (slots.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-calendar-xmark fs-2 opacity-50 d-block mb-2"></i>
+                    لا توجد حصص مجدولة لهذه المادة في الجدول الأسبوعي حالياً.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = days.map(day => {
         let cellsHtml = '';
-        for (let slot = 1; slot <= 5; slot++) {
-            if ((idx + slot) % 2 === 0) {
-                const clsName = sampleClasses[(idx + slot) % sampleClasses.length];
+        for (let lessonIdx = 1; lessonIdx <= 5; lessonIdx++) {
+            const slotMatch = slots.find(s => s.day === day && s.lesson.includes(lessonIdx.toString()));
+            if (slotMatch) {
                 cellsHtml += `
                     <td>
                         <span class="badge bg-primary-subtle text-primary rounded-3 p-2 d-block text-truncate">
-                            <i class="fa-solid fa-chalkboard me-1"></i> ${clsName}
+                            <i class="fa-solid fa-chalkboard me-1"></i> ${slotMatch.className} ${slotMatch.sectionName}
                         </span>
                     </td>
                 `;
@@ -1080,14 +1104,17 @@ function renderTimeline(timeline) {
     const container = document.getElementById('sp-timeline-container');
     if (!container) return;
 
-    const list = (timeline && timeline.length > 0) ? timeline : [
-        { title: "إضافة واجب دراسي جديد (الفصل الأول)", time: "اليوم - 09:30 صباحاً", icon: "fa-file-pen", color: "bg-primary" },
-        { title: "جدولة اختبار منتصف الفصل الدراسي", time: "أمس - 11:15 صباحاً", icon: "fa-calendar-check", color: "bg-warning" },
-        { title: "اعتماد رصد الدرجات الشهرية", time: "منذ 3 أيام", icon: "fa-clipboard-check", color: "bg-success" },
-        { title: "تحديث مفردات الخطة الأكاديمية", time: "منذ أسبوع", icon: "fa-rotate", color: "bg-info" }
-    ];
+    if (!timeline || timeline.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3 text-muted">
+                <i class="fa-solid fa-clock-rotate-left opacity-50 d-block mb-1"></i>
+                <small>لا توجد أنشطة مسجلة مؤخراً لهذه المادة.</small>
+            </div>
+        `;
+        return;
+    }
 
-    container.innerHTML = list.map(item => `
+    container.innerHTML = timeline.map(item => `
         <div class="timeline-item">
             <div class="timeline-badge ${item.color}"><i class="fa-solid ${item.icon}"></i></div>
             <h6 class="fw-bold text-dark mb-1">${item.title}</h6>
@@ -1182,15 +1209,35 @@ function initSubjectChart(data) {
         subjectChartInstance.destroy();
     }
 
-    const labels = ['الفصل 1', 'الفصل 2', 'منتصف العام', 'الفصل 3'];
-    const chartData = [84, 88, 92, Math.round(data.avgSuccess || 88.5)];
+    const score = (data.avgScore !== null && data.avgScore !== undefined) ? data.avgScore : (data.avgSuccess !== null && data.avgSuccess !== undefined ? data.avgSuccess : null);
+
+    if (score === null) {
+        ctx.style.display = 'none';
+        let noDataDiv = ctx.parentElement.querySelector('.no-chart-data');
+        if (!noDataDiv) {
+            noDataDiv = document.createElement('div');
+            noDataDiv.className = 'no-chart-data text-center py-4 text-muted';
+            noDataDiv.innerHTML = '<i class="fa-solid fa-chart-line fs-2 opacity-50 mb-2 d-block"></i>لا توجد درجات مسجلة لهذه المادة لتوليد الرسم البياني حالياً.';
+            ctx.parentElement.appendChild(noDataDiv);
+        } else {
+            noDataDiv.style.display = 'block';
+        }
+        return;
+    }
+
+    ctx.style.display = 'block';
+    const noDataDiv = ctx.parentElement.querySelector('.no-chart-data');
+    if (noDataDiv) noDataDiv.style.display = 'none';
+
+    const labels = ['متوسط الأداء الفعلي'];
+    const chartData = [score];
 
     subjectChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'متوسط الأداء الأكاديمي',
+                label: 'متوسط نتائج المادة',
                 data: chartData,
                 backgroundColor: 'rgba(37, 99, 235, 0.85)',
                 borderColor: '#2563eb',

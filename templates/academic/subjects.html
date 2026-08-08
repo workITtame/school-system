@@ -287,45 +287,36 @@
                       "classesCount": {{ s.linked_classes_count or 0 }},
                       "sectionsCount": {{ s.linked_classes|map(attribute='sections')|map('length')|sum if s.linked_classes else 0 }},
                       "weeklySlotsCount": {{ s.weekly_slots_count or 4 }},
-                      "avgSuccess": 88.5,
-                      "createdAt": "2024-09-01",
-                      "description": "مادة دراسية أساسية مقرة ضمن الخطة الأكاديمية المعتمدة، تشمل المهارات المركزية والتطبيقات العملية والتقييمات المستمرة للطلاب.",
+                      "avgSuccess": {{ s.avg_score if s.avg_score is defined and s.avg_score is not none else 'null' }},
+                      "passRate": {{ s.pass_rate if s.pass_rate is defined and s.pass_rate is not none else 'null' }},
+                      "description": "مادة دراسية مقرة ضمن الخطة الأكاديمية الرسمية والمناهج المعتمدة للمرحلة.",
                       "linkedClasses": [
                         {% for cls in s.linked_classes %}
                         {
                           "id": {{ cls.CID }},
                           "name": {{ cls.CName|tojson }},
                           "stage": {{ (cls.Stage or 'المرحلة العامة')|tojson }},
-                          "sectionsCount": {{ cls.sections|length if cls.sections else 1 }},
+                          "sectionsCount": {{ cls.sections|length if cls.sections else 0 }},
                           "studentsCount": {{ cls.students_count or 0 }},
-                          "maxStudents": {{ cls.MaxStudents or 40 }},
-                          "occupancy": {{ cls.occupancy_percentage if cls.occupancy_percentage is not none else 75 }}
+                          "maxStudents": {{ cls.MaxStudents or 0 }},
+                          "occupancy": {{ cls.occupancy_percentage if cls.occupancy_percentage is not none else 'null' }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
                       ],
                       "teachers": [
-                        {% if s.teachers and s.teachers.all() %}
-                        {% for t in s.teachers.all() %}
+                        {% set t_list = (s.teachers.all() if s.teachers.all is defined else s.teachers) %}
+                        {% if t_list %}
+                        {% for t in t_list %}
                         {
                           "id": {{ t.TeacherID }},
                           "name": {{ t.TeacherName|tojson }},
-                          "title": {{ (t.TeacherTitle or 'معلم قدير')|tojson }},
-                          "email": {{ (t.Email or 'teacher@school.edu')|tojson }},
-                          "phone": {{ (t.Phone or '0501234567')|tojson }},
+                          "title": {{ (t.TeacherTitle or 'معلم أكاديمي')|tojson }},
+                          "email": {{ (t.Email or 'غير محدد')|tojson }},
+                          "phone": {{ (t.Phone or 'غير محدد')|tojson }},
                           "status": {{ (t.Status or 'نشط')|tojson }},
                           "image": {{ (t.Image or '')|tojson }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
-                        {% else %}
-                        {
-                          "id": 101,
-                          "name": "أ. أحمد محمود علي",
-                          "title": "معلم أول قدير",
-                          "email": "ahmed.ali@school.edu",
-                          "phone": "+966 50 123 4567",
-                          "status": "نشط",
-                          "image": ""
-                        }
                         {% endif %}
                       ]
                     }
@@ -821,7 +812,7 @@
                                         <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-school me-1"></i> التغطية والكادر</h6>
                                         <div class="small font-monospace text-muted">
                                             <div class="d-flex justify-content-between mb-1"><span>الصفوف المرتبطة:</span><strong class="text-dark" id="add-sum-classes">جميع الصفوف</strong></div>
-                                            <div class="d-flex justify-content-between mb-1"><span>المعلمون المسندون:</span><strong class="text-dark" id="add-sum-teachers">أ. أحمد محمود علي، أ. سارة خالد</strong></div>
+                                            <div class="d-flex justify-content-between mb-1"><span>المعلمون المسندون:</span><strong class="text-dark" id="add-sum-teachers">لا يوجد معلمون محددون</strong></div>
                                             <div class="d-flex justify-content-between"><span>حالة المادة:</span><span class="badge bg-success-subtle text-success">جاهز للحفظ</span></div>
                                         </div>
                                     </div>
@@ -1204,7 +1195,7 @@
                                     اسم المادة الدراسية
                                 </h3>
                                 <p class="text-muted mb-3 fs-6">
-                                    <i class="fa-solid fa-chalkboard-user text-primary me-1"></i> المعلم الرئيسي: <strong id="sp-hero-teacher">أ. أحمد محمود علي</strong>
+                                    <i class="fa-solid fa-chalkboard-user text-primary me-1"></i> المعلم الرئيسي: <strong id="sp-hero-teacher">غير معين</strong>
                                     <span class="mx-2">•</span>
                                     <i class="fa-solid fa-school text-muted me-1"></i> الصفوف المرتبطة: <span class="font-monospace" id="sp-hero-classes-summary">3 صفوف دراسية</span>
                                 </p>
