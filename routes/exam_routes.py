@@ -259,23 +259,43 @@ def index():
     )
 
 @exam_bp.route('/add', methods=['POST'])
+@exam_bp.route('/create', methods=['POST'])
 @login_required
 def add_exam():
-    exam_type = request.form.get('exam_type')
+    exam_type = request.form.get('exam_type') or request.form.get('title')
     sub_id = request.form.get('sub_id', type=int)
     class_id = request.form.get('class_id', type=int)
+    section_id = request.form.get('section_id', type=int)
     exam_date_str = request.form.get('exam_date')
-    exam_time = request.form.get('exam_time')
+    exam_time = request.form.get('exam_time', '09:00 - 11:00')
     status = request.form.get('status', 'مجدول')
+    duration = request.form.get('duration', 60, type=int)
+
+    if not exam_type:
+        flash('يرجى إدخال اسم أو نوع الاختبار', 'warning')
+        return redirect(url_for('exams.index'))
+
+    if not sub_id or not class_id:
+        flash('يرجى تحديد المادة والصف الدراسي', 'warning')
+        return redirect(url_for('exams.index'))
 
     try:
         exam_date = datetime.strptime(exam_date_str, '%Y-%m-%d').date() if exam_date_str else date.today()
+        
+        # Check duplicate
+        existing = ExamSchedule.query.filter_by(ExamName=exam_type, SubID=sub_id, CID=class_id, ExamDate=exam_date).first()
+        if existing:
+            flash(f'الاختبار "{exam_type}" مجدول بالفعل لنفس المادة والصف في هذا التاريخ', 'warning')
+            return redirect(url_for('exams.index'))
+
         new_sched = ExamSchedule(
             ExamName=exam_type,
             SubID=sub_id,
             CID=class_id,
+            SectionID=section_id,
             ExamDate=exam_date,
             ExamTime=exam_time,
+            Duration=duration,
             Status=status
         )
         db.session.add(new_sched)
@@ -288,24 +308,131 @@ def add_exam():
 
     return redirect(url_for('exams.index'))
 
+@exam_bp.route('/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_exam(id):
+    sched = ExamSchedule.query.get(id)
+    if not sched:
+        flash('الاختبار غير موجود', 'warning')
+        return redirect(url_for('exams.index'))
+
+    exam_type = request.form.get('exam_type') or request.form.get('title')
+    sub_id = request.form.get('sub_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    section_id = request.form.get('section_id', type=int)
+    exam_date_str = request.form.get('exam_date')
+    exam_time = request.form.get('exam_time')
+    status = request.form.get('status')
+    duration = request.form.get('duration', type=int)
+
+    if exam_type: sched.ExamName = exam_type
+    if sub_id: sched.SubID = sub_id
+    if class_id: sched.CID = class_id
+    if section_id is not None: sched.SectionID = section_id
+    if exam_time: sched.ExamTime = exam_time
+    if status: sched.Status = status
+    if duration: sched.Duration = duration
+    if exam_date_str:
+        try:
+            sched.ExamDate = datetime.strptime(exam_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    try:
+        db.session.commit()
+        flash('تم تحديث بيانات الاختبار بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error editing exam: {e}")
+        flash(f'حدث خطأ أثناء تعديل الاختبار: {e}', 'danger')
+
+    return redirect(url_for('exams.index'))
+
+@exam_bp.route('/publish/<int:id>', methods=['POST'])
+@login_required
+def publish_exam_route(id):
+    sched = ExamSchedule.query.get(id)
+    if not sched:
+        flash('الاختبار غير موجود', 'warning')
+        return redirect(url_for('exams.index'))
+
+    sched.Status = 'منشور'
+    try:
+        db.session.commit()
+        flash('تم نشر الاختبار بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {e}', 'danger')
+    return redirect(url_for('exams.index'))
+
+@exam_bp.route('/close/<int:id>', methods=['POST'])
+@login_required
+def close_exam_route(id):
+    sched = ExamSchedule.query.get(id)
+    if not sched:
+        flash('الاختبار غير موجود', 'warning')
+        return redirect(url_for('exams.index'))
+
+    sched.Status = 'منتهي'
+    try:
+        db.session.commit()
+        flash('تم إغلاق الاختبار بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {e}', 'danger')
+    return redirect(url_for('exams.index'))
+
+@exam_bp.route('/duplicate/<int:id>', methods=['POST'])
+@login_required
+def duplicate_exam_route(id):
+    sched = ExamSchedule.query.get(id)
+    if not sched:
+        flash('الاختبار غير موجود', 'warning')
+        return redirect(url_for('exams.index'))
+
+    try:
+        dup = ExamSchedule(
+            ExamName=f"نسخة - {sched.ExamName}",
+            SubID=sched.SubID,
+            CID=sched.CID,
+            SectionID=sched.SectionID,
+            ExamDate=date.today(),
+            ExamTime=sched.ExamTime,
+            Duration=sched.Duration,
+            Status='مجدول'
+        )
+        db.session.add(dup)
+        db.session.commit()
+        flash('تم تكرار الاختبار بنجاح بدون نسخ درجات الطلاب', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء نسخ الاختبار: {e}', 'danger')
+    return redirect(url_for('exams.index'))
+
 @exam_bp.route('/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_exam(id):
+    sched = ExamSchedule.query.get(id)
+    if not sched:
+        flash('الاختبار غير موجود', 'warning')
+        return redirect(url_for('exams.index'))
+
+    # Check dependencies in Marks
+    marks_count = Marks.query.filter_by(SubID=sched.SubID).count() if sched.SubID else 0
+    if marks_count > 0 and sched.Status == 'تم التصحيح':
+        flash(f'تعذر حذف الاختبار "{sched.ExamName}" لوجود {marks_count} سجلات درجات مرصودة مرتبطة به.', 'danger')
+        return redirect(url_for('exams.index'))
+
     try:
-        sched = ExamSchedule.query.get(id)
-        if sched:
-            db.session.delete(sched)
-            db.session.commit()
-            flash('تم حذف الاختبار بنجاح', 'success')
-        else:
-            flash('الاختبار غير موجود', 'warning')
+        db.session.delete(sched)
+        db.session.commit()
+        flash('تم حذف الاختبار بنجاح', 'success')
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error deleting exam: {e}")
         flash(f'حدث خطأ عند حذف الاختبار: {e}', 'danger')
 
     return redirect(url_for('exams.index'))
-
 
 @exam_bp.route('/api/list', methods=['GET'])
 @login_required
@@ -340,6 +467,9 @@ def api_list():
 @login_required
 def api_details(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         data = get_exam_details(exam_id, current_user.id)
         if not data:
             return jsonify({'error': 'Exam not found'}), 404
@@ -354,6 +484,9 @@ def api_details(exam_id):
 @login_required
 def api_students(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         students = get_exam_students(exam_id, current_user.id)
         return jsonify(students)
     except PermissionError:
@@ -366,6 +499,9 @@ def api_students(exam_id):
 @login_required
 def api_results(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         results = get_exam_results(exam_id, current_user.id)
         return jsonify(results)
     except PermissionError:
@@ -392,6 +528,9 @@ def api_create():
 def api_update(exam_id):
     payload = request.get_json() or request.form
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         success = update_exam(exam_id, current_user.id, payload)
         if not success:
             return jsonify({'error': 'Exam not found'}), 404
@@ -406,6 +545,9 @@ def api_update(exam_id):
 @login_required
 def api_publish(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         success = publish_exam(exam_id, current_user.id)
         if not success:
             return jsonify({'error': 'Exam not found'}), 404
@@ -420,6 +562,9 @@ def api_publish(exam_id):
 @login_required
 def api_close(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         success = close_exam(exam_id, current_user.id)
         if not success:
             return jsonify({'error': 'Exam not found'}), 404
@@ -434,6 +579,9 @@ def api_close(exam_id):
 @login_required
 def api_duplicate(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         dup_id = duplicate_exam(exam_id, current_user.id)
         if not dup_id:
             return jsonify({'error': 'Exam not found'}), 404
@@ -448,6 +596,9 @@ def api_duplicate(exam_id):
 @login_required
 def api_restore(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         success = restore_exam(exam_id, current_user.id)
         return jsonify({'success': True, 'message': 'تم استعادة الاختبار بنجاح'})
     except PermissionError:
@@ -459,6 +610,9 @@ def api_restore(exam_id):
 @login_required
 def api_delete(exam_id):
     try:
+        sched = ExamSchedule.query.get(exam_id)
+        if not sched:
+            return jsonify({'error': 'Exam not found'}), 404
         success = soft_delete_exam(exam_id, current_user.id)
         if not success:
             return jsonify({'error': 'Exam not found'}), 404

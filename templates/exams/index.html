@@ -435,23 +435,30 @@
                 </td>
                 <td>
                   <div class="d-flex align-items-center justify-content-center gap-1">
-                    <button class="action-btn bg-primary-subtle text-primary border-primary-subtle" title="عرض" onclick="Swal.fire('تفاصيل','{{ ex.ExamName }}','info')">
+                    <!-- 1. 👁️ عرض التفاصيل -->
+                    <button class="action-btn bg-primary-subtle text-primary border-primary-subtle" title="عرض التفاصيل" onclick="openExamDetailsModal({{ ex.ScheduleID }})">
                       <i class="fa-solid fa-eye"></i>
                     </button>
-                    <button class="action-btn bg-info-subtle text-info border-info-subtle" title="تعديل" onclick="Swal.fire('تعديل','تعديل الاختبار','info')">
+                    <!-- 2. ✏️ تعديل الاختبار -->
+                    <button class="action-btn bg-info-subtle text-info border-info-subtle" title="تعديل الاختبار" onclick="openEditExamModal({{ ex.ScheduleID }}, '{{ ex.ExamName|e }}', {{ ex.SubID }}, {{ ex.CID }}, {{ ex.SectionID or 'null' }}, '{{ ex.ExamDate }}', '{{ ex.ExamTime or '' }}', '{{ ex.Status or 'مجدول' }}', {{ ex.Duration or 60 }})">
                       <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="action-btn bg-success-subtle text-success border-success-subtle" title="رصد الدرجات" onclick="Swal.fire('رصد الدرجات','رصد درجات الاختبار','success')">
+                    <!-- 3. ⭐ بدء التصحيح (Unified Teacher Grading Workspace) -->
+                    <button class="action-btn bg-warning-subtle text-warning border-warning-subtle" title="⭐ بدء التصحيح (Unified Grading Workspace)" onclick="openGradingWorkspace('exam', {{ ex.ScheduleID }})">
                       <i class="fa-solid fa-star"></i>
                     </button>
-                    <button class="action-btn bg-warning-subtle text-warning border-warning-subtle" title="طباعة" onclick="window.print()">
-                      <i class="fa-solid fa-print"></i>
+                    <!-- 4. 📤 نشر الاختبار -->
+                    <button class="action-btn bg-success-subtle text-success border-success-subtle" title="نشر الاختبار" onclick="publishExam({{ ex.ScheduleID }})">
+                      <i class="fa-solid fa-paper-plane"></i>
                     </button>
-                    <form action="{{ url_for('exams.delete_exam', id=ex.ScheduleID) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف الاختبار؟');">
-                      <button type="submit" class="action-btn bg-danger-subtle text-danger border-danger-subtle" title="حذف">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                    </form>
+                    <!-- 5. 📑 تكرار الاختبار -->
+                    <button class="action-btn bg-secondary-subtle text-secondary border-secondary-subtle" title="تكرار الاختبار" onclick="duplicateExam({{ ex.ScheduleID }})">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                    <!-- 6. 🗑️ حذف الاختبار -->
+                    <button type="button" class="action-btn bg-danger-subtle text-danger border-danger-subtle" title="حذف الاختبار" onclick="deleteExam({{ ex.ScheduleID }}, '{{ ex.ExamName|e }}')">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -717,6 +724,129 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT EXAM                                       -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editExamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered font-cairo">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header" style="border-bottom:1.5px solid #ede9fe;">
+        <h5 class="modal-title fw-bold text-dark" style="font-size:14px;">
+          <i class="fa-solid fa-pen me-2" style="color:#7c3aed;"></i> تعديل بيانات الاختبار
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editExamForm" method="POST" action="">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:12px;">اسم / نوع الاختبار *</label>
+            <input type="text" name="exam_type" id="editExamTitle" class="form-control bg-light" required style="font-size:13px;">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">المادة *</label>
+              <select name="sub_id" id="editExamSubject" class="form-select bg-light" required style="font-size:13px;">
+                {% for s in subjects %}<option value="{{ s.SubID }}">{{ s.SubName }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">الصف *</label>
+              <select name="class_id" id="editExamClass" class="form-select bg-light" required style="font-size:13px;">
+                {% for c in classes %}<option value="{{ c.CID }}">{{ c.CName }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">تاريخ الاختبار *</label>
+              <input type="date" name="exam_date" id="editExamDate" class="form-control bg-light" required style="font-size:13px;">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">وقت الاختبار *</label>
+              <input type="text" name="exam_time" id="editExamTime" class="form-control bg-light" placeholder="09:00 - 11:00" required style="font-size:13px;">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">المدة (بالدقائق)</label>
+              <input type="number" name="duration" id="editExamDuration" class="form-control bg-light" value="60" min="1" style="font-size:13px;">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold" style="font-size:12px;">الحالة</label>
+              <select name="status" id="editExamStatus" class="form-select bg-light" style="font-size:13px;">
+                <option value="مجدول">مجدول</option>
+                <option value="نشط">نشط</option>
+                <option value="تم التصحيح">تم التصحيح</option>
+                <option value="بانتظار التصحيح">بانتظار التصحيح</option>
+                <option value="منتهي">منتهي</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light rounded-bottom-4" style="border-top:1.5px solid #ede9fe;">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal" style="font-size:12px;">إلغاء</button>
+          <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background:#7c3aed;font-size:12px;">حفظ التغييرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: EXAM DETAILS & SUBMISSIONS                     -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="examDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered font-cairo">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-file-signature fs-4"></i>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="detailsExamTitle">تفاصيل الاختبار وقائمة الطلاب</h5>
+            <small class="text-white-50" id="detailsExamMeta">المادة | الصف | التاريخ</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <div class="row g-2 text-center mb-3">
+          <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">إجمالي الطلاب</small><strong class="text-dark" id="detailsTotalStudents">0</strong></div></div>
+          <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">الحاضرون</small><strong class="text-success" id="detailsAttended">0</strong></div></div>
+          <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">تم رصد الدرجات</small><strong class="text-primary" id="detailsGraded">0</strong></div></div>
+          <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">الحالة</small><strong class="text-purple" id="detailsStatus">منشور</strong></div></div>
+        </div>
+        <div class="bg-white p-3 rounded-4 border shadow-sm">
+          <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users me-2" style="color:#7c3aed;"></i>قائمة طلاب الاختبار</h6>
+          <div class="table-responsive" style="max-height: 320px;">
+            <table class="table table-sm table-hover align-middle mb-0 text-center">
+              <thead class="bg-light">
+                <tr>
+                  <th>#</th>
+                  <th class="text-start">اسم الطالب</th>
+                  <th>الرقم الأكاديمي</th>
+                  <th>الحالة</th>
+                  <th>الدرجة</th>
+                </tr>
+              </thead>
+              <tbody id="detailsStudentsBody">
+                <tr><td colspan="5" class="py-3 text-muted">جاري تحميل بيانات الطلاب...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-white">
+        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إغلاق</button>
+        <button type="button" class="btn text-white rounded-pill px-4 fw-bold" style="background:#7c3aed;" id="btnLaunchGradingFromDetails">
+          <i class="fa-solid fa-star me-1"></i> فتح مساحة التصحيح
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UNIFIED TEACHER GRADING WORKSPACE COMPONENT (1000px shared drawer) -->
+{% include 'teacher/grading_workspace.html' %}
 
 <script>
 function filterExams() {
@@ -764,6 +894,143 @@ function resetExamFilters() {
 function updatePageSize(n) {
   const el = document.getElementById('examCountText');
   if (el) el.textContent = `عرض 1 - ${n} من {{ kpi.total_exams }} اختبار`;
+}
+
+function openEditExamModal(id, title, subId, classId, secId, examDate, examTime, status, duration) {
+  const form = document.getElementById('editExamForm');
+  if (form) form.action = `/exams/edit/${id}`;
+
+  const titleEl = document.getElementById('editExamTitle');
+  const subEl = document.getElementById('editExamSubject');
+  const classEl = document.getElementById('editExamClass');
+  const dateEl = document.getElementById('editExamDate');
+  const timeEl = document.getElementById('editExamTime');
+  const statusEl = document.getElementById('editExamStatus');
+  const durEl = document.getElementById('editExamDuration');
+
+  if (titleEl) titleEl.value = title || '';
+  if (subEl && subId) subEl.value = subId;
+  if (classEl && classId) classEl.value = classId;
+  if (dateEl && examDate) dateEl.value = examDate.split(' ')[0];
+  if (timeEl) timeEl.value = examTime || '09:00 - 11:00';
+  if (statusEl && status) statusEl.value = status;
+  if (durEl) durEl.value = duration || 60;
+
+  const modalEl = document.getElementById('editExamModal');
+  if (modalEl) {
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+  }
+}
+
+function openExamDetailsModal(examId) {
+  fetch(`/exams/api/details/${examId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.title) {
+        document.getElementById('detailsExamTitle').textContent = data.title;
+        document.getElementById('detailsExamMeta').textContent = `${data.subject_name} | ${data.class_name} - ${data.section_name} | ${data.exam_date}`;
+        document.getElementById('detailsTotalStudents').textContent = data.total_students || 0;
+        document.getElementById('detailsAttended').textContent = data.attended_count || 0;
+        document.getElementById('detailsGraded').textContent = data.graded_count || 0;
+        document.getElementById('detailsStatus').textContent = data.status || 'منشور';
+
+        const btnLaunch = document.getElementById('btnLaunchGradingFromDetails');
+        if (btnLaunch) {
+          btnLaunch.onclick = function() {
+            const modalEl = document.getElementById('examDetailsModal');
+            const bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
+            openGradingWorkspace('exam', examId);
+          };
+        }
+
+        // Fetch students
+        fetch(`/exams/api/students/${examId}`)
+          .then(r2 => r2.json())
+          .then(stList => {
+            const tbody = document.getElementById('detailsStudentsBody');
+            if (stList && stList.length > 0) {
+              tbody.innerHTML = stList.map((st, i) => `
+                <tr>
+                  <td class="text-muted fw-bold">${i + 1}</td>
+                  <td class="text-start fw-bold text-dark">${st.student_name}</td>
+                  <td class="font-monospace text-muted">${st.academic_id}</td>
+                  <td><span class="badge ${st.grading_status === 'تم التصحيح' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} rounded-pill">${st.grading_status || 'بانتظار التصحيح'}</span></td>
+                  <td class="font-monospace fw-bold text-primary">${st.score !== null ? st.score : '—'}</td>
+                </tr>
+              `).join('');
+            } else {
+              tbody.innerHTML = '<tr><td colspan="5" class="py-3 text-muted">لا يوجد طلاب مسجلين في هذا الاختبار.</td></tr>';
+            }
+          });
+
+        const modalEl = document.getElementById('examDetailsModal');
+        if (modalEl) {
+          const bsModal = new bootstrap.Modal(modalEl);
+          bsModal.show();
+        }
+      }
+    })
+    .catch(e => console.error(e));
+}
+
+function publishExam(id) {
+  fetch(`/exams/api/publish/${id}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ toast:true, position:'top-end', icon:'success', title:'تم نشر الاختبار بنجاح', showConfirmButton:false, timer:1200 });
+        }
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alert(data.error || 'حدث خطأ أثناء النشر');
+      }
+    })
+    .catch(e => console.error(e));
+}
+
+function closeExam(id) {
+  fetch(`/exams/api/close/${id}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ toast:true, position:'top-end', icon:'success', title:'تم إغلاق الاختبار بنجاح', showConfirmButton:false, timer:1200 });
+        }
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alert(data.error || 'حدث خطأ أثناء إغلاق الاختبار');
+      }
+    })
+    .catch(e => console.error(e));
+}
+
+function duplicateExam(id) {
+  fetch(`/exams/api/duplicate/${id}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ toast:true, position:'top-end', icon:'success', title: data.message || 'تم نسخ الاختبار بنجاح', showConfirmButton:false, timer:1400 });
+        }
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        alert(data.error || 'حدث خطأ أثناء تكرار الاختبار');
+      }
+    })
+    .catch(e => console.error(e));
+}
+
+function deleteExam(id, name) {
+  if (confirm(`هل أنت متأكد من حذف الاختبار "${name}"؟`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/exams/delete/${id}`;
+    document.body.appendChild(form);
+    form.submit();
+  }
 }
 </script>
 {% endblock %}

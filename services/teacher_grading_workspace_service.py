@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, date
+from models import db
 from services.teacher_homework_grading_service import (
     get_homework_grading_workspace,
     get_student_submission as get_hw_student_submission,
@@ -150,6 +151,25 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                 if g_val < 0 or g_val > 100:
                     raise ValueError("Grade must be between 0 and 100")
                 _MOCK_UNIFIED_GRADING_STORE[store_key]['grade'] = g_val
+
+                # Database integration with Marks model
+                from models.grade import Marks
+                sub_id = details.get('subject_id')
+                if sub_id:
+                    mark = Marks.query.filter_by(SID=student_id, SubID=sub_id).first()
+                    if mark:
+                        mark.Score = g_val
+                        mark.MaxScore = details.get('total_score', 100)
+                    else:
+                        mark = Marks(
+                            SID=student_id,
+                            SubID=sub_id,
+                            Score=g_val,
+                            MaxScore=details.get('total_score', 100),
+                            is_deleted=False
+                        )
+                        db.session.add(mark)
+                    db.session.commit()
             except ValueError as ve:
                 raise ValueError(f"Invalid grade: {str(ve)}")
 

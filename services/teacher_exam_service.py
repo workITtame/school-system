@@ -9,6 +9,12 @@ logger = logging.getLogger(__name__)
 _MOCK_EXAM_STORE = {}
 
 def _get_teacher_and_scope(user_id):
+    from models import User
+    user = User.query.get(user_id)
+    if user and getattr(user, 'role', '') == 'admin':
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+        return teacher or user, set(), set(), set()
+
     teacher = Teacher.query.filter_by(user_id=user_id).first()
     if not teacher:
         return None, set(), set(), set()
