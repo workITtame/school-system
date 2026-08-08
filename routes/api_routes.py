@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, session
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
 from models import db, Student, Teacher, Classes, Subject, User, Qualifications
@@ -193,8 +193,10 @@ def delete_student(id):
         return api_response(False, f"حدث خطأ أثناء الحذف: {str(e)}", status_code=500)
 
 @api_bp.route("/teachers", methods=['GET'])
-@jwt_required()
+@jwt_required(optional=True)
 def get_teachers():
+    if 'user_id' not in session and not getattr(current_user, 'is_authenticated', False) and not get_jwt_identity():
+        return api_response(False, "Unauthorized", status_code=401)
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     search_term = request.args.get('search', '', type=str)
@@ -210,11 +212,15 @@ def get_teachers():
         
         if class_id:
             t_ids = [t[0] for t in db.session.query(SchoolTable.TeacherID).filter(SchoolTable.CID == class_id, SchoolTable.is_deleted == False).distinct().all() if t[0]]
-            s_ids = [s[0] for s in db.session.query(ClassSubject.SubjectID).filter(ClassSubject.ClassID == class_id).all() if s[0]]
+            s_ids = [s[0] for s in db.session.query(ClassSubject.c.SubID).filter(ClassSubject.c.CID == class_id).all() if s[0]]
             if s_ids:
-                ts_teacher_ids = [t[0] for t in db.session.query(TeacherSubject.teacher_id).filter(TeacherSubject.subject_id.in_(s_ids)).distinct().all() if t[0]]
+                ts_teacher_ids = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID).filter(TeacherSubject.c.SubID.in_(s_ids)).distinct().all() if t[0]]
                 t_ids.extend(ts_teacher_ids)
-            query = query.filter(Teacher.TeacherID.in_(list(set(t_ids))))
+            unique_tids = list(set(t_ids))
+            if unique_tids:
+                query = query.filter(Teacher.TeacherID.in_(unique_tids))
+            else:
+                query = query.filter(db.false())
         
         if search_term:
             query = query.filter(Teacher.TeacherName.like(f"%{search_term}%"))

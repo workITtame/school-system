@@ -556,11 +556,13 @@
                 renderTable(data.data);
                 renderPagination(data.meta);
             } else {
+                renderTable([]);
                 showToast(data.message || 'فشل في جلب البيانات', 'error');
             }
         })
         .catch(err => {
             console.error(err);
+            renderTable([]);
             showToast('حدث خطأ في الاتصال بالخادم.', 'error');
         });
     }
