@@ -6,6 +6,12 @@ from models import db, Homework, Subject, Classes, Sections, Student, Teacher, S
 logger = logging.getLogger(__name__)
 
 def _get_teacher_and_scope(user_id):
+    from models import User
+    user = User.query.get(user_id)
+    if user and getattr(user, 'role', '') == 'admin':
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+        return teacher or user, set(), set()
+
     teacher = Teacher.query.filter_by(user_id=user_id).first()
     if not teacher:
         return None, set(), set()

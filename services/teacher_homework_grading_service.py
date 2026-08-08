@@ -9,6 +9,12 @@ logger = logging.getLogger(__name__)
 _MOCK_GRADING_STORE = {}
 
 def _get_teacher_and_scope(user_id):
+    from models import User
+    user = User.query.get(user_id)
+    if user and getattr(user, 'role', '') == 'admin':
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+        return teacher or user, set(), set()
+
     teacher = Teacher.query.filter_by(user_id=user_id).first()
     if not teacher:
         return None, set(), set()
@@ -207,8 +213,27 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
 
     if grade is not None:
         _MOCK_GRADING_STORE[store_key]['grade'] = float(grade)
+        # Database integration with Marks model
+        if hw.sub_id:
+            from models.grade import Marks
+            mark = Marks.query.filter_by(SID=student_id, SubID=hw.sub_id).first()
+            if mark:
+                mark.Score = float(grade)
+                mark.Notes = f"واجب: {hw.title}"
+            else:
+                mark = Marks(
+                    SID=student_id,
+                    SubID=hw.sub_id,
+                    Score=float(grade),
+                    MaxScore=100,
+                    Notes=f"واجب: {hw.title}",
+                    is_deleted=False
+                )
+                db.session.add(mark)
+            db.session.commit()
+
     if feedback is not None:
-        _MOCK_GRADING_STORE[store_key]['feedback'] = str(feedback).trim() if hasattr(feedback, 'trim') else str(feedback).strip()
+        _MOCK_GRADING_STORE[store_key]['feedback'] = str(feedback).strip()
     _MOCK_GRADING_STORE[store_key]['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M')
 
     return True

@@ -209,43 +209,157 @@ def index():
                            late_count=data['kpi']['late_count'])
 
 @homework_bp.route('/add', methods=['POST'])
+@homework_bp.route('/create', methods=['POST'])
 @login_required
 def add_homework():
     title = request.form.get('title')
-    sub_id = request.form.get('sub_id')
-    class_id = request.form.get('class_id')
-    section_id = request.form.get('section_id')
+    sub_id = request.form.get('sub_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    section_id = request.form.get('section_id', type=int)
     due_date_str = request.form.get('due_date')
     status = request.form.get('status', 'معلق')
     description = request.form.get('description')
 
-    if title and sub_id and class_id and due_date_str:
-        try:
-            due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
-            new_hw = Homework(
-                title=title,
-                sub_id=sub_id,
-                class_id=class_id,
-                section_id=section_id if section_id else None,
-                due_date=due_date,
-                status=status,
-                description=description
-            )
-            db.session.add(new_hw)
-            db.session.commit()
-            flash('تمت إضافة الواجب الدراسي بنجاح', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'حدث خطأ أثناء الحفظ: {str(e)}', 'danger')
-    else:
-        flash('جميع الحقول الأساسية مطلوبة', 'warning')
+    if not title:
+        flash('يرجى إدخال عنوان الواجب', 'warning')
+        return redirect(url_for('homework.index'))
 
+    if not sub_id or not class_id:
+        flash('يرجى تحديد المادة والصف الدراسي', 'warning')
+        return redirect(url_for('homework.index'))
+
+    try:
+        due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else datetime.now().date()
+        
+        # Check duplicate
+        existing = Homework.query.filter_by(title=title, sub_id=sub_id, class_id=class_id, due_date=due_date).first()
+        if existing:
+            flash(f'الواجب "{title}" مسجل بالفعل لنفس المادة والصف في هذا التاريخ', 'warning')
+            return redirect(url_for('homework.index'))
+
+        new_hw = Homework(
+            title=title,
+            sub_id=sub_id,
+            class_id=class_id,
+            section_id=section_id if section_id else None,
+            due_date=due_date,
+            status=status,
+            description=description
+        )
+        db.session.add(new_hw)
+        db.session.commit()
+        flash('تمت إضافة الواجب الدراسي بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الحفظ: {str(e)}', 'danger')
+
+    return redirect(url_for('homework.index'))
+
+@homework_bp.route('/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_homework(id):
+    hw = Homework.query.get(id)
+    if not hw:
+        flash('الواجب غير موجود', 'warning')
+        return redirect(url_for('homework.index'))
+
+    title = request.form.get('title')
+    sub_id = request.form.get('sub_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    section_id = request.form.get('section_id', type=int)
+    due_date_str = request.form.get('due_date')
+    status = request.form.get('status')
+    description = request.form.get('description')
+
+    if title: hw.title = title
+    if sub_id: hw.sub_id = sub_id
+    if class_id: hw.class_id = class_id
+    if section_id is not None: hw.section_id = section_id if section_id > 0 else None
+    if status: hw.status = status
+    if description is not None: hw.description = description
+    if due_date_str:
+        try:
+            hw.due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    try:
+        db.session.commit()
+        flash('تم تحديث الواجب بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء التعديل: {str(e)}', 'danger')
+
+    return redirect(url_for('homework.index'))
+
+@homework_bp.route('/publish/<int:id>', methods=['POST'])
+@login_required
+def publish_homework(id):
+    hw = Homework.query.get(id)
+    if not hw:
+        flash('الواجب غير موجود', 'warning')
+        return redirect(url_for('homework.index'))
+
+    hw.status = 'منشور'
+    try:
+        db.session.commit()
+        flash('تم نشر الواجب للطلاب بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء النشر: {str(e)}', 'danger')
+    return redirect(url_for('homework.index'))
+
+@homework_bp.route('/close/<int:id>', methods=['POST'])
+@login_required
+def close_homework(id):
+    hw = Homework.query.get(id)
+    if not hw:
+        flash('الواجب غير موجود', 'warning')
+        return redirect(url_for('homework.index'))
+
+    hw.status = 'منتهي'
+    try:
+        db.session.commit()
+        flash('تم إغلاق تسليم الواجب بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الإغلاق: {str(e)}', 'danger')
+    return redirect(url_for('homework.index'))
+
+@homework_bp.route('/duplicate/<int:id>', methods=['POST'])
+@login_required
+def duplicate_homework(id):
+    hw = Homework.query.get(id)
+    if not hw:
+        flash('الواجب غير موجود', 'warning')
+        return redirect(url_for('homework.index'))
+
+    try:
+        dup = Homework(
+            title=f"نسخة - {hw.title}",
+            sub_id=hw.sub_id,
+            class_id=hw.class_id,
+            section_id=hw.section_id,
+            due_date=datetime.now().date(),
+            status='مسودة',
+            description=hw.description
+        )
+        db.session.add(dup)
+        db.session.commit()
+        flash('تم نسخ الواجب بنجاح كمسودة جديدة بدون نسخ درجات الطلاب', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء نسخ الواجب: {str(e)}', 'danger')
     return redirect(url_for('homework.index'))
 
 @homework_bp.route('/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_homework(id):
-    hw = Homework.query.get_or_404(id)
+    hw = Homework.query.get(id)
+    if not hw:
+        flash('الواجب غير موجود', 'warning')
+        return redirect(url_for('homework.index'))
+
     try:
         db.session.delete(hw)
         db.session.commit()
@@ -500,6 +614,9 @@ def api_list_homeworks():
 @login_required
 def api_homework_details(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         details = get_homework_details(hw_id, current_user.id)
         if not details:
             return jsonify({'error': 'Homework not found'}), 404
@@ -545,9 +662,14 @@ def api_create_homework():
 @login_required
 def api_update_homework(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         req_data = request.get_json() or request.form
         success = update_teacher_homework(hw_id, current_user.id, **req_data)
-        return jsonify({'success': success, 'message': 'تم تحديث الواجب بنجاح'})
+        if not success:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify({'success': True, 'message': 'تم تحديث الواجب بنجاح'})
     except PermissionError as pe:
         return jsonify({'error': str(pe)}), 403
     except Exception as e:
@@ -557,8 +679,13 @@ def api_update_homework(hw_id):
 @login_required
 def api_publish_homework(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         success = service_publish_homework(hw_id, current_user.id)
-        return jsonify({'success': success, 'message': 'تم نشر الواجب بنجاح'})
+        if not success:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify({'success': True, 'message': 'تم نشر الواجب بنجاح'})
     except PermissionError as pe:
         return jsonify({'error': str(pe)}), 403
     except Exception as e:
@@ -568,8 +695,37 @@ def api_publish_homework(hw_id):
 @login_required
 def api_close_homework(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         success = service_close_homework(hw_id, current_user.id)
-        return jsonify({'success': success, 'message': 'تم إغلاق الواجب بنجاح'})
+        if not success:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify({'success': True, 'message': 'تم إغلاق الواجب بنجاح'})
+    except PermissionError as pe:
+        return jsonify({'error': str(pe)}), 403
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@homework_bp.route('/api/duplicate/<int:hw_id>', methods=['POST'])
+@login_required
+def api_duplicate_homework(hw_id):
+    try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
+        dup = Homework(
+            title=f"نسخة - {hw.title}",
+            sub_id=hw.sub_id,
+            class_id=hw.class_id,
+            section_id=hw.section_id,
+            due_date=datetime.now().date(),
+            status='مسودة',
+            description=hw.description
+        )
+        db.session.add(dup)
+        db.session.commit()
+        return jsonify({'success': True, 'id': dup.id, 'message': 'تم نسخ الواجب بنجاح'})
     except PermissionError as pe:
         return jsonify({'error': str(pe)}), 403
     except Exception as e:
@@ -579,8 +735,13 @@ def api_close_homework(hw_id):
 @login_required
 def api_delete_homework(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         success = delete_teacher_homework(hw_id, current_user.id)
-        return jsonify({'success': success, 'message': 'تم حذف الواجب بنجاح'})
+        if not success:
+            return jsonify({'error': 'Homework not found'}), 404
+        return jsonify({'success': True, 'message': 'تم حذف الواجب بنجاح'})
     except PermissionError as pe:
         return jsonify({'error': str(pe)}), 403
     except Exception as e:
@@ -594,6 +755,9 @@ def api_delete_homework(hw_id):
 @login_required
 def api_grading_workspace(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         workspace_data = get_homework_grading_workspace(hw_id, current_user.id)
         if not workspace_data:
             return jsonify({'error': 'Homework not found'}), 404
@@ -607,6 +771,9 @@ def api_grading_workspace(hw_id):
 @login_required
 def api_grading_submission(hw_id, student_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         sub_data = get_student_submission(hw_id, student_id, current_user.id)
         if not sub_data:
             return jsonify({'error': 'Submission or student not found'}), 404
@@ -621,13 +788,17 @@ def api_grading_submission(hw_id, student_id):
 def api_grading_save():
     try:
         req_data = request.get_json() or request.form
-        hw_id = req_data.get('homework_id')
+        hw_id = req_data.get('homework_id') or req_data.get('source_id')
         student_id = req_data.get('student_id')
         grade = req_data.get('grade')
         feedback = req_data.get('feedback')
 
         if not hw_id or not student_id:
             return jsonify({'error': 'homework_id and student_id are required'}), 400
+
+        hw = Homework.query.get(int(hw_id))
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
 
         success = service_save_grade(int(hw_id), int(student_id), current_user.id, grade, feedback)
         return jsonify({'success': success, 'message': 'تم حفظ الدرجة والملاحظات بنجاح'})
@@ -642,6 +813,9 @@ def api_grading_save():
 @login_required
 def api_grading_publish_all(hw_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         success = service_publish_grades(hw_id, current_user.id)
         return jsonify({'success': success, 'message': 'تم نشر جميع الدرجات للطلاب بنجاح'})
     except PermissionError as pe:
@@ -653,6 +827,9 @@ def api_grading_publish_all(hw_id):
 @login_required
 def api_grading_reopen(hw_id, student_id):
     try:
+        hw = Homework.query.get(hw_id)
+        if not hw:
+            return jsonify({'error': 'Homework not found'}), 404
         success = service_reopen_submission(hw_id, student_id, current_user.id)
         return jsonify({'success': success, 'message': 'تم إعادة فتح التسليم للطالب بنجاح'})
     except PermissionError as pe:

@@ -302,17 +302,30 @@
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle" title="عرض التفاصيل" onclick="Swal.fire('تفاصيل الواجب', '{{ hw.title }} - {{ hw.description if hw.description else '' }}', 'info')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <!-- 1. 👁️ عرض التفاصيل -->
+                                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle" title="عرض التفاصيل" onclick="openHomeworkDetailsModal({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-light text-info rounded-circle" title="تعديل" onclick="Swal.fire('تعديل الواجب', 'تعديل بيانات الواجب {{ hw.title }}', 'info')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <!-- 2. ✏️ تعديل الواجب -->
+                                                <button type="button" class="btn btn-sm btn-light text-info rounded-circle" title="تعديل الواجب" onclick="openEditHomeworkModal({{ hw.id }}, '{{ hw.title|e }}', {{ hw.sub_id }}, {{ hw.class_id }}, {{ hw.section_id or 'null' }}, '{{ hw.due_date }}', '{{ hw.status or 'معلق' }}', '{{ (hw.description or '')|e }}')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
-                                                <form action="{{ url_for('homework.delete_homework', id=hw.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف الواجب؟');">
-                                                    <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle" title="حذف" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
-                                                        <i class="fa-solid fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <!-- 3. ⭐ مساحة التصحيح الموحدة (Unified Grading Workspace) -->
+                                                <button type="button" class="btn btn-sm btn-light text-warning rounded-circle" title="⭐ بدء التصحيح (Unified Grading Workspace)" onclick="openGradingWorkspace('homework', {{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                    <i class="fa-solid fa-star"></i>
+                                                </button>
+                                                <!-- 4. 📤 نشر الواجب -->
+                                                <button type="button" class="btn btn-sm btn-light text-success rounded-circle" title="نشر الواجب" onclick="publishHomework({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                    <i class="fa-solid fa-paper-plane"></i>
+                                                </button>
+                                                <!-- 5. 📑 تكرار الواجب -->
+                                                <button type="button" class="btn btn-sm btn-light text-secondary rounded-circle" title="تكرار الواجب" onclick="duplicateHomework({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                    <i class="fa-solid fa-copy"></i>
+                                                </button>
+                                                <!-- 6. 🗑️ حذف الواجب -->
+                                                <button type="button" class="btn btn-sm btn-light text-danger rounded-circle" title="حذف الواجب" onclick="deleteHomework({{ hw.id }}, '{{ hw.title|e }}')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -544,6 +557,146 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- MODAL: EDIT HOMEWORK MODAL                 -->
+<!-- ========================================== -->
+<div class="modal fade" id="editHomeworkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered font-monospace">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="fa-solid fa-pen text-info me-2"></i> تعديل بيانات الواجب الدراسي
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editHomeworkForm" method="POST" action="">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-dark fw-bold extra-small">عنوان الواجب *</label>
+                        <input type="text" name="title" id="editHwTitle" class="form-control bg-light" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-dark fw-bold extra-small">المادة *</label>
+                            <select name="sub_id" id="editHwSubject" class="form-select bg-light" required>
+                                {% for s in subjects %}
+                                    <option value="{{ s.SubID }}">{{ s.SubName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-dark fw-bold extra-small">الصف *</label>
+                            <select name="class_id" id="editHwClass" class="form-select bg-light" required>
+                                {% for c in classes %}
+                                    <option value="{{ c.CID }}">{{ c.CName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-dark fw-bold extra-small">الشعبة</label>
+                            <select name="section_id" id="editHwSection" class="form-select bg-light">
+                                <option value="">جميع الشعب</option>
+                                {% for sec in sections %}
+                                    <option value="{{ sec.SectionID }}">{{ sec.SectionName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-dark fw-bold extra-small">تاريخ التسليم *</label>
+                            <input type="date" name="due_date" id="editHwDueDate" class="form-control bg-light" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark fw-bold extra-small">الحالة</label>
+                        <select name="status" id="editHwStatus" class="form-select bg-light">
+                            <option value="معلق">معلق</option>
+                            <option value="منشور">منشور</option>
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="متأخر">متأخر</option>
+                            <option value="منتهي">منتهي</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark fw-bold extra-small">الملاحظات والتفاصيل</label>
+                        <textarea name="description" id="editHwDescription" class="form-control bg-light" rows="3" placeholder="أدخل تفاصيل الواجب والتعليمات..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-info text-white rounded-pill px-4 fw-bold">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: HOMEWORK DETAILS & SUBMISSIONS      -->
+<!-- ========================================== -->
+<div class="modal fade" id="homeworkDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered font-cairo">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-book-open fs-4"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="detailsHwTitle">تفاصيل الواجب الدراسي</h5>
+                        <small class="text-white-50" id="detailsHwMeta">المادة | الصف | تاريخ التسليم</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-2 text-center mb-3 font-monospace extra-small">
+                    <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">إجمالي الطلاب</small><strong class="text-dark" id="detailsHwTotalStudents">0</strong></div></div>
+                    <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">تم التسليم</small><strong class="text-info" id="detailsHwSubmitted">0</strong></div></div>
+                    <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">تم التصحيح</small><strong class="text-success" id="detailsHwGraded">0</strong></div></div>
+                    <div class="col-3"><div class="p-2 rounded-3 bg-white border"><small class="text-muted d-block">الحالة</small><strong class="text-primary" id="detailsHwStatus">منشور</strong></div></div>
+                </div>
+                <div class="bg-white p-3 rounded-4 border shadow-sm mb-3">
+                    <h6 class="fw-bold text-dark mb-1 extra-small"><i class="fa-solid fa-align-right text-primary me-1"></i> نص التعليمات والملاحظات:</h6>
+                    <p class="text-muted extra-small mb-0" id="detailsHwDescription">لا توجد ملاحظات إضافية.</p>
+                </div>
+                <div class="bg-white p-3 rounded-4 border shadow-sm">
+                    <h6 class="fw-bold text-dark mb-3 extra-small"><i class="fa-solid fa-users text-primary me-2"></i>قائمة تسليمات الطلاب:</h6>
+                    <div class="table-responsive" style="max-height: 280px;">
+                        <table class="table table-sm table-hover align-middle mb-0 text-center font-monospace extra-small">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th class="text-start">اسم الطالب</th>
+                                    <th>الرقم الأكاديمي</th>
+                                    <th>حالة التسليم</th>
+                                    <th>الدرجة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailsHwStudentsBody">
+                                <tr><td colspan="5" class="py-3 text-muted">جاري تحميل بيانات الطلاب...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" id="btnLaunchGradingFromHwDetails">
+                    <i class="fa-solid fa-star me-1"></i> فتح مساحة التصحيح (Workspace)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- UNIFIED TEACHER GRADING WORKSPACE COMPONENT (1000px shared drawer) -->
+{% include 'teacher/grading_workspace.html' %}
+
 <script>
 function filterHomeworkTable() {
     const query = (document.getElementById('hwSearchInput')?.value || '').trim().toLowerCase();
@@ -606,6 +759,144 @@ function resetHomeworkFilters() {
             showConfirmButton: false,
             timer: 1500
         });
+    }
+}
+
+function openEditHomeworkModal(id, title, subId, classId, secId, dueDate, status, description) {
+    const form = document.getElementById('editHomeworkForm');
+    if (form) form.action = `/homework/edit/${id}`;
+
+    const titleEl = document.getElementById('editHwTitle');
+    const subEl = document.getElementById('editHwSubject');
+    const classEl = document.getElementById('editHwClass');
+    const secEl = document.getElementById('editHwSection');
+    const dateEl = document.getElementById('editHwDueDate');
+    const statusEl = document.getElementById('editHwStatus');
+    const descEl = document.getElementById('editHwDescription');
+
+    if (titleEl) titleEl.value = title || '';
+    if (subEl && subId) subEl.value = subId;
+    if (classEl && classId) classEl.value = classId;
+    if (secEl && secId) secEl.value = secId;
+    if (dateEl && dueDate) dateEl.value = dueDate.split(' ')[0];
+    if (statusEl && status) statusEl.value = status;
+    if (descEl) descEl.value = description || '';
+
+    const modalEl = document.getElementById('editHomeworkModal');
+    if (modalEl) {
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+}
+
+function openHomeworkDetailsModal(hwId) {
+    fetch(`/homework/api/details/${hwId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.title) {
+                document.getElementById('detailsHwTitle').textContent = data.title;
+                document.getElementById('detailsHwMeta').textContent = `${data.subject_name} | ${data.class_name} - ${data.section_name} | موعد التسليم: ${data.due_date}`;
+                document.getElementById('detailsHwTotalStudents').textContent = data.total_students || 0;
+                document.getElementById('detailsHwSubmitted').textContent = data.received_count || 0;
+                document.getElementById('detailsHwGraded').textContent = data.graded_count || 0;
+                document.getElementById('detailsHwStatus').textContent = data.status || 'منشور';
+                document.getElementById('detailsHwDescription').textContent = data.description || 'لا توجد ملاحظات إضافية.';
+
+                const btnLaunch = document.getElementById('btnLaunchGradingFromHwDetails');
+                if (btnLaunch) {
+                    btnLaunch.onclick = function() {
+                        const modalEl = document.getElementById('homeworkDetailsModal');
+                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                        if (bsModal) bsModal.hide();
+                        openGradingWorkspace('homework', hwId);
+                    };
+                }
+
+                // Fetch student roster in workspace
+                fetch(`/grading/workspace/homework/${hwId}`)
+                    .then(r2 => r2.json())
+                    .then(ws => {
+                        const tbody = document.getElementById('detailsHwStudentsBody');
+                        if (ws && ws.students && ws.students.length > 0) {
+                            tbody.innerHTML = ws.students.map((st, i) => `
+                                <tr>
+                                    <td class="text-muted fw-bold">${i + 1}</td>
+                                    <td class="text-start fw-bold text-dark">${st.student_name}</td>
+                                    <td class="font-monospace text-muted">${st.academic_id}</td>
+                                    <td><span class="badge ${st.submission_status === 'تم التسليم' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} rounded-pill">${st.submission_status}</span></td>
+                                    <td class="font-monospace fw-bold text-primary">${st.grade !== null ? st.grade : '—'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="py-3 text-muted">لا يوجد طلاب مسجلين في هذا الواجب.</td></tr>';
+                        }
+                    });
+
+                const modalEl = document.getElementById('homeworkDetailsModal');
+                if (modalEl) {
+                    const bsModal = new bootstrap.Modal(modalEl);
+                    bsModal.show();
+                }
+            }
+        })
+        .catch(e => console.error(e));
+}
+
+function publishHomework(id) {
+    fetch(`/homework/api/publish/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نشر الواجب بنجاح', showConfirmButton: false, timer: 1200 });
+                }
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(data.error || 'حدث خطأ أثناء نشر الواجب');
+            }
+        })
+        .catch(e => console.error(e));
+}
+
+function closeHomework(id) {
+    fetch(`/homework/api/close/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم إغلاق الواجب بنجاح', showConfirmButton: false, timer: 1200 });
+                }
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(data.error || 'حدث خطأ أثناء إغلاق الواجب');
+            }
+        })
+        .catch(e => console.error(e));
+}
+
+function duplicateHomework(id) {
+    fetch(`/homework/api/duplicate/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message || 'تم نسخ الواجب بنجاح', showConfirmButton: false, timer: 1400 });
+                }
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alert(data.error || 'حدث خطأ أثناء تكرار الواجب');
+            }
+        })
+        .catch(e => console.error(e));
+}
+
+function deleteHomework(id, title) {
+    if (confirm(`هل أنت متأكد من حذف الواجب "${title}"؟`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/homework/delete/${id}`;
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
