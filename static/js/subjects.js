@@ -693,6 +693,10 @@ function openManageSubjectTeachersModal(subId, subName) {
     if (!modalEl) return;
 
     document.getElementById('mst-subject-id').value = subId;
+    if (!subName) {
+        const row = document.querySelector(`.subject-row[data-id="${subId}"]`);
+        subName = row ? row.getAttribute('data-name') : ('مادة #' + subId);
+    }
     const titleEl = document.getElementById('mst-modal-title');
     if (titleEl) titleEl.textContent = `إدارة المعلمين المسؤولين عن: ${subName}`;
 
@@ -758,6 +762,10 @@ function openManageSubjectClassesModal(subId, subName) {
     if (!modalEl) return;
 
     document.getElementById('msc-subject-id').value = subId;
+    if (!subName) {
+        const row = document.querySelector(`.subject-row[data-id="${subId}"]`);
+        subName = row ? row.getAttribute('data-name') : ('مادة #' + subId);
+    }
     const titleEl = document.getElementById('msc-modal-title');
     if (titleEl) titleEl.textContent = `إدارة الصفوف المرتبطة بـ: ${subName}`;
 
@@ -775,6 +783,13 @@ function openManageSubjectClassesModal(subId, subName) {
 
     const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     bsModal.show();
+}
+
+function confirmDeleteSubjectById(subId) {
+    const row = document.querySelector(`.subject-row[data-id="${subId}"]`);
+    const subName = row ? row.getAttribute('data-name') : 'المادة';
+    const slotsCount = row ? parseInt(row.getAttribute('data-slots') || 0) : 0;
+    confirmDeleteSubject(subId, subName, slotsCount);
 }
 
 function saveSubjectClassesModal() {

@@ -340,7 +340,8 @@
                         data-classes="{% for c in s.linked_classes %}{{ c.CID }}{% if not loop.last %},{% endif %}{% endfor %}"
                         data-classes-count="{{ s.linked_classes_count }}"
                         data-teachers-count="{{ s.assigned_teachers_count }}"
-                        data-students-count="{{ s.students_count }}">
+                        data-students-count="{{ s.students_count }}"
+                        data-slots="{{ s.weekly_slots_count or 0 }}">
                         
                         <!-- Checkbox -->
                         <td>
@@ -451,13 +452,13 @@
 
                                 <!-- 3. 👨‍🏫 إدارة المعلمين -->
                                 <button type="button" class="saas-action-btn btn-teachers text-purple" data-bs-toggle="tooltip" title="إدارة المعلمين"
-                                        onclick="openManageSubjectTeachersModal({{ s.SubID }}, {{ s.SubName|tojson }})">
+                                        onclick="openManageSubjectTeachersModal({{ s.SubID }})">
                                     <i class="fa-solid fa-chalkboard-user text-purple"></i>
                                 </button>
 
                                 <!-- 4. 👨‍🎓 إدارة الصفوف -->
                                 <button type="button" class="saas-action-btn btn-students text-info" data-bs-toggle="tooltip" title="إدارة الصفوف/الطلاب"
-                                        onclick="openManageSubjectClassesModal({{ s.SubID }}, {{ s.SubName|tojson }})">
+                                        onclick="openManageSubjectClassesModal({{ s.SubID }})">
                                     <i class="fa-solid fa-graduation-cap text-info"></i>
                                 </button>
 
@@ -468,7 +469,7 @@
 
                                 <!-- 6. 🗑️ حذف المادة -->
                                 <button type="button" class="saas-action-btn btn-delete text-danger" data-bs-toggle="tooltip" title="حذف المادة"
-                                        onclick="confirmDeleteSubject({{ s.SubID }}, {{ s.SubName|tojson }}, {{ s.weekly_slots_count }})">
+                                        onclick="confirmDeleteSubjectById({{ s.SubID }})">
                                     <i class="fa-solid fa-trash-can text-danger"></i>
                                 </button>
                             </div>
@@ -1638,9 +1639,6 @@
 .cursor-pointer { cursor: pointer; }
 .text-primary-hover:hover { color: #2563eb !important; text-decoration: underline; }
 </style>
-{% endblock %}
-
-{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/subjects.js') }}"></script>
 {% endblock %}
