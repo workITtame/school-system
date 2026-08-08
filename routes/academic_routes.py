@@ -224,25 +224,41 @@ def add_section():
 
 @academic_bp.route('/class/<int:id>/sections', methods=['GET'])
 def get_class_sections_api(id):
+    from flask import jsonify
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
-    from flask import jsonify
     from models import SchoolTable, ClassesSections
-    c = Classes.query.get_or_404(id)
+
+    try:
+        class_id = int(id)
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'رقم الصف الدراسي غير صالح'}), 400
+
+    c = Classes.query.filter_by(CID=class_id, is_deleted=False).first()
+    if not c:
+        return jsonify({'success': False, 'message': f'الصف الدراسي رقم ({id}) غير موجود في النظام'}), 404
     
     raw_sections = db.session.query(Sections).join(ClassesSections, Sections.SectionID == ClassesSections.c.SectionID)\
-        .filter(ClassesSections.c.CID == id).all()
+        .filter(ClassesSections.c.CID == class_id).all()
     sections_list = []
     
     for sec in raw_sections:
         if not getattr(sec, 'is_deleted', False):
             st_count = Student.query.filter(Student.SectionID == sec.SectionID, Student.CID == c.CID, Student.is_deleted == False).count()
             tb_count = SchoolTable.query.filter(SchoolTable.SectionID == sec.SectionID, SchoolTable.CID == c.CID, SchoolTable.is_deleted == False).count()
+            t_count = db.session.query(SchoolTable.TeacherID).filter(
+                SchoolTable.SectionID == sec.SectionID,
+                SchoolTable.CID == c.CID,
+                SchoolTable.is_deleted == False,
+                SchoolTable.TeacherID.isnot(None)
+            ).distinct().count()
+
             sections_list.append({
                 'id': sec.SectionID,
                 'name': sec.SectionName,
                 'maxStudents': sec.MaxStudents or 40,
                 'studentsCount': st_count,
+                'teachersCount': t_count,
                 'timetableCount': tb_count
             })
             
@@ -261,6 +277,7 @@ def add_class_section_api(id):
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
     from flask import jsonify
+    from models.academic import ClassesSections
     c = Classes.query.get_or_404(id)
     data = request.get_json() or {}
     name = data.get('name', '').strip()
@@ -268,13 +285,14 @@ def add_class_section_api(id):
     if not name:
         return jsonify({'success': False, 'message': 'يرجى كتابة اسم الشعبة'}), 400
         
-    existing_sections = c.sections.all() if hasattr(c.sections, 'all') else c.sections
+    existing_sections = db.session.query(Sections).join(ClassesSections, Sections.SectionID == ClassesSections.c.SectionID)\
+        .filter(ClassesSections.c.CID == id).all()
     for sec in existing_sections:
-        if not getattr(sec, 'is_deleted', False) and sec.SectionName.lower() == name.lower():
-            return jsonify({'success': False, 'message': f'الشعبة "{name}" موجودة بالفعل لصف {c.CName}'}), 400
+        if sec.SectionName and sec.SectionName.strip().lower() == name.lower():
+            if not getattr(sec, 'is_deleted', False):
+                return jsonify({'success': False, 'message': f'الشعبة "{name}" موجودة بالفعل لصف {c.CName}'}), 400
             
     try:
-        from models.academic import ClassesSections
         new_sec = Sections(SectionName=name)
         db.session.add(new_sec)
         db.session.flush()

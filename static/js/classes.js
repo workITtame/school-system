@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', function () {
     initFilters();
     initCheckboxes();
     initLivePreviews();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlClassId = urlParams.get('class_id');
+    const autoManage = urlParams.get('manage_sections');
+    if (urlClassId && (autoManage === '1' || autoManage === 'true' || window.location.hash === '#sections')) {
+        const parsedId = parseInt(urlClassId);
+        if (!isNaN(parsedId)) {
+            openManageSectionsModal(parsedId);
+        }
+    }
 });
 
 function initLivePreviews() {
@@ -410,6 +420,7 @@ function renderSectionsList(sections, className) {
                     <tr>
                         <th class="text-start">اسم الشعبة</th>
                         <th>عدد الطلاب</th>
+                        <th>عدد المعلمين</th>
                         <th>الحصص المجدولة</th>
                         <th>الإجراءات</th>
                     </tr>
@@ -422,6 +433,7 @@ function renderSectionsList(sections, className) {
                                 <span>${sec.name}</span>
                             </td>
                             <td><span class="badge bg-primary-subtle text-primary font-monospace">${sec.studentsCount} طالب</span></td>
+                            <td><span class="badge bg-purple-subtle text-purple font-monospace" style="background-color: #f3e8ff; color: #7e22ce;">${sec.teachersCount || 0} معلم</span></td>
                             <td><span class="badge bg-success-subtle text-success font-monospace">${sec.timetableCount} حصة</span></td>
                             <td>
                                 <button type="button" class="btn btn-sm btn-outline-warning rounded-circle p-1 px-2 me-1" title="تعديل اسم الشعبة" onclick="promptEditSection(${sec.id}, '${sec.name}')">
