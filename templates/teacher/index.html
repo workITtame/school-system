@@ -500,12 +500,13 @@
 <script>
     const jwtToken = document.querySelector('meta[name="jwt-token"]')?.getAttribute('content') || '';
     const apiHeadersJSON = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + jwtToken
+        'Content-Type': 'application/json'
     };
-    const apiHeadersForm = {
-        'Authorization': 'Bearer ' + jwtToken
-    };
+    const apiHeadersForm = {};
+    if (jwtToken && jwtToken.trim() !== '') {
+        apiHeadersJSON['Authorization'] = 'Bearer ' + jwtToken;
+        apiHeadersForm['Authorization'] = 'Bearer ' + jwtToken;
+    }
     
     let currentPage = 1;
     let currentSearch = '';
@@ -550,14 +551,17 @@
         const url = `/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}&qual=${encodeURIComponent(qual)}&status=${encodeURIComponent(status)}&gender=${encodeURIComponent(gender)}&class_id=${encodeURIComponent(classId)}`;
 
         fetch(url, { headers: apiHeadersJSON })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
         .then(data => {
-            if(data.success) {
+            if(data && data.success) {
                 renderTable(data.data);
                 renderPagination(data.meta);
             } else {
                 renderTable([]);
-                showToast(data.message || 'فشل في جلب البيانات', 'error');
+                showToast((data && data.message) || 'فشل في جلب البيانات', 'error');
             }
         })
         .catch(err => {

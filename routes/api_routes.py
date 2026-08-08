@@ -193,10 +193,16 @@ def delete_student(id):
         return api_response(False, f"حدث خطأ أثناء الحذف: {str(e)}", status_code=500)
 
 @api_bp.route("/teachers", methods=['GET'])
-@jwt_required(optional=True)
 def get_teachers():
-    if 'user_id' not in session and not getattr(current_user, 'is_authenticated', False) and not get_jwt_identity():
-        return api_response(False, "Unauthorized", status_code=401)
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    is_authenticated = ('user_id' in session) or getattr(current_user, 'is_authenticated', False)
+    if not is_authenticated:
+        try:
+            verify_jwt_in_request(optional=True)
+            if not get_jwt_identity():
+                return api_response(False, "غير مصرح", status_code=401)
+        except Exception:
+            return api_response(False, "غير مصرح", status_code=401)
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     search_term = request.args.get('search', '', type=str)
