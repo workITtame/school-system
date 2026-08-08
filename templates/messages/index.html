@@ -31,13 +31,13 @@
 
         <!-- TOP ACTIONS BUTTONS -->
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="openNewMessageModal()">
+            <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal()">
                 <i class="fa-solid fa-plus-circle"></i> <span>رسالة جديدة</span>
             </button>
-            <button type="button" class="btn btn-purple text-white rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" style="background-color: #7C3AED;" onclick="openBulkMessageModal()">
+            <button type="button" class="btn btn-purple text-white rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" style="background-color: #7C3AED;" data-bs-toggle="modal" data-bs-target="#bulkMessageModal" onclick="openBulkMessageModal()">
                 <i class="fa-solid fa-users"></i> <span>إرسال جماعي</span>
             </button>
-            <button type="button" class="btn btn-warning text-white rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="openQuickNotificationModal()">
+            <button type="button" class="btn btn-warning text-white rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#quickNotificationModal" onclick="openQuickNotificationModal()">
                 <i class="fa-solid fa-bullhorn"></i> <span>إشعار سريع</span>
             </button>
             <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="exportMessagesExcel()">
@@ -299,7 +299,7 @@
             <div class="card border-0 shadow-sm rounded-4 bg-white h-100 overflow-hidden">
                 <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
                     <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-comments text-primary me-2"></i>المحادثات النشطة</h6>
-                    <button type="button" class="btn btn-sm btn-primary rounded-pill extra-small font-monospace fw-bold" onclick="openNewMessageModal()">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill extra-small font-monospace fw-bold" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal()">
                         <i class="fa-solid fa-plus me-1"></i> جديدة
                     </button>
                 </div>
@@ -412,22 +412,22 @@
             <!-- FILTER TABS BAR -->
             <div class="card border-0 shadow-sm rounded-4 mb-3 bg-white">
                 <div class="card-body p-2 d-flex align-items-center gap-1 overflow-auto">
-                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active" onclick="switchMessagesTabFilter('inbox')">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active filter-tab-btn" data-filter="inbox" onclick="switchMessagesTabFilter('inbox', this)">
                         <i class="fa-solid fa-inbox me-1"></i> الواردة <span class="badge bg-white text-primary rounded-pill ms-1">12</span>
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchMessagesTabFilter('sent')">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="sent" onclick="switchMessagesTabFilter('sent', this)">
                         <i class="fa-solid fa-paper-plane me-1"></i> المرسلة
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchMessagesTabFilter('drafts')">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="drafts" onclick="switchMessagesTabFilter('drafts', this)">
                         <i class="fa-solid fa-pen-to-square me-1"></i> المسودات
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchMessagesTabFilter('archived')">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="archived" onclick="switchMessagesTabFilter('archived', this)">
                         <i class="fa-solid fa-box-archive me-1"></i> المؤرشفة
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchMessagesTabFilter('notifications')">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="notifications" onclick="switchMessagesTabFilter('notifications', this)">
                         <i class="fa-solid fa-bell me-1"></i> الإشعارات
                     </button>
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchMessagesTabFilter('starred')">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="starred" onclick="switchMessagesTabFilter('starred', this)">
                         <i class="fa-solid fa-star me-1"></i> المميزة
                     </button>
                 </div>
@@ -468,12 +468,12 @@
                         <div class="d-flex align-items-center justify-content-between pt-2 border-top">
                             <span class="text-muted font-monospace extra-small"><i class="fa-solid fa-paperclip me-1 text-primary"></i> {{ msg.attachments_count }} مرفقات</span>
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light border text-primary rounded-circle p-1 me-1" onclick="openReadMessageModal({{ msg.id }}, '{{ msg.sender_name }}', '{{ msg.subject }}', '{{ msg.preview }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                                <button type="button" class="btn btn-light border text-success rounded-circle p-1 me-1" onclick="replyToMessageModal('{{ msg.sender_name }}')" title="رد"><i class="fa-solid fa-reply"></i></button>
-                                <button type="button" class="btn btn-light border text-info rounded-circle p-1 me-1" onclick="forwardMessageModal('{{ msg.subject }}')" title="تحويل"><i class="fa-solid fa-share"></i></button>
+                                <button type="button" class="btn btn-light border text-primary rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#readMessageModal" onclick="openReadMessageModal({{ msg.id }}, '{{ msg.sender_name }}', '{{ msg.subject }}', '{{ msg.preview }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
+                                <button type="button" class="btn btn-light border text-success rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="replyToMessageModal('{{ msg.sender_name }}')" title="رد"><i class="fa-solid fa-reply"></i></button>
+                                <button type="button" class="btn btn-light border text-info rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="forwardMessageModal('{{ msg.subject }}')" title="تحويل"><i class="fa-solid fa-share"></i></button>
                                 <button type="button" class="btn btn-light border text-warning rounded-circle p-1 me-1" onclick="starMessageCard(this)" title="تمييز"><i class="fa-solid fa-star"></i></button>
                                 <button type="button" class="btn btn-light border text-purple rounded-circle p-1 me-1" style="color: #7C3AED;" onclick="archiveMessageCard(this)" title="أرشفة"><i class="fa-solid fa-box-archive"></i></button>
-                                <button type="button" class="btn btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this)" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                <button type="button" class="btn btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this, {{ msg.id }})" title="حذف"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
@@ -511,25 +511,25 @@
                     <h6 class="fw-bold text-dark mb-3 font-monospace"><i class="fa-solid fa-bolt text-warning me-2"></i>إجراءات سريعة</h6>
                     <div class="row g-2">
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 p-2 rounded-3 text-center hover-lift" onclick="openNewMessageModal()">
+                            <button type="button" class="btn btn-outline-primary w-100 p-2 rounded-3 text-center hover-lift" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal()">
                                 <i class="fa-solid fa-plus-circle fs-4 d-block mb-1 text-primary"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">رسالة جديدة</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-purple w-100 p-2 rounded-3 text-center hover-lift" style="border-color: #7C3AED;" onclick="openBulkMessageModal()">
+                            <button type="button" class="btn btn-outline-purple w-100 p-2 rounded-3 text-center hover-lift" style="border-color: #7C3AED;" data-bs-toggle="modal" data-bs-target="#bulkMessageModal" onclick="openBulkMessageModal()">
                                 <i class="fa-solid fa-users fs-4 d-block mb-1" style="color: #7C3AED;"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">رسالة جماعية</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-warning w-100 p-2 rounded-3 text-center hover-lift" onclick="openQuickNotificationModal()">
+                            <button type="button" class="btn btn-outline-warning w-100 p-2 rounded-3 text-center hover-lift" data-bs-toggle="modal" data-bs-target="#quickNotificationModal" onclick="openQuickNotificationModal()">
                                 <i class="fa-solid fa-bullhorn fs-4 d-block mb-1 text-warning"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">إشعار سريع</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-success w-100 p-2 rounded-3 text-center hover-lift" onclick="openNewMessageModal()">
+                            <button type="button" class="btn btn-outline-success w-100 p-2 rounded-3 text-center hover-lift" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal('', 'مراسلة ولي أمر')">
                                 <i class="fa-solid fa-users-between-lines fs-4 d-block mb-1 text-success"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">مراسلة ولي أمر</strong>
                             </button>
@@ -624,8 +624,8 @@
                         <td><span class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small px-3 py-1">غير مقروءة</span></td>
                         <td class="font-monospace extra-small text-muted">10:30 ص</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" onclick="openReadMessageModal(1, 'أحمد محمد علي', 'استفسار حول الدرجات', 'أستاذ سمير، هل يمكنك إرسال كشف الدرجات؟')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this)" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#readMessageModal" onclick="openReadMessageModal(1, 'أحمد محمد علي', 'استفسار حول الدرجات', 'أستاذ سمير، هل يمكنك إرسال كشف الدرجات؟')" title="عرض"><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this, 1)" title="حذف"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 </tbody>
@@ -1113,5 +1113,27 @@ function showToast(message, icon = 'info') {
         alert(message);
     }
 }
+
+// Explicit global window bindings for seamless button execution
+window.openNewMessageModal = openNewMessageModal;
+window.openBulkMessageModal = openBulkMessageModal;
+window.openQuickNotificationModal = openQuickNotificationModal;
+window.openChatThread = openChatThread;
+window.openReadMessageModal = openReadMessageModal;
+window.submitNewSingleMessage = submitNewSingleMessage;
+window.submitBulkMessage = submitBulkMessage;
+window.submitQuickNotification = submitQuickNotification;
+window.submitQuickReply = submitQuickReply;
+window.replyToMessageModal = replyToMessageModal;
+window.forwardMessageModal = forwardMessageModal;
+window.starMessageCard = starMessageCard;
+window.archiveMessageCard = archiveMessageCard;
+window.deleteMessageCard = deleteMessageCard;
+window.filterConversationsList = filterConversationsList;
+window.filterMessageCards = filterMessageCards;
+window.switchMessagesTabFilter = switchMessagesTabFilter;
+window.exportMessagesExcel = exportMessagesExcel;
+window.exportMessagesPDF = exportMessagesPDF;
+window.showToast = showToast;
 </script>
 {% endblock %}
