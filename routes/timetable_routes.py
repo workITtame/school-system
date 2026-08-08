@@ -33,9 +33,24 @@ def index():
     
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=current_user.id).first()
     
-    class_id = request.args.get('class_id', type=int)
+    try:
+        raw_class_id = request.args.get('class_id')
+        class_id = int(raw_class_id) if raw_class_id and str(raw_class_id).isdigit() else None
+    except (ValueError, TypeError):
+        class_id = None
+
     subject_id = request.args.get('subject_id', type=int)
     
+    selected_class = None
+    class_not_found = False
+    requested_class_id = raw_class_id if raw_class_id else None
+
+    if class_id is not None:
+        selected_class = Classes.query.filter_by(CID=class_id, is_deleted=False).first()
+        if not selected_class:
+            class_not_found = True
+            class_id = None
+
     if not teacher:
         teacher_name = current_user.name
         teacher_title = 'إدارة النظام'
@@ -92,7 +107,6 @@ def index():
     teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
     
     all_classes = Classes.query.filter_by(is_deleted=False).order_by(Classes.CID).all()
-    selected_class = Classes.query.filter_by(CID=class_id, is_deleted=False).first() if class_id else None
 
     if class_id:
         total_students = Student.query.filter(Student.CID == class_id, Student.is_deleted == False).count()
@@ -264,7 +278,9 @@ def index():
                            today_day_name=today_day_name,
                            all_classes=all_classes,
                            selected_class=selected_class,
-                           selected_class_id=class_id)
+                           selected_class_id=class_id,
+                           class_not_found=class_not_found,
+                           requested_class_id=requested_class_id)
 
 @timetable_bp.route('/api/drawer/<int:slot_id>')
 @login_required
