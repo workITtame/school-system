@@ -9,6 +9,7 @@ from .timetable import SchoolTable, TypeExams, SchoolTableTypeExam
 from .grade import Marks, DetailMarks
 from .message import Message
 from .homework import Homework
+from .notification import Notification
 
 __all__ = [
     'User',
@@ -35,5 +36,6 @@ __all__ = [
     'DetailMarks',
     'ExamSchedule',
     'Message',
-    'Homework'
+    'Homework',
+    'Notification'
 ]

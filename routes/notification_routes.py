@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from models import Teacher, Classes, Subject, Sections
+from models import db, Teacher, Classes, Subject, Sections, Notification, User
 from services.teacher_notification_service import (
     get_notification_statistics,
     get_notifications,
@@ -119,24 +119,82 @@ def api_statistics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@notifications_bp.route('/api/unread_count', methods=['GET'])
+@login_required
+def api_unread_count():
+    user_id = current_user.id
+    count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    return jsonify({'unread_count': count})
+
 @notifications_bp.route('/api/detail/<int:notification_id>', methods=['GET'])
+@notifications_bp.route('/api/details/<int:notification_id>', methods=['GET'])
 @login_required
 def api_detail(notification_id):
     user_id = current_user.id
-    try:
-        item = get_notification(notification_id, user_id)
-        return jsonify(item)
-    except PermissionError:
+    notif = Notification.query.get(notification_id)
+    if not notif:
+        return jsonify({'error': 'Notification not found'}), 404
+    if notif.user_id != user_id:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+
+    if not notif.is_read:
+        notif.is_read = True
+        notif.read_at = datetime.utcnow()
+        db.session.commit()
+
+    return jsonify({
+        'id': notif.id,
+        'title': notif.title,
+        'description': notif.message,
+        'action_url': notif.action_url,
+        'priority': notif.priority,
+        'is_read': notif.is_read,
+        'created_at': notif.created_at.strftime('%Y-%m-%d %H:%M:%S') if notif.created_at else ''
+    })
+
+@notifications_bp.route('/api/read/<int:notification_id>', methods=['POST'])
+@login_required
+def api_mark_read_by_id(notification_id):
+    notif = Notification.query.get(notification_id)
+    if not notif:
+        return jsonify({'error': 'Notification not found'}), 404
+    if notif.user_id != current_user.id:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+
+    notif.is_read = True
+    notif.read_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True, 'is_read': True, 'message': 'تم تعليم الإشعار كمقروء'})
+
+@notifications_bp.route('/api/unread/<int:notification_id>', methods=['POST'])
+@login_required
+def api_mark_unread_by_id(notification_id):
+    notif = Notification.query.get(notification_id)
+    if not notif:
+        return jsonify({'error': 'Notification not found'}), 404
+    if notif.user_id != current_user.id:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+
+    notif.is_read = False
+    db.session.commit()
+    return jsonify({'success': True, 'is_read': False, 'message': 'تم تعليم الإشعار كغير مقروء'})
 
 @notifications_bp.route('/api/read', methods=['POST'])
 @login_required
 def api_read():
     user_id = current_user.id
-    payload = request.get_json(silent=True) or {}
-    notification_id = payload.get('id')
+    payload = request.get_json(silent=True) or request.form
+    notification_id = payload.get('id') or payload.get('notification_id')
+    if notification_id:
+        try:
+            nid = int(notification_id)
+            notif = Notification.query.get(nid)
+            if notif and notif.user_id == user_id:
+                notif.is_read = True
+                notif.read_at = datetime.utcnow()
+                db.session.commit()
+        except Exception:
+            pass
     try:
         success = mark_as_read(notification_id, user_id)
         return jsonify({'success': success, 'message': 'تم تعليم الإشعار كمقروء'})
@@ -156,6 +214,19 @@ def api_read_all():
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@notifications_bp.route('/api/delete/<int:notification_id>', methods=['DELETE', 'POST'])
+@login_required
+def api_delete_by_id(notification_id):
+    notif = Notification.query.get(notification_id)
+    if not notif:
+        return jsonify({'error': 'Notification not found'}), 404
+    if notif.user_id != current_user.id:
+        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
+
+    db.session.delete(notif)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'تم حذف الإشعار بنجاح'})
 
 @notifications_bp.route('/api/archive', methods=['POST'])
 @login_required
@@ -209,14 +280,34 @@ def api_bulk():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@notifications_bp.route('/api/mark_all_read', methods=['POST'])
+@notifications_bp.route('/api/quick', methods=['POST'])
 @login_required
-def legacy_mark_all_read():
-    user_id = current_user.id
+def api_quick_notif():
+    payload = request.get_json(silent=True) or request.form
+    target_id = payload.get('user_id') or payload.get('recipient_id') or current_user.id
+    title = (payload.get('title') or 'إشعار سريع عاجل').strip()
+    msg = (payload.get('message') or payload.get('content') or 'تنبيه سريع من إدارة المدرسة').strip()
+
     try:
-        mark_all_as_read(user_id)
-        return jsonify({'success': True, 'message': 'تم تحديد جميع الإشعارات كمقروءة بنجاح'})
-    except PermissionError:
-        return jsonify({'error': 'Out-of-scope access forbidden'}), 403
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        rec_id = int(target_id)
+    except (ValueError, TypeError):
+        rec_id = current_user.id
+
+    notif = Notification(
+        user_id=rec_id,
+        title=title,
+        message=msg,
+        notification_type='admin',
+        action_url='/notifications/',
+        priority='urgent',
+        is_read=False,
+        created_at=datetime.utcnow()
+    )
+    db.session.add(notif)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'notification_id': notif.id,
+        'message': 'تم إرسال الإشعار السريع بنجاح'
+    })

@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from models import db, Teacher, Classes, Subject, Sections, User, Message, Student
+from models import db, Teacher, Classes, Subject, Sections, User, Message, Student, Notification
 from services.teacher_message_service import (
     get_teacher_message_statistics,
     get_conversations,
@@ -187,15 +187,65 @@ def api_send():
         db.session.add(new_msg)
         db.session.commit()
 
+        # Create real Notification for recipient in DB
+        sender_user = User.query.get(user_id)
+        sender_name = sender_user.name if (sender_user and hasattr(sender_user, 'name') and sender_user.name) else 'مستخدم النظام'
+        notif = Notification(
+            user_id=rec_id,
+            title=f"رسالة جديدة من {sender_name}",
+            message=message_text[:120],
+            notification_type='message',
+            action_url=f"/messages/?conversation_id={new_msg.id}",
+            priority='high',
+            is_read=False,
+            created_at=datetime.utcnow()
+        )
+        db.session.add(notif)
+        db.session.commit()
+
         return jsonify({
             'success': True,
             'id': new_msg.id,
             'message_id': new_msg.id,
+            'notification_id': notif.id,
             'message': 'تم إرسال الرسالة بنجاح'
         })
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/quick_notification', methods=['POST'])
+@messages_bp.route('/api/quick', methods=['POST'])
+@login_required
+def api_quick_notification():
+    payload = request.get_json(silent=True) or request.form
+    target_user_id = payload.get('user_id') or payload.get('recipient_id') or 1
+    title = (payload.get('title') or 'إشعار سريع عاجل').strip()
+    msg = (payload.get('message') or payload.get('content') or 'تنبيه سريع من إدارة المدرسة').strip()
+
+    try:
+        rec_id = int(target_user_id)
+    except (ValueError, TypeError):
+        rec_id = 1
+
+    notif = Notification(
+        user_id=rec_id,
+        title=title,
+        message=msg,
+        notification_type='admin',
+        action_url='/notifications/',
+        priority='urgent',
+        is_read=False,
+        created_at=datetime.utcnow()
+    )
+    db.session.add(notif)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'notification_id': notif.id,
+        'message': 'تم إرسال الإشعار السريع وحفظه في قاعدة البيانات بنجاح'
+    })
 
 @messages_bp.route('/api/details/<int:msg_id>', methods=['GET'])
 @login_required
