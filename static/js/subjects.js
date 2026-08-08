@@ -664,6 +664,151 @@ function openSubjectProfileModal(subjectId) {
     }
 }
 
+function openEditSubjectById(subId) {
+    fetch(`/academic/subject/${subId}/data`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.subject) {
+                const s = data.subject;
+                openEditSubjectModal(s.id, s.name, s.type, s.department, s.weeklyHours, s.status, s.color, s.classIds, s.teacherIds);
+            } else {
+                showToast(data.message || 'تعذر تحميل بيانات المادة التحريرية', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            const row = document.querySelector(`.subject-row[data-id="${subId}"]`);
+            if (row) {
+                const name = row.getAttribute('data-name');
+                const type = row.getAttribute('data-type');
+                const dept = row.getAttribute('data-stage');
+                const status = row.getAttribute('data-status');
+                openEditSubjectModal(subId, name, type, dept, 4, status, '#2563eb', [], []);
+            }
+        });
+}
+
+function openManageSubjectTeachersModal(subId, subName) {
+    const modalEl = document.getElementById('manageSubjectTeachersModal');
+    if (!modalEl) return;
+
+    document.getElementById('mst-subject-id').value = subId;
+    const titleEl = document.getElementById('mst-modal-title');
+    if (titleEl) titleEl.textContent = `إدارة المعلمين المسؤولين عن: ${subName}`;
+
+    fetch(`/academic/subject/${subId}/data`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.subject) {
+                const teacherIds = data.subject.teacherIds || [];
+                const checkboxes = modalEl.querySelectorAll('.mst-teacher-cb');
+                checkboxes.forEach(cb => {
+                    cb.checked = teacherIds.includes(parseInt(cb.value));
+                });
+            }
+        });
+
+    const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function filterManageTeachersModal() {
+    const term = (document.getElementById('mst-teacher-search')?.value || '').toLowerCase();
+    const cards = document.querySelectorAll('.mst-teacher-card');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(term) ? 'block' : 'none';
+    });
+}
+
+function saveSubjectTeachersModal() {
+    const subId = document.getElementById('mst-subject-id')?.value;
+    if (!subId) return;
+
+    const checkboxes = document.querySelectorAll('#mst-teachers-grid .mst-teacher-cb:checked');
+    const teacherIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    fetch(`/academic/subject/${subId}/teachers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacher_ids: teacherIds })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            const modalEl = document.getElementById('manageSubjectTeachersModal');
+            if (modalEl) {
+                const bsModal = bootstrap.Modal.getInstance(modalEl);
+                if (bsModal) bsModal.hide();
+            }
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showToast(data.message || 'حدث خطأ أثناء التحديث', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('حدث خطأ في الاتصال بالخادم', 'error');
+    });
+}
+
+function openManageSubjectClassesModal(subId, subName) {
+    const modalEl = document.getElementById('manageSubjectClassesModal');
+    if (!modalEl) return;
+
+    document.getElementById('msc-subject-id').value = subId;
+    const titleEl = document.getElementById('msc-modal-title');
+    if (titleEl) titleEl.textContent = `إدارة الصفوف المرتبطة بـ: ${subName}`;
+
+    fetch(`/academic/subject/${subId}/data`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.subject) {
+                const classIds = data.subject.classIds || [];
+                const checkboxes = modalEl.querySelectorAll('.msc-class-cb');
+                checkboxes.forEach(cb => {
+                    cb.checked = classIds.includes(parseInt(cb.value));
+                });
+            }
+        });
+
+    const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function saveSubjectClassesModal() {
+    const subId = document.getElementById('msc-subject-id')?.value;
+    if (!subId) return;
+
+    const checkboxes = document.querySelectorAll('#msc-classes-grid .msc-class-cb:checked');
+    const classIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    fetch(`/academic/subject/${subId}/classes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class_ids: classIds })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            const modalEl = document.getElementById('manageSubjectClassesModal');
+            if (modalEl) {
+                const bsModal = bootstrap.Modal.getInstance(modalEl);
+                if (bsModal) bsModal.hide();
+            }
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showToast(data.message || 'حدث خطأ أثناء التحديث', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('حدث خطأ في الاتصال بالخادم', 'error');
+    });
+}
+
 function loadSubjectProfile(data) {
     if (!data) return;
 

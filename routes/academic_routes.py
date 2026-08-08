@@ -674,6 +674,75 @@ def delete_subject(id):
     flash('تم حذف المادة بنجاح', 'success')
     return redirect(url_for('academic.subjects'))
 
+@academic_bp.route('/subject/<int:id>/data')
+def get_subject_data_api(id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    from models.teacher import Teacher
+    subject = Subject.query.get_or_404(id)
+    
+    class_objs = subject.classes.all() if hasattr(subject.classes, 'all') else subject.classes
+    linked_classes = [{'id': c.CID, 'name': c.CName, 'stage': c.Stage or 'المرحلة العامة'} for c in class_objs if not getattr(c, 'is_deleted', False)]
+    teacher_objs = subject.teachers.all() if hasattr(subject.teachers, 'all') else subject.teachers
+    assigned_teachers = [{'id': t.TeacherID, 'name': t.TeacherName, 'title': t.TeacherTitle or 'معلم قدير'} for t in teacher_objs if not getattr(t, 'is_deleted', False)]
+    
+    return jsonify({
+        'success': True,
+        'subject': {
+            'id': subject.SubID,
+            'name': subject.SubName,
+            'type': subject.Type or 'أساسية',
+            'department': subject.Department or 'جميع المراحل',
+            'weeklyHours': subject.WeeklyHours or 4,
+            'status': subject.Status or 'نشط',
+            'color': subject.Color or '#2563eb',
+            'classes': linked_classes,
+            'teachers': assigned_teachers,
+            'classIds': [c['id'] for c in linked_classes],
+            'teacherIds': [t['id'] for t in assigned_teachers]
+        }
+    })
+
+@academic_bp.route('/subject/<int:id>/teachers', methods=['POST'])
+def update_subject_teachers_api(id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    from models.teacher import Teacher
+    subject = Subject.query.get_or_404(id)
+    
+    data = request.get_json() or {}
+    teacher_ids = data.get('teacher_ids', [])
+    
+    subject.teachers = []
+    if teacher_ids:
+        target_teachers = Teacher.query.filter(Teacher.TeacherID.in_([int(tid) for tid in teacher_ids])).all()
+        subject.teachers.extend(target_teachers)
+        
+    db.session.commit()
+    teacher_objs = subject.teachers.all() if hasattr(subject.teachers, 'all') else subject.teachers
+    return jsonify({'success': True, 'message': f'تم تحديث الكادر التعليمي للمادة "{subject.SubName}" بنجاح', 'assigned_count': len(teacher_objs)})
+
+@academic_bp.route('/subject/<int:id>/classes', methods=['POST'])
+def update_subject_classes_api(id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'يرجى تسجيل الدخول أولاً'}), 401
+    from flask import jsonify
+    subject = Subject.query.get_or_404(id)
+    
+    data = request.get_json() or {}
+    class_ids = data.get('class_ids', [])
+    
+    subject.classes = []
+    if class_ids:
+        target_classes = Classes.query.filter(Classes.CID.in_([int(cid) for cid in class_ids])).all()
+        subject.classes.extend(target_classes)
+        
+    db.session.commit()
+    class_objs = subject.classes.all() if hasattr(subject.classes, 'all') else subject.classes
+    return jsonify({'success': True, 'message': f'تم تحديث الصفوف المرتبطة بالمادة "{subject.SubName}" بنجاح', 'classes_count': len(class_objs)})
+
 @academic_bp.route('/subjects/export/excel')
 def export_subjects_excel():
     if 'user_id' not in session: return redirect(url_for('auth.login'))

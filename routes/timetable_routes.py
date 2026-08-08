@@ -34,6 +34,7 @@ def index():
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=current_user.id).first()
     
     class_id = request.args.get('class_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
     
     if not teacher:
         teacher_name = current_user.name
@@ -51,6 +52,8 @@ def index():
         ).filter(SchoolTable.is_deleted == False)
         if class_id:
             query = query.filter(SchoolTable.CID == class_id)
+        if subject_id:
+            query = query.filter(SchoolTable.SubID == subject_id)
         slots = query.all()
     else:
         teacher_id = teacher.TeacherID
@@ -71,6 +74,8 @@ def index():
         ).filter_by(TeacherID=teacher_id, is_deleted=False)
         if class_id:
             query = query.filter(SchoolTable.CID == class_id)
+        if subject_id:
+            query = query.filter(SchoolTable.SubID == subject_id)
         slots = query.all()
 
     teacher_info = {
