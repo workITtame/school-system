@@ -137,13 +137,40 @@ def add_class():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    name = request.form.get('name')
-    stage = request.form.get('stage')
-    if name:
-        new_class = Classes(CName=name, Stage=stage)
+    name = request.form.get('name', '').strip()
+    stage = request.form.get('stage', '').strip()
+    if not name:
+        flash('يرجى كتابة اسم الصف الدراسي', 'warning')
+        return redirect(url_for('academic.classes'))
+        
+    existing_class = Classes.query.filter_by(CName=name).first()
+    if existing_class:
+        if getattr(existing_class, 'is_deleted', False):
+            existing_class.is_deleted = False
+            if stage:
+                existing_class.Stage = stage
+            try:
+                db.session.commit()
+                flash(f'تم إعادة تفعيل الصف "{name}" بنجاح', 'success')
+            except Exception:
+                db.session.rollback()
+                flash('حدث خطأ أثناء تفعيل الصف', 'danger')
+        else:
+            flash(f'الصف "{name}" موجود بالفعل في النظام', 'warning')
+        return redirect(url_for('academic.classes'))
+        
+    new_class = Classes(CName=name, Stage=stage)
+    try:
         db.session.add(new_class)
         db.session.commit()
-        flash('تمت إضافة الصف بنجاح', 'success')
+        flash(f'تمت إضافة الصف "{name}" بنجاح', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'الصف "{name}" موجود بالفعل أو حدث تعارض في البيانات', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إضافة الصف: {str(e)}', 'danger')
+        
     return redirect(url_for('academic.classes'))
 
 @academic_bp.route('/add_section', methods=['POST'])
@@ -151,16 +178,30 @@ def add_section():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    name = request.form.get('name')
+    name = request.form.get('name', '').strip()
     class_id = request.form.get('class_id')
-    if name and class_id:
+    if not name or not class_id:
+        flash('يرجى إدخال اسم الشعبة واختيار الصف الدراسي', 'warning')
+        return redirect(url_for('academic.classes'))
+        
+    c = Classes.query.get(class_id)
+    if not c:
+        flash('الصف الدراسي غير موجود', 'danger')
+        return redirect(url_for('academic.classes'))
+        
+    try:
         new_section = Sections(SectionName=name)
-        c = Classes.query.get(class_id)
-        if c:
-            new_section.classes.append(c)
+        new_section.classes.append(c)
         db.session.add(new_section)
         db.session.commit()
-        flash('تمت إضافة الشعبة بنجاح', 'success')
+        flash(f'تمت إضافة الشعبة "{name}" بنجاح للصف "{c.CName}"', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'الشعبة "{name}" موجودة بالفعل أو تعذر إضافتها', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إضافة الشعبة: {str(e)}', 'danger')
+        
     return redirect(url_for('academic.classes'))
 
 @academic_bp.route('/add_subject', methods=['POST'])
@@ -168,16 +209,44 @@ def add_subject():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    name = request.form.get('name')
+    name = request.form.get('name', '').strip()
     sub_type = request.form.get('type')
     department = request.form.get('department')
     status = request.form.get('status', 'نشط')
     
-    if name:
+    if not name:
+        flash('يرجى إدخال اسم المادة الدراسية', 'warning')
+        return redirect(url_for('academic.subjects'))
+        
+    existing_subject = Subject.query.filter_by(SubName=name).first()
+    if existing_subject:
+        if getattr(existing_subject, 'is_deleted', False):
+            existing_subject.is_deleted = False
+            if sub_type: existing_subject.Type = sub_type
+            if department: existing_subject.Department = department
+            existing_subject.Status = status
+            try:
+                db.session.commit()
+                flash(f'تم إعادة تفعيل المادة "{name}" بنجاح', 'success')
+            except Exception:
+                db.session.rollback()
+                flash('حدث خطأ أثناء تفعيل المادة', 'danger')
+        else:
+            flash(f'المادة الدراسية "{name}" موجودة بالفعل في النظام', 'warning')
+        return redirect(url_for('academic.subjects'))
+        
+    try:
         new_subject = Subject(SubName=name, Type=sub_type, Department=department, Status=status)
         db.session.add(new_subject)
         db.session.commit()
-        flash('تمت إضافة المادة بنجاح', 'success')
+        flash(f'تمت إضافة المادة "{name}" بنجاح', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'المادة الدراسية "{name}" موجودة بالفعل أو حدث تعارض في البيانات', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إضافة المادة: {str(e)}', 'danger')
+        
     return redirect(url_for('academic.subjects'))
 
 @academic_bp.route('/add_day', methods=['POST'])
@@ -185,9 +254,13 @@ def add_day():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     name = request.form.get('name')
     if name:
-        db.session.add(Days(DName=name))
-        db.session.commit()
-        flash('تمت إضافة اليوم بنجاح', 'success')
+        try:
+            db.session.add(Days(DName=name))
+            db.session.commit()
+            flash('تمت إضافة اليوم بنجاح', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('تعذر إضافة اليوم', 'danger')
     return redirect(url_for('academic.index'))
 
 @academic_bp.route('/add_lesson', methods=['POST'])
@@ -195,9 +268,13 @@ def add_lesson():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     name = request.form.get('name')
     if name:
-        db.session.add(Lessons(LessonName=name))
-        db.session.commit()
-        flash('تمت إضافة الحصة بنجاح', 'success')
+        try:
+            db.session.add(Lessons(LessonName=name))
+            db.session.commit()
+            flash('تمت إضافة الحصة بنجاح', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('تعذر إضافة الحصة', 'danger')
     return redirect(url_for('academic.index'))
 
 @academic_bp.route('/add_term', methods=['POST'])
@@ -205,9 +282,13 @@ def add_term():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     name = request.form.get('name')
     if name:
-        db.session.add(Terms(T_Name=name))
-        db.session.commit()
-        flash('تمت إضافة الترم بنجاح', 'success')
+        try:
+            db.session.add(Terms(T_Name=name))
+            db.session.commit()
+            flash('تمت إضافة الترم بنجاح', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('تعذر إضافة الترم', 'danger')
     return redirect(url_for('academic.index'))
 
 @academic_bp.route('/add_exam_type', methods=['POST'])
@@ -215,9 +296,13 @@ def add_exam_type():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     name = request.form.get('name')
     if name:
-        db.session.add(TypeExams(ExamName=name))
-        db.session.commit()
-        flash('تمت إضافة نوع الاختبار بنجاح', 'success')
+        try:
+            db.session.add(TypeExams(ExamName=name))
+            db.session.commit()
+            flash('تمت إضافة نوع الاختبار بنجاح', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('تعذر إضافة نوع الاختبار', 'danger')
     return redirect(url_for('academic.index'))
 
 
@@ -226,8 +311,12 @@ def add_exam_type():
 def handle_edit(obj, attr_name, new_val):
     if new_val:
         setattr(obj, attr_name, new_val)
-        db.session.commit()
-        flash('تم التعديل بنجاح', 'success')
+        try:
+            db.session.commit()
+            flash('تم التعديل بنجاح', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('تعذر التعديل بسبب تعارض في البيانات', 'danger')
 
 def handle_delete(obj):
     try:
@@ -243,12 +332,19 @@ def handle_delete(obj):
 def edit_class(id):
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     c = Classes.query.get_or_404(id)
-    name = request.form.get('name')
-    stage = request.form.get('stage')
+    name = request.form.get('name', '').strip()
+    stage = request.form.get('stage', '').strip()
     if name: c.CName = name
     if stage: c.Stage = stage
-    db.session.commit()
-    flash('تم تعديل الصف بنجاح', 'success')
+    try:
+        db.session.commit()
+        flash('تم تعديل الصف بنجاح', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'اسم الصف "{name}" مستخدم بالفعل لصف آخر', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء التعديل: {str(e)}', 'danger')
     return redirect(url_for('academic.classes'))
 
 @academic_bp.route('/delete_class/<int:id>', methods=['POST'])
