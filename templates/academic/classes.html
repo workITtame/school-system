@@ -381,7 +381,7 @@
                         <td>
                             <div class="d-flex align-items-center justify-content-center gap-1">
                                 <!-- 1. عرض الصف -->
-                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="عرض الصف" onclick="openEditClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}')">
+                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="عرض الصف" onclick="openViewClassModal({{ c.CID }}, '{{ c.CName }}', '{{ c.Stage }}', '{{ c.Status or 'نشط' }}', {{ c.students_count }}, {{ c.linked_sections|length }}, {{ c.teachers_count }}, {{ c.subjects_count }}, {{ c.occupancy_percentage if c.occupancy_percentage is not none else -1 }})">
                                     <i class="fa-solid fa-eye text-primary"></i>
                                 </button>
                                 <!-- 2. تعديل الصف -->
@@ -702,6 +702,121 @@
         </div>
     </div>
 </div>
+
+<!-- 4. View Class Enterprise SaaS Modal -->
+<div class="modal fade" id="viewClassModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
+            <!-- Hero Banner Header -->
+            <div class="modal-hero-header p-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="d-flex align-items-center justify-content-between position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="modal-icon-box bg-white text-primary rounded-4 shadow-sm d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-school"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-white-subtle text-white font-monospace px-2 py-0.5" id="viewClassCode">CLS-1</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-0.5" id="viewClassStatus">نشط</span>
+                            </div>
+                            <h4 class="fw-extrabold mb-0 font-cairo" id="viewClassName">اسم الصف الدراسي</h4>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 bg-light-subtle font-monospace extra-small">
+                <!-- Class Stats Grid -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <i class="fa-solid fa-user-graduate text-primary fs-4 mb-1"></i>
+                            <span class="text-muted d-block small">الطلاب المسجلين</span>
+                            <strong class="text-dark fs-6 font-monospace" id="viewClassStudents">0 طالب</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <i class="fa-solid fa-users-rectangle text-info fs-4 mb-1"></i>
+                            <span class="text-muted d-block small">الشعب المسندة</span>
+                            <strong class="text-dark fs-6 font-monospace" id="viewClassSections">0 شعب</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <i class="fa-solid fa-chalkboard-user text-purple fs-4 mb-1"></i>
+                            <span class="text-muted d-block small">الكادر التعليمي</span>
+                            <strong class="text-dark fs-6 font-monospace" id="viewClassTeachers">0 معلم</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <i class="fa-solid fa-book text-warning fs-4 mb-1"></i>
+                            <span class="text-muted d-block small">المواد الدراسية</span>
+                            <strong class="text-dark fs-6 font-monospace" id="viewClassSubjects">0 مادة</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Info Overview -->
+                <div class="card border rounded-3 p-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-3 font-cairo"><i class="fa-solid fa-circle-info text-primary me-2"></i> التفاصيل الأكاديمية ونسبة الإشغال</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>المرحلة الدراسية:</strong> <span id="viewClassStage" class="badge bg-primary-subtle text-primary border me-1">—</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>معدل نسبة الإشغال:</strong> <span id="viewClassOccupancy" class="fw-bold text-dark">—</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Quick Access Buttons -->
+            <div class="modal-footer bg-white border-top p-3 d-flex justify-content-between font-monospace extra-small">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted border" data-bs-dismiss="modal">إغلاق</button>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" id="viewBtnStudents" class="btn btn-outline-info rounded-pill px-3 fw-bold">
+                        <i class="fa-solid fa-users me-1"></i> إدارة الطلاب
+                    </a>
+                    <a href="#" id="viewBtnTeachers" class="btn btn-outline-primary rounded-pill px-3 fw-bold">
+                        <i class="fa-solid fa-chalkboard-user me-1"></i> إدارة المعلمين
+                    </a>
+                    <button type="button" id="viewBtnEdit" class="btn btn-warning rounded-pill px-4 fw-bold text-dark">
+                        <i class="fa-solid fa-pen me-1"></i> تعديل الصف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openViewClassModal(cid, name, stage, status, studentsCount, sectionsCount, teachersCount, subjectsCount, occupancy) {
+    document.getElementById('viewClassName').textContent = name;
+    document.getElementById('viewClassCode').textContent = 'CLS-' + cid;
+    document.getElementById('viewClassStage').textContent = stage || 'المرحلة العامة';
+    document.getElementById('viewClassStatus').textContent = status || 'نشط';
+    document.getElementById('viewClassStudents').textContent = studentsCount + ' طالب';
+    document.getElementById('viewClassSections').textContent = sectionsCount + ' شعب';
+    document.getElementById('viewClassTeachers').textContent = teachersCount + ' معلم';
+    document.getElementById('viewClassSubjects').textContent = subjectsCount + ' مادة';
+    document.getElementById('viewClassOccupancy').textContent = (occupancy >= 0 ? occupancy + '%' : 'غير محددة');
+
+    document.getElementById('viewBtnEdit').onclick = function() {
+        const viewModalEl = document.getElementById('viewClassModal');
+        const modalInstance = bootstrap.Modal.getInstance(viewModalEl);
+        if (modalInstance) modalInstance.hide();
+        openEditClassModal(cid, name, stage);
+    };
+    document.getElementById('viewBtnStudents').href = `/students/?class_id=${cid}`;
+    document.getElementById('viewBtnTeachers').href = `/teacher/?class_id=${cid}`;
+
+    const viewModal = new bootstrap.Modal(document.getElementById('viewClassModal'));
+    viewModal.show();
+}
+</script>
 
 <!-- JavaScript Integration -->
 <script src="{{ url_for('static', filename='js/classes.js') }}"></script>
