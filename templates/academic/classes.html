@@ -401,9 +401,9 @@
                                     <i class="fa-solid fa-book text-success"></i>
                                 </a>
                                 <!-- 6. إدارة الشعب -->
-                                <a href="{{ url_for('academic.classes') }}?class_id={{ c.CID }}" class="saas-action-btn" data-bs-toggle="tooltip" title="إدارة الشعب">
+                                <button type="button" class="saas-action-btn" data-bs-toggle="tooltip" title="إدارة الشعب" onclick="openAddSectionModal({{ c.CID }})">
                                     <i class="fa-solid fa-layer-group text-primary"></i>
-                                </a>
+                                </button>
                                 <!-- 7. الجدول الدراسي -->
                                 <a href="{{ url_for('timetable.index') }}?class_id={{ c.CID }}" class="saas-action-btn" data-bs-toggle="tooltip" title="الجدول الدراسي">
                                     <i class="fa-solid fa-calendar-days text-secondary"></i>

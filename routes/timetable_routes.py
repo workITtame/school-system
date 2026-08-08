@@ -33,6 +33,8 @@ def index():
     
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=current_user.id).first()
     
+    class_id = request.args.get('class_id', type=int)
+    
     if not teacher:
         teacher_name = current_user.name
         teacher_title = 'إدارة النظام'
@@ -40,13 +42,16 @@ def index():
         subjects_str = 'كافة المواد الدراسية'
         words = teacher_name.split()
         initials = ". ".join([w[0] for w in words[:2]]) if len(words) >= 2 else 'م.أ'
-        slots = SchoolTable.query.options(
+        query = SchoolTable.query.options(
             joinedload(SchoolTable.subject),
             joinedload(SchoolTable.school_class),
             joinedload(SchoolTable.section),
             joinedload(SchoolTable.day),
             joinedload(SchoolTable.lesson)
-        ).filter(SchoolTable.is_deleted == False).all()
+        ).filter(SchoolTable.is_deleted == False)
+        if class_id:
+            query = query.filter(SchoolTable.CID == class_id)
+        slots = query.all()
     else:
         teacher_id = teacher.TeacherID
         teacher_name = teacher.TeacherName
@@ -57,13 +62,16 @@ def index():
         words = teacher_name.split()
         initials = ". ".join([w[0] for w in words[:2]]) if len(words) >= 2 else 'م.أ'
         
-        slots = SchoolTable.query.options(
+        query = SchoolTable.query.options(
             joinedload(SchoolTable.subject),
             joinedload(SchoolTable.school_class),
             joinedload(SchoolTable.section),
             joinedload(SchoolTable.day),
             joinedload(SchoolTable.lesson)
-        ).filter_by(TeacherID=teacher_id, is_deleted=False).all()
+        ).filter_by(TeacherID=teacher_id, is_deleted=False)
+        if class_id:
+            query = query.filter(SchoolTable.CID == class_id)
+        slots = query.all()
 
     teacher_info = {
         'TeacherName': teacher_name,

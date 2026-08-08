@@ -86,10 +86,16 @@ function initFilters() {
             if (stageSelect) stageSelect.value = 'ALL';
             if (statusSelect) statusSelect.value = 'ALL';
             if (sortSelect) sortSelect.value = 'ID_ASC';
+            if (window.location.search) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
             applyFilters();
             showToast('تمت إعادة ضبط جميع الفلاتر بنجاح', 'success');
         });
     }
+
+    // Apply initial filters on page load
+    applyFilters();
 }
 
 function applyFilters() {
@@ -97,6 +103,9 @@ function applyFilters() {
     const stageVal = document.getElementById('stageFilter')?.value || 'ALL';
     const statusVal = document.getElementById('statusFilter')?.value || 'ALL';
     const sortVal = document.getElementById('sortFilter')?.value || 'ID_ASC';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlClassId = urlParams.get('class_id');
 
     const tableBody = document.getElementById('classesTableBody');
     const emptyState = document.getElementById('classesEmptyState');
@@ -106,16 +115,18 @@ function applyFilters() {
     let visibleCount = 0;
 
     rows.forEach(row => {
+        const classId = row.getAttribute('data-id') || '';
         const className = (row.getAttribute('data-name') || '').toLowerCase();
         const classCode = (row.getAttribute('data-code') || '').toLowerCase();
         const stage = row.getAttribute('data-stage') || '';
         const status = row.getAttribute('data-status') || '';
 
+        const matchesUrlClass = !urlClassId || classId === urlClassId;
         const matchesSearch = !searchVal || className.includes(searchVal) || classCode.includes(searchVal);
         const matchesStage = stageVal === 'ALL' || stage === stageVal;
         const matchesStatus = statusVal === 'ALL' || status === statusVal;
 
-        if (matchesSearch && matchesStage && matchesStatus) {
+        if (matchesUrlClass && matchesSearch && matchesStage && matchesStatus) {
             row.style.display = '';
             visibleCount++;
         } else {
@@ -346,6 +357,18 @@ function openEditClassModal(id, name, stage) {
     if (editPreviewName) editPreviewName.textContent = name;
     if (editPreviewStage) editPreviewStage.textContent = stage;
     
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+function openAddSectionModal(classId) {
+    const modalEl = document.getElementById('addSectionModal');
+    if (!modalEl) return;
+    const selectEl = document.getElementById('addSectionClassSelect');
+    if (selectEl && classId) {
+        selectEl.value = classId;
+        selectEl.dispatchEvent(new Event('change'));
+    }
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
 }
