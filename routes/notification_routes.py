@@ -38,20 +38,12 @@ def index():
     sections = Sections.query.filter_by(is_deleted=False).all()
 
     if user_role != 'teacher':
-        stats = {
-            'total_notifications': 15,
-            'unread_count': 4,
-            'today_count': 6,
-            'priority_count': 2,
-            'academic_count': 8,
-            'admin_count': 5,
-            'last_update': datetime.now().strftime('%H:%M'),
-            'smart_insights': ['تنبيه: تم إرسال جميع إشعارات الحضور لليوم بنجاح']
-        }
+        stats = get_notification_statistics(user_id)
+        notification_items = get_notifications(user_id)
         return render_template(
             'notifications.html',
             stats=stats,
-            notifications=[],
+            notifications=notification_items,
             subjects=subjects,
             classes=classes,
             sections=sections,
