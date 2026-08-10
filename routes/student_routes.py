@@ -330,7 +330,7 @@ def home():
         student_cards.append({
             'SID': st.SID,
             'SName': st.SName,
-            'student_code': f"2024{st.SID:03d}",
+            'student_code': f"#{st.SID}",
             'class_name': cls_name,
             'section_name': sec_name,
             'parent_name': st.Parent_Name or '—',
@@ -454,7 +454,7 @@ def api_list_students():
         student_list.append({
             'SID': st.SID,
             'SName': st.SName,
-            'student_code': f"2024{st.SID:03d}",
+            'student_code': f"#{st.SID}",
             'class_name': cls_name,
             'section_name': sec_name,
             'CID': st.CID,
@@ -492,7 +492,7 @@ def student_drawer_api(student_id):
     data['student'] = {
         'id': data.get('student_id'),
         'name': data.get('student_name'),
-        'academic_id': data.get('academic_id'),
+        'academic_id': f"#{data.get('student_id')}",
         'class_name': data.get('class_name'),
         'section_name': data.get('section_name'),
         'parent_name': data.get('parent_name'),

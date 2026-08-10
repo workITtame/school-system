@@ -218,7 +218,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
             cls_name = st.school_class.CName if st.school_class else 'الصف الثالث الثانوي'
             sec_name = st.section.SectionName if st.section else 'الشعبة الأولى'
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
-            academic_id = f"2024{st.SID:03d}"
+            academic_id = f"#{st.SID}"
 
             student_list.append({
                 'SID': st.SID,
@@ -310,7 +310,7 @@ def get_student_drawer_data(student_id, user_id):
         cls_name = student.school_class.CName if student.school_class else '—'
         sec_name = student.section.SectionName if student.section else '—'
         full_cls = f"{cls_name} - {sec_name}".strip(" -")
-        academic_id = f"2024{student.SID:03d}"
+        academic_id = f"#{student.SID}"
 
         return {
             'student_id': student.SID,

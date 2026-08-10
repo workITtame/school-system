@@ -259,7 +259,7 @@
                                 <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllStudents(this)">
                             </th>
                             <th class="py-3 text-start px-3">الطالب</th>
-                            <th class="py-3">الرقم الأكاديمي</th>
+                            <th class="py-3">رقم الطالب (ID)</th>
                             <th class="py-3">الصف</th>
                             <th class="py-3">الشعبة</th>
                             <th class="py-3">ولي الأمر</th>
@@ -279,16 +279,20 @@
                                 </td>
                                 <td class="text-start px-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">
-                                            {{ st.SName[0] if st.SName else 'ط' }}
-                                        </div>
+                                        {% if st.image %}
+                                            <img src="{{ st.image if st.image.startswith('/') else '/' + st.image }}" alt="{{ st.SName }}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">
+                                                {{ st.SName[0] if st.SName else 'ط' }}
+                                            </div>
+                                        {% endif %}
                                         <div>
                                             <span class="fw-bold text-dark font-cairo d-block" style="font-size: 0.88rem;">{{ st.SName }}</span>
-                                            <small class="text-muted extra-small font-monospace">{{ st.student_code }}</small>
+                                            <small class="text-muted extra-small font-monospace">ID: {{ st.SID }}</small>
                                         </div>
                                     </div>
                                 </td>
-                                <td><span class="badge bg-light text-dark border font-monospace">{{ st.student_code }}</span></td>
+                                <td><span class="badge bg-light text-dark border font-monospace">#{{ st.SID }}</span></td>
                                 <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ st.class_name }}</span></td>
                                 <td><span class="badge bg-info-subtle text-info border border-info-subtle">{{ st.section_name }}</span></td>
                                 <td>
@@ -716,16 +720,14 @@ function renderStudentsTable(students, totalStudents, page, perPage) {
                 </td>
                 <td class="text-start px-3">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">
-                            ${st.SName ? st.SName[0] : 'ط'}
-                        </div>
+                        ${st.image ? `<img src="${st.image.startsWith('/') ? st.image : '/' + st.image}" alt="${st.SName}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">` : `<div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">${st.SName ? st.SName[0] : 'ط'}</div>`}
                         <div>
                             <span class="fw-bold text-dark font-cairo d-block" style="font-size: 0.88rem;">${st.SName}</span>
-                            <small class="text-muted extra-small font-monospace">${st.student_code}</small>
+                            <small class="text-muted extra-small font-monospace">ID: ${st.SID}</small>
                         </div>
                     </div>
                 </td>
-                <td><span class="badge bg-light text-dark border font-monospace">${st.student_code}</span></td>
+                <td><span class="badge bg-light text-dark border font-monospace">#${st.SID}</span></td>
                 <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">${st.class_name}</span></td>
                 <td><span class="badge bg-info-subtle text-info border border-info-subtle">${st.section_name}</span></td>
                 <td>
@@ -917,12 +919,16 @@ function openStudentDrawer(studentId) {
             document.getElementById('drawerStudentCode').innerText = `ID: ${data.student.id} | ${data.student.class_name} - ${data.student.section_name}`;
             
             const avatarEl = document.getElementById('drawerStudentAvatar');
-            const studentImg = data.student.image || data.image;
+            const studentImg = (data.student && data.student.image) ? data.student.image : (data.image || null);
             if (studentImg) {
                 const imgPath = studentImg.startsWith('/') ? studentImg : `/${studentImg}`;
-                avatarEl.innerHTML = `<img src="${imgPath}" alt="${data.student.name}" class="w-100 h-100 object-fit-cover rounded-circle">`;
+                avatarEl.classList.remove('bg-white', 'text-primary');
+                avatarEl.classList.add('overflow-hidden', 'p-0');
+                avatarEl.innerHTML = `<img src="${imgPath}" alt="${data.student.name}" class="w-100 h-100 object-fit-cover">`;
             } else {
-                avatarEl.innerText = data.student.name ? data.student.name[0] : 'ط';
+                avatarEl.classList.add('bg-white', 'text-primary');
+                avatarEl.classList.remove('overflow-hidden', 'p-0');
+                avatarEl.innerText = (data.student && data.student.name) ? data.student.name[0] : 'ط';
             }
 
             renderDrawerOverview(data);

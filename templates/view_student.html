@@ -129,7 +129,7 @@
                         <p class="text-white-50 mb-2 small d-flex align-items-center gap-3 flex-wrap">
                             <span><i class="fa-solid fa-calendar me-1"></i> العمر: <strong>{{ age }} سنة</strong></span>
                             <span><i class="fa-solid fa-venus-mars me-1"></i> الجنس: <strong>{{ student.Gender or 'غير محدد' }}</strong></span>
-                            <span><i class="fa-solid fa-id-card me-1"></i> الهوية: <strong>{{ student.Identity_Number or student.SID }}</strong></span>
+                            <span><i class="fa-solid fa-id-card me-1"></i> رقم الطالب (ID): <strong>#{{ student.SID }}</strong></span>
                             <span><i class="fa-solid fa-cake-candles me-1"></i> الميلاد: <strong>{{ student.DOB.strftime('%Y-%m-%d') if student.DOB else '—' }}</strong></span>
                         </p>
                     </div>
