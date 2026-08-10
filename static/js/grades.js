@@ -1021,6 +1021,26 @@ function viewStudentAnalytics(sid) {
 }
 
 function viewStudentAudit(sid) {
+    const st = gradesState.studentsData.find(s => s.SID == sid);
+    const timelineEl = document.getElementById('auditTimeline');
+    
+    if (st && timelineEl) {
+        const hasScore = st.Score !== null && st.Score !== undefined && !isNaN(st.Score);
+        const scoreVal = hasScore ? st.Score : 'غير مدخل';
+        const nowStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        
+        timelineEl.innerHTML = `
+            <li class="mb-3 border-start border-2 border-primary ps-3">
+                <strong class="d-block text-dark">رصد / اعتماد الدرجة الحالية: ${scoreVal} من 100 (${computeGradeInfo(st.Score).label})</strong>
+                <span class="text-muted">بواسطة المستخدم: أ. مدير النظام - اليوم ${nowStr}</span>
+            </li>
+            <li class="mb-3 border-start border-2 border-success ps-3">
+                <strong class="d-block text-dark">التحقق والمزامنة بقاعدة البيانات</strong>
+                <span class="text-muted">بواسطة النظام الإلكتروني الموحد (Marks & DetailMarks)</span>
+            </li>
+        `;
+    }
+
     const bsModal = new bootstrap.Modal(document.getElementById('gradeAuditModal'));
     bsModal.show();
 }
