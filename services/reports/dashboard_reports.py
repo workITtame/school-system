@@ -31,10 +31,26 @@ def get_reports_dashboard_metrics():
 
         homework_count = Homework.query.count()
         exam_count = TypeExams.query.filter_by(is_deleted=False).count()
-        all_marks = Marks.query.all()
+        all_marks = Marks.query.filter_by(is_deleted=False).all() if hasattr(Marks, 'is_deleted') else Marks.query.all()
         marks_count = len(all_marks)
 
-        scores = [float(m.Score) for m in all_marks if m.Score is not None]
+        def _calc_score(m):
+            if m is None or m.Score is None:
+                return None
+            try:
+                if hasattr(m, 'Percentage') and m.Percentage is not None and float(m.Percentage) > 0:
+                    return float(m.Percentage)
+                s_val = float(m.Score)
+                mx_val = float(m.MaxScore) if hasattr(m, 'MaxScore') and m.MaxScore is not None and float(m.MaxScore) > 0 else 100.0
+                if mx_val > 0:
+                    return round((s_val / mx_val) * 100.0, 1)
+                if s_val <= 10.0:
+                    return s_val * 10.0
+                return s_val
+            except Exception:
+                return float(m.Score)
+
+        scores = [sc for sc in [_calc_score(m) for m in all_marks] if sc is not None]
         avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
         pass_count = sum(1 for s in scores if s >= 60)
         fail_count = sum(1 for s in scores if s < 60)
@@ -57,7 +73,8 @@ def get_reports_dashboard_metrics():
         subjects = Subject.query.filter_by(is_deleted=False).all()
         subject_stats = []
         for sub in subjects:
-            sub_scores = [float(m.Score) for m in all_marks if m.SubID == sub.SubID and m.Score is not None]
+            sub_marks = [m for m in all_marks if m.SubID == sub.SubID]
+            sub_scores = [sc for sc in [_calc_score(m) for m in sub_marks] if sc is not None]
             avg = round(sum(sub_scores) / len(sub_scores), 1) if sub_scores else 0.0
             subject_stats.append({"name": sub.SubName, "average": avg})
 
@@ -69,10 +86,11 @@ def get_reports_dashboard_metrics():
         # Student Rankings (Top 10 and Bottom 10)
         student_avg_map = {}
         for m in all_marks:
-            if m.Score is not None:
+            sc = _calc_score(m)
+            if sc is not None:
                 if m.SID not in student_avg_map:
                     student_avg_map[m.SID] = []
-                student_avg_map[m.SID].append(float(m.Score))
+                student_avg_map[m.SID].append(sc)
 
         student_rankings = []
         for sid, score_list in student_avg_map.items():
