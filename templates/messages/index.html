@@ -67,10 +67,10 @@
                             <i class="fa-solid fa-comments fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.total_messages if metrics else 325 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.total_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-inbox me-1" style="color: #7C3AED;"></i> جميع الرسائل</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar" style="background-color: #7C3AED; width: 100%;"></div>
+                        <div class="progress-bar" style="background-color: #7C3AED; width: {{ 100 if (metrics and metrics.total_messages) else 0 }}%;"></div>
                     </div>
                 </div>
             </div>
@@ -86,10 +86,10 @@
                             <i class="fa-solid fa-inbox fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.received_messages if metrics else 158 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.received_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-arrow-down-left me-1 text-primary"></i> رسالة واردة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: 80%"></div>
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ 100 if (metrics and metrics.received_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -105,10 +105,10 @@
                             <i class="fa-solid fa-paper-plane fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.sent_messages if metrics else 167 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.sent_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-arrow-up-right me-1 text-success"></i> رسالة مرسلة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 85%"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.sent_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -124,10 +124,10 @@
                             <i class="fa-solid fa-envelope fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.unread_messages if metrics else 12 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.unread_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-clock me-1"></i> رسالة غير مقروءة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: 30%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ 100 if (metrics and metrics.unread_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -143,10 +143,10 @@
                             <i class="fa-solid fa-comments-dollar fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.active_conversations if metrics else 18 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.active_conversations if metrics else 0 }}</h4>
                     <span class="extra-small text-info font-monospace"><i class="fa-solid fa-users me-1"></i> محادثة نشطة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: 75%"></div>
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ 100 if (metrics and metrics.active_conversations) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -162,10 +162,10 @@
                             <i class="fa-solid fa-bullhorn fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.sent_notifications if metrics else 24 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.sent_notifications if metrics else 0 }}</h4>
                     <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-bell me-1"></i> إشعار مرسل</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ 100 if (metrics and metrics.sent_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -184,10 +184,10 @@
                             <i class="fa-solid fa-user-graduate fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.student_messages if metrics else 126 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.student_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-primary font-monospace"><i class="fa-solid fa-message me-1"></i> استفسارات الطلاب</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: 90%"></div>
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ 100 if (metrics and metrics.student_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -203,10 +203,10 @@
                             <i class="fa-solid fa-users-between-lines fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.parent_messages if metrics else 89 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.parent_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-success font-monospace"><i class="fa-solid fa-comments me-1"></i> تواصل الأسرة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.parent_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -222,10 +222,10 @@
                             <i class="fa-solid fa-user-tie fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.admin_messages if metrics else 43 }}</h4>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.admin_messages if metrics else 0 }}</h4>
                     <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-building me-1"></i> توجيهات إدارية</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: 70%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ 100 if (metrics and metrics.admin_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -241,10 +241,10 @@
                             <i class="fa-solid fa-clock-rotate-left fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace extra-small">{{ metrics.avg_reply_time if metrics else '2 ساعة 15 دقيقة' }}</h4>
-                    <span class="extra-small text-info font-monospace"><i class="fa-solid fa-bolt me-1"></i> استجابة سريعة</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace extra-small">{{ metrics.avg_reply_time if (metrics and metrics.avg_reply_time) else '—' }}</h4>
+                    <span class="extra-small text-info font-monospace"><i class="fa-solid fa-bolt me-1"></i> استجابة المنظومة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: 85%"></div>
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -260,10 +260,10 @@
                             <i class="fa-solid fa-circle-check fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.response_rate if metrics else '96%' }}</h4>
-                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-check-double me-1"></i> ممتاز</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.response_rate if (metrics and metrics.response_rate) else '0%' }}</h4>
+                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-check-double me-1"></i> استجابة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 96%"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.response_rate) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -279,10 +279,10 @@
                             <i class="fa-solid fa-fire fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.urgent_messages if metrics else 7 }}</h4>
-                    <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-circle-exclamation me-1"></i> تحتاج إلى رد</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.urgent_messages if metrics else 0 }}</h4>
+                    <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-circle-exclamation me-1"></i> عاجل</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: 40%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ 100 if (metrics and metrics.urgent_messages) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -312,96 +312,31 @@
                 </div>
 
                 <div class="list-group list-group-flush overflow-auto" style="max-height: 580px;" id="activeConversationsList">
-                    <!-- Conversation Item 1 -->
-                    <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread(1, 'أحمد محمد علي', 'طالب - الصف الثالث الثانوي')">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="https://ui-avatars.com/api/?name=أحمد+محمد&background=2563eb&color=fff" class="rounded-circle border" style="width: 36px; height: 36px;">
-                                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle"></span>
-                                </div>
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">أحمد محمد علي</strong>
-                                    <small class="text-muted extra-small font-monospace">طالب - الصف الثالث الثانوي</small>
-                                </div>
-                            </div>
-                            <small class="text-muted extra-small font-monospace">10:30 ص</small>
-                        </div>
-                        <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">أستاذ سمير، هل يمكنك إرسال كشف الدرجات؟</p>
-                        <span class="badge bg-primary rounded-pill font-monospace float-end extra-small mt-1">2</span>
-                    </a>
-
-                    <!-- Conversation Item 2 -->
-                    <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread(2, 'ولي أمر / محمد خالد', 'ولي أمر - الصف الثالث الثانوي')">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="https://ui-avatars.com/api/?name=محمد+خالد&background=16a34a&color=fff" class="rounded-circle border" style="width: 36px; height: 36px;">
-                                    <span class="position-absolute bottom-0 end-0 p-1 bg-secondary border border-light rounded-circle"></span>
-                                </div>
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">ولي أمر / محمد خالد</strong>
-                                    <small class="text-muted extra-small font-monospace">ولي أمر - الصف الثالث الثانوي</small>
+                    {% if conversations and conversations|length > 0 %}
+                        {% for conv in conversations %}
+                        <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread('{{ conv.id }}', '{{ conv.sender.name if (conv.sender and conv.sender_id != current_user.id) else (conv.recipient.name if conv.recipient else 'مستخدم') }}', 'رسالة')">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="position-relative">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+                                            <i class="fa-solid fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong class="d-block text-dark font-monospace extra-small">{{ conv.sender.name if (conv.sender and conv.sender_id != current_user.id) else (conv.recipient.name if conv.recipient else 'مستخدم') }}</strong>
+                                        <small class="text-muted extra-small font-monospace">{{ conv.timestamp.strftime('%H:%M') if conv.timestamp else '—' }}</small>
+                                    </div>
                                 </div>
                             </div>
-                            <small class="text-muted extra-small font-monospace">أمس</small>
+                            <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">{{ conv.content }}</p>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted font-monospace">
+                            <i class="fa-solid fa-comments fs-3 d-block mb-2 opacity-50 text-primary"></i>
+                            لا توجد محادثات نشطة حالياً.
                         </div>
-                        <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">شكراً جزيلاً على اهتمامك ومتابعتك المستمرة...</p>
-                        <span class="badge bg-success rounded-pill font-monospace float-end extra-small mt-1">1</span>
-                    </a>
-
-                    <!-- Conversation Item 3 -->
-                    <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread(3, 'إدارة المدرسة', 'الإدارة التنفيذية')">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="https://ui-avatars.com/api/?name=إدارة+المدرسة&background=7c3aed&color=fff" class="rounded-circle border" style="width: 36px; height: 36px;">
-                                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle"></span>
-                                </div>
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">إدارة المدرسة</strong>
-                                    <small class="text-muted extra-small font-monospace">الإدارة التنفيذية</small>
-                                </div>
-                            </div>
-                            <small class="text-muted extra-small font-monospace">أمس</small>
-                        </div>
-                        <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">اجتماع المعلمين يوم الأحد القادم...</p>
-                    </a>
-
-                    <!-- Conversation Item 4 -->
-                    <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread(4, 'سارة إبراهيم محمود', 'طالبة - الصف الثالث الثانوي')">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="https://ui-avatars.com/api/?name=سارة+إبراهيم&background=06b6d4&color=fff" class="rounded-circle border" style="width: 36px; height: 36px;">
-                                </div>
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">سارة إبراهيم محمود</strong>
-                                    <small class="text-muted extra-small font-monospace">طالبة - الصف الثالث الثانوي</small>
-                                </div>
-                            </div>
-                            <small class="text-muted extra-small font-monospace">25 مايو</small>
-                        </div>
-                        <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">أستاذ سمير، في استفسار عن الواجب المطلوب...</p>
-                        <span class="badge bg-primary rounded-pill font-monospace float-end extra-small mt-1">2</span>
-                    </a>
-
-                    <!-- Conversation Item 5 -->
-                    <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread(5, 'أ. علي حسن منصور', 'معلم - مادة الفيزياء')">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="https://ui-avatars.com/api/?name=علي+منصور&background=f59e0b&color=fff" class="rounded-circle border" style="width: 36px; height: 36px;">
-                                </div>
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">أ. علي حسن منصور</strong>
-                                    <small class="text-muted extra-small font-monospace">معلم - مادة الفيزياء</small>
-                                </div>
-                            </div>
-                            <small class="text-muted extra-small font-monospace">24 مايو</small>
-                        </div>
-                        <p class="text-muted extra-small font-monospace mb-0 text-truncate" style="max-width: 210px;">تم إرسال جدول الاختبارات النهائي...</p>
-                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -413,7 +348,7 @@
             <div class="card border-0 shadow-sm rounded-4 mb-3 bg-white">
                 <div class="card-body p-2 d-flex align-items-center gap-1 overflow-auto">
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active filter-tab-btn" data-filter="inbox" onclick="switchMessagesTabFilter('inbox', this)">
-                        <i class="fa-solid fa-inbox me-1"></i> الواردة <span class="badge bg-white text-primary rounded-pill ms-1">12</span>
+                        <i class="fa-solid fa-inbox me-1"></i> الواردة <span class="badge bg-white text-primary rounded-pill ms-1">{{ metrics.received_messages if metrics else 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small filter-tab-btn" data-filter="sent" onclick="switchMessagesTabFilter('sent', this)">
                         <i class="fa-solid fa-paper-plane me-1"></i> المرسلة
@@ -445,43 +380,57 @@
 
             <!-- MESSAGES CARDS CONTAINER -->
             <div class="d-flex flex-column gap-3 mb-4" id="messagesCardsContainer">
-                {% for msg in message_cards %}
-                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift message-item-card">
-                    <div class="card-body p-3">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="{{ msg.avatar }}" class="rounded-circle border" style="width: 40px; height: 40px;">
-                                <div>
-                                    <strong class="d-block text-dark font-monospace extra-small">{{ msg.sender_name }}</strong>
-                                    <small class="text-muted extra-small font-monospace">{{ msg.role_title }}</small>
+                {% if message_cards and message_cards|length > 0 %}
+                    {% for msg in message_cards %}
+                    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift message-item-card">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="{{ msg.avatar }}" class="rounded-circle border" style="width: 40px; height: 40px;">
+                                    <div>
+                                        <strong class="d-block text-dark font-monospace extra-small">{{ msg.sender_name }}</strong>
+                                        <small class="text-muted extra-small font-monospace">{{ msg.role_title }}</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted font-monospace extra-small">{{ msg.time }}</small>
+                                    <span class="badge rounded-pill {{ msg.badge_class }} font-monospace extra-small px-3 py-1">{{ msg.status_label }}</span>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <small class="text-muted font-monospace extra-small">{{ msg.time }}</small>
-                                <span class="badge rounded-pill {{ msg.badge_class }} font-monospace extra-small px-3 py-1">{{ msg.status_label }}</span>
-                            </div>
-                        </div>
 
-                        <h6 class="fw-bold text-dark font-monospace mb-1">{{ msg.subject }}</h6>
-                        <p class="text-muted extra-small font-monospace mb-2 text-truncate">{{ msg.preview }}</p>
+                            <h6 class="fw-bold text-dark font-monospace mb-1">{{ msg.subject }}</h6>
+                            <p class="text-muted extra-small font-monospace mb-2 text-truncate">{{ msg.preview }}</p>
 
-                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
-                            <span class="text-muted font-monospace extra-small"><i class="fa-solid fa-paperclip me-1 text-primary"></i> {{ msg.attachments_count }} مرفقات</span>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light border text-primary rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#readMessageModal" onclick="openReadMessageModal({{ msg.id }}, '{{ msg.sender_name }}', '{{ msg.subject }}', '{{ msg.preview }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                                <button type="button" class="btn btn-light border text-success rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="replyToMessageModal('{{ msg.sender_name }}')" title="رد"><i class="fa-solid fa-reply"></i></button>
-                                <button type="button" class="btn btn-light border text-info rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="forwardMessageModal('{{ msg.subject }}')" title="تحويل"><i class="fa-solid fa-share"></i></button>
-                                <button type="button" class="btn btn-light border text-warning rounded-circle p-1 me-1" onclick="starMessageCard(this)" title="تمييز"><i class="fa-solid fa-star"></i></button>
-                                <button type="button" class="btn btn-light border text-purple rounded-circle p-1 me-1" style="color: #7C3AED;" onclick="archiveMessageCard(this)" title="أرشفة"><i class="fa-solid fa-box-archive"></i></button>
-                                <button type="button" class="btn btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this, {{ msg.id }})" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                <span class="text-muted font-monospace extra-small"><i class="fa-solid fa-paperclip me-1 text-primary"></i> {{ msg.attachments_count }} مرفقات</span>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-light border text-primary rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#readMessageModal" onclick="openReadMessageModal({{ msg.id }}, '{{ msg.sender_name }}', '{{ msg.subject }}', '{{ msg.preview }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
+                                    <button type="button" class="btn btn-light border text-success rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="replyToMessageModal('{{ msg.sender_name }}')" title="رد"><i class="fa-solid fa-reply"></i></button>
+                                    <button type="button" class="btn btn-light border text-info rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="forwardMessageModal('{{ msg.subject }}')" title="تحويل"><i class="fa-solid fa-share"></i></button>
+                                    <button type="button" class="btn btn-light border text-warning rounded-circle p-1 me-1" onclick="starMessageCard(this)" title="تمييز"><i class="fa-solid fa-star"></i></button>
+                                    <button type="button" class="btn btn-light border text-purple rounded-circle p-1 me-1" style="color: #7C3AED;" onclick="archiveMessageCard(this)" title="أرشفة"><i class="fa-solid fa-box-archive"></i></button>
+                                    <button type="button" class="btn btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this, {{ msg.id }})" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 bg-white p-5 text-center text-muted font-monospace">
+                        <i class="fa-solid fa-inbox fs-2 d-block mb-3 text-primary opacity-50"></i>
+                        <h6 class="fw-bold text-dark">لا توجد رسائل واردة حالياً</h6>
+                        <p class="extra-small text-muted mb-3">صندوق الوارد نظيف، يمكنك بدء محادثة جديدة أو إرسال إشعار سريع.</p>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal()">
+                                <i class="fa-solid fa-plus me-1"></i> إنشاء رسالة جديدة
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
 
             <!-- AI COMMUNICATION INSIGHTS CARD -->
+            {% if conversations and conversations|length > 0 %}
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden border-start border-4 border-purple" style="border-left-color: #7C3AED !important;">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -497,13 +446,14 @@
                     </div>
 
                     <div class="row g-2 font-monospace extra-small">
-                        <div class="col-6"><strong>أكثر طالب يتواصل:</strong> <span class="text-primary fw-bold">أحمد محمد علي (14 رسالة)</span></div>
-                        <div class="col-6"><strong>أكثر ولي أمر يتواصل:</strong> <span class="text-success fw-bold">ولي أمر / محمد خالد</span></div>
-                        <div class="col-6"><strong>أكثر مادة فيها استفسارات:</strong> <span class="text-purple fw-bold" style="color: #7C3AED;">الرياضيات (38 استفسار)</span></div>
-                        <div class="col-6"><strong>رسائل لم يتم الرد عليها:</strong> <span class="text-danger fw-bold">7 رسائل عاجلة</span></div>
+                        <div class="col-6"><strong>إجمالي الرسائل:</strong> <span class="text-primary fw-bold">{{ metrics.total_messages or 0 }}</span></div>
+                        <div class="col-6"><strong>الرسائل الواردة:</strong> <span class="text-success fw-bold">{{ metrics.received_messages or 0 }}</span></div>
+                        <div class="col-6"><strong>الرسائل المرسلة:</strong> <span class="text-purple fw-bold" style="color: #7C3AED;">{{ metrics.sent_messages or 0 }}</span></div>
+                        <div class="col-6"><strong>غير المقروءة:</strong> <span class="text-danger fw-bold">{{ metrics.unread_messages or 0 }}</span></div>
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- QUICK ACTIONS GRID -->
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
@@ -614,20 +564,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="align-middle">
-                        <td class="fw-bold text-muted font-monospace">1</td>
-                        <td class="text-start font-monospace extra-small fw-bold">أحمد محمد علي</td>
-                        <td class="text-start font-monospace extra-small text-muted">أ. سمير غانم (المعلم)</td>
-                        <td><span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small px-3 py-1">استفسار أكاديمي</span></td>
-                        <td class="text-start font-monospace extra-small">استفسار حول درجات اختبار الرياضيات</td>
-                        <td class="font-monospace extra-small">📎 2 ملفات</td>
-                        <td><span class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small px-3 py-1">غير مقروءة</span></td>
-                        <td class="font-monospace extra-small text-muted">10:30 ص</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" data-bs-toggle="modal" data-bs-target="#readMessageModal" onclick="openReadMessageModal(1, 'أحمد محمد علي', 'استفسار حول الدرجات', 'أستاذ سمير، هل يمكنك إرسال كشف الدرجات؟')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                            <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle p-1" onclick="deleteMessageCard(this, 1)" title="حذف"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
+                    {% if conversations and conversations|length > 0 %}
+                        {% for msg in conversations %}
+                        <tr class="align-middle">
+                            <td class="fw-bold text-muted font-monospace">{{ msg.id }}</td>
+                            <td class="text-start font-monospace extra-small fw-bold">{{ msg.sender.name if msg.sender else 'مستخدم' }}</td>
+                            <td class="text-start font-monospace extra-small text-muted">{{ msg.recipient.name if msg.recipient else 'مستخدم' }}</td>
+                            <td><span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small px-3 py-1">رسالة خاصة</span></td>
+                            <td class="text-start font-monospace extra-small">{{ msg.content[:40] }}...</td>
+                            <td class="font-monospace extra-small">—</td>
+                            <td><span class="badge bg-{{ 'success' if msg.is_read else 'warning' }}-subtle text-{{ 'success' if msg.is_read else 'warning' }} rounded-pill font-monospace extra-small px-3 py-1">{{ 'مقروءة' if msg.is_read else 'غير مقروءة' }}</span></td>
+                            <td class="font-monospace extra-small text-muted">{{ msg.timestamp.strftime('%H:%M') if msg.timestamp else '—' }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" onclick="openReadMessageModal('{{ msg.id }}', '{{ msg.sender.name if msg.sender else 'مستخدم' }}', 'رسالة', '{{ msg.content }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted font-monospace">
+                                <i class="fa-solid fa-inbox fs-4 d-block mb-2 opacity-50"></i>
+                                لا توجد رسائل مسجلة في الأرشيف حالياً.
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
@@ -784,16 +744,22 @@ document.addEventListener('DOMContentLoaded', function() {
 function initMessagesAnalyticsCharts() {
     if (typeof Chart === 'undefined') return;
 
+    const totalMsgs = {{ metrics.total_messages or 0 }};
+    const recMsgs = {{ metrics.received_messages or 0 }};
+    const sentMsgs = {{ metrics.sent_messages or 0 }};
+    const unreadMsgs = {{ metrics.unread_messages or 0 }};
+    const readMsgs = Math.max(0, totalMsgs - unreadMsgs);
+
     // 1. Donut Chart - Recipients
     const ctxDonut = document.getElementById('donutMessagesChart');
     if (ctxDonut) {
         new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
-                labels: ['طلاب 45%', 'أولياء أمور 27%', 'الإدارة 13%', 'معلمين 10%', 'أخرى 5%'],
+                labels: totalMsgs > 0 ? ['وارد', 'صادر'] : ['لا توجد رسائل'],
                 datasets: [{
-                    data: [146, 88, 42, 32, 17],
-                    backgroundColor: ['#2563eb', '#16a34a', '#f59e0b', '#7c3aed', '#06b6d4'],
+                    data: totalMsgs > 0 ? [recMsgs, sentMsgs] : [0],
+                    backgroundColor: ['#2563eb', '#16a34a'],
                     borderWidth: 2
                 }]
             },
@@ -812,10 +778,10 @@ function initMessagesAnalyticsCharts() {
         new Chart(ctxLine, {
             type: 'line',
             data: {
-                labels: ['20 مايو', '21 مايو', '22 مايو', '23 مايو', '24 مايو', '25 مايو', '26 مايو'],
+                labels: ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'اليوم'],
                 datasets: [{
                     label: 'عدد الرسائل',
-                    data: [18, 28, 40, 32, 42, 48, 30],
+                    data: [0, 0, 0, 0, 0, 0, totalMsgs],
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37, 99, 235, 0.1)',
                     fill: true,
@@ -827,7 +793,7 @@ function initMessagesAnalyticsCharts() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { y: { min: 0 } }
+                scales: { y: { min: 0, ticks: { stepSize: 1 } } }
             }
         });
     }
@@ -838,10 +804,10 @@ function initMessagesAnalyticsCharts() {
         new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['20 مايو', '21 مايو', '22 مايو', '23 مايو', '24 مايو', '25 مايو', '26 مايو'],
+                labels: ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'اليوم'],
                 datasets: [{
                     label: 'نسبة الاستجابة %',
-                    data: [90, 85, 95, 92, 98, 96, 96],
+                    data: totalMsgs > 0 ? [0, 0, 0, 0, 0, 0, 100] : [0, 0, 0, 0, 0, 0, 0],
                     backgroundColor: '#16a34a',
                     borderRadius: 6
                 }]
@@ -861,10 +827,10 @@ function initMessagesAnalyticsCharts() {
         new Chart(ctxPie, {
             type: 'doughnut',
             data: {
-                labels: ['مقروءة 65%', 'غير مقروءة 11%', 'تم الرد 18%', 'عاجلة 6%'],
+                labels: totalMsgs > 0 ? ['مقروءة', 'غير مقروءة'] : ['لا توجد رسائل'],
                 datasets: [{
-                    data: [211, 36, 58, 20],
-                    backgroundColor: ['#2563eb', '#f59e0b', '#16a34a', '#dc2626'],
+                    data: totalMsgs > 0 ? [readMsgs, unreadMsgs] : [0],
+                    backgroundColor: ['#2563eb', '#f59e0b'],
                     borderWidth: 2
                 }]
             },

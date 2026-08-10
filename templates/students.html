@@ -914,8 +914,16 @@ function openStudentDrawer(studentId) {
         .then(data => {
             currentStudentDrawerData = data;
             document.getElementById('drawerStudentName').innerText = data.student.name || 'طالب';
-            document.getElementById('drawerStudentCode').innerText = `ID: 2024${data.student.id} | ${data.student.class_name} - ${data.student.section_name}`;
-            document.getElementById('drawerStudentAvatar').innerText = data.student.name ? data.student.name[0] : 'ط';
+            document.getElementById('drawerStudentCode').innerText = `ID: ${data.student.id} | ${data.student.class_name} - ${data.student.section_name}`;
+            
+            const avatarEl = document.getElementById('drawerStudentAvatar');
+            const studentImg = data.student.image || data.image;
+            if (studentImg) {
+                const imgPath = studentImg.startsWith('/') ? studentImg : `/${studentImg}`;
+                avatarEl.innerHTML = `<img src="${imgPath}" alt="${data.student.name}" class="w-100 h-100 object-fit-cover rounded-circle">`;
+            } else {
+                avatarEl.innerText = data.student.name ? data.student.name[0] : 'ط';
+            }
 
             renderDrawerOverview(data);
             renderDrawerAcademic(data);
@@ -940,6 +948,7 @@ function renderDrawerOverview(data) {
         <div class="col-12 col-md-6">
             <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 font-monospace extra-small">
                 <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-address-card text-primary me-2"></i> البيانات الشخصية والأكاديمية</h6>
+                <p class="mb-2"><strong>رقم الطالب (ID):</strong> <span class="badge bg-light text-dark border font-monospace">#${st.id}</span></p>
                 <p class="mb-2"><strong>اسم الطالب:</strong> ${st.name}</p>
                 <p class="mb-2"><strong>الصف الدراسي:</strong> ${st.class_name}</p>
                 <p class="mb-2"><strong>الشعبة:</strong> ${st.section_name}</p>
@@ -952,8 +961,8 @@ function renderDrawerOverview(data) {
             <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 font-monospace extra-small">
                 <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-pie text-warning me-2"></i> ملخص الأداء والأرقام</h6>
                 <div class="row g-2 text-center">
-                    <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">المعدل العام</small><strong class="text-warning fs-5">${stats.gpa || 85}%</strong></div></div>
-                    <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">نسبة الحضور</small><strong class="text-success fs-5">${stats.attendance_rate || 95}%</strong></div></div>
+                    <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">المعدل العام</small><strong class="text-warning fs-5">${(stats.gpa !== undefined && stats.gpa !== null) ? stats.gpa : 0}%</strong></div></div>
+                    <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">نسبة الحضور</small><strong class="text-success fs-5">${(stats.attendance_rate !== undefined && stats.attendance_rate !== null) ? stats.attendance_rate : 0}%</strong></div></div>
                     <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">المواظبة</small><strong class="text-primary fs-5">${stats.attendance_days || 0} يوم</strong></div></div>
                     <div class="col-6"><div class="p-2 bg-light rounded-3 border"><small class="text-muted d-block">الواجبات</small><strong class="text-info fs-5">${stats.homework_count || 0}</strong></div></div>
                 </div>

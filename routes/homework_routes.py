@@ -19,8 +19,8 @@ def get_teacher_homework_data():
     pending_count = sum(1 for h in homework_list if h.status in ['معلق', 'قيد الإنجاز'])
     late_count = sum(1 for h in homework_list if h.status == 'متأخر')
     
-    targeted_subjects_count = len(set([h.sub_id for h in homework_list if h.sub_id])) or len(subjects) or 12
-    completion_rate = round((completed_count / total_count * 100), 1) if total_count > 0 else 40.0
+    targeted_subjects_count = len(set([h.sub_id for h in homework_list if h.sub_id]))
+    completion_rate = round((completed_count / total_count * 100), 1) if total_count > 0 else 0.0
 
     kpi = {
         'total_count': total_count,
@@ -31,18 +31,21 @@ def get_teacher_homework_data():
         'completion_rate': completion_rate
     }
 
-    latest_hw = homework_list[0] if homework_list else None
-    current_active_homework = {
-        'academic_year': '2024 - 2025',
-        'section_name': latest_hw.section.SectionName if (latest_hw and latest_hw.section) else 'شعبة أ',
-        'class_name': latest_hw.school_class.CName if (latest_hw and latest_hw.school_class) else 'الثالث الثانوي',
-        'subject_name': latest_hw.subject.SubName if (latest_hw and latest_hw.subject) else 'الرياضيات',
-        'remaining_minutes': '25 دقيقة',
-        'status': 'حصة الآن'
-    }
+    if homework_list:
+        latest_hw = homework_list[0]
+        current_active_homework = {
+            'academic_year': 'العام الدراسي',
+            'section_name': latest_hw.section.SectionName if latest_hw.section else '—',
+            'class_name': latest_hw.school_class.CName if latest_hw.school_class else '—',
+            'subject_name': latest_hw.subject.SubName if latest_hw.subject else '—',
+            'remaining_minutes': '—',
+            'status': 'حصة الآن'
+        }
+    else:
+        current_active_homework = None
 
-    c_pct = round((completed_count / total_count * 100), 1) if total_count > 0 else 40.0
-    p_pct = round((pending_count / total_count * 100), 1) if total_count > 0 else 40.0
+    c_pct = round((completed_count / total_count * 100), 1) if total_count > 0 else 0.0
+    p_pct = round((pending_count / total_count * 100), 1) if total_count > 0 else 0.0
     l_pct = round((late_count / total_count * 100), 1) if total_count > 0 else 0.0
     
     status_distribution = {
@@ -55,7 +58,7 @@ def get_teacher_homework_data():
         'cancelled': 0,
         'cancelled_pct': 0.0,
         'not_started': max(0, total_count - (completed_count + pending_count + late_count)),
-        'not_started_pct': round(max(0, 100 - (c_pct + p_pct + l_pct)), 1)
+        'not_started_pct': round(max(0, 100 - (c_pct + p_pct + l_pct)), 1) if total_count > 0 else 0.0
     }
 
     sub_counts = defaultdict(int)
@@ -64,22 +67,15 @@ def get_teacher_homework_data():
         sub_counts[sub_name] += 1
         
     most_assigned_subjects = []
-    max_c = max(sub_counts.values()) if sub_counts else 1
-    for name, cnt in sorted(sub_counts.items(), key=lambda x: x[1], reverse=True)[:4]:
-        pct = round((cnt / max_c * 100), 1)
-        most_assigned_subjects.append({
-            'name': name,
-            'count': cnt,
-            'pct': pct
-        })
-        
-    if not most_assigned_subjects:
-        most_assigned_subjects = [
-            {'name': 'الرياضيات', 'count': 2, 'pct': 100},
-            {'name': 'الفيزياء', 'count': 1, 'pct': 50},
-            {'name': 'الكيمياء', 'count': 1, 'pct': 50},
-            {'name': 'اللغة الإنجليزية', 'count': 1, 'pct': 50}
-        ]
+    if sub_counts:
+        max_c = max(sub_counts.values()) if sub_counts else 1
+        for name, cnt in sorted(sub_counts.items(), key=lambda x: x[1], reverse=True)[:4]:
+            pct = round((cnt / max_c * 100), 1)
+            most_assigned_subjects.append({
+                'name': name,
+                'count': cnt,
+                'pct': pct
+            })
 
     upcoming_homeworks = []
     for hw in homework_list[:3]:
@@ -94,7 +90,7 @@ def get_teacher_homework_data():
         upcoming_homeworks.append({
             'id': hw.id,
             'title': hw.title,
-            'due_date_str': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '2024-05-26',
+            'due_date_str': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '—',
             'relative_date': rel_str
         })
 

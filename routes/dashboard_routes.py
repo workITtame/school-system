@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, jsonify, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from models import db, Student, Teacher, Classes, Sections, Subject, Attendance, ExamSchedule, Homework, User, Message, Days, Lessons
+from models import db, Student, Teacher, Classes, Sections, Subject, Attendance, ExamSchedule, Homework, User, Message, Days, Lessons, Notification
 from models.timetable import SchoolTable
 from models.grade import Marks
 from sqlalchemy import func, text, or_
@@ -469,12 +469,25 @@ def get_admin_dashboard_data():
             'color': color_label
         })
 
-    # 6. Notifications & Upcoming Events (Parts 8 & 10)
-    notifications_list = [
-        {'id': 1, 'text': 'تم التحديث الدوري للنظام بنجاح', 'time': 'منذ 10 دقائق', 'status': 'جديد', 'priority': 'عالية', 'color': 'danger'},
-        {'id': 2, 'text': 'تم اعتماد جدول امتحانات الترم الدراسي الأول', 'time': 'منذ ساعتين', 'status': 'مقروء', 'priority': 'متوسطة', 'color': 'warning'},
-        {'id': 3, 'text': 'تم تسجيل 5 طلاب جدد في الصف الأول المتوسط', 'time': 'اليوم 09:00 ص', 'status': 'مقروء', 'priority': 'عادية', 'color': 'info'}
-    ]
+    # 6. Notifications & Upcoming Events
+    uid = current_user.id if (current_user and hasattr(current_user, 'id')) else None
+    if uid:
+        db_notifs = Notification.query.filter((Notification.user_id == uid) | (Notification.user_id.is_(None))).order_by(Notification.created_at.desc()).limit(5).all()
+    else:
+        db_notifs = Notification.query.order_by(Notification.created_at.desc()).limit(5).all()
+    notifications_list = []
+    for n in db_notifs:
+        color = 'danger' if n.priority in ['urgent', 'high'] else ('warning' if n.priority == 'medium' else 'info')
+        status_txt = 'جديد' if not n.is_read else 'مقروء'
+        time_txt = n.created_at.strftime('%H:%M') if n.created_at else 'الآن'
+        notifications_list.append({
+            'id': n.id,
+            'text': n.title + (' - ' + n.message if n.message else ''),
+            'time': time_txt,
+            'status': status_txt,
+            'priority': n.priority or 'عادية',
+            'color': color
+        })
 
     upcoming_events = []
     for ex in recent_exams_list:
@@ -801,15 +814,22 @@ def finance():
     if not current_user.is_authenticated or role != 'admin':
         flash('عذراً، هذه الصفحة مخصصة لمدراء النظام فقط', 'danger')
         return redirect(url_for('dashboard.index'))
-    total_revenue = 150000
-    total_expenses = 45000
-    collected_fees = 105000
-    remaining_fees = 45000
+    
+    student_count = Student.query.filter_by(is_deleted=False).count()
+    teacher_salaries = db.session.query(func.sum(Teacher.Salary)).filter(Teacher.is_deleted == False).scalar() or 0.0
+    
+    total_revenue = float(student_count * 1500)
+    total_expenses = float(teacher_salaries)
+    collected_fees = total_revenue
+    remaining_fees = 0.0
+    current_balance = max(0.0, total_revenue - total_expenses)
+    
     return render_template('dashboard/finance.html',
                            total_revenue=total_revenue,
                            total_expenses=total_expenses,
                            collected_fees=collected_fees,
-                           remaining_fees=remaining_fees)
+                           remaining_fees=remaining_fees,
+                           current_balance=current_balance)
 
 
 @dashboard_bp.route('/settings', methods=['GET', 'POST'])

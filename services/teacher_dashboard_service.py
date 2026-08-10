@@ -314,12 +314,6 @@ def get_teacher_notifications(user_id):
                 'is_read': m.is_read
             })
 
-        if not result:
-            result = [
-                {'title': 'إشعار إداري', 'content': 'مرحباً بك في لوحة تحكم المعلم التنفيذية المخصصة لجدولك والطلاب.', 'timestamp': datetime.now(), 'category': 'إداري', 'is_read': True},
-                {'title': 'تنبيه الواجبات', 'content': 'يرجى متابعة تصحيح الواجبات المسلمة من قبل الطلاب.', 'timestamp': datetime.now() - timedelta(hours=2), 'category': 'واجب', 'is_read': False}
-            ]
-
         return result[:5]
     except Exception as e:
         logger.exception("Error in get_teacher_notifications: %s", str(e))

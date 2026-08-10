@@ -243,6 +243,7 @@
 
 </div>
 
+{% if current_active_exam %}
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- §3  CURRENT ACTIVE EXAM BANNER                        -->
 <!-- ══════════════════════════════════════════════════════ -->
@@ -306,6 +307,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- §4  FILTERS BAR                                        -->
@@ -543,6 +545,7 @@
     </div>
 
     <!-- 2. Best subjects by avg -->
+    {% if best_subjects_by_score and best_subjects_by_score|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h6 class="fw-bold text-dark mb-0" style="font-size:12px;"><i class="fa-solid fa-ranking-star text-primary me-2"></i>أفضل المواد حسب متوسط النتائج</h6>
@@ -560,8 +563,10 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 3. Best Students -->
+    {% if best_students and best_students|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-star text-warning me-2"></i>أفضل الطلاب</h6>
       {% for st in best_students %}
@@ -574,8 +579,10 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 4. Struggling Students -->
+    {% if struggling_students and struggling_students|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>الطلاب المتعثرون</h6>
       {% for st in struggling_students %}
@@ -585,8 +592,10 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 5. Upcoming Exams -->
+    {% if upcoming_exams_list and upcoming_exams_list|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-regular fa-clock text-warning me-2"></i>أقرب الاختبارات</h6>
       {% for ex in upcoming_exams_list %}
@@ -599,8 +608,10 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 6. Uncorrected Exams -->
+    {% if uncorrected_list and uncorrected_list|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-pen-to-square text-warning me-2"></i>الاختبارات التي لم يتم تصحيحها</h6>
       {% for ex in uncorrected_list %}
@@ -613,8 +624,10 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 7. System Alerts -->
+    {% if system_alerts and system_alerts|length > 0 %}
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4 mb-3">
       <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-bell text-danger me-2"></i>تنبيهات النظام</h6>
       {% for al in system_alerts %}
@@ -624,6 +637,7 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <!-- 8. Quick Actions -->
     <div class="card border-0 shadow-sm sidebar-widget bg-white p-4">

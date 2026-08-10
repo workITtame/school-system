@@ -372,6 +372,33 @@
                         </div>
                     </div>
                 </div>
+
+                <h6 class="fw-bold text-secondary mb-3 border-top pt-3"><i class="fa-solid fa-location-dot me-1"></i> بيانات السكن والإقامة (الدولة، المحافظة، المديرية)</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-muted small">الدولة</label>
+                        <input type="text" class="form-control rounded-3" name="country_name" list="countryList" value="اليمن" placeholder="الدولة">
+                        <datalist id="countryList">
+                            {% for c in countries %}<option value="{{ c.Country_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-muted small">المحافظة</label>
+                        <input type="text" class="form-control rounded-3" name="g_name" list="gList" value="صنعاء" placeholder="المحافظة">
+                        <datalist id="gList">
+                            {% for g in governorates %}<option value="{{ g.G_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-muted small">المديرية</label>
+                        <input type="text" class="form-control rounded-3" name="directorate_name" list="dirList" value="السبعين" placeholder="المديرية">
+                        <datalist id="dirList">
+                            {% for d in directorates %}<option value="{{ d.Disc_Name }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+                </div>
             </div>
 
             <!-- STEP 4: Attachments -->

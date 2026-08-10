@@ -212,18 +212,19 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
                 })
                 break
 
-    if len(att_records) == 0:
-        alerts.append({
-            'type': 'info',
-            'title': 'شعبة لم يتم تسجيل حضورها اليوم',
-            'subtitle': f"{cur_sec} - {cur_cls}"
-        })
-    else:
-        alerts.append({
-            'type': 'success',
-            'title': 'تم تسجيل حضور هذه الشعبة اليوم',
-            'subtitle': f"عدد المسجلين: {len(att_records)} من إجمالي {total_st} طالب"
-        })
+    if total_st > 0:
+        if len(att_records) == 0:
+            alerts.append({
+                'type': 'info',
+                'title': 'شعبة لم يتم تسجيل حضورها اليوم',
+                'subtitle': f"{cur_sec} - {cur_cls}"
+            })
+        else:
+            alerts.append({
+                'type': 'success',
+                'title': 'تم تسجيل حضور هذه الشعبة اليوم',
+                'subtitle': f"عدد المسجلين: {len(att_records)} من إجمالي {total_st} طالب"
+            })
 
     kpi = {
         'total_students': total_st,
@@ -240,16 +241,19 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'discipline_score': disc_score
     }
 
-    current_lesson_info = {
-        'subject': cur_sub,
-        'time': f"{cur_st_time} - {cur_en_time}",
-        'class_name': cur_cls,
-        'section_name': cur_sec,
-        'lesson_num': 'الحصة الثانية',
-        'students_count': total_st,
-        'remaining_minutes': '25 دقيقة',
-        'status': 'جارية الآن'
-    }
+    if current_slot:
+        current_lesson_info = {
+            'subject': cur_sub,
+            'time': f"{cur_st_time} - {cur_en_time}",
+            'class_name': cur_cls,
+            'section_name': cur_sec,
+            'lesson_num': getattr(current_slot.lesson, 'LName', None) or 'الحصة الحالية',
+            'students_count': total_st,
+            'remaining_minutes': '—',
+            'status': 'جارية الآن'
+        }
+    else:
+        current_lesson_info = None
 
     teacher_info = {
         'TeacherName': teacher_name,
@@ -333,22 +337,8 @@ def index():
         active_slot_id = None
         if teacher:
             slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
-            if not slot:
-                cls = classes[0] if classes else Classes.query.filter_by(is_deleted=False).first()
-                sec = sections[0] if sections else Sections.query.filter_by(is_deleted=False).first()
-                sub = teacher.subjects[0] if teacher.subjects else Subject.query.filter_by(is_deleted=False).first()
-                slot = SchoolTable(
-                    TeacherID=teacher.TeacherID,
-                    CID=cls.CID if cls else 1,
-                    SectionID=sec.SectionID if sec else 1,
-                    SubID=sub.SubID if sub else 1,
-                    DayID=1,
-                    LessonID=1,
-                    is_deleted=False
-                )
-                db.session.add(slot)
-                db.session.commit()
-            active_slot_id = slot.SchoolTableID
+            if slot:
+                active_slot_id = slot.SchoolTableID
 
         return render_template('teacher/attendance.html',
                                classes=classes,

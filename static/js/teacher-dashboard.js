@@ -97,9 +97,7 @@ function openStudentDrawer(studentId) {
 
             drawerBody.innerHTML = `
                 <div class="text-center mb-4">
-                    <div class="rounded-circle bg-primary text-white fw-bold font-monospace fs-1 d-inline-flex align-items-center justify-content-center shadow mb-2" style="width: 72px; height: 72px;">
-                        ${data.student_name ? data.student_name[0] : 'ط'}
-                    </div>
+                    ${data.image ? `<img src="${data.image.startsWith('/') ? data.image : '/' + data.image}" alt="${data.student_name}" class="rounded-circle shadow mb-2 object-fit-cover" style="width: 72px; height: 72px;">` : `<div class="rounded-circle bg-primary text-white fw-bold font-monospace fs-1 d-inline-flex align-items-center justify-content-center shadow mb-2" style="width: 72px; height: 72px;">${data.student_name ? data.student_name[0] : 'ط'}</div>`}
                     <h5 class="fw-bold text-dark mb-1">${data.student_name}</h5>
                     <p class="text-muted extra-small mb-0">الرقم الأكاديمي: <span class="font-monospace fw-bold">${data.academic_id}</span></p>
                     <span class="badge bg-light text-dark border rounded-pill mt-1 extra-small">${data.full_class}</span>

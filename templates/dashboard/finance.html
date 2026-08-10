@@ -34,7 +34,7 @@
             <div class="stat-card-flat h-100">
                 <div class="stat-content">
                     <span class="stat-label">إجمالي الإيرادات</span>
-                    <span class="stat-value">97,300 <small class="fs-6 text-muted">ريال</small></span>
+                    <span class="stat-value">{{ "{:,.0f}".format(total_revenue) }} <small class="fs-6 text-muted">ريال</small></span>
                 </div>
                 <div class="stat-icon-wrapper bg-icon-blue">
                     <i class="fa-solid fa-arrow-trend-up"></i>
@@ -45,7 +45,7 @@
             <div class="stat-card-flat h-100">
                 <div class="stat-content">
                     <span class="stat-label">المستحقات</span>
-                    <span class="stat-value">28,450 <small class="fs-6 text-muted">ريال</small></span>
+                    <span class="stat-value">{{ "{:,.0f}".format(remaining_fees) }} <small class="fs-6 text-muted">ريال</small></span>
                 </div>
                 <div class="stat-icon-wrapper bg-icon-orange">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -56,7 +56,7 @@
             <div class="stat-card-flat h-100">
                 <div class="stat-content">
                     <span class="stat-label">إجمالي المصروفات</span>
-                    <span class="stat-value">45,300 <small class="fs-6 text-muted">ريال</small></span>
+                    <span class="stat-value">{{ "{:,.0f}".format(total_expenses) }} <small class="fs-6 text-muted">ريال</small></span>
                 </div>
                 <div class="stat-icon-wrapper bg-icon-purple" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">
                     <i class="fa-solid fa-arrow-trend-down"></i>
@@ -67,7 +67,7 @@
             <div class="stat-card-flat h-100">
                 <div class="stat-content">
                     <span class="stat-label">الرصيد الحالي</span>
-                    <span class="stat-value text-success">125,750 <small class="fs-6 text-muted">ريال</small></span>
+                    <span class="stat-value text-success">{{ "{:,.0f}".format(current_balance) }} <small class="fs-6 text-muted">ريال</small></span>
                 </div>
                 <div class="stat-icon-wrapper bg-icon-green">
                     <i class="fa-solid fa-wallet"></i>

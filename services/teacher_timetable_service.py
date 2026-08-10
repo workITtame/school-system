@@ -71,7 +71,7 @@ def get_teacher_timetable_stats(user_id):
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
 
             # Student count for class
-            st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 25
+            st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 0
 
             item = {
                 'TableID': slot.SchoolTableID,

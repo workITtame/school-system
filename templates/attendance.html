@@ -118,7 +118,7 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">المستأذنون</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiExcused">{{ kpi.excused_count if kpi is defined else 2 }}</h3>
+                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiExcused">{{ kpi.excused_count if kpi is defined else 0 }}</h3>
                     <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-paper-plane fs-6"></i>
                     </div>
@@ -132,7 +132,7 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">نسبة الحضور</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-success font-monospace mb-0" id="kpiAttRate">{{ kpi.attendance_rate if kpi is defined else attendance_rate }}%</h3>
+                    <h3 class="fw-bold text-success font-monospace mb-0" id="kpiAttRate">{{ kpi.attendance_rate if kpi is defined else 0.0 }}%</h3>
                     <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-chart-pie fs-6"></i>
                     </div>
@@ -146,7 +146,7 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">نسبة الغياب</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-danger font-monospace mb-0" id="kpiAbsRate">{{ kpi.absence_rate if kpi is defined else 4.8 }}%</h3>
+                    <h3 class="fw-bold text-danger font-monospace mb-0" id="kpiAbsRate">{{ kpi.absence_rate if kpi is defined else 0.0 }}%</h3>
                     <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-chart-line fs-6"></i>
                     </div>
@@ -160,7 +160,7 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">متوسط الانضباط</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-primary font-monospace mb-0" id="kpiDiscipline">{{ kpi.discipline_score if kpi is defined else 92.4 }}%</h3>
+                    <h3 class="fw-bold text-primary font-monospace mb-0" id="kpiDiscipline">{{ kpi.discipline_score if kpi is defined else 0.0 }}%</h3>
                     <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-shield-halved fs-6"></i>
                     </div>
@@ -173,38 +173,40 @@
     <!-- ========================================== -->
     <!-- SECTION 3: CURRENT LESSON BANNER           -->
     <!-- ========================================== -->
+    {% if current_lesson %}
     <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 no-print">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 text-center text-md-start font-monospace extra-small">
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-success rounded-pill px-3 py-1 fs-6 mb-1 d-inline-block">الحصة الحالية</span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">{{ current_lesson.status if current_lesson is defined else 'جارية الآن' }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">{{ current_lesson.status or 'جارية الآن' }}</span>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">وقت الحصة</span>
-                <strong class="text-dark fs-6"><i class="fa-regular fa-clock text-primary me-1"></i>{{ current_lesson.time if current_lesson is defined else '09:30 - 10:15' }}</strong>
+                <strong class="text-dark fs-6"><i class="fa-regular fa-clock text-primary me-1"></i>{{ current_lesson.time or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">الصف</span>
-                <strong class="text-dark"><i class="fa-solid fa-house-user text-info me-1"></i>{{ current_lesson.class_name if current_lesson is defined else 'الصف الثالث الثانوي' }}</strong>
+                <strong class="text-dark"><i class="fa-solid fa-house-user text-info me-1"></i>{{ current_lesson.class_name or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">الشعبة</span>
-                <strong class="text-dark"><i class="fa-solid fa-users text-secondary me-1"></i>{{ current_lesson.section_name if current_lesson is defined else 'شعبة أ' }}</strong>
+                <strong class="text-dark"><i class="fa-solid fa-users text-secondary me-1"></i>{{ current_lesson.section_name or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">الحصة</span>
-                <strong class="text-dark"><i class="fa-solid fa-display text-warning me-1"></i>{{ current_lesson.lesson_num if current_lesson is defined else 'الحصة الثانية' }}</strong>
+                <strong class="text-dark"><i class="fa-solid fa-display text-warning me-1"></i>{{ current_lesson.lesson_num or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">المادة</span>
-                <strong class="text-primary"><i class="fa-solid fa-book-open text-primary me-1"></i>{{ current_lesson.subject if current_lesson is defined else 'الرياضيات' }}</strong>
+                <strong class="text-primary"><i class="fa-solid fa-book-open text-primary me-1"></i>{{ current_lesson.subject or '—' }}</strong>
             </div>
             <div>
                 <span class="text-muted d-block">الوقت المتبقي</span>
-                <strong class="text-warning"><i class="fa-solid fa-hourglass-half me-1"></i>{{ current_lesson.remaining_minutes if current_lesson is defined else '25 دقيقة' }}</strong>
+                <strong class="text-warning"><i class="fa-solid fa-hourglass-half me-1"></i>{{ current_lesson.remaining_minutes or '—' }}</strong>
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- ========================================== -->
     <!-- SECTION 4: SEARCH & FILTERS BAR            -->
@@ -344,19 +346,19 @@
                 <div class="font-monospace extra-small border-top pt-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-success me-1"></i> حاضـر</span>
-                        <strong class="text-dark" id="sidePresent">{{ kpi.present_count if kpi is defined else present }} ({{ kpi.attendance_rate if kpi is defined else 92.9 }}%)</strong>
+                        <strong class="text-dark" id="sidePresent">{{ kpi.present_count if kpi is defined else 0 }} ({{ kpi.attendance_rate if kpi is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-danger me-1"></i> غائـب</span>
-                        <strong class="text-dark" id="sideAbsent">{{ kpi.absent_count if kpi is defined else absent }} ({{ kpi.absence_rate if kpi is defined else 3.6 }}%)</strong>
+                        <strong class="text-dark" id="sideAbsent">{{ kpi.absent_count if kpi is defined else 0 }} ({{ kpi.absence_rate if kpi is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-warning me-1"></i> متأخـر</span>
-                        <strong class="text-dark" id="sideLate">{{ kpi.late_count if kpi is defined else late }} (3.6%)</strong>
+                        <strong class="text-dark" id="sideLate">{{ kpi.late_count if kpi is defined else 0 }} ({{ kpi.late_rate if kpi is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between">
                         <span class="text-muted"><i class="fa-solid fa-circle text-info me-1"></i> مستأذن</span>
-                        <strong class="text-dark" id="sideExcused">{{ kpi.excused_count if kpi is defined else 2 }} (7.1%)</strong>
+                        <strong class="text-dark" id="sideExcused">{{ kpi.excused_count if kpi is defined else 0 }} ({{ kpi.excused_rate if kpi is defined else 0.0 }}%)</strong>
                     </div>
                 </div>
             </div>
@@ -376,13 +378,14 @@
                                     <span class="fw-bold me-1 text-danger">{{ loop.index }}</span>
                                     <strong class="text-dark">{{ st.SName }}</strong>
                                 </div>
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 font-monospace">
-                                    {{ st.days }}
-                                </span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace">{{ st.days }}</span>
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="py-3 text-center text-muted">لا يوجد طلاب متكرري الغياب.</div>
+                        <div class="text-center py-3 text-muted">
+                            <i class="fa-solid fa-user-check fs-4 d-block mb-1 text-success opacity-50"></i>
+                            لا يوجد طلاب متكرري الغياب
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -399,9 +402,9 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="p-2 rounded-3 bg-success-subtle border border-success-subtle text-success">
-                            <strong class="d-block mb-1"><i class="fa-solid fa-circle-check me-1"></i> جميع الشعب منتظمة اليوم</strong>
-                            <small class="d-block text-muted">لا توجد تنبيهات غياب حرجة في الكشف الحالي.</small>
+                        <div class="text-center py-3 text-muted">
+                            <i class="fa-solid fa-bell-slash fs-4 d-block mb-1 opacity-50"></i>
+                            لا توجد تنبيهات حضور مسجلة حالياً
                         </div>
                     {% endif %}
                 </div>

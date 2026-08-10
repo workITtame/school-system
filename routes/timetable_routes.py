@@ -33,6 +33,16 @@ def index():
     
     teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=current_user.id).first()
     
+    req_teacher_id = request.args.get('teacher_id', type=int)
+    target_teacher = None
+    if req_teacher_id:
+        target_teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(TeacherID=req_teacher_id, is_deleted=False).first()
+
+    if not teacher and target_teacher:
+        teacher = target_teacher
+        
+    all_teachers = Teacher.query.filter_by(is_deleted=False).order_by(Teacher.TeacherName.asc()).all()
+
     try:
         raw_class_id = request.args.get('class_id')
         class_id = int(raw_class_id) if raw_class_id and str(raw_class_id).isdigit() else None
@@ -70,6 +80,10 @@ def index():
         if subject_id:
             query = query.filter(SchoolTable.SubID == subject_id)
         slots = query.all()
+        if not slots:
+            from services.timetable_sync_service import sync_all_active_subject_timetable_slots
+            sync_all_active_subject_timetable_slots()
+            slots = query.all()
     else:
         teacher_id = teacher.TeacherID
         teacher_name = teacher.TeacherName
@@ -92,6 +106,10 @@ def index():
         if subject_id:
             query = query.filter(SchoolTable.SubID == subject_id)
         slots = query.all()
+        if not slots:
+            from services.timetable_sync_service import sync_all_active_subject_timetable_slots
+            sync_all_active_subject_timetable_slots()
+            slots = query.all()
 
     teacher_info = {
         'TeacherName': teacher_name,
@@ -141,7 +159,7 @@ def index():
         room_name = getattr(slot, 'RoomNo', None) or f"قاعة {200 + idx}"
         time_range = f"{start_t} - {end_t}"
         
-        st_count = Student.query.filter(Student.CID == slot.CID, Student.is_deleted == False).count() if slot.CID else 30
+        st_count = Student.query.filter(Student.CID == slot.CID, Student.is_deleted == False).count() if slot.CID else 0
         is_current = False
         is_next = False
         
@@ -162,7 +180,7 @@ def index():
                 'time': time_range,
                 'room': room_name,
                 'students_count': st_count,
-                'attendance_rate': 90
+                'attendance_rate': 0
             }
         else:
             if not next_lesson:
@@ -209,8 +227,8 @@ def index():
             'class': f"{cls_name} - {sec_name}".strip(" -"),
             'time': f"{start_t} - {end_t}",
             'room': getattr(first_s, 'RoomNo', None) or 'قاعة 201',
-            'students_count': total_students or 32,
-            'attendance_rate': 90
+            'students_count': total_students or 0,
+            'attendance_rate': 0
         }
         current_slot_num = 1
         current_slot_time = f"{start_t} - {end_t}"
@@ -245,24 +263,24 @@ def index():
         today_absent = Attendance.query.filter(Attendance.Date == today, Attendance.Status == 'غائب').count()
         
     total_att = today_present + today_absent
-    att_rate = round((today_present / total_att * 100), 1) if total_att > 0 else 90.0
+    att_rate = round((today_present / total_att * 100), 1) if total_att > 0 else 0.0
     
     kpi_data = {
         'today_lessons_count': today_lessons_count,
-        'current_slot_num': current_slot_num or ('2' if today_slots_sorted else '—'),
-        'current_slot_time': current_slot_time or ('08:55 - 09:40' if today_slots_sorted else '—'),
-        'next_slot_num': next_slot_num or ('3' if len(today_slots_sorted) > 1 else '—'),
-        'next_slot_time': next_slot_time or ('09:50 - 10:35' if len(today_slots_sorted) > 1 else '—'),
+        'current_slot_num': current_slot_num or ('1' if today_slots_sorted else '—'),
+        'current_slot_time': current_slot_time or ('—' if not today_slots_sorted else ''),
+        'next_slot_num': next_slot_num or ('—' if len(today_slots_sorted) <= 1 else ''),
+        'next_slot_time': next_slot_time or '—',
         'total_students': total_students,
-        'occupancy_rate': occupancy_rate or 83,
-        'taught_classes_count': today_classes_count or (len(teacher_class_ids) or 3)
+        'occupancy_rate': occupancy_rate or 0,
+        'taught_classes_count': today_classes_count or len(teacher_class_ids)
     }
     
     today_summary = {
         'completed_str': f"{finished_count} من {today_lessons_count}",
         'attendance_rate': att_rate,
-        'absent_count': today_absent or 3,
-        'present_count': today_present or (total_students - 3 if total_students > 3 else 29)
+        'absent_count': today_absent or 0,
+        'present_count': today_present or 0
     }
 
     return render_template('timetable/index.html',

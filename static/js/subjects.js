@@ -500,6 +500,87 @@ function updateWizardPreviews(wizardType = 'add') {
 
     updateWizardClassesPreview(wizardType);
     updateWizardTeachersPreview(wizardType);
+    updateWizardTimetablePreview(wizardType);
+}
+
+function updateWizardTimetablePreview(wizardType = 'add') {
+    const tbody = document.getElementById(`${wizardType}-timetable-tbody`);
+    if (!tbody) return;
+
+    const checked = document.querySelectorAll(`.${wizardType}-class-checkbox:checked`);
+    if (checked.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-muted text-center font-monospace">
+            <i class="fa-solid fa-calendar-xmark fs-3 d-block mb-2 text-secondary opacity-50"></i>
+            يرجى تحديد الصفوف الدراسية في الخطوة (2) لمعاينة توزيع الحصص
+        </td></tr>`;
+        return;
+    }
+
+    const hoursInput = document.getElementById(`${wizardType}SubjectHoursInput`);
+    const targetHours = hoursInput ? (parseInt(hoursInput.value) || 4) : 4;
+
+    const classNames = Array.from(checked).map(cb => {
+        const label = cb.closest('label');
+        const h6 = label ? label.querySelector('h6') : null;
+        return h6 ? h6.textContent.trim() : 'صف دراسي';
+    });
+
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+    
+    // 5 days x 5 slots grid
+    const grid = Array.from({ length: 5 }, () => Array(5).fill(null));
+
+    // For each class, assign EXACTLY targetHours slots across the week
+    classNames.forEach((clsName, cIdx) => {
+        let assigned = 0;
+        for (let dayIdx = 0; dayIdx < 5 && assigned < targetHours; dayIdx++) {
+            const slotIdx = (cIdx + dayIdx) % 5;
+            if (!grid[dayIdx][slotIdx]) {
+                grid[dayIdx][slotIdx] = clsName;
+                assigned++;
+            } else {
+                for (let s = 0; s < 5; s++) {
+                    if (!grid[dayIdx][s]) {
+                        grid[dayIdx][s] = clsName;
+                        assigned++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        while (assigned < targetHours) {
+            let placed = false;
+            for (let d = 0; d < 5; d++) {
+                for (let s = 0; s < 5; s++) {
+                    if (!grid[d][s]) {
+                        grid[d][s] = clsName;
+                        assigned++;
+                        placed = true;
+                        break;
+                    }
+                }
+                if (placed) break;
+            }
+            if (!placed) break; // grid full
+        }
+    });
+
+    let html = '';
+    days.forEach((day, dIdx) => {
+        html += `<tr><td class="fw-bold bg-light">${day}</td>`;
+        for (let slot = 0; slot < 5; slot++) {
+            const cls = grid[dIdx][slot];
+            if (cls) {
+                html += `<td><span class="badge bg-primary-subtle text-primary p-2 w-100 fw-bold">${cls}</span></td>`;
+            } else {
+                html += `<td><span class="text-muted small">-</span></td>`;
+            }
+        }
+        html += `</tr>`;
+    });
+
+    tbody.innerHTML = html;
 }
 
 function updateWizardClassesPreview(wizardType = 'add') {
@@ -514,6 +595,8 @@ function updateWizardClassesPreview(wizardType = 'add') {
     if (countBadge) countBadge.textContent = `${selectedCount} صفوف مختارة`;
     if (sectionsBadge) sectionsBadge.textContent = `${estimatedSections} شعب مشمولة`;
     if (sumClasses) sumClasses.textContent = selectedCount > 0 ? `${selectedCount} صفوف دراسية` : 'جميع الصفوف المشمولة';
+
+    updateWizardTimetablePreview(wizardType);
 }
 
 function updateWizardTeachersPreview(wizardType = 'add') {

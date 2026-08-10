@@ -47,22 +47,23 @@ def get_notification_statistics(user_id):
     unread_count = sum(1 for n in db_notifs if not n.is_read)
     priority_count = sum(1 for n in db_notifs if n.priority in ['high', 'urgent'])
     today_count = sum(1 for n in db_notifs if n.created_at and n.created_at.date() == datetime.utcnow().date())
+    academic_count = sum(1 for n in db_notifs if getattr(n, 'type', '') in ['academic', 'أكاديمي', 'واجب', 'اختبار'])
+    admin_count = sum(1 for n in db_notifs if getattr(n, 'type', '') in ['admin', 'إداري', 'تنبيه'])
 
-    smart_insights = [
-        {'id': 1, 'text': '📌 يوجد طالبان بحاجة إلى متابعة وتقوية أكاديمية فورية.', 'type': 'warning'},
-        {'id': 2, 'text': '📌 تم نشر اختبار جديد لمادة الرياضيات للصف الثالث الثانوي.', 'type': 'info'},
-        {'id': 3, 'text': '📌 يوجد واجبان أسبوعيان بانتظار تصحيح الدرجات بالسجل.', 'type': 'primary'},
-        {'id': 4, 'text': '📌 نسبة مواظبة حضور الطلاب اليوم مرتفعة وتصل إلى 96.0%.', 'type': 'success'}
-    ]
+    smart_insights = []
+    if total_notifications > 0:
+        smart_insights = [
+            {'id': 1, 'text': f'📌 لديك {unread_count} إشعار غير مقروء في النظام.', 'type': 'info' if unread_count == 0 else 'warning'}
+        ]
 
     return {
-        'total_notifications': max(total_notifications, 15),
+        'total_notifications': total_notifications,
         'unread_count': unread_count,
-        'today_count': max(today_count, 5),
+        'today_count': today_count,
         'priority_count': priority_count,
-        'academic_count': max(total_notifications - 4, 8),
-        'admin_count': 4,
-        'last_update': datetime.now().strftime('%Y-%m-%d %H:%M'),
+        'academic_count': academic_count,
+        'admin_count': admin_count,
+        'last_update': datetime.now().strftime('%Y-%m-%d %H:%M') if total_notifications > 0 else '—',
         'smart_insights': smart_insights
     }
 
@@ -108,33 +109,6 @@ def get_notifications(user_id, filters=None, search=None):
             'action_url': item.action_url or '/messages/',
             'action_label': 'فتح التفاصيل'
         })
-
-    # Default fallback items if empty
-    if not results:
-        results = [
-            {
-                'id': 101,
-                'title': 'تم تسليم واجب الرياضيات من الطالب أحمد علي',
-                'description': 'قام الطالب بتسليم إجابة واجب الرياضيات الأسبوعي بانتظار التصحيح ورصد الدرجة.',
-                'module': 'homework',
-                'module_name': 'الواجبات',
-                'student_id': 1,
-                'student_name': 'أحمد علي',
-                'subject_name': 'الرياضيات',
-                'class_name': 'الصف الثالث الثانوي',
-                'timestamp': 'منذ 10 دقائق',
-                'date_str': datetime.now().strftime('%Y-%m-%d'),
-                'priority': 'high',
-                'priority_label': 'مرتفعة 🟠',
-                'priority_badge': 'warning',
-                'read': False,
-                'archived': False,
-                'icon': 'fa-solid fa-book-bookmark',
-                'color_class': 'text-primary bg-primary-subtle',
-                'action_url': '/grading/workspace/homework/1',
-                'action_label': 'فتح الواجب والتصحيح'
-            }
-        ]
 
     return results
 

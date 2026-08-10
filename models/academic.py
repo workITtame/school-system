@@ -23,8 +23,9 @@ TeacherSubject = db.Table('TeacherSubject',
 
 class Classes(db.Model, AuditMixin):
     __tablename__ = 'Classes'
+    __table_args__ = (db.UniqueConstraint('CName', 'Stage', name='uq_class_name_stage'),)
     CID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    CName = db.Column(db.String(50), unique=True)
+    CName = db.Column(db.String(50), nullable=False)
     Stage = db.Column(db.String(50))           # الثانوية, المتوسطة, الابتدائية
     MaxStudents = db.Column(db.Integer, default=40)  # الحد الأقصى للطلاب
     

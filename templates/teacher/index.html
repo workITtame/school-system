@@ -550,15 +550,15 @@
 
         const url = `/api/v1/teachers?page=${page}&limit=10&search=${encodeURIComponent(currentSearch)}&qual=${encodeURIComponent(qual)}&status=${encodeURIComponent(status)}&gender=${encodeURIComponent(gender)}&class_id=${encodeURIComponent(classId)}`;
 
-        fetch(url, { headers: apiHeadersJSON })
+        fetch(url, { headers: apiHeadersJSON, credentials: 'same-origin' })
         .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
         })
         .then(data => {
             if(data && data.success) {
-                renderTable(data.data);
-                renderPagination(data.meta);
+                renderTable(data.data || []);
+                renderPagination(data.meta || { pages: 0, current_page: 1, total: 0 });
             } else {
                 renderTable([]);
                 showToast((data && data.message) || 'فشل في جلب البيانات', 'error');
@@ -567,7 +567,6 @@
         .catch(err => {
             console.error(err);
             renderTable([]);
-            showToast('حدث خطأ في الاتصال بالخادم.', 'error');
         });
     }
 
@@ -577,15 +576,17 @@
         selectedTeacherIds.clear();
         updateBulkBar();
 
-        if(teachers.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">
+        if(!teachers || teachers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted font-monospace">
                 <i class="fa-solid fa-users-slash fs-1 mb-3 d-block text-secondary opacity-50"></i>
-                <h5 class="fw-bold text-dark">لا يوجد معلمين يطابقون خيارات البحث</h5>
-                <p class="text-muted small mb-3">أعد ضغط خيارات الفلترة أو قم بإضافة معلم جديد للمنظومة</p>
+                <h5 class="fw-bold text-dark">لا يوجد معلمين مسجلين حالياً</h5>
+                <p class="text-muted small mb-3">أعد ضبط خيارات الفلترة أو قم بإضافة معلم جديد للمنظومة</p>
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="openAddModal()">
-                    <i class="fa-solid fa-plus me-1"></i> إضافة أول معلم
+                    <i class="fa-solid fa-plus me-1"></i> إضافة معلم جديد
                 </button>
             </td></tr>`;
+            const stats = document.getElementById('teachersPaginationStats');
+            if (stats) stats.textContent = 'عرض 0 من 0 معلم';
             return;
         }
         
@@ -634,7 +635,7 @@
                         <a href="/teacher/edit/${t.TeacherID}" class="action-btn-solid bg-warning-subtle text-dark" title="تعديل">
                             <i class="fa-solid fa-pen"></i> تعديل
                         </a>
-                        <a href="{{ url_for('timetable.index') }}" class="action-btn-solid bg-info-subtle text-info" title="الجدول الأسبوعي">
+                        <a href="/timetable/?teacher_id=${t.TeacherID}" class="action-btn-solid bg-info-subtle text-info" title="الجدول الأسبوعي للمعلم">
                             <i class="fa-solid fa-calendar-days"></i> الجدول
                         </a>
                         <button type="button" class="action-btn-solid bg-danger-subtle text-danger" title="حذف" onclick="confirmDelete(${t.TeacherID})">

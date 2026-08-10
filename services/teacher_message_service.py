@@ -15,24 +15,19 @@ def _get_teacher_scope(user_id):
     return teacher, students, class_ids, section_ids
 
 def get_teacher_message_statistics(user_id):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    total_students = len(students)
-
-    # Calculate real or synthetic stats
-    total_conversations = max(1, total_students)
-    unread_count = min(3, total_conversations)
-    sent_today = 14
-    received_today = 8
-    bulk_sent = 5
-    last_activity = datetime.now().strftime('%Y-%m-%d %H:%M')
+    from models.message import Message
+    total_messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).count()
+    unread_count = Message.query.filter_by(recipient_id=user_id, is_read=False).count()
+    sent_msgs = Message.query.filter_by(sender_id=user_id).count()
+    rec_msgs = Message.query.filter_by(recipient_id=user_id).count()
 
     return {
-        'total_conversations': total_conversations,
+        'total_conversations': total_messages,
         'unread_count': unread_count,
-        'sent_today': sent_today,
-        'received_today': received_today,
-        'bulk_sent': bulk_sent,
-        'last_activity': last_activity
+        'sent_today': sent_msgs,
+        'received_today': rec_msgs,
+        'bulk_sent': 0,
+        'last_activity': datetime.now().strftime('%Y-%m-%d %H:%M') if total_messages > 0 else '—'
     }
 
 def get_conversations(user_id, search=None, filter_type=None, sort_by='newest'):
@@ -107,17 +102,27 @@ def get_conversation(conversation_id, user_id):
     stored = _STORED_MESSAGES.get(int(conversation_id), [])
     messages_list.extend(stored)
 
+    # Calculate real grades for student
+    st_marks = Marks.query.filter_by(SID=st.SID).all()
+    scores = [float(m.Score) for m in st_marks if m.Score is not None]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+    
+    st_att = Attendance.query.filter_by(SID=st.SID).all()
+    att_pct = round((sum(1 for a in st_att if a.Status in ['حاضر', 'متأخر']) / len(st_att) * 100), 1) if st_att else 0.0
+
+    status_txt = 'ممتاز 🟢' if avg_score >= 90 else ('جيد جداً 🟢' if avg_score >= 80 else ('جيد 🟡' if avg_score >= 70 else ('يحتاج متابعة 🟠' if avg_score > 0 else 'منتظم 🟢')))
+
     student_summary = {
         'student_id': st.SID,
         'student_name': st.SName,
         'academic_id': f"20240{st.SID}",
-        'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
-        'section_name': st.section.SectionName if st.section else 'شعبة أ',
-        'homework_avg': 9.5,
-        'exam_avg': 94.0,
-        'attendance_pct': 96.0,
-        'final_grade': 94.5,
-        'status_text': 'ممتاز 🟢'
+        'class_name': st.school_class.CName if st.school_class else '—',
+        'section_name': st.section.SectionName if st.section else '—',
+        'homework_avg': 0.0,
+        'exam_avg': avg_score,
+        'attendance_pct': att_pct,
+        'final_grade': avg_score,
+        'status_text': status_txt
     }
 
     return {

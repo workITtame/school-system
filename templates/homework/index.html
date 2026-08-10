@@ -118,7 +118,7 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">المواد المستهدفة</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiTargetedSubs">{{ kpi.targeted_subjects_count if kpi is defined else 12 }}</h3>
+                    <h3 class="fw-bold text-info font-monospace mb-0" id="kpiTargetedSubs">{{ kpi.targeted_subjects_count if kpi is defined else 0 }}</h3>
                     <div class="rounded-circle p-2 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                         <i class="fa-solid fa-layer-group fs-6"></i>
                     </div>
@@ -132,13 +132,13 @@
             <div class="glass-panel-card p-3 rounded-4 shadow-sm border-0 bg-white h-100 position-relative overflow-hidden hover-lift">
                 <span class="extra-small text-muted font-monospace fw-bold d-block mb-1">نسبة الإنجاز</span>
                 <div class="d-flex align-items-center justify-content-between">
-                    <h3 class="fw-bold text-primary font-monospace mb-0" id="kpiCompletionRate">{{ kpi.completion_rate if kpi is defined else 40.0 }}%</h3>
+                    <h3 class="fw-bold text-primary font-monospace mb-0" id="kpiCompletionRate">{{ kpi.completion_rate if kpi is defined else 0.0 }}%</h3>
                     <div class="rounded-circle p-2 bg-purple-subtle text-purple d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background:#f3e8ff; color:#7c3aed;">
                         <i class="fa-solid fa-chart-line fs-6"></i>
                     </div>
                 </div>
                 <div class="progress mt-2" style="height: 4px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ kpi.completion_rate if kpi is defined else 40 }}%" id="kpiProgressBar"></div>
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ kpi.completion_rate if kpi is defined else 0 }}%" id="kpiProgressBar"></div>
                 </div>
             </div>
         </div>
@@ -147,33 +147,35 @@
     <!-- ========================================== -->
     <!-- SECTION 3: CURRENT ACTIVE HOMEWORK BANNER  -->
     <!-- ========================================== -->
+    {% if current_active_homework %}
     <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 no-print">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 text-center text-md-start font-monospace extra-small">
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-success rounded-pill px-3 py-1 fs-6 mb-1 d-inline-block">{{ current_active_homework.status if current_active_homework is defined else 'حصة الآن' }}</span>
+                <span class="badge bg-success rounded-pill px-3 py-1 fs-6 mb-1 d-inline-block">{{ current_active_homework.status or 'حصة الآن' }}</span>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">العام الدراسي</span>
-                <strong class="text-dark fs-6"><i class="fa-solid fa-graduation-cap text-primary me-1"></i>{{ current_active_homework.academic_year if current_active_homework is defined else '2024 - 2025' }}</strong>
+                <strong class="text-dark fs-6"><i class="fa-solid fa-graduation-cap text-primary me-1"></i>{{ current_active_homework.academic_year or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">الشعبة</span>
-                <strong class="text-dark"><i class="fa-solid fa-users text-info me-1"></i>{{ current_active_homework.section_name if current_active_homework is defined else 'شعبة أ' }}</strong>
+                <strong class="text-dark"><i class="fa-solid fa-users text-info me-1"></i>{{ current_active_homework.section_name or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">الصف</span>
-                <strong class="text-dark"><i class="fa-solid fa-school text-secondary me-1"></i>{{ current_active_homework.class_name if current_active_homework is defined else 'الثالث الثانوي' }}</strong>
+                <strong class="text-dark"><i class="fa-solid fa-school text-secondary me-1"></i>{{ current_active_homework.class_name or '—' }}</strong>
             </div>
             <div class="border-end pe-md-3">
                 <span class="text-muted d-block">المادة</span>
-                <strong class="text-primary"><i class="fa-solid fa-book-open text-primary me-1"></i>{{ current_active_homework.subject_name if current_active_homework is defined else 'الرياضيات' }}</strong>
+                <strong class="text-primary"><i class="fa-solid fa-book-open text-primary me-1"></i>{{ current_active_homework.subject_name or '—' }}</strong>
             </div>
             <div>
                 <span class="text-muted d-block">الوقت المتبقي</span>
-                <strong class="text-warning"><i class="fa-solid fa-hourglass-half me-1"></i>{{ current_active_homework.remaining_minutes if current_active_homework is defined else '25 دقيقة' }}</strong>
+                <strong class="text-warning"><i class="fa-solid fa-hourglass-half me-1"></i>{{ current_active_homework.remaining_minutes or '—' }}</strong>
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- ========================================== -->
     <!-- SECTION 4: SEARCH & FILTERS BAR            -->
@@ -378,28 +380,29 @@
                 <div class="font-monospace extra-small border-top pt-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-success me-1"></i> مكتمل</span>
-                        <strong class="text-dark" id="sideHwCompleted">{{ status_distribution.completed if status_distribution is defined else 2 }} ({{ status_distribution.completed_pct if status_distribution is defined else 40 }}%)</strong>
+                        <strong class="text-dark" id="sideHwCompleted">{{ status_distribution.completed if status_distribution is defined else 0 }} ({{ status_distribution.completed_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-warning me-1"></i> معلق</span>
-                        <strong class="text-dark" id="sideHwPending">{{ status_distribution.pending if status_distribution is defined else 2 }} ({{ status_distribution.pending_pct if status_distribution is defined else 40 }}%)</strong>
+                        <strong class="text-dark" id="sideHwPending">{{ status_distribution.pending if status_distribution is defined else 0 }} ({{ status_distribution.pending_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-danger me-1"></i> متأخر</span>
-                        <strong class="text-dark" id="sideHwLate">{{ status_distribution.late if status_distribution is defined else 0 }} ({{ status_distribution.late_pct if status_distribution is defined else 0 }}%)</strong>
+                        <strong class="text-dark" id="sideHwLate">{{ status_distribution.late if status_distribution is defined else 0 }} ({{ status_distribution.late_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-muted"><i class="fa-solid fa-circle text-secondary me-1"></i> ملغى</span>
-                        <strong class="text-dark">0 (0%)</strong>
+                        <strong class="text-dark">0 (0.0%)</strong>
                     </div>
                     <div class="d-flex align-items-center justify-content-between">
                         <span class="text-muted"><i class="fa-solid fa-circle text-info me-1"></i> لم يبدأ</span>
-                        <strong class="text-dark" id="sideHwNotStarted">1 (20%)</strong>
+                        <strong class="text-dark" id="sideHwNotStarted">{{ status_distribution.not_started if status_distribution is defined else 0 }} ({{ status_distribution.not_started_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
                 </div>
             </div>
 
             <!-- 2. Most Assigned Subjects Widget -->
+            {% if most_assigned_subjects and most_assigned_subjects|length > 0 %}
             <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="المواد الأكثر تكليفاً">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-layer-group text-primary me-2"></i> المواد الأكثر تكليفاً</h6>
@@ -407,21 +410,20 @@
                 </div>
 
                 <div class="font-monospace extra-small" id="mostAssignedContainer">
-                    {% if most_assigned_subjects and most_assigned_subjects|length > 0 %}
-                        {% for sub in most_assigned_subjects %}
-                            <div class="mb-3">
-                                <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <span class="fw-bold text-dark">{{ sub.name }}</span>
-                                    <span class="text-muted extra-small">{{ sub.count }} واجب</span>
-                                </div>
-                                <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar {% if loop.index == 1 %}bg-primary{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ sub.pct }}%;"></div>
-                                </div>
+                    {% for sub in most_assigned_subjects %}
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-bold text-dark">{{ sub.name }}</span>
+                                <span class="text-muted extra-small">{{ sub.count }} واجب</span>
                             </div>
-                        {% endfor %}
-                    {% endif %}
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar {% if loop.index == 1 %}bg-primary{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ sub.pct }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
             <!-- 3. Nearest Due Homeworks Widget -->
             <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="أقرب الواجبات تسليماً">

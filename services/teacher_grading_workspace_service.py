@@ -44,8 +44,8 @@ def get_workspace(source_type, source_id, user_id):
             'pending_grading': ws['pending_grading'],
             'graded_count': ws['graded_count'],
             'average_grade': ws['average_grade'],
-            'highest_grade': 10.0,
-            'lowest_grade': 5.0,
+            'highest_grade': max([float(s['grade']) for s in ws['students'] if s.get('grade') is not None], default=0.0),
+            'lowest_grade': min([float(s['grade']) for s in ws['students'] if s.get('grade') is not None], default=0.0),
             'students': ws['students']
         }
     elif source_type in ['exam', 'exams']:
@@ -54,8 +54,14 @@ def get_workspace(source_type, source_id, user_id):
             return None
         
         students = get_exam_students(source_id, user_id)
-        graded_count = sum(1 for s in students if s.get('grading_status') == 'تم التصحيح' or s.get('score') is not None)
+        graded_students = [s for s in students if s.get('score') is not None]
+        graded_count = len(graded_students)
         pending_count = len(students) - graded_count
+
+        scores = [float(s['score']) for s in graded_students]
+        avg_g = round(sum(scores) / len(scores), 1) if scores else 0.0
+        high_g = max(scores) if scores else 0.0
+        low_g = min(scores) if scores else 0.0
 
         return {
             'source_type': 'exam',
@@ -71,9 +77,9 @@ def get_workspace(source_type, source_id, user_id):
             'total_submissions': details['attended_count'],
             'pending_grading': pending_count,
             'graded_count': graded_count,
-            'average_grade': 88.5,
-            'highest_grade': 99.0,
-            'lowest_grade': 65.0,
+            'average_grade': avg_g,
+            'highest_grade': high_g,
+            'lowest_grade': low_g,
             'students': students
         }
     else:

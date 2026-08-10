@@ -19,7 +19,18 @@ def classes():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     classes_list = Classes.query.filter_by(is_deleted=False).order_by(Classes.CID.asc()).all()
-    sections_list = Sections.query.filter_by(is_deleted=False).all()
+    active_class_ids = [c.CID for c in classes_list]
+    
+    from models.academic import ClassesSections
+    if active_class_ids:
+        sections_list = db.session.query(Sections).join(
+            ClassesSections, Sections.SectionID == ClassesSections.c.SectionID
+        ).filter(
+            ClassesSections.c.CID.in_(active_class_ids),
+            Sections.is_deleted == False
+        ).distinct().all()
+    else:
+        sections_list = []
     
     total_classes = len(classes_list)
     total_sections = len(sections_list)
@@ -76,7 +87,11 @@ def subjects():
     
     from models.teacher import Teacher
     class_id = request.args.get('class_id', type=int)
-    classes = Classes.query.filter_by(is_deleted=False).all()
+    classes = Classes.query.filter_by(is_deleted=False).order_by(Classes.CID.asc()).all()
+    for c in classes:
+        c.linked_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
+        c.students_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+        
     teachers_list = Teacher.query.filter_by(is_deleted=False).all()
     
     query = Subject.query
@@ -100,11 +115,13 @@ def subjects():
     total_classes = len(classes)
     linked_classes_count = db.session.query(ClassSubject.c.CID)\
         .join(Classes, ClassSubject.c.CID == Classes.CID)\
-        .filter(Classes.is_deleted == False).distinct().count()
+        .join(Subject, ClassSubject.c.SubID == Subject.SubID)\
+        .filter(Classes.is_deleted == False, Subject.is_deleted == False).distinct().count()
         
     assigned_teachers_count = db.session.query(TeacherSubject.c.TeacherID)\
         .join(Teacher, TeacherSubject.c.TeacherID == Teacher.TeacherID)\
-        .filter(Teacher.is_deleted == False).distinct().count()
+        .join(Subject, TeacherSubject.c.SubID == Subject.SubID)\
+        .filter(Teacher.is_deleted == False, Subject.is_deleted == False).distinct().count()
     
     total_valid_links = db.session.query(ClassSubject)\
         .join(Classes, ClassSubject.c.CID == Classes.CID)\
@@ -161,7 +178,11 @@ def add_class():
         flash('يرجى كتابة اسم الصف الدراسي', 'warning')
         return redirect(url_for('academic.classes'))
         
-    existing_class = Classes.query.filter_by(CName=name).first()
+    query = Classes.query.filter_by(CName=name)
+    if stage:
+        query = query.filter_by(Stage=stage)
+    existing_class = query.first()
+
     if existing_class:
         if getattr(existing_class, 'is_deleted', False):
             existing_class.is_deleted = False
@@ -169,12 +190,13 @@ def add_class():
                 existing_class.Stage = stage
             try:
                 db.session.commit()
-                flash(f'تم إعادة تفعيل الصف "{name}" بنجاح', 'success')
+                flash(f'تمت استعادة وتفعيل الصف "{name}" بنجاح', 'success')
             except Exception:
                 db.session.rollback()
                 flash('حدث خطأ أثناء تفعيل الصف', 'danger')
         else:
-            flash(f'الصف "{name}" موجود بالفعل في النظام', 'warning')
+            stage_desc = f' ({stage})' if stage else ''
+            flash(f'الصف "{name}"{stage_desc} موجود بالفعل في النظام', 'warning')
         return redirect(url_for('academic.classes'))
         
     new_class = Classes(CName=name, Stage=stage)
@@ -417,6 +439,8 @@ def add_subject():
 
     try:
         db.session.commit()
+        from services.timetable_sync_service import sync_subject_timetable_slots
+        sync_subject_timetable_slots(subject_obj.SubID)
         flash(f'تمت إضافة المادة "{name}" وتخصيص الصفوف والمعلمين بنجاح', 'success')
     except IntegrityError:
         db.session.rollback()
@@ -531,9 +555,19 @@ def delete_class(id):
     c = Classes.query.get_or_404(id)
     student_count = Student.query.filter_by(CID=id, is_deleted=False).count()
     if student_count > 0:
-        flash('لا يمكن حذف الصف لاحتوائه على طلاب مسجلين بالفعلي. يرجى نقل الطلاب أو تفريغ الصف أولاً.', 'danger')
+        flash('لا يمكن حذف الصف لاحتوائه على طلاب مسجلين بالفعل. يرجى نقل الطلاب أو تفريغ الصف أولاً.', 'danger')
         return redirect(url_for('academic.classes'))
+        
+    associated_sections = list(c.sections)
+    c.sections.clear()
+    for sec in associated_sections:
+        remaining_classes = [cl for cl in sec.classes if not getattr(cl, 'is_deleted', False)]
+        if not remaining_classes:
+            sec.is_deleted = True
+            
     handle_delete(c)
+    db.session.commit()
+    flash(f'تم حذف الصف "{c.CName}" والشعب المرتبطة به بنجاح', 'success')
     return redirect(url_for('academic.classes'))
 
 # Sections
@@ -802,6 +836,8 @@ def edit_subject(id):
                 subject.teachers.extend(target_teachers)
 
         db.session.commit()
+        from services.timetable_sync_service import sync_subject_timetable_slots
+        sync_subject_timetable_slots(subject.SubID)
         flash('تم تحديث بيانات المادة بنجاح', 'success')
     return redirect(url_for('academic.subjects'))
 
@@ -819,13 +855,24 @@ def delete_subject(id):
         flash(f'تعذر حذف المادة "{subject.SubName}" لارتباطها بـ {slots_count} حصص في الجدول الأسبوعي.', 'danger')
         return redirect(url_for('academic.subjects'))
         
-    if hasattr(subject, 'is_deleted'):
-        subject.is_deleted = True
+    # Clear associations from join tables (TeacherSubject, ClassSubject)
+    from models.academic import TeacherSubject, ClassSubject
+    db.session.execute(TeacherSubject.delete().where(TeacherSubject.c.SubID == subject.SubID))
+    db.session.execute(ClassSubject.delete().where(ClassSubject.c.SubID == subject.SubID))
+    
+    from models.grade import Marks
+    if hasattr(Marks, 'is_deleted'):
+        marks_count = Marks.query.filter_by(SubID=subject.SubID, is_deleted=False).count()
     else:
+        marks_count = Marks.query.filter_by(SubID=subject.SubID).count()
+    
+    if marks_count == 0:
         db.session.delete(subject)
+    else:
+        subject.is_deleted = True
         
     db.session.commit()
-    flash('تم حذف المادة بنجاح', 'success')
+    flash(f'تم حذف المادة "{subject.SubName}" وإلغاء إسنادها بنجاح', 'success')
     return redirect(url_for('academic.subjects'))
 
 @academic_bp.route('/subject/<int:id>/data')

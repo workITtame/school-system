@@ -48,26 +48,34 @@ def get_gradebook_statistics(user_id, subject_id=None, class_id=None, section_id
             'smart_insights': ['لا يوجد طلاب مسجلون حالياً']
         }
 
-    # Compute statistics dynamically
-    scores = []
-    needs_followup = 0
-    for s in students:
-        base_score = 75.0 + (s.SID % 25)
-        scores.append(base_score)
-        if base_score < 70.0:
-            needs_followup += 1
+    # Compute statistics dynamically from real marks
+    from models.marks import Marks
+    student_ids = [s.SID for s in students]
+    marks_records = Marks.query.filter(Marks.SID.in_(student_ids)).all() if student_ids else []
+    scores = [float(m.Score) for m in marks_records if m.Score is not None]
 
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-    highest = round(max(scores), 1) if scores else 0.0
-    lowest = round(min(scores), 1) if scores else 0.0
+    if not scores:
+        return {
+            'total_students': total_students,
+            'class_average': 0.0,
+            'highest_grade': 0.0,
+            'lowest_grade': 0.0,
+            'pass_rate': 0.0,
+            'needs_followup_count': 0,
+            'smart_insights': ['لا توجد درجات مرصودة حالياً لهؤلاء الطلاب']
+        }
+
+    needs_followup = sum(1 for sc in scores if sc < 60.0)
+    avg_score = round(sum(scores) / len(scores), 1)
+    highest = round(max(scores), 1)
+    lowest = round(min(scores), 1)
     passed_count = sum(1 for sc in scores if sc >= 60.0)
-    pass_rate = round((passed_count / len(scores)) * 100, 1) if scores else 0.0
+    pass_rate = round((passed_count / len(scores)) * 100, 1)
 
     smart_insights = [
-        f"نسبة النجاح العامة في الفصل ممتازة وتصل إلى {pass_rate}%",
+        f"نسبة النجاح العامة في الفصل تصل إلى {pass_rate}%",
         f"أعلى درجة مرصودة بالفصل هي {highest}% من 100%",
-        f"يوجد {needs_followup} طالب بحاجة لمتابعة وتقوية أكاديمية",
-        "طالبان تحسن مستواهما الأكاديمي بنسبة +8% مقارنة بالشهر الماضي"
+        f"يوجد {needs_followup} طالب بحاجة لمتابعة وتقوية أكاديمية"
     ]
 
     return {

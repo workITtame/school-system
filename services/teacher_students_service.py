@@ -49,12 +49,12 @@ def get_teacher_student_stats(user_id):
         if class_ids:
             taught_classes_count = len(class_ids)
         else:
-            taught_classes_count = len(set([st.CID for st in students if st.CID])) or Classes.query.filter_by(is_deleted=False).count() or 1
+            taught_classes_count = len(set([st.CID for st in students if st.CID])) or Classes.query.filter_by(is_deleted=False).count()
 
         if section_ids:
             taught_sections_count = len(section_ids)
         else:
-            taught_sections_count = len(set([st.SectionID for st in students if st.SectionID])) or Sections.query.filter_by(is_deleted=False).count() or 1
+            taught_sections_count = len(set([st.SectionID for st in students if st.SectionID])) or Sections.query.filter_by(is_deleted=False).count()
 
         today = datetime.now().date()
         present_today_count = 0
@@ -190,7 +190,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
         student_list = []
         for idx, st in enumerate(all_students, start=1):
             scores = marks_by_sid.get(st.SID, [])
-            avg_score = round(sum(scores) / len(scores), 1) if scores else 85.0
+            avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
 
             atts = att_by_sid.get(st.SID, [])
             if atts:
@@ -198,7 +198,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
                 absent_cnt = sum(1 for status in atts if status == 'غائب')
                 att_rate = round((present_cnt / len(atts)) * 100, 1)
             else:
-                att_rate = 95.0
+                att_rate = 0.0
                 absent_cnt = 0
 
             # Determine Status Code: excellent, good, attention, absent
@@ -302,13 +302,13 @@ def get_student_drawer_data(student_id, user_id):
             pres_c = sum(1 for a in att_list if a['status'] in ['حاضر', 'متأخر'])
             att_rate = round((pres_c / len(att_list)) * 100, 1)
         else:
-            att_rate = 95.0
+            att_rate = 0.0
 
         scores = [m['score'] for m in marks if m['score'] is not None]
-        avg_score = round(sum(scores) / len(scores), 1) if scores else 88.0
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
 
-        cls_name = student.school_class.CName if student.school_class else 'الصف الثالث الثانوي'
-        sec_name = student.section.SectionName if student.section else 'الشعبة الأولى'
+        cls_name = student.school_class.CName if student.school_class else '—'
+        sec_name = student.section.SectionName if student.section else '—'
         full_cls = f"{cls_name} - {sec_name}".strip(" -")
         academic_id = f"2024{student.SID:03d}"
 
@@ -321,6 +321,7 @@ def get_student_drawer_data(student_id, user_id):
             'full_class': full_cls,
             'parent_name': student.Parent_Name or 'ولي الأمر',
             'parent_number': student.Parent_Number or '-',
+            'image': student.Image or None,
             'attendance_rate': att_rate,
             'avg_score': avg_score,
             'recent_attendance': att_list[:5],

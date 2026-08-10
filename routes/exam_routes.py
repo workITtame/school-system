@@ -107,35 +107,38 @@ def index():
 
     for ex in schedules:
         st_count = Student.query.filter_by(CID=ex.CID, is_deleted=False).count() if ex.CID else 0
-        if st_count == 0:
-            st_count = 25
         ex._total_students = st_count
-        ex._present = int(st_count * 0.92) if st_count > 0 else 0
-        ex._absent = st_count - ex._present
-        ex._avg = 85.5
-        ex._pass_pct = 92.0
+        
+        exam_marks = []
+        if ex.SubID and ex.CID:
+            exam_marks = Marks.query.join(Student, Marks.SID == Student.SID).filter(Marks.SubID == ex.SubID, Student.CID == ex.CID, Student.is_deleted == False).all()
+        elif ex.SubID:
+            exam_marks = Marks.query.filter_by(SubID=ex.SubID).all()
+            
+        scores = [float(m.Score) for m in exam_marks if m.Score is not None]
+        ex._present = len(scores)
+        ex._absent = max(0, st_count - len(scores))
+        ex._avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+        ex._pass_pct = round((sum(1 for s in scores if s >= 60) / len(scores)) * 100, 1) if scores else 0.0
 
-    total_exams = len(schedules) if schedules else 12
-    active_exams = sum(1 for ex in schedules if (ex.Status or '') in ['نشط', 'نشطة', 'جارية', 'مفعل']) if schedules else 3
-    upcoming_exams = sum(1 for ex in schedules if (ex.Status or '') in ['مجدول', 'لم تبدأ بعد'] or (ex.ExamDate and ex.ExamDate > today_date)) if schedules else 4
-    finished_exams = sum(1 for ex in schedules if (ex.Status or '') in ['منتهي', 'منتهية', 'تم التصحيح', 'مكتمل'] or (ex.ExamDate and ex.ExamDate < today_date)) if schedules else 5
-    corrected_exams = sum(1 for ex in schedules if (ex.Status or '') == 'تم التصحيح') if schedules else 4
-    pending_correction = sum(1 for ex in schedules if (ex.Status or '') in ['بانتظار التصحيح', 'غير مصحح']) if schedules else 2
+    total_exams = len(schedules)
+    active_exams = sum(1 for ex in schedules if (ex.Status or '') in ['نشط', 'نشطة', 'جارية', 'مفعل'])
+    upcoming_exams = sum(1 for ex in schedules if (ex.Status or '') in ['مجدول', 'لم تبدأ بعد'] or (ex.ExamDate and ex.ExamDate > today_date))
+    finished_exams = sum(1 for ex in schedules if (ex.Status or '') in ['منتهي', 'منتهية', 'تم التصحيح', 'مكتمل'] or (ex.ExamDate and ex.ExamDate < today_date))
+    corrected_exams = sum(1 for ex in schedules if (ex.Status or '') == 'تم التصحيح')
+    pending_correction = sum(1 for ex in schedules if (ex.Status or '') in ['بانتظار التصحيح', 'غير مصحح'])
 
-    try:
-        all_marks = Marks.query.all()
-        scores = [float(m.Score) for m in all_marks if m.Score is not None]
-        if scores:
-            avg_score = round(sum(scores) / len(scores), 1)
-            max_score = max(scores)
-            min_score = min(scores)
-            pass_count = sum(1 for s in scores if s >= 60)
-            pass_rate = round((pass_count / len(scores)) * 100, 1)
-            fail_rate = round(100.0 - pass_rate, 1)
-        else:
-            avg_score, max_score, min_score, pass_rate, fail_rate = 84.5, 100.0, 45.0, 91.2, 8.8
-    except Exception:
-        avg_score, max_score, min_score, pass_rate, fail_rate = 84.5, 100.0, 45.0, 91.2, 8.8
+    all_marks = Marks.query.all()
+    scores = [float(m.Score) for m in all_marks if m.Score is not None]
+    if scores:
+        avg_score = round(sum(scores) / len(scores), 1)
+        max_score = max(scores)
+        min_score = min(scores)
+        pass_count = sum(1 for s in scores if s >= 60)
+        pass_rate = round((pass_count / len(scores)) * 100, 1)
+        fail_rate = round(100.0 - pass_rate, 1)
+    else:
+        avg_score, max_score, min_score, pass_rate, fail_rate = 0.0, 0.0, 0.0, 0.0, 0.0
 
     subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
@@ -153,7 +156,7 @@ def index():
         'fail_rate': fail_rate,
         'max_score': max_score,
         'min_score': min_score,
-        'subjects_count': len(subjects) or 8
+        'subjects_count': len(subjects)
     }
 
     active_sched = next((s for s in schedules if (s.Status or '') in ['نشط', 'نشطة', 'جارية']), None)
@@ -164,81 +167,100 @@ def index():
             'type': 'نهائي',
             'class_name': active_sched.school_class.CName if active_sched.school_class else 'جميع الصفوف',
             'section_name': active_sched.section.SectionName if active_sched.section else 'جميع الشعب',
-            'term_name': 'الفصل الثاني',
-            'academic_year': '2024-2025',
+            'term_name': 'الفصل الدراسي',
+            'academic_year': 'العام الدراسي',
             'exam_date_str': active_sched.ExamDate.strftime('%Y-%m-%d') if active_sched.ExamDate else today_str,
             'start_time': active_sched.ExamTime or '09:00',
             'end_time': '11:00',
             'pass_mark': 50,
-            'students_count': getattr(active_sched, '_total_students', 30)
+            'students_count': getattr(active_sched, '_total_students', 0)
         }
     else:
-        current_active_exam = {
-            'name': 'اختبار الرياضيات النهائي - الفصل الثاني',
-            'subject_name': 'الرياضيات',
-            'type': 'نهائي',
-            'class_name': 'الصف الثالث الثانوي',
-            'section_name': 'شعبة أ',
-            'term_name': 'الفصل الثاني',
-            'academic_year': '2024-2025',
-            'exam_date_str': today_str,
-            'start_time': '09:00',
-            'end_time': '11:00',
-            'pass_mark': 50,
-            'students_count': 32
-        }
+        current_active_exam = None
 
     tot = total_exams if total_exams > 0 else 1
     status_distribution = {
         'active': active_exams,
-        'active_pct': round((active_exams / tot) * 100, 1),
+        'active_pct': round((active_exams / tot) * 100, 1) if total_exams > 0 else 0.0,
         'finished': finished_exams,
-        'finished_pct': round((finished_exams / tot) * 100, 1),
+        'finished_pct': round((finished_exams / tot) * 100, 1) if total_exams > 0 else 0.0,
         'upcoming': upcoming_exams,
-        'upcoming_pct': round((upcoming_exams / tot) * 100, 1),
+        'upcoming_pct': round((upcoming_exams / tot) * 100, 1) if total_exams > 0 else 0.0,
         'cancelled': 0,
         'cancelled_pct': 0.0,
         'pending': pending_correction,
-        'pending_pct': round((pending_correction / tot) * 100, 1)
+        'pending_pct': round((pending_correction / tot) * 100, 1) if total_exams > 0 else 0.0
     }
 
-    best_subjects_by_score = [
-        {'name': 'الرياضيات', 'score': '92.5', 'pct': 92.5},
-        {'name': 'الفيزياء', 'score': '88.0', 'pct': 88.0},
-        {'name': 'اللغة الإنجليزية', 'score': '85.4', 'pct': 85.4},
-        {'name': 'الكيمياء', 'score': '83.2', 'pct': 83.2},
-        {'name': 'الأحياء', 'score': '81.0', 'pct': 81.0}
-    ]
+    # Dynamic Best Subjects by Score
+    best_subjects_by_score = []
+    try:
+        from sqlalchemy import func
+        subject_marks = db.session.query(
+            Subject.SubName,
+            func.avg(Marks.Score).label('avg_score')
+        ).join(Marks, Subject.SubID == Marks.SubID).group_by(Subject.SubID, Subject.SubName).having(func.count(Marks.M_ID) > 0).order_by(func.avg(Marks.Score).desc()).limit(5).all()
 
-    best_students = [
-        {'name': 'أحمد محمد علي', 'avg': '98.5%'},
-        {'name': 'سارة خالد محمود', 'avg': '97.0%'},
-        {'name': 'عمر فاروق حسن', 'avg': '96.2%'},
-        {'name': 'فاطمة عبدالله', 'avg': '95.8%'},
-        {'name': 'يوسف إبراهيم', 'avg': '94.5%'}
-    ]
+        for s_name, s_avg in subject_marks:
+            val = round(float(s_avg), 1)
+            best_subjects_by_score.append({
+                'name': s_name,
+                'score': str(val),
+                'pct': min(100.0, val)
+            })
+    except Exception as e:
+        logger.error(f"Error querying subject averages: {e}")
 
-    struggling_students = [
-        {'name': 'خالد عبدالرحمن', 'avg': '52.0%'},
-        {'name': 'محمد سامي', 'avg': '54.5%'},
-        {'name': 'علي حسن', 'avg': '57.0%'}
-    ]
+    # Dynamic Best & Struggling Students
+    best_students = []
+    struggling_students = []
+    try:
+        from sqlalchemy import func
+        student_scores = db.session.query(
+            Student.SName,
+            func.avg(Marks.Score).label('avg_score')
+        ).join(Marks, Student.SID == Marks.SID).filter(Student.is_deleted == False).group_by(Student.SID, Student.SName).having(func.count(Marks.M_ID) > 0).all()
 
-    upcoming_exams_list = [
-        {'title': 'اختبار الكيمياء الشهري', 'date_str': today_str, 'subject': 'الكيمياء', 'rel_tag': 'اليوم'},
-        {'title': 'اختبار الفيزياء النصف فصلي', 'date_str': 'غداً', 'subject': 'الفيزياء', 'rel_tag': 'غداً'},
-        {'title': 'اختبار اللغة العربية', 'date_str': 'الأسبوع القادم', 'subject': 'اللغة العربية', 'rel_tag': 'قريباً'}
-    ]
+        if student_scores:
+            sorted_st = sorted(student_scores, key=lambda x: float(x[1]), reverse=True)
+            for name, avg in sorted_st[:5]:
+                val = round(float(avg), 1)
+                best_students.append({'name': name, 'avg': f"{val}%"})
+            
+            struggling = [st for st in sorted_st if float(st[1]) < 60]
+            for name, avg in struggling[:5]:
+                val = round(float(avg), 1)
+                struggling_students.append({'name': name, 'avg': f"{val}%"})
+    except Exception as e:
+        logger.error(f"Error querying student rankings: {e}")
 
-    uncorrected_list = [
-        {'title': 'اختبار الرياضيات النهائي', 'subject': 'الرياضيات'},
-        {'title': 'اختبار الحاسوب العملي', 'subject': 'الحاسوب'}
-    ]
+    # Dynamic Upcoming and Uncorrected Exams
+    upcoming_exams_list = []
+    uncorrected_list = []
+    for ex in schedules:
+        sub_name = ex.subject.SubName if ex.subject else 'مادة'
+        if ex.ExamDate and ex.ExamDate >= today_date:
+            rel = 'اليوم' if ex.ExamDate == today_date else (ex.ExamDate.strftime('%Y-%m-%d'))
+            upcoming_exams_list.append({
+                'title': ex.ExamName or f"اختبار {sub_name}",
+                'date_str': ex.ExamDate.strftime('%Y-%m-%d'),
+                'subject': sub_name,
+                'rel_tag': rel
+            })
+        if (ex.Status or '') in ['بانتظار التصحيح', 'لم يصحح']:
+            uncorrected_list.append({
+                'title': ex.ExamName or f"اختبار {sub_name}",
+                'subject': sub_name
+            })
 
-    system_alerts = [
-        {'type': 'warning', 'icon': 'fa-triangle-exclamation', 'title': 'يوجد اختباران بانتظار الاعتماد النهائي'},
-        {'type': 'info', 'icon': 'fa-circle-info', 'title': 'تم رصد درجات 85% من الطلاب حتى الآن'}
-    ]
+    # Dynamic System Alerts
+    system_alerts = []
+    if pending_correction > 0:
+        system_alerts.append({
+            'type': 'warning',
+            'icon': 'fa-triangle-exclamation',
+            'title': f"يوجد {pending_correction} اختبارات بانتظار الاعتماد والتصحيح"
+        })
 
     return render_template(
         'exams/index.html',

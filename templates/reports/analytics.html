@@ -511,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data: {
                 labels: ['نسبة الحضور', 'نسبة الغياب'],
                 datasets: [{
-                    data: [{{ metrics.attendance_rate if metrics else 73.2 }}, {{ (100 - (metrics.attendance_rate if metrics else 73.2))|round(1) }}],
+                    data: [{{ (metrics.attendance_rate if metrics else 0.0) }}, {{ (100 - (metrics.attendance_rate if metrics else 0.0))|round(1) if (metrics and metrics.attendance_rate) else 0 }}],
                     backgroundColor: ['#10b981', '#ef4444'],
                     borderWidth: 0
                 }]

@@ -621,35 +621,41 @@
                 html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
                 html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book text-primary me-2"></i> إحصائيات تسليم الواجبات بالتفصيل:</h6>';
                 html += '<div class="row g-2 text-center font-monospace mb-3">';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">إجمالي الواجبات</small><strong class="text-dark">' + (data.homework_stats ? data.homework_stats.total : 12) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تم التسليم بالموعد</small><strong class="text-success">' + (data.homework_stats ? data.homework_stats.delivered : 10) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تسليم متأخر</small><strong class="text-warning">' + (data.homework_stats ? data.homework_stats.late : 1) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">مفقود / غير مسلّم</small><strong class="text-danger">' + (data.homework_stats ? data.homework_stats.missing : 1) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">إجمالي الواجبات</small><strong class="text-dark">' + (data.homework_stats ? data.homework_stats.total : 0) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تم التسليم بالموعد</small><strong class="text-success">' + (data.homework_stats ? data.homework_stats.delivered : 0) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تسليم متأخر</small><strong class="text-warning">' + (data.homework_stats ? data.homework_stats.late : 0) + '</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">مفقود / غير مسلّم</small><strong class="text-danger">' + (data.homework_stats ? data.homework_stats.missing : 0) + '</strong></div></div>';
                 html += '</div>';
-                html += '<div class="mb-2"><div class="d-flex justify-content-between mb-1"><span>نسبة الإنجاز الكلية للواجبات</span><strong class="font-monospace text-primary">' + (data.homework_stats ? data.homework_stats.completion_pct : 91.6) + '%</strong></div>';
-                html += '<div class="progress" style="height: 10px;"><div class="progress-bar bg-primary" style="width: ' + (data.homework_stats ? data.homework_stats.completion_pct : 91.6) + '%;"></div></div></div>';
+                html += '<div class="mb-2"><div class="d-flex justify-content-between mb-1"><span>نسبة الإنجاز الكلية للواجبات</span><strong class="font-monospace text-primary">' + (data.homework_stats ? data.homework_stats.completion_pct : 0.0) + '%</strong></div>';
+                html += '<div class="progress" style="height: 10px;"><div class="progress-bar bg-primary" style="width: ' + (data.homework_stats ? data.homework_stats.completion_pct : 0) + '%;"></div></div></div>';
                 html += '</div></div>';
 
                 // Tab 4: Exams
                 html += '<div class="tab-pane fade ' + (activeTabName === 'exams' ? 'show active' : '') + '" id="stTabExams">';
                 html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
                 html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-file-signature text-danger me-2"></i> سجّل نتائـج الاختبارات الأكاديمية:</h6>';
-                html += '<table class="table table-sm extra-small mb-0">';
-                html += '<thead><tr><th>الاختبار</th><th>التاريخ</th><th>الدرجة</th><th>المتوسط العام</th><th>النتيجة</th></tr></thead><tbody>';
-                html += '<tr><td>اختبار منتصف الفصل الأكاديمي</td><td>2026-08-04</td><td class="fw-bold text-success font-monospace">95 / 100</td><td class="font-monospace">85.0%</td><td><span class="badge bg-success">ناجح 🟢</span></td></tr>';
-                html += '<tr><td>اختبار التقييم القصير الأسبوعي #1</td><td>2026-07-28</td><td class="fw-bold text-success font-monospace">98 / 100</td><td class="font-monospace">82.5%</td><td><span class="badge bg-success">ناجح 🟢</span></td></tr>';
-                html += '</tbody></table>';
+                if (data.exams && data.exams.length > 0) {
+                    html += '<table class="table table-sm extra-small mb-0">';
+                    html += '<thead><tr><th>الاختبار</th><th>التاريخ</th><th>الدرجة</th><th>المتوسط العام</th><th>النتيجة</th></tr></thead><tbody>';
+                    data.exams.forEach(function(ex) {
+                        html += '<tr><td>' + ex.title + '</td><td>' + ex.date + '</td><td class="fw-bold text-success font-monospace">' + ex.score + '</td><td class="font-monospace">' + (ex.avg || '—') + '</td><td><span class="badge bg-success">' + ex.result + '</span></td></tr>';
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<div class="text-center py-4 text-muted"><i class="fa-solid fa-file-excel fs-4 d-block mb-1"></i>لا توجد نتائج اختبارات مرصودة لهذا الطالب.</div>';
+                }
                 html += '</div></div>';
 
                 // Tab 5: Attendance
                 html += '<div class="tab-pane fade ' + (activeTabName === 'attendance' ? 'show active' : '') + '" id="stTabAttendance">';
                 html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center">';
                 html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clipboard-user text-success me-2"></i> ملخص انضباط مواظبة الحضور والغياب:</h6>';
+                var att = data.attendance_stats || { present: 0, late: 0, absent: 0, excused: 0 };
                 html += '<div class="row g-2 font-monospace my-3">';
-                html += '<div class="col-3"><div class="p-2 bg-success-subtle text-success rounded border border-success-subtle"><small class="d-block">حاضر</small><strong>24 يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-warning-subtle text-warning rounded border border-warning-subtle"><small class="d-block">متأخر</small><strong>1 يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle"><small class="d-block">غائب</small><strong>1 يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-info-subtle text-info rounded border border-info-subtle"><small class="d-block">بعذر رسمي</small><strong>0 يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-success-subtle text-success rounded border border-success-subtle"><small class="d-block">حاضر</small><strong>' + att.present + ' يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-warning-subtle text-warning rounded border border-warning-subtle"><small class="d-block">متأخر</small><strong>' + att.late + ' يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle"><small class="d-block">غائب</small><strong>' + att.absent + ' يوم</strong></div></div>';
+                html += '<div class="col-3"><div class="p-2 bg-info-subtle text-info rounded border border-info-subtle"><small class="d-block">بعذر رسمي</small><strong>' + att.excused + ' يوم</strong></div></div>';
                 html += '</div>';
                 html += '</div></div>';
 

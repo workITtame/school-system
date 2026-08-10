@@ -66,7 +66,7 @@
             {{ macros.render_kpi_card("الإشعارات الجماعية", kpi.bulk_sent, "حملات التذكير", "fa-solid fa-bullhorn", "warning", "javascript:openBulkMessagingModal()", "الإشعارات الجماعية") }}
         </div>
         <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterConversations('')">
-            {{ macros.render_kpi_card("آخر نشاط", 1, "تحديث فوري آلي", "fa-solid fa-clock-rotate-left", "secondary", "javascript:filterConversations('')", "آخر نشاط للتواصل") }}
+            {{ macros.render_kpi_card("آخر نشاط", kpi.last_activity or '—', "تحديث فوري آلي", "fa-solid fa-clock-rotate-left", "secondary", "javascript:filterConversations('')", "آخر نشاط للتواصل") }}
         </div>
     </div>
 

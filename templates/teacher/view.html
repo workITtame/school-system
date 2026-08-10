@@ -160,7 +160,7 @@
                     <button type="button" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm" onclick="window.location.href='{{ url_for('teacher.index') }}'">
                         <i class="fa-solid fa-pen-to-square me-1"></i> تعديل البيانات
                     </button>
-                    <a href="{{ url_for('timetable.index') }}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                    <a href="{{ url_for('timetable.index', teacher_id=teacher.TeacherID) }}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
                         <i class="fa-solid fa-calendar-days me-1"></i> الجدول الدراسي
                     </a>
                     <a href="{{ url_for('messages.index') }}" class="btn btn-outline-info rounded-pill px-4 fw-bold">
@@ -614,7 +614,7 @@
             </div>
 
             <div class="col">
-                <a href="{{ url_for('timetable.index') }}" class="quick-action-card">
+                <a href="{{ url_for('timetable.index', teacher_id=teacher.TeacherID) }}" class="quick-action-card">
                     <i class="fa-solid fa-calendar-days fs-2 text-primary mb-2"></i>
                     <h6 class="fw-bold text-dark mb-0">عرض الجدول الدراسي</h6>
                 </a>
@@ -657,7 +657,7 @@ function initTeacherCharts() {
             labels: ['الشهر 1', 'الشهر 2', 'الشهر 3', 'الشهر 4'],
             datasets: [{
                 label: 'متوسط نتائج الطلاب',
-                data: [85, 88, 92, {{ avg_score if avg_score > 0 else 88 }}],
+                data: [0, 0, 0, {{ avg_score if avg_score > 0 else 0 }}],
                 backgroundColor: 'rgba(37, 99, 235, 0.85)',
                 borderRadius: 8
             }]

@@ -466,6 +466,17 @@
                             </div>
                         </td>
                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted font-monospace">
+                            <i class="fa-solid fa-book-open-reader fs-1 text-secondary opacity-50 mb-3 d-block"></i>
+                            <h5 class="fw-bold text-dark">لا توجد مواد دراسية مسجلة حالياً</h5>
+                            <p class="text-muted small mb-3">يمكنك إضافة المواد الدراسية وربطها بالصفوف والمعلمين لتنظيم الخطة الأكاديمية</p>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                                <i class="fa-solid fa-plus me-1"></i> إضافة مادة جديدة
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -667,7 +678,7 @@
                                         <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-school text-primary me-1"></i> {{ c.CName }}</h6>
                                         <span class="badge bg-secondary-subtle text-dark rounded-pill font-monospace small mb-2">{{ c.Stage or 'المرحلة العامة' }}</span>
                                         <div class="d-flex justify-content-between text-muted small font-monospace">
-                                            <span>الشعب: {{ c.sections|length if c.sections else 1 }} شعب</span>
+                                            <span>الشعب: {{ (c.linked_sections|length) if c.linked_sections is defined else (c.sections|length) }} شعب</span>
                                             <span>الطلاب: {{ c.students_count or 0 }}</span>
                                         </div>
                                     </div>
@@ -736,47 +747,7 @@
                                         <th>الحصة 5</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الأحد</td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الإثنين</td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الثلاثاء</td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الأربعاء</td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثالث الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الخميس</td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الأول الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-primary-subtle text-primary p-2 w-100">الصف الثاني الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                    </tr>
+                                <tbody id="add-timetable-tbody">
                                 </tbody>
                             </table>
                         </div>
@@ -999,7 +970,7 @@
                                         <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-school text-info me-1"></i> {{ c.CName }}</h6>
                                         <span class="badge bg-secondary-subtle text-dark rounded-pill font-monospace small mb-2">{{ c.Stage or 'المرحلة العامة' }}</span>
                                         <div class="d-flex justify-content-between text-muted small font-monospace">
-                                            <span>الشعب: {{ c.sections|length if c.sections else 1 }} شعب</span>
+                                            <span>الشعب: {{ (c.linked_sections|length) if c.linked_sections is defined else (c.sections|length) }} شعب</span>
                                             <span>الطلاب: {{ c.students_count or 0 }}</span>
                                         </div>
                                     </div>
@@ -1041,15 +1012,6 @@
                             {% endfor %}
                         </div>
                     </div>
-                                            <h6 class="fw-bold text-dark mb-0">أ. سارة خالد العتيبي</h6>
-                                            <small class="text-muted d-block font-monospace">معلم مادة متقدم</small>
-                                        </div>
-                                    </div>
-                                    <input type="checkbox" class="form-check-input fs-5" checked>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- STEP 4: Timetable Preview -->
                     <div class="form-step-pane" id="edit-pane-4">
@@ -1075,15 +1037,7 @@
                                         <th>الحصة 5</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="fw-bold bg-light">الأحد</td>
-                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الأول الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الثاني الثانوي</span></td>
-                                        <td><span class="text-muted small">-</span></td>
-                                        <td><span class="badge bg-info-subtle text-info p-2 w-100">الصف الثالث الثانوي</span></td>
-                                    </tr>
+                                <tbody id="edit-timetable-tbody">
                                 </tbody>
                             </table>
                         </div>

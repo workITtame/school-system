@@ -562,8 +562,8 @@
                 html += '<div class="d-flex justify-content-between align-items-center font-monospace fw-bold mb-2"><span>نسبة الإنجاز الكلية:</span><span class="text-success fs-5">' + data.submission_rate + '%</span></div>';
                 html += '<div class="progress rounded-pill mb-3" style="height: 14px;"><div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: ' + data.submission_rate + '%;"></div></div>';
                 html += '<div class="row g-2 text-center mt-2">';
-                html += '<div class="col-6"><div class="p-2 rounded bg-light border"><small class="text-muted d-block">معدل التسليم المبكر</small><strong class="text-success font-monospace">85.0%</strong></div></div>';
-                html += '<div class="col-6"><div class="p-2 rounded bg-light border"><small class="text-muted d-block">المتوسط المتوقع للدرجات</small><strong class="text-primary font-monospace">9.2 / 10</strong></div></div>';
+                html += '<div class="col-6"><div class="p-2 rounded bg-light border"><small class="text-muted d-block">معدل التسليم المبكر</small><strong class="text-success font-monospace">' + (data.early_submission_rate || 0.0) + '%</strong></div></div>';
+                html += '<div class="col-6"><div class="p-2 rounded bg-light border"><small class="text-muted d-block">المتوسط المتوقع للدرجات</small><strong class="text-primary font-monospace">' + (data.average_grade || 0.0) + ' / 10</strong></div></div>';
                 html += '</div>';
                 html += '<div class="alert alert-success mt-3 mb-0 extra-small border-0 rounded-3 text-center fw-bold"><i class="fa-solid fa-check-circle me-1"></i> هذا الواجب مكتمل ومجهز بنسبة 100% لاستقبال Phase 5.1 – Homework Grading Workspace</div>';
                 html += '</div>';

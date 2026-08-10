@@ -12,6 +12,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 reports_bp = Blueprint('reports', __name__)
 
 @reports_bp.route("/reports")
+@reports_bp.route("/reports/")
 @login_required
 def index():
     from services.reports import get_reports_dashboard_metrics, get_reports_registry
@@ -24,13 +25,7 @@ def index():
     terms = Terms.query.filter_by(is_deleted=False).all()
     students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
     
-    recent_reports = [
-        {"id": 1, "title": "كشف درجات الفصل الثاني", "type": "كشف درجات صف", "class_name": "الثالث الثانوي / الشعبة أ", "subject_name": "الرياضيات", "created_at": "2024-05-26 10:30 AM", "author": "أ. سمير غانم", "status": "مكتمل"},
-        {"id": 2, "title": "تقرير أداء طلاب الفصل الثاني", "type": "تقرير الأداء الأكاديمي", "class_name": "الثالث الثانوي / الشعبة أ", "subject_name": "الرياضيات", "created_at": "2024-05-25 08:45 AM", "author": "أ. سمير غانم", "status": "مكتمل"},
-        {"id": 3, "title": "تقرير الحضور والغياب", "type": "تقرير الحضور والغياب", "class_name": "الثالث الثانوي / الشعبة أ", "subject_name": "الرياضيات", "created_at": "2024-05-24 11:20 AM", "author": "أ. سمير غانم", "status": "مكتمل"},
-        {"id": 4, "title": "نتائج الاختبار النهائي", "type": "تقرير الاختبارات", "class_name": "الثالث الثانوي / الشعبة أ", "subject_name": "الرياضيات", "created_at": "2024-05-23 02:15 PM", "author": "أ. سمير غانم", "status": "مكتمل"},
-        {"id": 5, "title": "تقرير المتفوقين", "type": "تقرير المتفوقين", "class_name": "الثالث الثانوي", "subject_name": "جميع المواد", "created_at": "2024-05-22 09:10 AM", "author": "أ. سمير غانم", "status": "مكتمل"}
-    ]
+    recent_reports = []
 
     return render_template("reports/index.html", 
                            metrics=metrics, 

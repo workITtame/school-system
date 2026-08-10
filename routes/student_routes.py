@@ -6,7 +6,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
-from models import db, Student, Classes, Sections, Directorate, Country, Governorates, Teacher, SchoolTable, Attendance, Marks, Homework, ExamSchedule
+from models import db, Student, Classes, Sections, Directorate, Country, Governorates, Teacher, SchoolTable, Attendance, Marks, Homework, ExamSchedule, Subject
 from datetime import datetime, timedelta
 import uuid
 from utils.decorators import admin_required
@@ -57,8 +57,8 @@ def get_teacher_students_data(user_id):
         students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False).all()
         
     total_students = len(students)
-    taught_classes_count = len(teacher_class_ids) or len(set([st.CID for st in students if st.CID])) or 4
-    taught_sections_count = len(teacher_section_ids) or len(set([st.SectionID for st in students if st.SectionID])) or 8
+    taught_classes_count = len(teacher_class_ids) or len(set([st.CID for st in students if st.CID]))
+    taught_sections_count = len(teacher_section_ids) or len(set([st.SectionID for st in students if st.SectionID]))
     
     student_ids = [st.SID for st in students]
     all_marks = []
@@ -93,7 +93,7 @@ def get_teacher_students_data(user_id):
     
     for idx, st in enumerate(students, start=1):
         st_scores = marks_by_student.get(st.SID, [])
-        st_avg_score = float(round(sum(st_scores) / len(st_scores), 1)) if st_scores else 84.0
+        st_avg_score = float(round(sum(st_scores) / len(st_scores), 1)) if st_scores else 0.0
         all_student_scores.append(st_avg_score)
         
         if st_avg_score >= 90:
@@ -113,7 +113,7 @@ def get_teacher_students_data(user_id):
             st_att_rate = round((pres / len(st_atts)) * 100, 1)
             st_absent_count = sum(1 for status in st_atts if status == 'غائب')
         else:
-            st_att_rate = 94.0
+            st_att_rate = 0.0
             st_absent_count = 0
             
         all_student_att_rates.append(st_att_rate)
@@ -155,24 +155,24 @@ def get_teacher_students_data(user_id):
 
     top_students = sorted(student_cards, key=lambda x: x['avg_score'], reverse=True)[:5]
     
-    avg_total_att = round(sum(all_student_att_rates) / len(all_student_att_rates), 1) if all_student_att_rates else 92.6
-    avg_total_score = round(sum(all_student_scores) / len(all_student_scores), 1) if all_student_scores else 84.3
+    avg_total_att = round(sum(all_student_att_rates) / len(all_student_att_rates), 1) if all_student_att_rates else 0.0
+    avg_total_score = round(sum(all_student_scores) / len(all_student_scores), 1) if all_student_scores else 0.0
     
-    reg_pct = round((regular_c / total_students * 100), 1) if total_students > 0 else 75.0
-    follow_pct = round((needs_followup_c / total_students * 100), 1) if total_students > 0 else 16.0
-    abs_pct = round((high_absence_c / total_students * 100), 1) if total_students > 0 else 9.0
+    reg_pct = round((regular_c / total_students * 100), 1) if total_students > 0 else 0.0
+    follow_pct = round((needs_followup_c / total_students * 100), 1) if total_students > 0 else 0.0
+    abs_pct = round((high_absence_c / total_students * 100), 1) if total_students > 0 else 0.0
 
     kpi = {
-        'total_students': total_students or 128,
+        'total_students': total_students,
         'taught_classes_count': taught_classes_count,
         'taught_sections_count': taught_sections_count,
         'avg_attendance_rate': avg_total_att,
         'avg_score': avg_total_score,
-        'regular_count': regular_c or 96,
+        'regular_count': regular_c,
         'regular_pct': reg_pct,
-        'needs_followup_count': needs_followup_c or 20,
+        'needs_followup_count': needs_followup_c,
         'needs_followup_pct': follow_pct,
-        'high_absence_count': high_absence_c or 12,
+        'high_absence_count': high_absence_c,
         'high_absence_pct': abs_pct
     }
     
@@ -265,7 +265,7 @@ def home():
         avg_score_val = db.session.query(func.avg(Marks.Score)).join(Student, Marks.SID == Student.SID).filter(Student.CID == class_id, Student.is_deleted == False).scalar()
     else:
         avg_score_val = db.session.query(func.avg(Marks.Score)).scalar()
-    avg_score = round(float(avg_score_val), 1) if avg_score_val is not None else 85.0
+    avg_score = round(float(avg_score_val), 1) if avg_score_val is not None else 0.0
 
     kpi_dict = {
         'total_students': total_students,
@@ -289,6 +289,20 @@ def home():
 
     student_items = student_items_query.order_by(Student.SID.desc()).all()
 
+    student_ids = [st.SID for st in student_items]
+    marks_by_sid = {}
+    att_by_sid = {}
+    if student_ids:
+        from models import Attendance, Marks
+        all_marks = Marks.query.filter(Marks.SID.in_(student_ids)).all()
+        for m in all_marks:
+            if m.Score is not None:
+                marks_by_sid.setdefault(m.SID, []).append(float(m.Score))
+                
+        all_attendance = Attendance.query.filter(Attendance.SID.in_(student_ids)).all()
+        for a in all_attendance:
+            att_by_sid.setdefault(a.SID, []).append(a.Status)
+
     student_cards = []
     for st in student_items:
         cls_name = st.school_class.CName if st.school_class else '—'
@@ -303,6 +317,16 @@ def home():
         else:
             st_class = 'warning'
 
+        scores = marks_by_sid.get(st.SID, [])
+        st_avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+
+        atts = att_by_sid.get(st.SID, [])
+        if atts:
+            pres_c = sum(1 for status in atts if status in ['حاضر', 'متأخر', 'Present', 'حضور'])
+            st_att_rate = round((pres_c / len(atts)) * 100, 1)
+        else:
+            st_att_rate = 0.0
+
         student_cards.append({
             'SID': st.SID,
             'SName': st.SName,
@@ -311,10 +335,11 @@ def home():
             'section_name': sec_name,
             'parent_name': st.Parent_Name or '—',
             'parent_number': st.Parent_Number or '—',
+            'image': st.Image or None,
             'status_tag': status_val,
             'status_class': st_class,
-            'attendance_rate': 95.0,
-            'avg_score': 85.0
+            'attendance_rate': st_att_rate,
+            'avg_score': st_avg_score
         })
 
     last_updated_time = datetime.now().strftime('%H:%M:%S')
@@ -385,7 +410,22 @@ def api_list_students():
     pagination = query.order_by(Student.SID.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     student_list = []
-    for st in pagination.items:
+    page_items = pagination.items
+    student_ids = [st.SID for st in page_items]
+    marks_by_sid = {}
+    att_by_sid = {}
+    if student_ids:
+        from models import Attendance, Marks
+        all_marks = Marks.query.filter(Marks.SID.in_(student_ids)).all()
+        for m in all_marks:
+            if m.Score is not None:
+                marks_by_sid.setdefault(m.SID, []).append(float(m.Score))
+                
+        all_attendance = Attendance.query.filter(Attendance.SID.in_(student_ids)).all()
+        for a in all_attendance:
+            att_by_sid.setdefault(a.SID, []).append(a.Status)
+
+    for st in page_items:
         cls_name = st.school_class.CName if st.school_class else '—'
         sec_name = st.section.SectionName if st.section else '—'
         
@@ -401,6 +441,16 @@ def api_list_students():
 
         created_str = st.created_at.strftime('%Y-%m-%d') if hasattr(st, 'created_at') and st.created_at else '—'
 
+        scores = marks_by_sid.get(st.SID, [])
+        st_avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+
+        atts = att_by_sid.get(st.SID, [])
+        if atts:
+            pres_c = sum(1 for status in atts if status in ['حاضر', 'متأخر', 'Present', 'حضور'])
+            st_att_rate = round((pres_c / len(atts)) * 100, 1)
+        else:
+            st_att_rate = 0.0
+
         student_list.append({
             'SID': st.SID,
             'SName': st.SName,
@@ -411,10 +461,11 @@ def api_list_students():
             'SectionID': st.SectionID,
             'parent_name': st.Parent_Name or '—',
             'parent_number': st.Parent_Number or '—',
+            'image': st.Image or None,
             'status': status_val,
             'status_class': st_class,
-            'attendance_rate': 95.0,
-            'avg_score': 85.0,
+            'attendance_rate': st_att_rate,
+            'avg_score': st_avg_score,
             'created_at': created_str
         })
 
@@ -446,14 +497,15 @@ def student_drawer_api(student_id):
         'section_name': data.get('section_name'),
         'parent_name': data.get('parent_name'),
         'parent_phone': data.get('parent_number'),
+        'image': data.get('image'),
         'status': 'نشط'
     }
     data['academic_summary'] = {
-        'gpa': data.get('avg_score', 85.0),
-        'attendance_rate': data.get('attendance_rate', 95.0),
-        'attendance_days': 45,
-        'homework_count': 12,
-        'exam_count': 4
+        'gpa': data.get('avg_score', 0.0),
+        'attendance_rate': data.get('attendance_rate', 0.0),
+        'attendance_days': len(data.get('recent_attendance', [])),
+        'homework_count': 0,
+        'exam_count': len(data.get('recent_marks', []))
     }
 
     return jsonify(data)
@@ -475,7 +527,7 @@ def add_student():
         parent_phone = request.form.get('parent_number')
         parent_work = request.form.get('parent_work')
         
-        country_name = request.form.get('country_name')
+        country_name = request.form.get('country_name') or 'اليمن'
         country_id = None
         if country_name:
             c = Country.query.filter_by(Country_Name=country_name).first()
@@ -485,7 +537,7 @@ def add_student():
                 db.session.commit()
             country_id = c.CountryID
         
-        g_name = request.form.get('g_name')
+        g_name = request.form.get('g_name') or 'صنعاء'
         g_id = None
         if g_name:
             gov = Governorates.query.filter_by(G_Name=g_name).first()
@@ -495,7 +547,7 @@ def add_student():
                 db.session.commit()
             g_id = gov.G_ID
 
-        directorate_name = request.form.get('directorate_name')
+        directorate_name = request.form.get('directorate_name') or 'السبعين'
         directorate_id = None
         if directorate_name:
             disc = Directorate.query.filter_by(Disc_Name=directorate_name).first()
@@ -645,9 +697,19 @@ def delete_student(id):
         return redirect(url_for('auth.login'))
         
     student = Student.query.get_or_404(id)
-    student.is_deleted = True
-    db.session.commit()
-    flash('تم حذف الطالب بنجاح', 'success')
+    try:
+        from models import Attendance, Message
+        from models.grade import Marks, DetailMarks
+        Attendance.query.filter_by(SID=id).delete(synchronize_session=False)
+        Marks.query.filter_by(SID=id).delete(synchronize_session=False)
+        DetailMarks.query.filter_by(SID=id).delete(synchronize_session=False)
+        Message.query.filter((Message.sender_id == id) | (Message.recipient_id == id)).delete(synchronize_session=False)
+        db.session.delete(student)
+        db.session.commit()
+        flash('تم حذف الطالب نهائياً من قاعدة البيانات بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الطالب: {str(e)}', 'danger')
     return redirect(url_for('students.home'))
 
 @students_bp.route('/view/<int:id>')
@@ -677,7 +739,7 @@ def view_student(id):
     present_count = len([a for a in attendance_records if a.Status in ['حاضر', 'Present', 'حضور']])
     absent_count = len([a for a in attendance_records if a.Status in ['غائب', 'Absent', 'غياب', 'مجاز']])
     late_count = len([a for a in attendance_records if a.Status in ['متأخر', 'Late']])
-    attendance_rate = round((present_count / total_att) * 100, 1) if total_att > 0 else 100
+    attendance_rate = round((present_count / total_att) * 100, 1) if total_att > 0 else 0.0
     
     # Homeworks for student's class/section
     homeworks = Homework.query.filter(
@@ -806,9 +868,20 @@ def bulk_delete_students():
     if not ids:
         return jsonify({'success': False, 'message': 'لم يتم تحديد أي طالب للحذف'}), 400
         
-    Student.query.filter(Student.SID.in_(ids)).update({Student.is_deleted: True}, synchronize_session=False)
-    db.session.commit()
-    return jsonify({'success': True, 'message': f'تم حذف {len(ids)} طلاب بنجاح', 'count': len(ids)})
+    try:
+        from models import Attendance, Message
+        from models.grade import Marks, DetailMarks
+        Attendance.query.filter(Attendance.SID.in_(ids)).delete(synchronize_session=False)
+        Marks.query.filter(Marks.SID.in_(ids)).delete(synchronize_session=False)
+        DetailMarks.query.filter(DetailMarks.SID.in_(ids)).delete(synchronize_session=False)
+        Message.query.filter((Message.sender_id.in_(ids)) | (Message.recipient_id.in_(ids))).delete(synchronize_session=False)
+        
+        count = Student.query.filter(Student.SID.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'تم حذف {count} طلاب نهائياً من قاعدة البيانات بنجاح', 'count': count})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ أثناء الحذف: {str(e)}'}), 500
 
 @students_bp.route('/bulk-status', methods=['POST'])
 @admin_required

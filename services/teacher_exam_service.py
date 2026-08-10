@@ -78,13 +78,18 @@ def get_teacher_exam_statistics(user_id):
         else:
             active_count += 1
 
+    from models.marks import Marks
+    from sqlalchemy import func
+    avg_score_raw = db.session.query(func.avg(Marks.Score)).scalar()
+    avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
+
     return {
         'total_count': total_count,
         'active_count': active_count,
         'upcoming_count': upcoming_count,
         'ended_count': ended_count,
         'pending_grading': pending_grading,
-        'average_score': 88.5
+        'average_score': avg_score
     }
 
 def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, status=None, search=None, page=1, per_page=10):

@@ -51,17 +51,17 @@ def index():
     unread_msgs = Message.query.filter_by(recipient_id=user_id, is_read=False).count()
 
     kpi_stats = {
-        'total_messages': max(total_msgs, 1),
-        'total_conversations': max(total_msgs, 1),
+        'total_messages': total_msgs,
+        'total_conversations': total_msgs,
         'received_messages': rec_msgs,
         'sent_messages': sent_msgs,
         'unread_messages': unread_msgs,
         'unread_count': unread_msgs,
-        'active_conversations': max(1, (sent_msgs + rec_msgs)),
+        'active_conversations': (sent_msgs + rec_msgs),
         'sent_today': sent_msgs,
         'received_today': rec_msgs,
         'bulk_sent': 0,
-        'last_activity': datetime.now().strftime('%H:%M')
+        'last_activity': datetime.now().strftime('%H:%M') if total_msgs > 0 else '—'
     }
 
     if user_role != 'teacher':

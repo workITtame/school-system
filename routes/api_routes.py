@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app, session
+from flask_login import current_user
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
 from models import db, Student, Teacher, Classes, Subject, User, Qualifications
@@ -90,7 +91,7 @@ def get_students():
             # Attendance Rate calculation
             total_att = len(s.attendances) if s.attendances else 0
             present_att = sum(1 for a in s.attendances if a.Status in ['حاضر', 'Present', 'حضور']) if s.attendances else 0
-            s_dict['attendance_rate'] = round((present_att / total_att) * 100, 1) if total_att > 0 else 100.0
+            s_dict['attendance_rate'] = round((present_att / total_att) * 100, 1) if total_att > 0 else 0.0
             
             # GPA / Average Grade calculation
             scores = student_marks_map.get(s.SID, [])
@@ -180,14 +181,20 @@ def update_student(id):
 @api_bp.route("/students/<int:id>", methods=['DELETE'])
 @jwt_required()
 def delete_student(id):
-    student = Student.query.filter_by(SID=id, is_deleted=False).first()
-    if not student:
+    student = Student.query.get(id)
+    if not student or student.is_deleted:
         return api_response(False, "الطالب غير موجود", status_code=404)
         
     try:
-        student.is_deleted = True
+        from models import Attendance, Message
+        from models.grade import Marks, DetailMarks
+        Attendance.query.filter_by(SID=id).delete(synchronize_session=False)
+        Marks.query.filter_by(SID=id).delete(synchronize_session=False)
+        DetailMarks.query.filter_by(SID=id).delete(synchronize_session=False)
+        Message.query.filter((Message.sender_id == id) | (Message.recipient_id == id)).delete(synchronize_session=False)
+        db.session.delete(student)
         db.session.commit()
-        return api_response(True, "تم حذف الطالب بنجاح (Soft Delete)")
+        return api_response(True, "تم حذف الطالب نهائياً من قاعدة البيانات بنجاح")
     except Exception as e:
         db.session.rollback()
         return api_response(False, f"حدث خطأ أثناء الحذف: {str(e)}", status_code=500)
@@ -195,7 +202,7 @@ def delete_student(id):
 @api_bp.route("/teachers", methods=['GET'])
 def get_teachers():
     from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-    is_authenticated = ('user_id' in session) or getattr(current_user, 'is_authenticated', False)
+    is_authenticated = ('user_id' in session) or ('_user_id' in session) or getattr(current_user, 'is_authenticated', False)
     if not is_authenticated:
         try:
             verify_jwt_in_request(optional=True)
