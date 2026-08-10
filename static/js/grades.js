@@ -58,6 +58,9 @@ function setupGradesEventListeners() {
     const filterClass = document.getElementById('filterClass');
     const filterSection = document.getElementById('filterSection');
     const filterSubject = document.getElementById('filterSubject');
+    const filterTerm = document.getElementById('filterTerm');
+    const filterExam = document.getElementById('filterExam');
+    const filterYear = document.getElementById('filterYear');
     const filterSearch = document.getElementById('filterSearch');
     const filterStatus = document.getElementById('filterStatus');
     const resetBtn = document.getElementById('resetFiltersBtn');
@@ -72,6 +75,7 @@ function setupGradesEventListeners() {
             if (!cid || !gradesState.referenceData) {
                 if (filterSection) filterSection.disabled = true;
                 if (filterSubject) filterSubject.disabled = true;
+                loadStudentsGradeGrid();
                 return;
             }
 
@@ -90,14 +94,27 @@ function setupGradesEventListeners() {
                     filterSubject.disabled = false;
                 }
             }
+            loadStudentsGradeGrid();
         });
     }
+
+    if (filterSection) filterSection.addEventListener('change', loadStudentsGradeGrid);
+    if (filterSubject) filterSubject.addEventListener('change', loadStudentsGradeGrid);
+    if (filterTerm) filterTerm.addEventListener('change', loadStudentsGradeGrid);
+    if (filterExam) filterExam.addEventListener('change', loadStudentsGradeGrid);
+    if (filterYear) filterYear.addEventListener('change', loadStudentsGradeGrid);
 
     if (filterSearch) filterSearch.addEventListener('input', applyGradesFilters);
     if (filterStatus) filterStatus.addEventListener('change', applyGradesFilters);
 
     if (resetBtn) {
         resetBtn.addEventListener('click', function() {
+            if (filterSearch) filterSearch.value = '';
+            if (filterStatus) filterStatus.value = 'all';
+            if (filterClass) filterClass.value = '';
+            if (filterSection) { filterSection.value = ''; filterSection.disabled = true; }
+            if (filterSubject) { filterSubject.value = ''; filterSubject.disabled = true; }
+            if (filterExam) filterExam.value = '';
             loadStudentsGradeGrid();
         });
     }
@@ -734,10 +751,20 @@ function applyGradesFilters() {
 
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
-        const rowStatus = row.dataset.status;
+        const sid = row.dataset.sid;
+        const input = row.querySelector('.score-input');
+        const hasScore = input && input.value !== '' && !isNaN(input.value);
 
-        let matchSearch = !searchVal || text.includes(searchVal);
-        let matchStatus = statusVal === 'all' || rowStatus === statusVal;
+        let matchSearch = !searchVal || text.includes(searchVal) || (sid && sid.includes(searchVal));
+        let matchStatus = true;
+
+        if (statusVal === 'approved') {
+            matchStatus = hasScore;
+        } else if (statusVal === 'pending') {
+            matchStatus = false;
+        } else if (statusVal === 'missing') {
+            matchStatus = !hasScore;
+        }
 
         if (matchSearch && matchStatus) {
             row.classList.remove('d-none');
