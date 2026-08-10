@@ -20,11 +20,11 @@
                     <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">رصد الدرجات والتحليل الأكاديمي</li>
                 </ol>
             </nav>
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                 <h3 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-chart-line-up text-primary"></i> مركز رصد وإدارة الدرجات
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise SaaS</span>
                 </h3>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise SaaS</span>
             </div>
             <p class="text-muted small mb-0 font-monospace">إدخال درجات الطلاب، مراجعتها، اعتماد النتائج، وتحليل الأداء الأكاديمي للصفوف والمواد</p>
         </div>
@@ -304,10 +304,10 @@
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace extra-small" id="activeExamType">اختبار مفعل</span>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 font-monospace extra-small"><i class="fa-solid fa-circle me-1 fs-6"></i> حالة الاختبار: نشط ومعتمد بنسبة 100%</span>
+                            <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace extra-small" id="activeExamType">{{ stats.active_exam_name if stats else 'اختبار شهري' }}</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 font-monospace extra-small"><i class="fa-solid fa-circle me-1 fs-6"></i> حالة الاختبار: نشط ومتاح لرصد النتائج</span>
                         </div>
-                        <h4 class="fw-bold text-dark mb-1 font-monospace" id="activeExamTitle">كشف تحليلات ورصد الدرجات المباشر</h4>
+                        <h4 class="fw-bold text-dark mb-1 font-monospace" id="activeExamTitle">{{ stats.active_exam_name if stats else 'اختبار شهري' }}</h4>
                         <p class="text-muted extra-small mb-0 font-monospace">كشف تفاصيل معايير وإعدادات الامتحان المعتمد لرصد النتائج والتحليلات بقاعدة البيانات</p>
                     </div>
                 </div>
@@ -315,12 +315,12 @@
                 <div class="d-flex flex-wrap align-items-center gap-3 bg-light p-3 rounded-4 border w-100 w-lg-auto">
                     <div class="px-2">
                         <small class="text-muted d-block font-monospace extra-small">المادة والصف</small>
-                        <strong class="text-dark font-monospace" id="metaSubjectClass">الرياضيات - كشوفات المواد</strong>
+                        <strong class="text-dark font-monospace" id="metaSubjectClass">{{ (stats.active_subject_name if stats else 'القرآن الكريم') }} - {{ (stats.active_class_name if stats else 'الأول') }} ({{ (stats.active_section_name if stats else 'شعبة أ') }})</strong>
                     </div>
                     <div class="vr opacity-25 d-none d-sm-block"></div>
                     <div class="px-2">
                         <small class="text-muted d-block font-monospace extra-small">الفصل والعام</small>
-                        <strong class="text-dark font-monospace" id="metaTermYear">الفصل الدراسي الأول (2024 - 2025)</strong>
+                        <strong class="text-dark font-monospace" id="metaTermYear">{{ (terms[0].T_Name if terms else 'الفصل الدراسي الأول') }} (2025 - 2026)</strong>
                     </div>
                     <div class="vr opacity-25 d-none d-sm-block"></div>
                     <div class="px-2">

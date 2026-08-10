@@ -24,31 +24,36 @@ def manage_grades():
     if user_role == 'teacher':
         return redirect(url_for('gradebook.index'))
         
+    from models.academic import ExamSchedule
     total_students = Student.query.filter_by(is_deleted=False).count()
-    total_exams = TypeExams.query.filter_by(is_deleted=False).count()
+    total_exams = ExamSchedule.query.filter_by(is_deleted=False).count()
     total_subjects = Subject.query.filter_by(is_deleted=False).count()
     total_classes = Classes.query.filter_by(is_deleted=False).count()
     
-    all_marks = Marks.query.all()
-    total_marks_count = len(all_marks)
+    valid_marks = Marks.query.join(Student, Marks.SID == Student.SID).filter(Student.is_deleted == False).all()
+    total_marks_count = len(valid_marks)
     
-    scores = [float(m.Score) for m in all_marks if m.Score is not None]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-    max_score = max(scores) if scores else 0.0
-    min_score = min(scores) if scores else 0.0
-    
-    pass_count = sum(1 for s in scores if s >= 60)
-    fail_count = sum(1 for s in scores if s < 60)
-    pass_rate = round((pass_count / len(scores)) * 100, 1) if scores else 0.0
-    fail_rate = round((fail_count / len(scores)) * 100, 1) if scores else 0.0
-    
-    rating_label = 'ممتاز جداً' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if avg_score >= 60 else 'ضعيف')))
+    scores = [float(m.Score) for m in valid_marks if m.Score is not None]
+    if scores:
+        avg_score = round(sum(scores) / len(scores), 1)
+        max_score = max(scores)
+        min_score = min(scores)
+        pass_count = sum(1 for s in scores if s >= 60)
+        fail_count = sum(1 for s in scores if s < 60)
+        pass_rate = round((pass_count / len(scores)) * 100, 1)
+        fail_rate = round((fail_count / len(scores)) * 100, 1)
+        rating_label = 'ممتاز جداً' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if avg_score >= 60 else 'ضعيف')))
+    else:
+        avg_score, max_score, min_score, pass_count, fail_count, pass_rate, fail_rate = 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0
+        rating_label = '—'
     
     terms = Terms.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     exams = TypeExams.query.filter_by(is_deleted=False).all()
     subjects = Subject.query.filter_by(is_deleted=False).all()
     
+    active_sched = ExamSchedule.query.filter_by(is_deleted=False).order_by(ExamSchedule.ScheduleID.desc()).first()
+
     stats = {
         "total_students": total_students,
         "total_exams": total_exams,
@@ -62,7 +67,11 @@ def manage_grades():
         "fail_count": fail_count,
         "pass_rate": pass_rate,
         "fail_rate": fail_rate,
-        "rating_label": rating_label
+        "rating_label": rating_label,
+        "active_exam_name": active_sched.ExamName if active_sched else 'اختبار شهري',
+        "active_subject_name": active_sched.subject.SubName if active_sched and active_sched.subject else 'القرآن الكريم',
+        "active_class_name": active_sched.school_class.CName if active_sched and active_sched.school_class else 'الأول',
+        "active_section_name": active_sched.section.SectionName if active_sched and active_sched.section else 'شعبة أ'
     }
 
     all_students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
