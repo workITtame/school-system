@@ -819,15 +819,30 @@
     </div>
 </div>
 
-<!-- Modal 3: Student View & Performance Modal -->
-<div class="modal fade" id="studentAnalyticsModal" tabindex="-1" aria-hidden="true">
+<!-- Modal 3A: Student Details & Profile Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-primary text-white border-0 py-3">
-                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0" id="studentModalTitle"><i class="fa-solid fa-chart-user me-2"></i> تحليل الأداء الأكاديمي للطالب</h5>
+                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0" id="studentDetailsModalTitle"><i class="fa-solid fa-id-card me-2"></i> البطاقة الأكاديمية وسجل الطالب</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4" id="studentModalBody">
+            <div class="modal-body p-4" id="studentDetailsModalBody">
+                <!-- Dynamic Content JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3B: Student Performance Analytics & AI Insights Modal -->
+<div class="modal fade" id="studentAnalyticsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);">
+                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0" id="studentAnalyticsModalTitle"><i class="fa-solid fa-chart-line me-2"></i> مركز تحليل الأداء الأكاديمي والذكاء الاصطناعي</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="studentAnalyticsModalBody">
                 <!-- Dynamic Content JS -->
             </div>
         </div>

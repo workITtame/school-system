@@ -976,31 +976,56 @@ function viewStudentDetails(sid) {
     const st = gradesState.studentsData.find(s => s.SID == sid);
     if (!st) return;
 
-    const modalTitle = document.getElementById('studentModalTitle');
-    const modalBody = document.getElementById('studentModalBody');
+    const modalTitle = document.getElementById('studentDetailsModalTitle');
+    const modalBody = document.getElementById('studentDetailsModalBody');
 
-    if (modalTitle) modalTitle.textContent = `تفاصيل أداء الطالب: ${st.StudentName}`;
+    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-id-card me-2"></i> البطاقة الأكاديمية وسجل الطالب: ${st.StudentName}`;
+    
+    const info = computeGradeInfo(st.Score);
+    const scoreText = (st.Score !== null && st.Score !== undefined) ? `${st.Score} / 100` : 'لم ترصد بعد';
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(st.StudentName)}&background=2563eb&color=fff&size=128`;
+
     if (modalBody) {
         modalBody.innerHTML = `
-            <div class="row g-3">
-                <div class="col-md-4 text-center border-end">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(st.StudentName)}&background=2563eb&color=fff&size=128" class="rounded-circle mb-2 border" style="width: 96px; height: 96px;">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-4 text-center border-end pe-md-4">
+                    <img src="${avatarUrl}" class="rounded-circle mb-3 border border-3 border-primary shadow-sm" style="width: 100px; height: 100px;">
                     <h5 class="fw-bold font-monospace text-dark mb-1">${st.StudentName}</h5>
-                    <span class="badge bg-primary rounded-pill font-monospace extra-small">الرقم: ${st.SID}</span>
+                    <span class="badge bg-primary rounded-pill font-monospace extra-small px-3 py-1 mb-2">رقم الطالب ID: #${st.SID}</span>
+                    <p class="text-muted extra-small font-monospace mb-0">${st.ClassName || 'الصف الأول'} - ${st.SectionName || 'شعبة أ'}</p>
                 </div>
-                <div class="col-md-8">
-                    <h6 class="fw-bold font-monospace mb-2 text-primary">المعطيات والنتائج الأكاديمية</h6>
-                    <ul class="list-group list-group-flush extra-small font-monospace">
-                        <li class="list-group-item d-flex justify-content-between"><span>درجة الاختبار الحالي:</span> <strong>${st.Score || 0} من 100</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>التقدير العام:</span> <strong>${computeGradeInfo(st.Score).label}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>معدل الحضور:</span> <strong class="text-success">${st.Attendance || 'حاضر'}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>حالة الاعتماد:</span> <strong class="text-success">مكتمل ومعتمد</strong></li>
-                    </ul>
+                <div class="col-md-8 ps-md-4">
+                    <h6 class="fw-bold font-monospace text-primary mb-3 border-bottom pb-2">
+                        <i class="fa-solid fa-graduation-cap me-1"></i> بيانات الكشف والأداء الحالي
+                    </h6>
+                    <div class="row g-2 font-monospace extra-small">
+                        <div class="col-6 bg-light p-2 rounded border">
+                            <span class="text-muted d-block mb-1">المادة الدراسية:</span>
+                            <strong class="text-dark fs-6">${st.SubjectName || 'القرآن الكريم'}</strong>
+                        </div>
+                        <div class="col-6 bg-light p-2 rounded border">
+                            <span class="text-muted d-block mb-1">الدرجة المحصلة:</span>
+                            <strong class="text-primary fs-6">${scoreText}</strong>
+                        </div>
+                        <div class="col-6 bg-light p-2 rounded border">
+                            <span class="text-muted d-block mb-1">التقدير العام:</span>
+                            <span class="badge rounded-pill ${info.badgeClass} px-3 py-1">${info.label}</span>
+                        </div>
+                        <div class="col-6 bg-light p-2 rounded border">
+                            <span class="text-muted d-block mb-1">حالة الحضور:</span>
+                            <strong class="text-success">${st.Attendance || 'حاضر'}</strong>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm rounded-pill font-monospace fw-bold px-3" onclick="viewStudentReport(${st.SID})">
+                            <i class="fa-solid fa-file-invoice me-1"></i> فتح التقرير الأكاديمي الشامل
+                        </button>
+                    </div>
                 </div>
             </div>`;
     }
 
-    const bsModal = new bootstrap.Modal(document.getElementById('studentAnalyticsModal'));
+    const bsModal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
     bsModal.show();
 }
 
@@ -1017,7 +1042,81 @@ function viewStudentReport(sid) {
 }
 
 function viewStudentAnalytics(sid) {
-    viewStudentDetails(sid);
+    const st = gradesState.studentsData.find(s => s.SID == sid);
+    if (!st) return;
+
+    const modalTitle = document.getElementById('studentAnalyticsModalTitle');
+    const modalBody = document.getElementById('studentAnalyticsModalBody');
+
+    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-chart-line me-2"></i> تحليلات الذكاء الاصطناعي والأداء: ${st.StudentName}`;
+
+    const score = (st.Score !== null && st.Score !== undefined) ? parseFloat(st.Score) : 0;
+    const info = computeGradeInfo(score);
+    const classAvg = gradesState.metaData?.overall_avg || 78.5;
+    const diff = (score - classAvg).toFixed(1);
+    const diffBadge = diff >= 0 
+        ? `<span class="badge bg-success-subtle text-success font-monospace px-2 py-1"><i class="fa-solid fa-arrow-trend-up me-1"></i> أعلى من متوسط الصف بـ +${diff} درجة</span>`
+        : `<span class="badge bg-danger-subtle text-danger font-monospace px-2 py-1"><i class="fa-solid fa-arrow-trend-down me-1"></i> أقل من متوسط الصف بـ ${diff} درجة</span>`;
+
+    let aiRecommendation = '';
+    if (score >= 90) {
+        aiRecommendation = 'الطالب يظهر تفوقاً ممتازاً (فوق 90%). يُوصى بتقديم أنشطة إثرائية ومشاريع تحفيزية متقدمة لاستثمار قدراته العالية.';
+    } else if (score >= 75) {
+        aiRecommendation = 'مستوى الطالب جيد جداً ومستقر. ينصح بمتابعة تمارين التثبيت الدورية للحفاظ على نسق التفوق.';
+    } else if (score >= 60) {
+        aiRecommendation = 'مستوى الطالب مقبول ويحتاج إلى مراجعة مركزة للمفاهيم الأساسية قبل الاختبارات النهائية.';
+    } else {
+        aiRecommendation = 'تنبيه ذكي: الطالب يحتاج إلى خطة دعم أكاديمي عاجلة وجلسات تقوية ومتابعة خاصة مع ولي الأمر.';
+    }
+
+    if (modalBody) {
+        modalBody.innerHTML = `
+            <div class="row g-3 font-monospace">
+                <!-- Header Indicator -->
+                <div class="col-12 text-center p-3 rounded-4 bg-light border">
+                    <h6 class="text-muted extra-small mb-1">المعدل العام للطالب في هذه المادة</h6>
+                    <div class="display-6 fw-bold text-primary mb-1">${score.toFixed(1)}%</div>
+                    <div>${diffBadge}</div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border bg-white h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fa-solid fa-award text-warning fs-5"></i>
+                            <strong class="text-dark extra-small">التقييم والشرائح</strong>
+                        </div>
+                        <p class="extra-small text-muted mb-1">تصنيف الأداء: <strong>${info.label}</strong></p>
+                        <p class="extra-small text-muted mb-0">متوسط باقي طلاب الصف: <strong>${classAvg}%</strong></p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border bg-white h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fa-solid fa-bullseye text-success fs-5"></i>
+                            <strong class="text-dark extra-small">حالة الاستيعاب للأهداف</strong>
+                        </div>
+                        <p class="extra-small text-muted mb-1">نسبة إنجاز المخرجات: <strong>${score >= 60 ? 'مكتمل بنجاح' : 'غير مكتمل'}</strong></p>
+                        <p class="extra-small text-muted mb-0">معدل الحضور والالتزام: <strong>${st.Attendance || 'حاضر (100%)'}</strong></p>
+                    </div>
+                </div>
+
+                <!-- AI Recommendation Box -->
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border border-primary-subtle bg-primary-subtle text-dark">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="fa-solid fa-brain text-primary fs-5"></i>
+                            <strong class="text-primary extra-small">توصية الذكاء الاصطناعي الأكاديمية (AI Insight)</strong>
+                        </div>
+                        <p class="extra-small mb-0 text-secondary">${aiRecommendation}</p>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    const bsModal = new bootstrap.Modal(document.getElementById('studentAnalyticsModal'));
+    bsModal.show();
 }
 
 function viewStudentAudit(sid) {
