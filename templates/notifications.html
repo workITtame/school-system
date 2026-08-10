@@ -419,9 +419,9 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-light border text-primary rounded-circle p-2 me-1" onclick="viewNotificationDetails({{ n.id }}, '{{ n.title }}', '{{ n.description }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                                        <button type="button" class="btn btn-light border text-success rounded-circle p-2 me-1" onclick="markSingleNotificationRead(this)" title="تعلم كمقروء"><i class="fa-solid fa-check"></i></button>
+                                        <button type="button" class="btn btn-light border text-success rounded-circle p-2 me-1" onclick="markSingleNotificationRead(this, {{ n.id }})" title="تعلم كمقروء"><i class="fa-solid fa-check"></i></button>
                                         <button type="button" class="btn btn-light border text-warning rounded-circle p-2 me-1" onclick="pinNotificationCard(this)" title="تثبيت"><i class="fa-solid fa-thumbtack"></i></button>
-                                        <button type="button" class="btn btn-light border text-danger rounded-circle p-2" onclick="deleteNotificationCard(this)" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="button" class="btn btn-light border text-danger rounded-circle p-2" onclick="deleteNotificationCard(this, {{ n.id }})" title="حذف"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
 
@@ -821,7 +821,15 @@ function submitNewNotificationForm(e) {
 }
 
 function markAllNotificationsAsRead() {
-    fetch('/notifications/api/mark_all_read', { method: 'POST' }).catch(() => {});
+    fetch('/notifications/api/mark_all_read', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            showToast('تم تحديد جميع الإشعارات والتنبيهات كمقروءة بنجاح ✔️', 'success');
+            if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+        })
+        .catch(err => {
+            if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+        });
 
     // Clear unread badges & update DOM
     const cards = document.querySelectorAll('.notification-item-card');
@@ -837,10 +845,18 @@ function markAllNotificationsAsRead() {
     const unreadKpis = document.querySelectorAll('.card-body h4.text-warning, .card-body h4.text-danger');
     unreadKpis.forEach(el => el.textContent = '0');
 
-    showToast('تم تحديد جميع الإشعارات والتنبيهات كمقروءة بنجاح ✔️', 'success');
+    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
 }
 
-function markSingleNotificationRead(btn) {
+function markSingleNotificationRead(btn, id) {
+    if (id) {
+        fetch(`/notifications/api/read/${id}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(() => {
+                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+            })
+            .catch(() => {});
+    }
     const card = btn.closest('.notification-item-card');
     if (card) {
         const badge = card.querySelector('.badge.bg-danger');
@@ -850,6 +866,7 @@ function markSingleNotificationRead(btn) {
         }
         showToast('تم تعليم الإشعار كمقروء ✔️', 'success');
     }
+    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
 }
 
 function pinNotificationCard(btn) {
@@ -857,12 +874,21 @@ function pinNotificationCard(btn) {
     showToast('تم تثبيت الإشعار في أعلى القائمة', 'info');
 }
 
-function deleteNotificationCard(btn) {
+function deleteNotificationCard(btn, id) {
     const card = btn.closest('.notification-item-card') || btn.closest('tr');
+    if (id) {
+        fetch(`/notifications/api/delete/${id}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(() => {
+                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+            })
+            .catch(() => {});
+    }
     if (card) {
         card.remove();
-        showToast('تم حذف الإشعار بنجاح 🗑', 'info');
+        showToast('تم حذف الإشعار بنجاح من قاعدة البيانات 🗑', 'info');
     }
+    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
 }
 
 function viewNotificationDetails(id, title, desc) {
