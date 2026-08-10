@@ -286,12 +286,16 @@
         var html = '';
         students.forEach(function(s) {
             var activeClass = (String(s.student_id) === String(ugwCurrentStudentId)) ? 'bg-primary-subtle border-primary' : 'bg-light border-0';
-            var gradeText = (s.grade !== null && s.grade !== undefined) ? (s.grade + ' / ' + ugwMaxGrade) : 'لم ترصد';
-            var statusBadge = s.submission_status === 'تم التسليم' ? 'bg-success' : 'bg-danger-subtle text-danger';
+            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
+            var scoreVal = hasGrade ? (s.score !== undefined && s.score !== null ? s.score : s.grade) : null;
+            var gradeText = hasGrade ? (scoreVal + ' / ' + ugwMaxGrade) : 'لم ترصد';
+            var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
+            var subStatusText = isSubmitted ? 'تم التسليم' : 'لم يسلم';
+            var statusBadge = isSubmitted ? 'bg-success text-white' : 'bg-danger-subtle text-danger border border-danger-subtle';
 
             html += '<button type="button" class="list-group-item list-group-item-action p-2 mb-1 rounded-3 d-flex align-items-center justify-content-between text-start ' + activeClass + '" onclick="loadGradingStudent(' + s.student_id + ')">';
             html += '<div><strong class="d-block text-dark">' + s.student_name + '</strong><small class="text-muted font-monospace">درجة: ' + gradeText + '</small></div>';
-            html += '<span class="badge ' + statusBadge + ' rounded-pill px-2 py-1 extra-small">' + s.submission_status + '</span>';
+            html += '<span class="badge ' + statusBadge + ' rounded-pill px-2 py-1 extra-small">' + subStatusText + '</span>';
             html += '</button>';
         });
         container.innerHTML = html;
@@ -313,7 +317,7 @@
             .then(function(res) { return res.json(); })
             .then(function(sub) {
                 document.getElementById('ugwCurrentStudentName').textContent = sub.student_name;
-                document.getElementById('ugwCurrentStudentCode').textContent = 'الرقم الأكاديمي: ' + sub.academic_id;
+                document.getElementById('ugwCurrentStudentCode').textContent = 'رقم الطالب (ID): ' + sub.academic_id;
                 document.getElementById('ugwSubmissionStatus').textContent = sub.submission_status;
                 document.getElementById('ugwSubmissionTime').textContent = sub.submission_date;
 
@@ -536,7 +540,14 @@
         }
 
         var filtered = ugwStudentsList.filter(function(s) {
-            return s.submission_status === status || s.grading_status === status;
+            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
+            var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
+            var isGraded = hasGrade || s.status === 'تم التصحيح' || s.grading_status === 'تم التصحيح';
+            
+            if (status === 'تم') return isSubmitted || isGraded;
+            if (status === 'بانتظار') return !isGraded && isSubmitted;
+            if (status === 'لم يسلم') return !isSubmitted;
+            return true;
         });
         renderStudentRoster(filtered);
     };

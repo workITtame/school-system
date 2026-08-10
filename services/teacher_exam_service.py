@@ -198,7 +198,19 @@ def get_exam_details(exam_id, user_id):
     sec_name = ex.section.SectionName if ex.section else "الكل"
 
     students = Student.query.filter_by(CID=ex.CID, is_deleted=False).all() if ex.CID else []
-    total_students = len(students) if students else 20
+    total_students = len(students)
+
+    from models.grade import Marks
+    if ex.SubID and students:
+        sids = [s.SID for s in students]
+        marks_list = Marks.query.filter(Marks.SubID == ex.SubID, Marks.SID.in_(sids)).all()
+        graded_count = len([m for m in marks_list if m.Score is not None])
+    else:
+        graded_count = 0
+
+    is_graded_exam = (ex.Status or '') in ['تم التصحيح', 'منتهي'] or graded_count > 0
+    attended_count = graded_count if is_graded_exam else 0
+    pending_count = max(0, total_students - graded_count) if is_graded_exam else 0
 
     return {
         'id': ex.ScheduleID,
@@ -209,19 +221,19 @@ def get_exam_details(exam_id, user_id):
         'class_name': cls_name,
         'section_id': ex.SectionID,
         'section_name': sec_name,
-        'exam_type': 'امتحان تحريري نهائي',
+        'exam_type': 'امتحان تحريري',
         'total_score': 100,
         'exam_date': ex.ExamDate.strftime('%Y-%m-%d') if ex.ExamDate else date.today().strftime('%Y-%m-%d'),
         'exam_time': ex.ExamTime or '09:00 ص',
         'duration': ex.Duration or 60,
         'location': ex.Location or 'القاعة الرئيسية',
-        'status': ex.Status or 'منشور',
+        'status': ex.Status or 'مجدول',
         'total_students': total_students,
-        'attended_count': int(total_students * 0.9),
-        'graded_count': int(total_students * 0.7),
-        'pending_count': int(total_students * 0.3),
-        'description': 'اختبار نهائي شامل لمفردات المقرّر الأكاديمي لتقييم تحصيل الطلاب والمعارف والمهارات المقررة.',
-        'instructions': 'يرجى الحضور قبل الموعد بـ 15 دقيقة وإحضار البطاقة الأكاديمية والأدوات المسموح بها.',
+        'attended_count': attended_count,
+        'graded_count': graded_count,
+        'pending_count': pending_count,
+        'description': f"اختبار {sub_name} - {cls_name}",
+        'instructions': 'يرجى التواجد في قاعة الاختبار في الموعد المحدد.',
         'created_at': ex.ExamDate.strftime('%Y-%m-%d') if ex.ExamDate else date.today().strftime('%Y-%m-%d')
     }
 
@@ -345,33 +357,62 @@ def get_exam_students(exam_id, user_id):
         return []
 
     students = Student.query.filter_by(CID=details['class_id'], is_deleted=False).all() if details.get('class_id') else []
+    from models.grade import Marks
+    sub_id = details.get('subject_id')
+
+    marks_map = {}
+    if sub_id and students:
+        sids = [s.SID for s in students]
+        marks_list = Marks.query.filter(Marks.SubID == sub_id, Marks.SID.in_(sids)).all()
+        for m in marks_list:
+            marks_map[m.SID] = m
+
     result = []
-    for idx, s in enumerate(students):
+    for s in students:
+        m = marks_map.get(s.SID)
+        has_score = m is not None and m.Score is not None
+        score_val = float(m.Score) if has_score else None
+        
         result.append({
             'student_id': s.SID,
             'student_name': s.SName,
-            'academic_id': getattr(s, 'student_code', f"20240{s.SID}"),
-            'attendance': 'حاضر' if idx % 5 != 0 else 'غائب',
-            'status': 'تم التصحيح' if idx % 2 == 0 else 'بانتظار التصحيح',
-            'score': 92.5 if idx % 2 == 0 else None,
-            'max_score': 100
+            'academic_id': f"#{s.SID}",
+            'attendance': 'حاضر' if has_score else 'غائب',
+            'status': 'تم التصحيح' if has_score else 'بانتظار التصحيح',
+            'submission_status': 'تم التسليم' if has_score else 'لم يسلم',
+            'score': score_val,
+            'max_score': int(m.MaxScore) if (m and m.MaxScore) else 100
         })
     return result
 
 def get_exam_results(exam_id, user_id):
-    details = get_exam_details(exam_id, user_id)
-    if not details:
-        return {'highest': 0, 'lowest': 0, 'average': 0, 'success_rate': 0, 'fail_rate': 0}
+    students_data = get_exam_students(exam_id, user_id)
+    scores = [s['score'] for s in students_data if s['score'] is not None]
+
+    if not scores:
+        return {
+            'highest': 0, 'lowest': 0, 'average': 0, 'median': 0,
+            'success_rate': 0.0, 'fail_rate': 0.0,
+            'passed_count': 0, 'failed_count': 0
+        }
+
+    highest = max(scores)
+    lowest = min(scores)
+    average = round(sum(scores) / len(scores), 1)
+    passed_count = sum(1 for sc in scores if sc >= 50)
+    failed_count = len(scores) - passed_count
+    success_rate = round((passed_count / len(scores)) * 100, 1)
+    fail_rate = round(100.0 - success_rate, 1)
 
     return {
-        'highest': 99.0,
-        'lowest': 65.0,
-        'average': 88.5,
-        'median': 90.0,
-        'success_rate': 95.0,
-        'fail_rate': 5.0,
-        'passed_count': int(details['total_students'] * 0.95),
-        'failed_count': int(details['total_students'] * 0.05)
+        'highest': highest,
+        'lowest': lowest,
+        'average': average,
+        'median': average,
+        'success_rate': success_rate,
+        'fail_rate': fail_rate,
+        'passed_count': passed_count,
+        'failed_count': failed_count
     }
 
 def get_exam_statistics(exam_id, user_id):

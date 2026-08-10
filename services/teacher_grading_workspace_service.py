@@ -107,31 +107,27 @@ def get_submission(source_type, source_id, student_id, user_id):
         store_key = f"exam_{source_id}_{student_id}"
         saved_data = _MOCK_UNIFIED_GRADING_STORE.get(store_key, {})
 
-        grade = saved_data.get('grade', st.get('score') if st else 92.5)
-        feedback = saved_data.get('feedback', 'إجابة نموذجية ومنظمة')
+        st_score = st.get('score') if st else None
+        grade = saved_data.get('grade', st_score)
+        feedback = saved_data.get('feedback', '')
+
+        is_submitted = grade is not None or (st and st.get('attendance') == 'حاضر')
+        sub_status = 'تم التسليم' if is_submitted else 'لم يسلم'
 
         return {
             'student_id': student_id,
             'student_name': st['student_name'] if st else 'طالب أكاديمي',
-            'academic_id': st['academic_id'] if st else f"20240{student_id}",
-            'submission_status': 'تم التسليم',
-            'submission_date': date.today().strftime('%Y-%m-%d %H:%M'),
-            'delay_str': 'في الموعد المحدد',
+            'academic_id': st['academic_id'] if st else f"#{student_id}",
+            'submission_status': sub_status,
+            'submission_date': date.today().strftime('%Y-%m-%d %H:%M') if is_submitted else '—',
+            'delay_str': 'في الموعد المحدد' if is_submitted else 'لم يتم التسليم بعد',
             'grade': grade,
             'max_grade': 100,
             'feedback': feedback,
-            'attachments': [
-                {
-                    'name': f'ورقة_إجابة_الاختبار_{student_id}.pdf',
-                    'size': '1.4 MB',
-                    'type': 'pdf',
-                    'url': '#'
-                }
-            ],
+            'attachments': [],
             'timeline': [
-                {'title': 'بداية وقت الاختبار', 'time': '09:00 ص'},
-                {'title': 'تسليم ورقة الإجابة', 'time': '10:00 ص'},
-                {'title': 'حفظ الدرجة المبدئية', 'time': '10:15 ص'}
+                {'title': 'جدولة الاختبار', 'time': '09:00 ص'},
+                {'title': 'حالة التسليم', 'time': 'تم التسليم' if is_submitted else 'لم تسلم بعد'}
             ]
         }
     else:
@@ -160,6 +156,7 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
 
                 # Database integration with Marks model
                 from models.grade import Marks
+                from models.academic import ExamSchedule
                 sub_id = details.get('subject_id')
                 if sub_id:
                     mark = Marks.query.filter_by(SID=student_id, SubID=sub_id).first()
@@ -175,6 +172,11 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                             is_deleted=False
                         )
                         db.session.add(mark)
+
+                    # Update ExamSchedule status to 'تم التصحيح'
+                    ex = ExamSchedule.query.get(source_id)
+                    if ex:
+                        ex.Status = 'تم التصحيح'
                     db.session.commit()
             except ValueError as ve:
                 raise ValueError(f"Invalid grade: {str(ve)}")
