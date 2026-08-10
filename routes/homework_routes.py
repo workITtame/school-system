@@ -33,12 +33,21 @@ def get_teacher_homework_data():
 
     if homework_list:
         latest_hw = homework_list[0]
+        days_rem = (latest_hw.due_date - today_date).days if latest_hw.due_date else 0
+        if days_rem < 0:
+            rem_str = 'منتهي'
+        elif days_rem == 0:
+            rem_str = 'اليوم'
+        else:
+            rem_str = f"{days_rem} أيام متبقية"
+
+        sec_title = (latest_hw.section.SectionName if latest_hw.section else 'جميع الشعب') if latest_hw.section_id else 'جميع الشعب'
         current_active_homework = {
-            'academic_year': 'العام الدراسي',
-            'section_name': latest_hw.section.SectionName if latest_hw.section else '—',
-            'class_name': latest_hw.school_class.CName if latest_hw.school_class else '—',
-            'subject_name': latest_hw.subject.SubName if latest_hw.subject else '—',
-            'remaining_minutes': '—',
+            'academic_year': 'العام الدراسي (2025-2026)',
+            'section_name': sec_title,
+            'class_name': latest_hw.school_class.CName if latest_hw.school_class else 'الصف الأول',
+            'subject_name': latest_hw.subject.SubName if latest_hw.subject else 'القرآن الكريم',
+            'remaining_minutes': rem_str,
             'status': 'حصة الآن'
         }
     else:
