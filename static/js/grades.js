@@ -279,36 +279,36 @@ function computeGradeInfo(score) {
     }
 
     const s = parseFloat(score);
-    if (s >= 95) {
-        return {
-            letter: 'A+',
-            label: '⭐⭐⭐ ممتاز',
-            badgeClass: 'star-rating-badge text-dark font-monospace fw-bold',
-            status: 'approved',
-            statusBadge: '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-circle-check me-1"></i> معتمد</span>',
-            stars: '⭐⭐⭐'
-        };
-    } else if (s >= 85) {
+    if (s >= 90) {
         return {
             letter: 'A',
-            label: '🟢 جيد جداً',
+            label: '⭐ ممتاز',
             badgeClass: 'bg-success text-white font-monospace fw-bold',
+            status: 'approved',
+            statusBadge: '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-circle-check me-1"></i> معتمد</span>',
+            stars: '⭐'
+        };
+    } else if (s >= 80) {
+        return {
+            letter: 'B',
+            label: '🟢 جيد جداً',
+            badgeClass: 'bg-primary text-white font-monospace fw-bold',
             status: 'approved',
             statusBadge: '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-circle-check me-1"></i> معتمد</span>',
             stars: '🟢'
         };
-    } else if (s >= 75) {
+    } else if (s >= 70) {
         return {
-            letter: 'B',
+            letter: 'C',
             label: '🔵 جيد',
-            badgeClass: 'bg-primary text-white font-monospace fw-bold',
+            badgeClass: 'bg-info text-white font-monospace fw-bold',
             status: 'approved',
             statusBadge: '<span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-circle-check me-1"></i> معتمد</span>',
             stars: '🔵'
         };
     } else if (s >= 60) {
         return {
-            letter: 'C',
+            letter: 'D',
             label: '🟡 مقبول',
             badgeClass: 'bg-warning text-dark font-monospace fw-bold',
             status: 'approved',
@@ -318,7 +318,7 @@ function computeGradeInfo(score) {
     } else {
         return {
             letter: 'F',
-            label: '🔴 ضعيف',
+            label: '🔴 راسب',
             badgeClass: 'bg-danger text-white font-monospace fw-bold',
             status: 'approved',
             statusBadge: '<span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 font-monospace"><i class="fa-solid fa-circle-xmark me-1"></i> راسب</span>',
@@ -507,7 +507,7 @@ function updateGradesKPICards() {
     }
 
     let ratingLabel = 'غير رصد';
-    if (parseFloat(avgScore) >= 90) ratingLabel = 'ممتاز جداً';
+    if (parseFloat(avgScore) >= 90) ratingLabel = 'ممتاز';
     else if (parseFloat(avgScore) >= 80) ratingLabel = 'جيد جداً';
     else if (parseFloat(avgScore) >= 70) ratingLabel = 'جيد';
     else if (parseFloat(avgScore) >= 60) ratingLabel = 'مقبول';
@@ -549,7 +549,7 @@ function updateGradesKPICards() {
    CHARTS RENDER ENGINE (Donut, Bar, Line) FROM REAL DB
    ========================================================================== */
 function updateAnalyticsCharts() {
-    const counts = { 'A+': 0, 'A': 0, 'B': 0, 'C': 0, 'F': 0 };
+    const counts = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
 
     gradesState.studentsData.forEach(st => {
         if (st.Score !== null && st.Score !== undefined && !isNaN(st.Score)) {
@@ -563,16 +563,16 @@ function updateAnalyticsCharts() {
     if (canvasDonut) {
         const ctxDonut = canvasDonut.getContext('2d');
         if (gradesState.donutChartInstance) {
-            gradesState.donutChartInstance.data.datasets[0].data = [counts['A+'], counts['A'], counts['B'], counts['C'], counts['F']];
+            gradesState.donutChartInstance.data.datasets[0].data = [counts['A'], counts['B'], counts['C'], counts['D'], counts['F']];
             gradesState.donutChartInstance.update();
         } else {
             gradesState.donutChartInstance = new Chart(ctxDonut, {
                 type: 'doughnut',
                 data: {
-                    labels: ['ممتاز 95+', 'جيد جداً 85-94', 'جيد 75-84', 'مقبول 60-74', 'ضعيف <60'],
+                    labels: ['ممتاز 90-100', 'جيد جداً 80-89', 'جيد 70-79', 'مقبول 60-69', 'راسب <60'],
                     datasets: [{
-                        data: [counts['A+'], counts['A'], counts['B'], counts['C'], counts['F']],
-                        backgroundColor: ['#eab308', '#16a34a', '#2563eb', '#f59e0b', '#dc2626'],
+                        data: [counts['A'], counts['B'], counts['C'], counts['D'], counts['F']],
+                        backgroundColor: ['#16a34a', '#2563eb', '#0284c7', '#f59e0b', '#dc2626'],
                         borderWidth: 2
                     }]
                 },

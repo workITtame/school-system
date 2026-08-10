@@ -42,7 +42,7 @@ def manage_grades():
         fail_count = sum(1 for s in scores if s < 60)
         pass_rate = round((pass_count / len(scores)) * 100, 1)
         fail_rate = round((fail_count / len(scores)) * 100, 1)
-        rating_label = 'ممتاز جداً' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if avg_score >= 60 else 'ضعيف')))
+        rating_label = 'ممتاز' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if avg_score >= 60 else 'ضعيف')))
     else:
         avg_score, max_score, min_score, pass_count, fail_count, pass_rate, fail_rate = 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0
         rating_label = '—'
