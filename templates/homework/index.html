@@ -265,7 +265,7 @@
                                     <tr class="hw-row-item" data-title="{{ hw.title }}" data-subject="{{ hw.subject.SubName if hw.subject else '' }}" data-class="{{ hw.school_class.CName if hw.school_class else '' }}" data-section="{{ hw.section.SectionName if hw.section else '' }}" data-status="{{ hw.status }}">
                                         <td>
                                             <input type="checkbox" class="form-check-input">
-                                            <span class="text-muted extra-small ms-1">{{ loop.index }}</span>
+                                            <span class="text-muted extra-small ms-1">#{{ hw.id }}</span>
                                         </td>
                                         <td class="text-start pe-3">
                                             <strong class="text-dark d-block fs-6 mb-1">{{ hw.title }}</strong>
@@ -280,8 +280,8 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="fw-bold text-dark">{{ hw.school_class.CName if hw.school_class else 'الثالث الثانوي' }}</div>
-                                            <small class="text-muted">{{ hw.section.SectionName if hw.section else 'شعبة أ' }}</small>
+                                            <div class="fw-bold text-dark">{{ hw.school_class.CName if hw.school_class else 'الأول' }}</div>
+                                            <small class="text-muted">{{ hw.section.SectionName if hw.section else 'جميع الشعب' }}</small>
                                         </td>
                                         <td>
                                             <div class="fw-bold text-dark">{{ hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '2024-05-26' }}</div>
