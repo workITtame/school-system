@@ -61,20 +61,14 @@
       <button class="btn text-white fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="background:#7c3aed;font-size:12px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
         <i class="fa-solid fa-plus"></i> إضافة اختبار جديد
       </button>
-      <button class="btn btn-primary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
-        <i class="fa-solid fa-bolt"></i> إنشاء اختبار سريع
-      </button>
-      <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('نسخ اختبار','اختر الاختبار السابق للنسخ','info')">
-        <i class="fa-solid fa-copy"></i> نسخ اختبار سابق
-      </button>
-      <button class="btn btn-outline-info fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('جدولة اختبار','حدد موعد الاختبار الجديد','info')">
-        <i class="fa-regular fa-calendar-plus"></i> جدولة اختبار
-      </button>
-      <button class="btn btn-outline-success fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="window.print()">
-        <i class="fa-solid fa-file-excel"></i> تصدير Excel
-      </button>
-      <button class="btn btn-outline-danger fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="Swal.fire('مركز التحليلات','فتح تحليلات الاختبارات','info')">
-        <i class="fa-solid fa-chart-pie"></i> مركز التحليلات
+      <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-success fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="font-size:12px;">
+        <i class="fa-solid fa-pen-to-square"></i> رصد الدرجات
+      </a>
+      <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-info text-white fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="font-size:12px;">
+        <i class="fa-solid fa-list-check"></i> كشف النتائج
+      </a>
+      <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> طباعة كشف
       </button>
     </div>
   </div>
@@ -642,37 +636,7 @@
     </div>
     {% endif %}
 
-    <!-- 8. Quick Actions -->
-    <div class="card border-0 shadow-sm sidebar-widget bg-white p-4">
-      <h6 class="fw-bold text-dark mb-3" style="font-size:12px;"><i class="fa-solid fa-bolt text-warning me-2"></i>إجراءات سريعة</h6>
-      <div class="row g-2">
-        <div class="col-6">
-          <button class="btn btn-outline-primary w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;" data-bs-toggle="modal" data-bs-target="#addExamModal">
-            <i class="fa-solid fa-plus me-1"></i> إضافة اختبار
-          </button>
-        </div>
-        <div class="col-6">
-          <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-outline-success w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;">
-            <i class="fa-solid fa-pen-to-square me-1"></i> رصد الدرجات
-          </a>
-        </div>
-        <div class="col-6">
-          <button class="btn btn-outline-secondary w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;" onclick="window.print()">
-            <i class="fa-solid fa-print me-1"></i> طباعة كشف
-          </button>
-        </div>
-        <div class="col-6">
-          <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-outline-info w-100 fw-bold rounded-3 text-start" style="font-size:11px;padding:7px 10px;">
-            <i class="fa-solid fa-list me-1"></i> كشف النتائج
-          </a>
-        </div>
-        <div class="col-12">
-          <button class="btn w-100 fw-bold rounded-3 text-start text-white" style="font-size:11px;padding:7px 10px;background:#7c3aed;" data-bs-toggle="modal" data-bs-target="#addExamModal">
-            <i class="fa-solid fa-bolt me-1"></i> إنشاء اختبار سريع
-          </button>
-        </div>
-      </div>
-    </div>
+
 
   </div><!-- end sidebar -->
 </div><!-- end main row -->
