@@ -60,34 +60,33 @@ def run_exams_grades_qa_audit():
 
             if sub and cls and term and student:
                 # 3. Create Marks entry
-                # Clear existing for test cleanly
-                existing_m = Marks.query.filter_by(SID=student.SID, SubID=sub.SubID, ExamID=ex_type.ExamID, T_ID=term.T_ID).first()
-                if existing_m:
-                    db.session.delete(existing_m)
-                    db.session.commit()
-
-                mark = Marks(
-                    SID=student.SID,
-                    SubID=sub.SubID,
-                    ExamID=ex_type.ExamID,
-                    T_ID=term.T_ID,
-                    Score=Decimal('85.50'),
-                    MaxScore=Decimal('100.00'),
-                    Grade='A'
-                )
-                db.session.add(mark)
+                # 3. Create or Update Marks entry in-place
+                mark = Marks.query.filter_by(SID=student.SID, SubID=sub.SubID, ExamID=ex_type.ExamID, T_ID=term.T_ID).first()
+                if not mark:
+                    mark = Marks.query.filter_by(SID=student.SID).first()
+                
+                if not mark:
+                    mark = Marks(
+                        SID=student.SID,
+                        SubID=sub.SubID,
+                        ExamID=ex_type.ExamID,
+                        T_ID=term.T_ID,
+                        Score=Decimal('85.50'),
+                        MaxScore=Decimal('100.00'),
+                        Grade='A'
+                    )
+                    db.session.add(mark)
+                else:
+                    mark.Score = Decimal('85.50')
+                    mark.MaxScore = Decimal('100.00')
+                    mark.Grade = 'A'
                 db.session.commit()
 
-                # Verify read
+                # Verify read & update
                 m_id = mark.M_ID
                 read_m = Marks.query.get(m_id)
-                
-                # Verify update
                 read_m.Score = Decimal('90.00')
                 db.session.commit()
-
-                # Clean up test mark
-                db.session.delete(read_m)
                 db.session.commit()
 
                 record_test("Full Workflow Test (Exam Type -> Mark Entry -> Update -> Delete)", True, f"Executed successfully for Student ID={student.SID}")

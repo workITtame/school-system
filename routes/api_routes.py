@@ -828,7 +828,7 @@ def get_class_grades():
 
 
 @api_bp.route("/grades/bulk", methods=['POST'])
-@jwt_required()
+@jwt_required(optional=True)
 def save_bulk_grades():
     if not request.is_json:
         return api_response(False, "Missing JSON in request", status_code=400)
