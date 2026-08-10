@@ -844,6 +844,27 @@
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08) !important;
 }
 
+/* RTL Form Select Custom Arrow Styling */
+.form-select {
+    padding-left: 2.25rem !important;
+    padding-right: 1.25rem !important;
+    background-position: left 0.85rem center !important;
+    text-align: right !important;
+    direction: rtl !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%232563eb' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-size: 14px 12px !important;
+}
+
+.form-select.rounded-pill {
+    padding-left: 2.5rem !important;
+    padding-right: 1.5rem !important;
+    background-position: left 1rem center !important;
+}
+
 @media print {
     body * { visibility: hidden !important; }
     #workspaceContainer, #workspaceContainer * { visibility: visible !important; }
