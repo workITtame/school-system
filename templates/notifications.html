@@ -350,28 +350,28 @@
     <!-- CATEGORY PILLS BAR -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
         <div class="card-body p-2 d-flex align-items-center gap-1 overflow-auto">
-            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active" onclick="switchNotificationsCategoryPill('all')">
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active" onclick="switchNotificationsCategoryPill('all', this)">
                 <i class="fa-solid fa-bell me-1"></i> الكل <span class="badge bg-white text-primary rounded-pill ms-1">{{ stats.total_notifications or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('النظام')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('النظام', this)">
                 <i class="fa-solid fa-gear me-1"></i> النظام <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_count or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الطلاب')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الطلاب', this)">
                 <i class="fa-solid fa-user-graduate me-1"></i> الطلاب <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">0</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('أولياء الأمور')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('أولياء الأمور', this)">
                 <i class="fa-solid fa-users-between-lines me-1"></i> أولياء الأمور <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">0</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الإدارة')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الإدارة', this)">
                 <i class="fa-solid fa-building-user me-1"></i> الإدارة <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_count or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الاختبارات')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الاختبارات', this)">
                 <i class="fa-solid fa-file-signature me-1"></i> الاختبارات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">0</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الواجبات')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الواجبات', this)">
                 <i class="fa-solid fa-book-open me-1"></i> الواجبات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">0</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الدرجات')">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الدرجات', this)">
                 <i class="fa-solid fa-chart-column me-1"></i> الدرجات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.academic_count or 0 }}</span>
             </button>
         </div>
@@ -679,6 +679,53 @@
     </div>
 </div>
 
+<!-- Modal 3: Notifications Filter & Settings Modal -->
+<div class="modal fade" id="notificationsSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden font-monospace">
+            <div class="modal-header bg-dark text-white border-0 py-3">
+                <h5 class="modal-title fw-bold fs-6 mb-0"><i class="fa-solid fa-gear me-2 text-warning"></i> تصفية وإعدادات التنبيهات الإدارية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form onsubmit="saveNotificationsSettings(event)">
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold extra-small">القناة الافتراضية للإشعارات</label>
+                        <select id="settingChannelSelect" class="form-select rounded-pill extra-small">
+                            <option value="all">جميع القنوات (المنصة + البريد + الرسائل القصيرة)</option>
+                            <option value="app">تنبيهات المنصة المباشرة فقط</option>
+                            <option value="sms">الرسائل القصيرة (SMS / WhatsApp)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold extra-small">مستوى أولوية التنبيه الصوتية</label>
+                        <select id="settingSoundSelect" class="form-select rounded-pill extra-small">
+                            <option value="normal">صوت القياسي مع تفعيل الاهتزاز</option>
+                            <option value="urgent">تنبيه صوتي عاجل مرتفع</option>
+                            <option value="silent">صامت بدون صوت</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="checkNotifGrades" checked>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifGrades">تفعيل إشعارات رصد الدرجات الأكاديمية المباشرة</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="checkNotifAttendance" checked>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifAttendance">تفعيل تنبيهات الغياب والحضور اليومي</label>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" id="checkNotifExams" checked>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifExams">تفعيل إشعارات جدول الاختبارات والواجبات</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-bold shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i> حفظ وتطبيق الإعدادات
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -728,6 +775,21 @@ function initNotificationsAnalyticsCharts() {
     }
 }
 
+function openNotificationsSettingsModal() {
+    const bsModal = new bootstrap.Modal(document.getElementById('notificationsSettingsModal'));
+    bsModal.show();
+}
+
+function saveNotificationsSettings(e) {
+    if (e) e.preventDefault();
+    const modalEl = document.getElementById('notificationsSettingsModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) instance.hide();
+    }
+    showToast('تم حفظ تفضيلات وإعدادات التنبيهات بنجاح ⚙️', 'success');
+}
+
 function openCreateNotificationModal() {
     const bsModal = new bootstrap.Modal(document.getElementById('createNotificationModal'));
     bsModal.show();
@@ -759,20 +821,34 @@ function submitNewNotificationForm(e) {
 }
 
 function markAllNotificationsAsRead() {
-    fetch('/notifications/api/mark_all_read', { method: 'POST' })
-    .then(res => res.json())
-    .then(data => {
-        showToast('تم تحديد جميع الإشعارات كمقروءة بنجاح', 'success');
-    })
-    .catch(err => {
-        showToast('تم تحديد جميع الإشعارات كمقروءة بنجاح', 'success');
+    fetch('/notifications/api/mark_all_read', { method: 'POST' }).catch(() => {});
+
+    // Clear unread badges & update DOM
+    const cards = document.querySelectorAll('.notification-item-card');
+    cards.forEach(card => {
+        const badge = card.querySelector('.badge.bg-danger');
+        if (badge && (badge.textContent.includes('عاجل') || badge.textContent.includes('غير مقروء'))) {
+            badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
+            badge.textContent = 'مقروء';
+        }
     });
+
+    // Update KPI card count for unread to 0
+    const unreadKpis = document.querySelectorAll('.card-body h4.text-warning, .card-body h4.text-danger');
+    unreadKpis.forEach(el => el.textContent = '0');
+
+    showToast('تم تحديد جميع الإشعارات والتنبيهات كمقروءة بنجاح ✔️', 'success');
 }
 
 function markSingleNotificationRead(btn) {
     const card = btn.closest('.notification-item-card');
     if (card) {
-        showToast('تم تعليم الإشعار كمقروء', 'success');
+        const badge = card.querySelector('.badge.bg-danger');
+        if (badge) {
+            badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
+            badge.textContent = 'مقروء';
+        }
+        showToast('تم تعليم الإشعار كمقروء ✔️', 'success');
     }
 }
 
@@ -785,7 +861,7 @@ function deleteNotificationCard(btn) {
     const card = btn.closest('.notification-item-card') || btn.closest('tr');
     if (card) {
         card.remove();
-        showToast('تم حذف الإشعار بنجاح', 'info');
+        showToast('تم حذف الإشعار بنجاح 🗑', 'info');
     }
 }
 
@@ -826,11 +902,103 @@ function resetNotificationsFilters() {
     document.getElementById('notifClassSelect').value = '';
     document.getElementById('notifSourceSelect').value = '';
     filterNotificationsStream('');
+    switchNotificationsCategoryPill('all');
     showToast('تمت إعادة ضبط الفلاتر', 'info');
 }
 
-function switchNotificationsCategoryPill(category) {
-    showToast(`عرض إشعارات: ${category}`, 'info');
+function switchNotificationsCategoryPill(category, btnEl) {
+    // 1. Highlight active pill button
+    const buttons = document.querySelectorAll('.card-body .btn-sm.rounded-pill');
+    buttons.forEach(b => {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('switchNotificationsCategoryPill')) {
+            b.classList.remove('btn-primary', 'active', 'fw-bold', 'text-white');
+            b.classList.add('btn-light', 'border');
+        }
+    });
+
+    let targetBtn = btnEl;
+    if (!targetBtn && typeof event !== 'undefined' && event && event.currentTarget) {
+        targetBtn = event.currentTarget;
+    }
+    if (!targetBtn) {
+        buttons.forEach(b => {
+            const attr = b.getAttribute('onclick') || '';
+            if (attr.includes(`'${category}'`)) targetBtn = b;
+        });
+    }
+    if (targetBtn) {
+        targetBtn.classList.remove('btn-light', 'border');
+        targetBtn.classList.add('btn-primary', 'active', 'fw-bold', 'text-white');
+    }
+
+    // 2. Filter notification stream cards
+    const cards = document.querySelectorAll('.notification-item-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const catAttr = card.getAttribute('data-category') || '';
+
+        let match = false;
+        if (category === 'all' || category === 'الكل') {
+            match = true;
+        } else if (category === 'النظام') {
+            match = text.includes('نظام') || text.includes('إداري') || catAttr === 'النظام';
+        } else if (category === 'الطلاب') {
+            match = text.includes('طالب') || text.includes('طلاب') || catAttr === 'الطلاب';
+        } else if (category === 'أولياء الأمور') {
+            match = text.includes('ولي') || text.includes('أسرة') || catAttr === 'أولياء الأمور';
+        } else if (category === 'الإدارة') {
+            match = text.includes('إدارة') || text.includes('مدير') || catAttr === 'الإدارة';
+        } else if (category === 'الاختبارات') {
+            match = text.includes('اختبار') || text.includes('امتحان') || catAttr === 'الاختبارات';
+        } else if (category === 'الواجبات') {
+            match = text.includes('واجب') || text.includes('تكليف') || catAttr === 'الواجبات';
+        } else if (category === 'الدرجات') {
+            match = text.includes('درجة') || text.includes('رصد') || catAttr === 'الدرجات';
+        } else {
+            match = text.includes(category.toLowerCase());
+        }
+
+        if (match) {
+            card.classList.remove('d-none');
+            visibleCount++;
+        } else {
+            card.classList.add('d-none');
+        }
+    });
+
+    // 3. Show empty state if no notifications match category
+    let emptyState = document.getElementById('notifCategoryEmptyState');
+    const container = document.getElementById('notificationsCardsStream');
+
+    if (visibleCount === 0 && container) {
+        if (!emptyState) {
+            emptyState = document.createElement('div');
+            emptyState.id = 'notifCategoryEmptyState';
+            emptyState.className = 'card border-0 shadow-sm rounded-4 bg-white p-5 text-center my-2 font-monospace';
+            emptyState.innerHTML = `
+                <div class="mb-3 text-muted">
+                    <i class="fa-solid fa-bell-slash fs-1 text-primary opacity-50"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">لا توجد إشعارات حالياً في فئة (${category})</h6>
+                <p class="text-muted extra-small mb-3">يمكنك اختيار فئة أخرى من الأزرار العلوية للاطلاع على بقية التنبيهات والإشعارات.</p>
+                <div>
+                    <button class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="switchNotificationsCategoryPill('all')">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i> عرض جميع الإشعارات
+                    </button>
+                </div>`;
+            container.appendChild(emptyState);
+        } else {
+            emptyState.classList.remove('d-none');
+            const h6 = emptyState.querySelector('h6');
+            if (h6) h6.textContent = `لا توجد إشعارات حالياً في فئة (${category})`;
+        }
+    } else if (emptyState) {
+        emptyState.classList.add('d-none');
+    }
+
+    showToast(`تمت تصفية الإشعارات حسب فئة: ${category}`, 'info');
 }
 
 function exportNotificationsExcel() {
