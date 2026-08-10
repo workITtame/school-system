@@ -30,7 +30,10 @@ def get_reports_dashboard_metrics():
             attendance_rate = round((present_count / attendance_count * 100), 1)
 
         homework_count = Homework.query.count()
-        exam_count = TypeExams.query.filter_by(is_deleted=False).count()
+        from models import ExamSchedule
+        exam_count = ExamSchedule.query.filter_by(is_deleted=False).count() if hasattr(ExamSchedule, 'is_deleted') else ExamSchedule.query.count()
+        if exam_count == 0:
+            exam_count = TypeExams.query.filter_by(is_deleted=False).count()
         all_marks = Marks.query.filter_by(is_deleted=False).all() if hasattr(Marks, 'is_deleted') else Marks.query.all()
         marks_count = len(all_marks)
 
