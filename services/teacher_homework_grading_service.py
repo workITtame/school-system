@@ -66,12 +66,10 @@ def get_homework_grading_workspace(homework_id, user_id):
         store_key = f"{homework_id}_{s.SID}"
         saved_data = _MOCK_GRADING_STORE.get(store_key, {})
 
-        if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
+        if st_val in ['مكتمل', 'تم التسليم']:
             submission_status = 'تم التسليم'
-        elif st_val in ['مسودة', 'معلق']:
-            submission_status = 'لم يسلم'
         else:
-            submission_status = 'تم التسليم' if (idx % 2 == 0) else 'لم يسلم'
+            submission_status = 'لم يسلم'
 
         if 'grade' in saved_data:
             grade = saved_data['grade']
@@ -95,10 +93,12 @@ def get_homework_grading_workspace(homework_id, user_id):
             total_graded += 1
             total_grade_sum += float(grade)
 
+        student_code = getattr(s, 'student_code', None) or getattr(s, 'Code', None) or str(s.SID)
+
         student_queue.append({
             'student_id': s.SID,
             'student_name': s.SName,
-            'academic_id': getattr(s, 'student_code', f"20240{s.SID}"),
+            'academic_id': student_code,
             'submission_status': submission_status,
             'submission_date': (date.today().strftime('%Y-%m-%d %H:%M')) if submission_status == 'تم التسليم' else '---',
             'grading_status': grading_status,

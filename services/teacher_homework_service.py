@@ -176,17 +176,17 @@ def get_homework_details(homework_id, user_id):
     student_list = []
     st_val = hw.status or 'منشور'
     for idx, s in enumerate(students):
-        if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
+        if st_val in ['مكتمل', 'تم التسليم']:
             submitted = True
-        elif st_val in ['مسودة', 'معلق']:
-            submitted = False
         else:
-            submitted = (idx % 2 == 0)
+            submitted = False
+
+        student_code = getattr(s, 'student_code', None) or getattr(s, 'Code', None) or str(s.SID)
 
         student_list.append({
             'student_id': s.SID,
             'student_name': s.SName,
-            'academic_id': getattr(s, 'student_code', f"20240{s.SID}"),
+            'academic_id': student_code,
             'submission_status': 'تم التسليم' if submitted else 'لم يسلم',
             'submission_date': (date.today().strftime('%Y-%m-%d %H:%M')) if submitted else '---'
         })
