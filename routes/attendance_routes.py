@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from sqlalchemy.orm import joinedload
-from models import db, Student, Classes, Sections, Teacher, SchoolTable
+from models import db, Student, Classes, Sections, Teacher, SchoolTable, Terms, Subject
 from models.student import Attendance
 from utils.decorators import admin_required
 from services.teacher_attendance_service import get_lesson_attendance, save_lesson_attendance
@@ -40,7 +40,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
             joinedload(SchoolTable.lesson)
         ).filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
 
-    subjects_str = " | ".join(sub_names) if sub_names else 'الرياضيات'
+    subjects_str = " | ".join(sub_names) if sub_names else 'المواد الدراسية'
     teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
     teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
 
@@ -354,10 +354,14 @@ def index():
 
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
+    subjects = Subject.query.filter_by(is_deleted=False).all()
+    terms = Terms.query.filter_by(is_deleted=False).all()
     
     class_id = request.args.get('class_id')
     section_id = request.args.get('section_id')
     date_str = request.args.get('date')
+    subject_id = request.args.get('subject_id')
+    term_id = request.args.get('term_id')
 
     target_date = date.today()
     if date_str:
@@ -368,10 +372,20 @@ def index():
     
     user_id = session.get('user_id', current_user.id if current_user.is_authenticated else 1)
     data = get_teacher_attendance_data(user_id, class_id=class_id, section_id=section_id, target_date=target_date)
-        
+    
+    if subject_id:
+        try:
+            sub_obj = Subject.query.get(int(subject_id))
+            if sub_obj:
+                data['current_lesson']['subject'] = sub_obj.SubName
+        except (ValueError, TypeError):
+            pass
+
     return render_template('attendance.html',
                            classes=classes,
                            sections=sections,
+                           subjects=subjects,
+                           terms=terms,
                            today=target_date.strftime('%Y-%m-%d'),
                            teacher_info=data['teacher_info'],
                            current_lesson=data['current_lesson'],
@@ -381,6 +395,8 @@ def index():
                            alerts=data['alerts'],
                            selected_cid=data['selected_cid'],
                            selected_secid=data['selected_secid'],
+                           selected_subject_id=subject_id or '',
+                           selected_term_id=term_id or '',
                            total_students=data['kpi']['total_students'],
                            present=data['kpi']['present_count'],
                            absent=data['kpi']['absent_count'],

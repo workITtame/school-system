@@ -220,8 +220,11 @@
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label text-muted extra-small font-monospace mb-1">العام / الفصل</label>
-                <select class="form-select bg-light font-monospace extra-small" id="filterTerm">
-                    <option value="">الفصل الثاني 2024/2025</option>
+                <select class="form-select bg-light font-monospace extra-small" id="filterTerm" onchange="loadAttendanceByFilter()">
+                    <option value="">جميع الفصول الدراسية</option>
+                    {% for t in terms %}
+                        <option value="{{ t.T_ID }}" {% if selected_term_id is defined and selected_term_id|string == t.T_ID|string %}selected{% endif %}>{{ t.T_Name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-6 col-md-2">
@@ -244,8 +247,11 @@
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label text-muted extra-small font-monospace mb-1">المادة</label>
-                <select class="form-select bg-light font-monospace extra-small" id="filterSubject">
-                    <option value="">الرياضيات</option>
+                <select class="form-select bg-light font-monospace extra-small" id="filterSubject" onchange="loadAttendanceByFilter()">
+                    <option value="">جميع المواد الدراسية</option>
+                    {% for sub in subjects %}
+                        <option value="{{ sub.SubID }}" {% if selected_subject_id is defined and selected_subject_id|string == sub.SubID|string %}selected{% endif %}>{{ sub.SubName }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-6 col-md-2">
@@ -426,11 +432,15 @@ function loadAttendanceByFilter() {
     const cid = document.getElementById('filterClass')?.value;
     const secid = document.getElementById('filterSection')?.value;
     const dt = document.getElementById('filterDate')?.value;
+    const termid = document.getElementById('filterTerm')?.value;
+    const subid = document.getElementById('filterSubject')?.value;
     
     let url = "{{ url_for('attendance.index') }}?";
     if (cid) url += `class_id=${cid}&`;
     if (secid) url += `section_id=${secid}&`;
     if (dt) url += `date=${dt}&`;
+    if (termid) url += `term_id=${termid}&`;
+    if (subid) url += `subject_id=${subid}&`;
     
     window.location.href = url;
 }
