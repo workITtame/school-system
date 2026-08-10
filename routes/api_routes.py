@@ -839,9 +839,9 @@ def save_bulk_grades():
     if not all(field in data for field in required_fields):
         return api_response(False, "جميع الحقول مطلوبة (ترم، مادة، امتحان، درجات)", status_code=400)
         
-    term_id = data['term_id']
-    subject_id = data['subject_id']
-    exam_id = data['exam_id']
+    term_id = int(data['term_id']) if data.get('term_id') else 1
+    subject_id = int(data['subject_id']) if data.get('subject_id') else 1
+    exam_id = int(data['exam_id']) if data.get('exam_id') else 1
     grades_list = data['grades']
     
     # Get the teacher id
@@ -855,9 +855,6 @@ def save_bulk_grades():
         teacher = Teacher.query.filter_by(user_id=user.id).first()
         if teacher:
             teacher_id = teacher.TeacherID
-            # Optional: Strict Check if teacher teaches this subject
-            # if subject_id not in [s.SubID for s in teacher.subjects]:
-            #     return api_response(False, "لا يمكنك إدخال درجات مادة لا تدرسها", status_code=403)
             
     # Default to 1 for admin or if teacher not found
     if not teacher_id:
@@ -874,7 +871,7 @@ def save_bulk_grades():
             return 'F'
 
         for item in grades_list:
-            sid = item.get('sid')
+            sid = int(item.get('sid')) if item.get('sid') is not None else None
             score_val = item.get('score')
             
             if sid is None or score_val is None or score_val == "":
@@ -888,27 +885,63 @@ def save_bulk_grades():
             max_score = 100.0
             pct = round((score / max_score) * 100, 2)
 
-            # 1. UPSERT Marks
+            # 1. UPSERT Marks with multi-level lookup to keep M_ID constant
             mark = Marks.query.filter_by(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id).first()
             if not mark:
-                mark = Marks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score, MaxScore=max_score, Percentage=pct, Grade=letter_grade)
-                db.session.add(mark)
-            else:
+                mark = Marks.query.filter_by(SID=sid, SubID=subject_id).first()
+            if not mark:
+                mark = Marks.query.filter_by(SID=sid).first()
+
+            if mark:
                 mark.Score = score
                 mark.MaxScore = max_score
                 mark.Percentage = pct
                 mark.Grade = letter_grade
+                mark.ExamID = exam_id
+                mark.T_ID = term_id
+                mark.SubID = subject_id
                 mark.TeacherID = teacher_id
+            else:
+                mark = Marks(
+                    SID=sid,
+                    SubID=subject_id,
+                    ExamID=exam_id,
+                    T_ID=term_id,
+                    TeacherID=teacher_id,
+                    Score=score,
+                    MaxScore=max_score,
+                    Percentage=pct,
+                    Grade=letter_grade,
+                    is_deleted=False
+                )
+                db.session.add(mark)
 
-            # 2. UPSERT DetailMarks
+            # 2. UPSERT DetailMarks with multi-level lookup to keep DT_ID constant
             detail = DetailMarks.query.filter_by(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id).first()
             if not detail:
-                detail = DetailMarks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score, MaxScore=max_score)
-                db.session.add(detail)
-            else:
+                detail = DetailMarks.query.filter_by(SID=sid, SubID=subject_id).first()
+            if not detail:
+                detail = DetailMarks.query.filter_by(SID=sid).first()
+
+            if detail:
                 detail.Score = score
                 detail.MaxScore = max_score
+                detail.ExamID = exam_id
+                detail.T_ID = term_id
+                detail.SubID = subject_id
                 detail.TeacherID = teacher_id
+            else:
+                detail = DetailMarks(
+                    SID=sid,
+                    SubID=subject_id,
+                    ExamID=exam_id,
+                    T_ID=term_id,
+                    TeacherID=teacher_id,
+                    Score=score,
+                    MaxScore=max_score,
+                    is_deleted=False
+                )
+                db.session.add(detail)
                 
         db.session.commit()
         return api_response(True, "تم حفظ الدرجات بنجاح", status_code=200)
