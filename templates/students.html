@@ -280,7 +280,7 @@
                                 <td class="text-start px-3">
                                     <div class="d-flex align-items-center gap-2">
                                         {% if st.image %}
-                                            <img src="{{ st.image if st.image.startswith('/') else '/' + st.image }}" alt="{{ st.SName }}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
+                                            <img src="{{ url_for('static', filename=st.image) if not (st.image.startswith('static/') or st.image.startswith('/static/')) else (st.image if st.image.startswith('/') else '/' + st.image) }}" alt="{{ st.SName }}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
                                         {% else %}
                                             <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">
                                                 {{ st.SName[0] if st.SName else 'ط' }}
@@ -720,7 +720,7 @@ function renderStudentsTable(students, totalStudents, page, perPage) {
                 </td>
                 <td class="text-start px-3">
                     <div class="d-flex align-items-center gap-2">
-                        ${st.image ? `<img src="${st.image.startsWith('/') ? st.image : '/' + st.image}" alt="${st.SName}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">` : `<div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">${st.SName ? st.SName[0] : 'ط'}</div>`}
+                        ${st.image ? `<img src="${st.image.startsWith('static/') || st.image.startsWith('/static/') ? (st.image.startsWith('/') ? st.image : '/' + st.image) : '/static/' + (st.image.startsWith('/') ? st.image.substring(1) : st.image)}" alt="${st.SName}" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">` : `<div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 36px; height: 36px; font-size: 13px;">${st.SName ? st.SName[0] : 'ط'}</div>`}
                         <div>
                             <span class="fw-bold text-dark font-cairo d-block" style="font-size: 0.88rem;">${st.SName}</span>
                             <small class="text-muted extra-small font-monospace">ID: ${st.SID}</small>
@@ -921,7 +921,7 @@ function openStudentDrawer(studentId) {
             const avatarEl = document.getElementById('drawerStudentAvatar');
             const studentImg = (data.student && data.student.image) ? data.student.image : (data.image || null);
             if (studentImg) {
-                const imgPath = studentImg.startsWith('/') ? studentImg : `/${studentImg}`;
+                const imgPath = studentImg.startsWith('static/') || studentImg.startsWith('/static/') ? (studentImg.startsWith('/') ? studentImg : '/' + studentImg) : '/static/' + (studentImg.startsWith('/') ? studentImg.substring(1) : studentImg);
                 avatarEl.classList.remove('bg-white', 'text-primary');
                 avatarEl.classList.add('overflow-hidden', 'p-0');
                 avatarEl.innerHTML = `<img src="${imgPath}" alt="${data.student.name}" class="w-100 h-100 object-fit-cover">`;
