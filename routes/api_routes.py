@@ -885,24 +885,29 @@ def save_bulk_grades():
                 return api_response(False, "الدرجة يجب أن تكون بين 0 و 100", status_code=400)
                 
             letter_grade = calculate_letter(score)
+            max_score = 100.0
+            pct = round((score / max_score) * 100, 2)
 
             # 1. UPSERT Marks
             mark = Marks.query.filter_by(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id).first()
             if not mark:
-                mark = Marks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score, Grade=letter_grade)
+                mark = Marks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score, MaxScore=max_score, Percentage=pct, Grade=letter_grade)
                 db.session.add(mark)
             else:
                 mark.Score = score
+                mark.MaxScore = max_score
+                mark.Percentage = pct
                 mark.Grade = letter_grade
                 mark.TeacherID = teacher_id
 
             # 2. UPSERT DetailMarks
             detail = DetailMarks.query.filter_by(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id).first()
             if not detail:
-                detail = DetailMarks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score)
+                detail = DetailMarks(SID=sid, SubID=subject_id, ExamID=exam_id, T_ID=term_id, TeacherID=teacher_id, Score=score, MaxScore=max_score)
                 db.session.add(detail)
             else:
                 detail.Score = score
+                detail.MaxScore = max_score
                 detail.TeacherID = teacher_id
                 
         db.session.commit()

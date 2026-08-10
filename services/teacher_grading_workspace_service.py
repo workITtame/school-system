@@ -154,27 +154,73 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                     raise ValueError("Grade must be between 0 and 100")
                 _MOCK_UNIFIED_GRADING_STORE[store_key]['grade'] = g_val
 
-                # Database integration with Marks model
-                from models.grade import Marks
+                # Database integration with Marks and DetailMarks models
+                from models.grade import Marks, DetailMarks
                 from models.academic import ExamSchedule
+                from models.teacher import Teacher
+
                 sub_id = details.get('subject_id')
+                max_score = float(details.get('total_score', 100))
+                
+                ex = ExamSchedule.query.get(source_id)
+                exam_id = getattr(ex, 'ExamID', 1) or 1
+                t_id = getattr(ex, 'T_ID', 1) or 1
+                
+                teacher = Teacher.query.filter_by(user_id=user_id).first()
+                teacher_id = teacher.TeacherID if teacher else 1
+
+                pct = round((g_val / max_score) * 100, 2) if max_score > 0 else 0.0
+                letter_grade = 'A' if g_val >= 90 else ('B' if g_val >= 80 else ('C' if g_val >= 70 else ('D' if g_val >= 60 else 'F')))
+
                 if sub_id:
-                    mark = Marks.query.filter_by(SID=student_id, SubID=sub_id).first()
+                    # 1. UPSERT Marks
+                    mark = Marks.query.filter_by(SID=student_id, SubID=sub_id, ExamID=exam_id, T_ID=t_id).first()
+                    if not mark:
+                        mark = Marks.query.filter_by(SID=student_id, SubID=sub_id).first()
+
                     if mark:
                         mark.Score = g_val
-                        mark.MaxScore = details.get('total_score', 100)
+                        mark.MaxScore = max_score
+                        mark.ExamID = exam_id
+                        mark.T_ID = t_id
+                        mark.TeacherID = teacher_id
+                        mark.Percentage = pct
+                        mark.Grade = letter_grade
                     else:
                         mark = Marks(
                             SID=student_id,
                             SubID=sub_id,
+                            ExamID=exam_id,
+                            T_ID=t_id,
+                            TeacherID=teacher_id,
                             Score=g_val,
-                            MaxScore=details.get('total_score', 100),
+                            MaxScore=max_score,
+                            Percentage=pct,
+                            Grade=letter_grade,
                             is_deleted=False
                         )
                         db.session.add(mark)
 
-                    # Update ExamSchedule status to 'تم التصحيح'
-                    ex = ExamSchedule.query.get(source_id)
+                    # 2. UPSERT DetailMarks
+                    dm = DetailMarks.query.filter_by(SID=student_id, SubID=sub_id, ExamID=exam_id, T_ID=t_id).first()
+                    if not dm:
+                        dm = DetailMarks(
+                            SID=student_id,
+                            SubID=sub_id,
+                            ExamID=exam_id,
+                            T_ID=t_id,
+                            TeacherID=teacher_id,
+                            Score=g_val,
+                            MaxScore=max_score,
+                            is_deleted=False
+                        )
+                        db.session.add(dm)
+                    else:
+                        dm.Score = g_val
+                        dm.MaxScore = max_score
+                        dm.TeacherID = teacher_id
+
+                    # 3. Update ExamSchedule status to 'تم التصحيح'
                     if ex:
                         ex.Status = 'تم التصحيح'
                     db.session.commit()

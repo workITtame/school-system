@@ -747,20 +747,40 @@
                         <label class="form-label text-muted fw-bold extra-small font-monospace">اختر الطالب</label>
                         <select id="modalStudentSelect" class="form-select rounded-pill font-monospace extra-small" required>
                             {% for st in all_students %}
-                            <option value="{{ st.SID }}">{{ st.SName }} (رقم الأكاديمي: {{ st.SID }})</option>
+                            <option value="{{ st.SID }}">{{ st.SName }} (رقم الطالب ID: #{{ st.SID }})</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold extra-small font-monospace">درجة الاختبار (من 100)</label>
-                        <input type="number" step="0.5" min="0" max="100" id="modalScoreInput" class="form-control rounded-pill font-monospace text-center fs-5 fw-bold" placeholder="0.0" required>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted fw-bold extra-small font-monospace">المادة</label>
+                            <select id="modalSubjectSelect" class="form-select rounded-pill font-monospace extra-small">
+                                {% for sub in subjects %}
+                                <option value="{{ sub.SubID }}">{{ sub.SubName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted fw-bold extra-small font-monospace">نوع الاختبار</label>
+                            <select id="modalExamTypeSelect" class="form-select rounded-pill font-monospace extra-small">
+                                {% for ex in exams %}
+                                <option value="{{ ex.ExamID }}">{{ ex.ExamName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label text-muted fw-bold extra-small font-monospace">حالة الحضور</label>
-                        <select id="modalAttendanceSelect" class="form-select rounded-pill font-monospace extra-small">
-                            <option value="حاضر">حاضر</option>
-                            <option value="غائب">غائب</option>
-                        </select>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted fw-bold extra-small font-monospace">درجة الاختبار (من 100)</label>
+                            <input type="number" step="0.5" min="0" max="100" id="modalScoreInput" class="form-control rounded-pill font-monospace text-center fs-5 fw-bold" placeholder="0.0" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted fw-bold extra-small font-monospace">حالة الحضور</label>
+                            <select id="modalAttendanceSelect" class="form-select rounded-pill font-monospace extra-small">
+                                <option value="حاضر">حاضر</option>
+                                <option value="غائب">غائب</option>
+                            </select>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-bold font-monospace shadow-sm">
                         <i class="fa-solid fa-floppy-disk me-1"></i> حفظ وتحديث الكشف

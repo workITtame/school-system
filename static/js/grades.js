@@ -243,7 +243,7 @@ function updateExamMetadataCard() {
     if (titleEl) titleEl.textContent = examText.includes('اختر') ? 'كشف تحليلات ورصد الدرجات المباشر' : examText;
     if (typeEl) typeEl.textContent = examText.includes('اختر') ? 'شامل' : examText;
     if (subClassEl) subClassEl.textContent = `${subText.replace('اختر المادة', 'المادة: الكل')} - ${classText.replace('اختر الصف', 'الكل')} (${secText.replace('اختر الشعبة', 'الكل')})`;
-    if (termYearEl) termYearEl.textContent = `${termText} (2024 - 2025)`;
+    if (termYearEl) termYearEl.textContent = `${termText} (2025 - 2026)`;
 }
 
 /* ==========================================================================
@@ -851,13 +851,15 @@ function submitSingleGrade(e) {
         return;
     }
 
+    const modalSubject = document.getElementById('modalSubjectSelect');
+    const modalExamType = document.getElementById('modalExamTypeSelect');
     const filterTerm = document.getElementById('filterTerm');
     const filterExam = document.getElementById('filterExam');
     const filterSubject = document.getElementById('filterSubject');
 
-    const term_id = filterTerm?.value || (gradesState.referenceData?.terms[0]?.T_ID || 1);
-    const exam_id = filterExam?.value || (gradesState.referenceData?.exams[0]?.ExamID || 1);
-    const subject_id = filterSubject?.value || (gradesState.referenceData?.subjects[0]?.SubID || 1);
+    const term_id = parseInt(filterTerm?.value || (gradesState.referenceData?.terms[0]?.T_ID || 1));
+    const exam_id = parseInt(modalExamType?.value || filterExam?.value || (gradesState.referenceData?.exams[0]?.ExamID || 1));
+    const subject_id = parseInt(modalSubject?.value || filterSubject?.value || (gradesState.referenceData?.subjects[0]?.SubID || 1));
 
     const payload = {
         term_id: term_id,
