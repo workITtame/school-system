@@ -288,17 +288,21 @@
                                             <span class="badge bg-light text-muted border rounded-pill px-2 py-0 extra-small">اليوم</span>
                                         </td>
                                         <td>
-                                            {% if hw.status == 'مكتمل' %}
+                                            {% if hw.status == 'منشور' %}
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-1">
+                                                    <i class="fa-solid fa-paper-plane me-1"></i> منشور
+                                                </span>
+                                            {% elif hw.status == 'مكتمل' or hw.status == 'تم التسليم' %}
                                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
                                                     <i class="fa-solid fa-circle-check me-1"></i> مكتمل
                                                 </span>
-                                            {% elif hw.status == 'معلق' or hw.status == 'قيد الإنجاز' %}
+                                            {% elif hw.status == 'معلق' or hw.status == 'قيد الإنجاز' or hw.status == 'مسودة' %}
                                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">
                                                     <i class="fa-solid fa-hourglass-half me-1"></i> معلق
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
-                                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> متأخر
+                                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ hw.status or 'متأخر' }}
                                                 </span>
                                             {% endif %}
                                         </td>

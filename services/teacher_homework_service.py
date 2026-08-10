@@ -229,7 +229,14 @@ def create_teacher_homework(user_id, title, sub_id, class_id, section_id=None, d
         due_date = datetime.strptime(due_date, '%Y-%m-%d').date()
 
     try:
+        # Find lowest available integer ID to prevent gaps when homeworks are deleted and re-added
+        existing_ids = set(r[0] for r in db.session.query(Homework.id).all())
+        target_id = 1
+        while target_id in existing_ids:
+            target_id += 1
+
         new_hw = Homework(
+            id=target_id,
             title=title,
             sub_id=int(sub_id),
             class_id=int(class_id),
