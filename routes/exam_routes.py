@@ -143,6 +143,7 @@ def index():
     subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
+    terms = Terms.query.filter_by(is_deleted=False).all()
 
     kpi = {
         'total_exams': total_exams,
@@ -269,6 +270,7 @@ def index():
         subjects=subjects,
         classes=classes,
         sections=sections,
+        terms=terms,
         schedules=schedules,
         status_distribution=status_distribution,
         best_subjects_by_score=best_subjects_by_score,
@@ -293,6 +295,9 @@ def add_exam():
     status = request.form.get('status', 'مجدول')
     duration = request.form.get('duration', 60, type=int)
 
+    t_id = request.form.get('t_id', type=int)
+    location = request.form.get('location')
+
     if not exam_type:
         flash('يرجى إدخال اسم أو نوع الاختبار', 'warning')
         return redirect(url_for('exams.index'))
@@ -314,7 +319,9 @@ def add_exam():
             ExamName=exam_type,
             SubID=sub_id,
             CID=class_id,
-            SectionID=section_id,
+            SectionID=section_id if section_id else None,
+            T_ID=t_id if t_id else None,
+            Location=location if location else None,
             ExamDate=exam_date,
             ExamTime=exam_time,
             Duration=duration,
@@ -347,10 +354,15 @@ def edit_exam(id):
     status = request.form.get('status')
     duration = request.form.get('duration', type=int)
 
+    t_id = request.form.get('t_id', type=int)
+    location = request.form.get('location')
+
     if exam_type: sched.ExamName = exam_type
     if sub_id: sched.SubID = sub_id
     if class_id: sched.CID = class_id
-    if section_id is not None: sched.SectionID = section_id
+    if section_id is not None: sched.SectionID = section_id if section_id else None
+    if t_id is not None: sched.T_ID = t_id if t_id else None
+    if location is not None: sched.Location = location if location else None
     if exam_time: sched.ExamTime = exam_time
     if status: sched.Status = status
     if duration: sched.Duration = duration
