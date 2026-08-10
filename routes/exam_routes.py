@@ -110,14 +110,15 @@ def index():
         ex._total_students = st_count
         
         exam_marks = []
-        if ex.SubID and ex.CID:
-            exam_marks = Marks.query.join(Student, Marks.SID == Student.SID).filter(Marks.SubID == ex.SubID, Student.CID == ex.CID, Student.is_deleted == False).all()
-        elif ex.SubID:
-            exam_marks = Marks.query.filter_by(SubID=ex.SubID).all()
+        if (ex.Status or '') in ['تم التصحيح', 'منتهي', 'بانتظار التصحيح']:
+            if ex.SubID and ex.CID:
+                exam_marks = Marks.query.join(Student, Marks.SID == Student.SID).filter(Marks.SubID == ex.SubID, Student.CID == ex.CID, Student.is_deleted == False).all()
+            elif ex.SubID:
+                exam_marks = Marks.query.filter_by(SubID=ex.SubID).all()
             
         scores = [float(m.Score) for m in exam_marks if m.Score is not None]
         ex._present = len(scores)
-        ex._absent = max(0, st_count - len(scores))
+        ex._absent = max(0, st_count - len(scores)) if (ex.Status or '') in ['تم التصحيح', 'منتهي', 'بانتظار التصحيح'] else 0
         ex._avg = round(sum(scores) / len(scores), 1) if scores else 0.0
         ex._pass_pct = round((sum(1 for s in scores if s >= 60) / len(scores)) * 100, 1) if scores else 0.0
 
@@ -144,6 +145,7 @@ def index():
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
     terms = Terms.query.filter_by(is_deleted=False).all()
+    active_term_name = terms[0].T_Name if terms else 'الفصل الدراسي'
 
     kpi = {
         'total_exams': total_exams,
@@ -279,7 +281,8 @@ def index():
         upcoming_exams_list=upcoming_exams_list,
         uncorrected_list=uncorrected_list,
         system_alerts=system_alerts,
-        today=today_str
+        today=today_str,
+        active_term_name=active_term_name
     )
 
 @exam_bp.route('/add', methods=['POST'])

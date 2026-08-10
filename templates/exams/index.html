@@ -51,8 +51,8 @@
       <p class="text-muted mb-0" style="font-size:11px;">إدارة الاختبارات القصيرة والنهائية وجدولة الامتحانات ومتابعة نتائج الطلاب وتحليل الأداء الأكاديمي.</p>
       <div class="d-flex gap-2 mt-1 flex-wrap">
         <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-regular fa-calendar me-1" style="color:#7c3aed;"></i>{{ today }}</span>
-        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-layer-group me-1 text-info"></i>الفصل الثاني</span>
-        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-graduation-cap me-1 text-primary"></i>2024 - 2025</span>
+        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-layer-group me-1 text-info"></i>{{ active_term_name if active_term_name else 'الفصل الدراسي' }}</span>
+        <span class="badge bg-light border text-muted" style="font-size:10px;"><i class="fa-solid fa-graduation-cap me-1 text-primary"></i>2025 - 2026</span>
       </div>
     </div>
 
@@ -397,10 +397,10 @@
             {% if schedules and schedules|length > 0 %}
               {% for ex in schedules %}
               <tr class="exam-row" data-name="{{ ex.ExamName or '' }}" data-subject="{{ ex.subject.SubName if ex.subject else '' }}" data-class="{{ ex.school_class.CName if ex.school_class else '' }}" data-section="{{ ex.section.SectionName if ex.section else '' }}" data-status="{{ ex.Status or '' }}">
-                <td class="text-muted fw-bold">{{ loop.index }}</td>
+                <td class="text-muted fw-bold">#{{ ex.ScheduleID }}</td>
                 <td class="text-start">
                   <strong class="d-block text-dark" style="font-size:12px;">{{ ex.ExamName or 'اختبار' }}</strong>
-                  <small class="text-muted" style="font-size:10px;">اختبار نهائي شامل</small>
+                  <small class="text-muted" style="font-size:10px;">ID: #{{ ex.ScheduleID }} | {{ ex.school_class.CName if ex.school_class else '' }}</small>
                 </td>
                 <td>
                   {% set sn = ex.subject.SubName if ex.subject else 'مادة' %}
@@ -409,7 +409,10 @@
                   </span>
                 </td>
                 <td>
-                  <span class="status-chip chip-done" style="font-size:10px;">نهائي</span>
+                  {% set etype = 'شهري' if 'شهري' in (ex.ExamName or '') else ('نصفي' if ('نصف' in (ex.ExamName or '') or 'فصل' in (ex.ExamName or '')) else ('نهائي' if 'نهائي' in (ex.ExamName or '') else (ex.ExamName or 'اختبار'))) %}
+                  <span class="status-chip {% if etype == 'شهري' %}chip-scheduled{% elif etype == 'نهائي' %}chip-done{% else %}chip-active{% endif %}" style="font-size:10px;">
+                    {{ etype }}
+                  </span>
                 </td>
                 <td style="font-size:11px;">{{ ex.school_class.CName if ex.school_class else '—' }}</td>
                 <td style="font-size:11px;">{{ ex.section.SectionName if ex.section else '—' }}</td>
