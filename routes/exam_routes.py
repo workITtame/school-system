@@ -110,35 +110,30 @@ def index():
         st_count = Student.query.filter_by(CID=ex.CID, is_deleted=False).count() if ex.CID else 0
         ex._total_students = st_count
         
-        exam_marks = []
-        if (ex.Status or '') in ['تم التصحيح', 'منتهي', 'بانتظار التصحيح']:
-            if ex.SubID and ex.CID:
-                exam_marks = Marks.query.join(Student, Marks.SID == Student.SID).filter(Marks.SubID == ex.SubID, Student.CID == ex.CID, Student.is_deleted == False).all()
-            elif ex.SubID:
-                exam_marks = Marks.query.filter_by(SubID=ex.SubID).all()
+        exam_marks = Marks.query.filter(
+            Marks.assessment_type == 'exam',
+            (Marks.ExamID == ex.ScheduleID) | (Marks.assessment_id == ex.ScheduleID)
+        ).all()
             
         scores = [float(m.Score) for m in exam_marks if m.Score is not None]
         ex._present = len(scores)
-        ex._absent = max(0, st_count - len(scores)) if (ex.Status or '') in ['تم التصحيح', 'منتهي', 'بانتظار التصحيح'] else 0
+        ex._absent = max(0, st_count - len(scores)) if (len(scores) > 0 or (ex.Status or '') in ['تم التصحيح', 'منتهي', 'منشور', 'مكتمل', 'بانتظار التصحيح']) else 0
         ex._avg = round(sum(scores) / len(scores), 1) if scores else 0.0
         ex._pass_pct = round((sum(1 for s in scores if s >= 60) / len(scores)) * 100, 1) if scores else 0.0
 
     total_exams = len(schedules)
     active_exams = sum(1 for ex in schedules if (ex.Status or '') in ['نشط', 'نشطة', 'جارية', 'مفعل'])
-    upcoming_exams = sum(1 for ex in schedules if (ex.Status or '') in ['مجدول', 'لم تبدأ بعد', 'منشور'])
-    finished_exams = sum(1 for ex in schedules if (ex.Status or '') in ['منتهي', 'منتهية', 'تم التصحيح', 'مكتمل'])
-    corrected_exams = sum(1 for ex in schedules if (ex.Status or '') == 'تم التصحيح')
-    pending_correction = sum(1 for ex in schedules if (ex.Status or '') in ['بانتظار التصحيح', 'غير مصحح'])
+    upcoming_exams = sum(1 for ex in schedules if (ex.Status or '') in ['مجدول', 'لم تبدأ بعد'])
+    finished_exams = sum(1 for ex in schedules if (ex.Status or '') in ['منتهي', 'منتهية', 'تم التصحيح', 'مكتمل', 'منشور'])
+    corrected_exams = sum(1 for ex in schedules if (ex.Status or '') in ['تم التصحيح', 'منشور', 'منتهي', 'مكتمل'] or getattr(ex, '_present', 0) > 0)
+    pending_correction = sum(1 for ex in schedules if (ex.Status or '') in ['بانتظار التصحيح', 'غير مصحح'] and getattr(ex, '_present', 0) == 0)
 
-    # Only aggregate overall score KPIs if there are corrected/finished exams
-    corrected_schedules = [ex for ex in schedules if (ex.Status or '') in ['تم التصحيح', 'منتهي']]
-    corrected_sub_ids = list(set([ex.SubID for ex in corrected_schedules if ex.SubID]))
-
-    if corrected_schedules and corrected_sub_ids:
-        overall_marks = Marks.query.filter(Marks.SubID.in_(corrected_sub_ids)).all()
-        scores = [float(m.Score) for m in overall_marks if m.Score is not None]
-    else:
-        scores = []
+    # Aggregate overall score KPIs directly from all recorded exam marks
+    overall_marks = Marks.query.filter(
+        Marks.assessment_type == 'exam',
+        Marks.Score.isnot(None)
+    ).all()
+    scores = [float(m.Score) for m in overall_marks if m.Score is not None]
 
     if scores:
         avg_score = round(sum(scores) / len(scores), 1)
@@ -206,15 +201,18 @@ def index():
         'pending_pct': round((pending_correction / tot) * 100, 1) if total_exams > 0 else 0.0
     }
 
-    # Dynamic Best Subjects by Score (Only from corrected exams)
+    # Dynamic Best Subjects by Score
     best_subjects_by_score = []
-    if corrected_schedules and corrected_sub_ids:
+    if overall_marks:
         try:
             from sqlalchemy import func
             subject_marks = db.session.query(
                 Subject.SubName,
                 func.avg(Marks.Score).label('avg_score')
-            ).join(Marks, Subject.SubID == Marks.SubID).filter(Subject.SubID.in_(corrected_sub_ids)).group_by(Subject.SubID, Subject.SubName).having(func.count(Marks.M_ID) > 0).order_by(func.avg(Marks.Score).desc()).limit(5).all()
+            ).join(Marks, Subject.SubID == Marks.SubID)\
+             .filter(Marks.assessment_type == 'exam', Marks.Score.isnot(None))\
+             .group_by(Subject.SubID, Subject.SubName)\
+             .order_by(func.avg(Marks.Score).desc()).limit(5).all()
 
             for s_name, s_avg in subject_marks:
                 val = round(float(s_avg), 1)
@@ -226,16 +224,16 @@ def index():
         except Exception as e:
             logger.error(f"Error querying subject averages: {e}")
 
-    # Dynamic Best & Struggling Students (Only from corrected exams)
+    # Dynamic Best & Struggling Students
     best_students = []
     struggling_students = []
-    if corrected_schedules and corrected_sub_ids:
+    if overall_marks:
         try:
             from sqlalchemy import func
             student_scores = db.session.query(
                 Student.SName,
                 func.avg(Marks.Score).label('avg_score')
-            ).join(Marks, Student.SID == Marks.SID).filter(Student.is_deleted == False, Marks.SubID.in_(corrected_sub_ids)).group_by(Student.SID, Student.SName).having(func.count(Marks.M_ID) > 0).all()
+            ).join(Marks, Student.SID == Marks.SID).filter(Student.is_deleted == False, Marks.assessment_type == 'exam', Marks.Score.isnot(None)).group_by(Student.SID, Student.SName).having(func.count(Marks.M_ID) > 0).all()
 
             if student_scores:
                 sorted_st = sorted(student_scores, key=lambda x: float(x[1]), reverse=True)
