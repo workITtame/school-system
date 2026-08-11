@@ -349,6 +349,16 @@ def soft_delete_exam(exam_id, user_id):
     if teacher_class_ids and ex.CID and ex.CID not in teacher_class_ids:
         raise PermissionError("Access forbidden")
 
+    from models.grade import Marks, DetailMarks
+    Marks.query.filter(
+        Marks.assessment_type == 'exam',
+        (Marks.ExamID == exam_id) | (Marks.assessment_id == exam_id)
+    ).delete(synchronize_session=False)
+    DetailMarks.query.filter(
+        DetailMarks.assessment_type == 'exam',
+        (DetailMarks.ExamID == exam_id) | (DetailMarks.assessment_id == exam_id)
+    ).delete(synchronize_session=False)
+
     db.session.delete(ex)
     db.session.commit()
     return True

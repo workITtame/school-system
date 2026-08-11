@@ -467,16 +467,20 @@ def delete_exam(id):
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
 
-    # Check dependencies in Marks
-    marks_count = Marks.query.filter_by(SubID=sched.SubID).count() if sched.SubID else 0
-    if marks_count > 0 and sched.Status == 'تم التصحيح':
-        flash(f'تعذر حذف الاختبار "{sched.ExamName}" لوجود {marks_count} سجلات درجات مرصودة مرتبطة به.', 'danger')
-        return redirect(url_for('exams.index'))
-
     try:
+        from models.grade import Marks, DetailMarks
+        Marks.query.filter(
+            Marks.assessment_type == 'exam',
+            (Marks.ExamID == id) | (Marks.assessment_id == id)
+        ).delete(synchronize_session=False)
+        DetailMarks.query.filter(
+            DetailMarks.assessment_type == 'exam',
+            (DetailMarks.ExamID == id) | (DetailMarks.assessment_id == id)
+        ).delete(synchronize_session=False)
+
         db.session.delete(sched)
         db.session.commit()
-        flash('تم حذف الاختبار بنجاح', 'success')
+        flash('تم حذف الاختبار والدرجات المرتبطة به بنجاح', 'success')
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error deleting exam: {e}")
