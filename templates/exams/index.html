@@ -64,7 +64,7 @@
       <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-success fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="font-size:12px;">
         <i class="fa-solid fa-pen-to-square"></i> رصد الدرجات
       </a>
-      <a href="{{ url_for('grades.manage_grades') }}" class="btn btn-info text-white fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="font-size:12px;">
+      <a href="{{ url_for('grades.student_report_page') }}" class="btn btn-info text-white fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1 hover-lift" style="font-size:12px;">
         <i class="fa-solid fa-list-check"></i> كشف النتائج
       </a>
       <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 py-1 d-flex align-items-center gap-1" style="font-size:12px;" onclick="window.print()">
@@ -446,15 +446,19 @@
                     <button class="action-btn bg-warning-subtle text-warning border-warning-subtle" title="⭐ بدء التصحيح (Unified Grading Workspace)" onclick="openGradingWorkspace('exam', {{ ex.ScheduleID }})">
                       <i class="fa-solid fa-star"></i>
                     </button>
-                    <!-- 4. 📤 نشر الاختبار -->
+                    <!-- 4. 📊 كشف النتائج (Exam Results Statement) -->
+                    <a href="{{ url_for('grades.student_report_page') }}?exam_id={{ ex.ScheduleID }}" class="action-btn bg-info-subtle text-info border-info-subtle" title="كشف النتائج والتحليل" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
+                      <i class="fa-solid fa-list-check"></i>
+                    </a>
+                    <!-- 5. 📤 نشر الاختبار -->
                     <button class="action-btn bg-success-subtle text-success border-success-subtle" title="نشر الاختبار" onclick="publishExam({{ ex.ScheduleID }})">
                       <i class="fa-solid fa-paper-plane"></i>
                     </button>
-                    <!-- 5. 📑 تكرار الاختبار -->
+                    <!-- 6. 📑 تكرار الاختبار -->
                     <button class="action-btn bg-secondary-subtle text-secondary border-secondary-subtle" title="تكرار الاختبار" onclick="duplicateExam({{ ex.ScheduleID }})">
                       <i class="fa-solid fa-copy"></i>
                     </button>
-                    <!-- 6. 🗑️ حذف الاختبار -->
+                    <!-- 7. 🗑️ حذف الاختبار -->
                     <button type="button" class="action-btn bg-danger-subtle text-danger border-danger-subtle" title="حذف الاختبار" onclick="deleteExam({{ ex.ScheduleID }}, '{{ ex.ExamName|e }}')">
                       <i class="fa-solid fa-trash"></i>
                     </button>
