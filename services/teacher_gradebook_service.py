@@ -48,11 +48,15 @@ def get_gradebook_statistics(user_id, subject_id=None, class_id=None, section_id
             'smart_insights': ['لا يوجد طلاب مسجلون حالياً']
         }
 
-    # Compute statistics dynamically from real marks
-    from models.marks import Marks
+    # Compute statistics dynamically from Exam Marks and HomeworkMarks separately
+    from models.grade import Marks, HomeworkMarks
     student_ids = [s.SID for s in students]
-    marks_records = Marks.query.filter(Marks.SID.in_(student_ids)).all() if student_ids else []
-    scores = [float(m.Score) for m in marks_records if m.Score is not None]
+    exam_marks = Marks.query.filter(Marks.SID.in_(student_ids), Marks.assessment_type == 'exam', Marks.Score.isnot(None)).all() if student_ids else []
+    hw_marks = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids), HomeworkMarks.Score.isnot(None)).all() if student_ids else []
+    
+    exam_scores = [float(m.Score) for m in exam_marks]
+    hw_scores = [float(m.Score) for m in hw_marks]
+    scores = exam_scores + hw_scores
 
     if not scores:
         return {
@@ -72,15 +76,20 @@ def get_gradebook_statistics(user_id, subject_id=None, class_id=None, section_id
     passed_count = sum(1 for sc in scores if sc >= 60.0)
     pass_rate = round((passed_count / len(scores)) * 100, 1)
 
+    exam_avg = round(sum(exam_scores) / len(exam_scores), 1) if exam_scores else 0.0
+    hw_avg = round(sum(hw_scores) / len(hw_scores), 1) if hw_scores else 0.0
+
     smart_insights = [
         f"نسبة النجاح العامة في الفصل تصل إلى {pass_rate}%",
-        f"أعلى درجة مرصودة بالفصل هي {highest}% من 100%",
+        f"أعلى درجة مرصودة بالفصل هي {highest}% (متوسط الاختبارات: {exam_avg}%، متوسط الواجبات: {hw_avg}%)",
         f"يوجد {needs_followup} طالب بحاجة لمتابعة وتقوية أكاديمية"
     ]
 
     return {
         'total_students': total_students,
         'class_average': avg_score,
+        'exam_average': exam_avg,
+        'homework_average': hw_avg,
         'highest_grade': highest,
         'lowest_grade': lowest,
         'pass_rate': pass_rate,

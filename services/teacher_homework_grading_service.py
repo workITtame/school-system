@@ -62,16 +62,24 @@ def get_homework_grading_workspace(homework_id, user_id):
 
     st_val = hw.status or 'منشور'
 
+    from models.grade import HomeworkMarks
+    db_marks = {hm.SID: hm for hm in HomeworkMarks.query.filter_by(HomeworkID=homework_id, is_deleted=False).all()}
+
     for idx, s in enumerate(students):
         store_key = f"{homework_id}_{s.SID}"
         saved_data = _MOCK_GRADING_STORE.get(store_key, {})
+        hm_record = db_marks.get(s.SID)
 
         if st_val in ['مكتمل', 'تم التسليم']:
             submission_status = 'تم التسليم'
         else:
             submission_status = 'لم يسلم'
 
-        if 'grade' in saved_data:
+        if hm_record and hm_record.Score is not None:
+            grade = float(hm_record.Score)
+            grading_status = 'تم التصحيح'
+            feedback = saved_data.get('feedback', '') or (hm_record.Notes or '')
+        elif 'grade' in saved_data:
             grade = saved_data['grade']
             grading_status = 'تم التصحيح'
             feedback = saved_data.get('feedback', '')
@@ -213,36 +221,32 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
 
     if grade is not None:
         _MOCK_GRADING_STORE[store_key]['grade'] = float(grade)
-        # Database integration with Marks model (strictly homework type)
-        if hw.sub_id:
-            from models.grade import Marks
-            mark = Marks.query.filter_by(
+        # Database integration with HomeworkMarks model exclusively
+        from models.grade import HomeworkMarks
+        t_id_val = getattr(teacher, 'TeacherID', None)
+        hm = HomeworkMarks.query.filter_by(
+            SID=student_id,
+            HomeworkID=hw.id
+        ).first()
+        if hm:
+            hm.Score = float(grade)
+            hm.MaxScore = 100
+            hm.SubID = hw.sub_id
+            hm.TeacherID = t_id_val
+            hm.is_deleted = False
+        else:
+            hm = HomeworkMarks(
                 SID=student_id,
                 SubID=hw.sub_id,
-                assessment_type='homework',
-                HomeworkID=hw.id
-            ).first()
-            if mark:
-                mark.Score = float(grade)
-                mark.MaxScore = 100
-                mark.Notes = f"واجب: {hw.title}"
-                mark.assessment_id = hw.id
-                mark.ExamID = None
-            else:
-                mark = Marks(
-                    SID=student_id,
-                    SubID=hw.sub_id,
-                    HomeworkID=hw.id,
-                    assessment_type='homework',
-                    assessment_id=hw.id,
-                    ExamID=None,
-                    Score=float(grade),
-                    MaxScore=100,
-                    Notes=f"واجب: {hw.title}",
-                    is_deleted=False
-                )
-                db.session.add(mark)
-            db.session.commit()
+                HomeworkID=hw.id,
+                TeacherID=t_id_val,
+                Score=float(grade),
+                MaxScore=100,
+                Notes=f"واجب: {hw.title}",
+                is_deleted=False
+            )
+            db.session.add(hm)
+        db.session.commit()
 
     if feedback is not None:
         _MOCK_GRADING_STORE[store_key]['feedback'] = str(feedback).strip()

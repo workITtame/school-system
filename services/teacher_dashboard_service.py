@@ -149,15 +149,22 @@ def get_students_needing_attention(teacher):
 
         absent_map = {sid: count for sid, count in absent_counts}
 
-        # 2. Low grades check
+        # 2. Low grades check (Exam Marks and HomeworkMarks)
+        from models.grade import HomeworkMarks
         low_grade_sids = set()
         if subject_ids:
             low_grades = db.session.query(Marks.SID).filter(
                 Marks.SID.in_(student_ids),
                 Marks.SubID.in_(subject_ids),
+                Marks.assessment_type == 'exam',
                 Marks.Score < 60
             ).distinct().all()
-            low_grade_sids = {g[0] for g in low_grades}
+            low_hw = db.session.query(HomeworkMarks.SID).filter(
+                HomeworkMarks.SID.in_(student_ids),
+                HomeworkMarks.SubID.in_(subject_ids),
+                HomeworkMarks.Score < 60
+            ).distinct().all()
+            low_grade_sids = {g[0] for g in low_grades} | {h[0] for h in low_hw}
 
         for st in students:
             reasons = []

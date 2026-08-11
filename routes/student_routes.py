@@ -699,10 +699,11 @@ def delete_student(id):
     student = Student.query.get_or_404(id)
     try:
         from models import Attendance, Message
-        from models.grade import Marks, DetailMarks
+        from models.grade import Marks, DetailMarks, HomeworkMarks
         Attendance.query.filter_by(SID=id).delete(synchronize_session=False)
         Marks.query.filter_by(SID=id).delete(synchronize_session=False)
         DetailMarks.query.filter_by(SID=id).delete(synchronize_session=False)
+        HomeworkMarks.query.filter_by(SID=id).delete(synchronize_session=False)
         Message.query.filter((Message.sender_id == id) | (Message.recipient_id == id)).delete(synchronize_session=False)
         db.session.delete(student)
         db.session.commit()
@@ -870,10 +871,11 @@ def bulk_delete_students():
         
     try:
         from models import Attendance, Message
-        from models.grade import Marks, DetailMarks
+        from models.grade import Marks, DetailMarks, HomeworkMarks
         Attendance.query.filter(Attendance.SID.in_(ids)).delete(synchronize_session=False)
         Marks.query.filter(Marks.SID.in_(ids)).delete(synchronize_session=False)
         DetailMarks.query.filter(DetailMarks.SID.in_(ids)).delete(synchronize_session=False)
+        HomeworkMarks.query.filter(HomeworkMarks.SID.in_(ids)).delete(synchronize_session=False)
         Message.query.filter((Message.sender_id.in_(ids)) | (Message.recipient_id.in_(ids))).delete(synchronize_session=False)
         
         count = Student.query.filter(Student.SID.in_(ids)).delete(synchronize_session=False)

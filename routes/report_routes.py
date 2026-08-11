@@ -73,7 +73,7 @@ def student_report():
             selected_student = None
 
         if selected_student:
-            marks = Marks.query.filter_by(SID=selected_student.SID).all()
+            marks = Marks.query.filter_by(SID=selected_student.SID, assessment_type='exam').all()
             report_data = {}
             total_score = 0
             count = 0
@@ -125,7 +125,7 @@ def performance():
         func.avg(Marks.Score)
     ).join(Student, Student.CID == Classes.CID)\
      .join(Marks, Marks.SID == Student.SID)\
-     .filter(Classes.is_deleted == False, Student.is_deleted == False)\
+     .filter(Classes.is_deleted == False, Student.is_deleted == False, Marks.assessment_type == 'exam')\
      .group_by(Classes.CName).all()
      
     class_averages = [{'class_name': r[0], 'average': round(float(r[1]), 2)} for r in results if r[1] is not None]
@@ -142,7 +142,7 @@ def student_report_pdf_fast(student_id):
     term_id = request.args.get('term_id', type=int)
     exam_id = request.args.get('exam_id', type=int)
     
-    query = Marks.query.filter_by(SID=student_id)
+    query = Marks.query.filter_by(SID=student_id, assessment_type='exam')
     if term_id:
         query = query.filter_by(T_ID=term_id)
     if exam_id:

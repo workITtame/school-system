@@ -308,6 +308,8 @@ def delete_teacher_homework(homework_id, user_id):
         raise PermissionError("Access forbidden")
 
     try:
+        from models.grade import HomeworkMarks
+        HomeworkMarks.query.filter_by(HomeworkID=homework_id).delete(synchronize_session=False)
         db.session.delete(hw)
         db.session.commit()
         return True

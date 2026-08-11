@@ -166,13 +166,17 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
             if target_sub:
                 subjects_str_default = target_sub.SubName
 
-        # Batch query marks & attendance (Zero N+1)
+        from models.grade import HomeworkMarks
         all_marks = []
         filter_sub_ids = [subject_id] if subject_id else subject_ids
         if student_ids and filter_sub_ids:
-            all_marks = Marks.query.filter(Marks.SID.in_(student_ids), Marks.SubID.in_(filter_sub_ids)).all()
+            exam_m = Marks.query.filter(Marks.SID.in_(student_ids), Marks.SubID.in_(filter_sub_ids), Marks.assessment_type == 'exam').all()
+            hw_m = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids), HomeworkMarks.SubID.in_(filter_sub_ids)).all()
+            all_marks = exam_m + hw_m
         elif student_ids:
-            all_marks = Marks.query.filter(Marks.SID.in_(student_ids)).all()
+            exam_m = Marks.query.filter(Marks.SID.in_(student_ids), Marks.assessment_type == 'exam').all()
+            hw_m = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids)).all()
+            all_marks = exam_m + hw_m
 
         marks_by_sid = {}
         for m in all_marks:

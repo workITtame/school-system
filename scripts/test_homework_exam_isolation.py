@@ -79,26 +79,25 @@ class HomeworkExamIsolationTestCase(unittest.TestCase):
 
         # Step 3: Verify DB state
         print("--- Step 3: Verify DB state for Exam #1 and Homework #1 ---")
-        exam_mark = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', assessment_id=ex.ScheduleID).first()
+        from models.grade import HomeworkMarks
+        exam_mark = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', ExamID=ex.ScheduleID).first()
         self.assertIsNotNone(exam_mark)
         self.assertEqual(float(exam_mark.Score), 100.0)
         self.assertEqual(exam_mark.assessment_type, 'exam')
         self.assertEqual(exam_mark.ExamID, ex.ScheduleID)
         self.assertIsNone(exam_mark.HomeworkID)
 
-        hw_mark = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='homework', HomeworkID=hw.id).first()
+        hw_mark = HomeworkMarks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, HomeworkID=hw.id).first()
         self.assertIsNotNone(hw_mark)
         self.assertEqual(float(hw_mark.Score), 80.0)
-        self.assertEqual(hw_mark.assessment_type, 'homework')
         self.assertEqual(hw_mark.HomeworkID, hw.id)
-        self.assertIsNone(hw_mark.ExamID)
 
         # Step 4: Change Homework 80 -> 70
         print("--- Step 4: Change Homework #1 from 80 to 70 ---")
         save_grade('homework', hw.id, self.student.SID, self.user_id, 70.0, "تعديل درجة الواجب")
 
-        exam_mark_after_hw = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', assessment_id=ex.ScheduleID).first()
-        hw_mark_after_hw = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='homework', HomeworkID=hw.id).first()
+        exam_mark_after_hw = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', ExamID=ex.ScheduleID).first()
+        hw_mark_after_hw = HomeworkMarks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, HomeworkID=hw.id).first()
         self.assertEqual(float(exam_mark_after_hw.Score), 100.0) # Exam MUST remain 100!
         self.assertEqual(float(hw_mark_after_hw.Score), 70.0)   # Homework becomes 70!
 
@@ -106,8 +105,8 @@ class HomeworkExamIsolationTestCase(unittest.TestCase):
         print("--- Step 5: Change Exam #1 from 100 to 90 ---")
         save_grade('exam', ex.ScheduleID, self.student.SID, self.user_id, 90.0, "تعديل درجة الاختبار")
 
-        exam_mark_after_exam = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', assessment_id=ex.ScheduleID).first()
-        hw_mark_after_exam = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='homework', HomeworkID=hw.id).first()
+        exam_mark_after_exam = Marks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, assessment_type='exam', ExamID=ex.ScheduleID).first()
+        hw_mark_after_exam = HomeworkMarks.query.filter_by(SID=self.student.SID, SubID=self.subject.SubID, HomeworkID=hw.id).first()
         self.assertEqual(float(exam_mark_after_exam.Score), 90.0) # Exam becomes 90!
         self.assertEqual(float(hw_mark_after_exam.Score), 70.0)   # Homework MUST remain 70!
 
