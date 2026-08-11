@@ -1,92 +1,115 @@
-<!-- UNIFIED TEACHER GRADING WORKSPACE DRAWER (1000px Shared Component for Homework, Exams, Projects, Assignments) -->
-<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="unifiedGradingWorkspaceDrawer" style="width: 1000px; max-width: 95vw;">
-    <div class="offcanvas-header bg-primary text-white p-3">
-        <h6 class="offcanvas-title fw-bold mb-0" id="unifiedGradingDrawerTitle">
-            <i class="fa-solid fa-star me-2"></i> مساحة التصحيح الموحدة (Unified Grading Workspace)
-        </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close" onclick="confirmCloseGradingWorkspace(event)"></button>
+<!-- UNIFIED TEACHER GRADING WORKSPACE DRAWER (Professional SaaS / ERP Academic Grading Workspace) -->
+<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="unifiedGradingWorkspaceDrawer" style="width: 1200px; max-width: 95vw;">
+    <!-- Drawer Header -->
+    <div class="offcanvas-header bg-dark text-white p-3 border-bottom border-secondary d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary bg-opacity-25 text-primary p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                <i class="fa-solid fa-graduation-cap fs-5"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary rounded-pill px-2 py-1 extra-small" id="ugwTypeBadge">اختبار أكاديمي</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 extra-small" id="ugwStatusBadge">🟢 نشط</span>
+                </div>
+                <h5 class="fw-bold text-white mb-0 font-cairo fs-6" id="ugwTitle">مساحة التصحيح الموحدة</h5>
+                <small class="text-white-50 extra-small" id="ugwMeta">المادة: -- | الصف: -- | الشعبة: -- | التاريخ: --</small>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold extra-small" onclick="triggerPublishConfirmation()">
+                <i class="fa-solid fa-paper-plane me-1"></i> نشر النتائج
+            </button>
+            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="offcanvas" aria-label="Close" onclick="confirmCloseGradingWorkspace(event)"></button>
+        </div>
     </div>
 
     <div class="offcanvas-body p-0 d-flex flex-column bg-light" id="unifiedGradingDrawerBody">
         <!-- Skeleton Loading State -->
         <div class="p-4 font-cairo" id="unifiedGradingSkeleton">
-            <div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 110px;"></div></div>
-            <div class="row g-2 mb-3">
-                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
-                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
-                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 60px;"></div></div></div>
-            </div>
+            <div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 90px;"></div></div>
             <div class="row g-3">
-                <div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 380px;"></div></div></div>
-                <div class="col-8"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 380px;"></div></div></div>
+                <div class="col-3"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 480px;"></div></div></div>
+                <div class="col-9"><div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 480px;"></div></div></div>
             </div>
         </div>
 
         <!-- Real Workspace Container (Populated via AJAX) -->
         <div class="d-none flex-grow-1 flex-column" id="unifiedGradingContent">
-            <!-- Header Section -->
+            
+            <!-- Progress & KPI Metrics Bar -->
             <div class="p-3 bg-white border-bottom shadow-sm">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <div>
-                        <span class="badge bg-primary rounded-pill px-3 py-1 extra-small mb-1" id="ugwTypeBadge">واجب أكاديمي</span>
-                        <h5 class="fw-bold text-dark mb-0 font-cairo" id="ugwTitle">عنوان التقييم</h5>
-                        <small class="text-muted extra-small" id="ugwMeta">المادة: -- | الصف: -- | التاريخ: --</small>
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-lg-8">
+                        <div class="d-flex align-items-center justify-content-between mb-1 extra-small">
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-chart-line text-primary me-1"></i> تقدم التصحيح الإجمالي:</span>
+                            <span class="font-monospace fw-bold text-primary" id="ugwProgressLabel">0% - تم تصحيح 0 من 0 طلاب</span>
+                        </div>
+                        <div class="progress rounded-pill bg-light" style="height: 10px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated rounded-pill" id="ugwProgressBar" style="width: 0%;"></div>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 font-monospace extra-small" id="ugwStatusBadge">🟢 نشط</span>
-                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold extra-small" onclick="publishGradingGrades()">
-                            <i class="fa-solid fa-paper-plane me-1"></i> نشر جميع الدرجات
-                        </button>
+                    <div class="col-12 col-lg-4">
+                        <div class="d-flex align-items-center justify-content-around text-center extra-small font-monospace bg-light p-2 rounded-3 border">
+                            <div><small class="text-muted d-block">إجمالي</small><strong class="text-dark fs-6" id="ugwKpiTotal">0</strong></div>
+                            <div class="border-end h-100"></div>
+                            <div><small class="text-muted d-block">تسليم</small><strong class="text-info fs-6" id="ugwKpiSubmitted">0</strong></div>
+                            <div class="border-end h-100"></div>
+                            <div><small class="text-muted d-block">مصحح</small><strong class="text-success fs-6" id="ugwKpiGraded">0</strong></div>
+                            <div class="border-end h-100"></div>
+                            <div><small class="text-muted d-block">بانتظار</small><strong class="text-warning fs-6" id="ugwKpiPending">0</strong></div>
+                            <div class="border-end h-100"></div>
+                            <div><small class="text-muted d-block">لم يسلم</small><strong class="text-danger fs-6" id="ugwKpiMissing">0</strong></div>
+                        </div>
                     </div>
-                </div>
-
-                <!-- 6 KPI Summary Mini Cards -->
-                <div class="row g-2 text-center extra-small mt-1 font-monospace">
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">إجمالي الطلاب</small><strong class="text-dark" id="ugwKpiTotal">0</strong></div></div>
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">تم التسليم</small><strong class="text-info" id="ugwKpiSubmitted">0</strong></div></div>
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">بانتظار التصحيح</small><strong class="text-warning" id="ugwKpiPending">0</strong></div></div>
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">تم التصحيح</small><strong class="text-success" id="ugwKpiGraded">0</strong></div></div>
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">متوسط الدرجات</small><strong class="text-primary" id="ugwKpiAvg">0.0</strong></div></div>
-                    <div class="col-2"><div class="p-2 rounded-3 bg-light border"><small class="text-muted d-block">أعلى درجة</small><strong class="text-success" id="ugwKpiHighest">0.0</strong></div></div>
                 </div>
             </div>
 
-            <!-- Main Split Body (Left Roster Sidebar + Right Submission & Grading) -->
+            <!-- Main Split Workspace Body (25% Roster Sidebar | 75% Grading Editor) -->
             <div class="row g-0 flex-grow-1 overflow-hidden">
-                <!-- Left Panel: Student Roster -->
-                <div class="col-12 col-md-4 bg-white border-end d-flex flex-column h-100 p-3">
-                    <div class="mb-2">
-                        <div class="input-group input-group-sm mb-2">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            <input type="text" id="ugwStudentSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب..." onkeyup="searchGradingStudents(this.value)">
-                        </div>
-                        <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small pb-1">
-                            <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 active" onclick="filterGradingStudents('', this)">الكل</button>
-                            <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="filterGradingStudents('بانتظار التصحيح', this)">🟡 بانتظار</button>
-                            <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2" onclick="filterGradingStudents('تم التصحيح', this)">🟢 تم</button>
-                            <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2" onclick="filterGradingStudents('لم يسلم', this)">🔴 لم يسلم</button>
-                        </div>
+                
+                <!-- Roster Sidebar Panel (25% Width in RTL) -->
+                <div class="col-12 col-md-3 bg-white border-end d-flex flex-column h-100 p-3">
+                    <!-- Search Input -->
+                    <div class="input-group input-group-sm mb-2 shadow-xs">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="ugwStudentSearch" class="form-control border-start-0 ps-0 extra-small" placeholder="بحث باسم الطالب..." onkeyup="searchGradingStudents(this.value)">
                     </div>
 
-                    <div class="flex-grow-1 overflow-y-auto list-group list-group-flush extra-small pe-1" id="ugwStudentList">
+                    <!-- Quick Filter Chips with Badges -->
+                    <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small pb-2 mb-2 border-bottom">
+                        <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 active fw-bold" id="ugwFilterAll" onclick="filterGradingStudents('', this)">الكل (<span id="ugwCntAll">0</span>)</button>
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 fw-bold" id="ugwFilterPending" onclick="filterGradingStudents('بانتظار', this)">بانتظار (<span id="ugwCntPending">0</span>)</button>
+                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 fw-bold" id="ugwFilterGraded" onclick="filterGradingStudents('تم', this)">تم (<span id="ugwCntGraded">0</span>)</button>
+                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 fw-bold" id="ugwFilterMissing" onclick="filterGradingStudents('لم يسلم', this)">لم يسلم (<span id="ugwCntMissing">0</span>)</button>
+                    </div>
+
+                    <!-- Student List Roster Cards -->
+                    <div class="flex-grow-1 overflow-y-auto pe-1 d-flex flex-column gap-1" id="ugwStudentList">
                         <!-- Dynamically populated student items -->
                     </div>
                 </div>
 
-                <!-- Right Panel: Submission Viewer & Grading Panel -->
-                <div class="col-12 col-md-8 p-3 overflow-y-auto d-flex flex-column gap-3">
-                    <!-- Student Header Card -->
+                <!-- Right Panel: Student Submission Viewer & Grading Editor (75% Width in RTL) -->
+                <div class="col-12 col-md-9 p-3 overflow-y-auto d-flex flex-column gap-3 bg-light">
+                    
+                    <!-- Selected Student Info Header Card -->
                     <div class="card p-3 border-0 bg-white shadow-sm rounded-4">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                     <i class="fa-solid fa-user-graduate fs-4"></i>
                                 </div>
                                 <div>
                                     <h6 class="fw-bold text-dark mb-0 fs-6" id="ugwCurrentStudentName">اختر طالباً للبدء</h6>
-                                    <small class="text-muted font-monospace extra-small" id="ugwCurrentStudentCode">الرقم الأكاديمي: --</small>
+                                    <div class="d-flex align-items-center gap-2 extra-small text-muted font-monospace mt-1">
+                                        <span id="ugwCurrentStudentCode">رقم الطالب: --</span>
+                                        <span>•</span>
+                                        <span id="ugwCurrentStudentClass">الصف الأول - شعبة أ</span>
+                                    </div>
                                 </div>
                             </div>
+
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 extra-small" id="ugwSubmissionStatus">تم التسليم</span>
                                 <small class="text-muted font-monospace extra-small" id="ugwSubmissionTime">--</small>
@@ -94,79 +117,83 @@
                         </div>
                     </div>
 
-                    <!-- Submission Viewer & Attachments Section -->
+                    <!-- Submission Answer & Attachments Card -->
                     <div class="card p-3 border-0 bg-white shadow-sm rounded-4">
-                        <h6 class="fw-bold text-dark mb-2 extra-small"><i class="fa-solid fa-paperclip text-primary me-2"></i> مرفقات وإجابة الطالب:</h6>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-paperclip text-primary me-2"></i> مرفقات وإجابة الطالب:</h6>
+                            <span class="badge bg-light text-muted border extra-small" id="ugwFilesCountBadge">0 مرفق</span>
+                        </div>
+                        
                         <div id="ugwSubmissionFiles" class="mb-3">
-                            <div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد مرفقات معروضة.</div>
+                            <div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد مرفقات لهذا التسليم.</div>
                         </div>
 
-                        <!-- Submission Activity Timeline -->
+                        <!-- Timeline Section -->
                         <div class="border-top pt-2 mt-2">
-                            <small class="fw-bold text-dark d-block mb-1 extra-small"><i class="fa-solid fa-clock-rotate-left text-warning me-1"></i> السجل الزمني للتسليم والتعديل:</small>
-                            <div class="d-flex align-items-center gap-3 extra-small text-muted font-monospace overflow-x-auto" id="ugwTimelineContainer">
-                                <span><i class="fa-solid fa-circle-check text-success me-1"></i> تم التسليم</span>
+                            <small class="fw-bold text-dark d-block mb-2 extra-small"><i class="fa-solid fa-clock-rotate-left text-warning me-1"></i> السجل الزمني للتسليم والتعديل:</small>
+                            <div class="d-flex align-items-center gap-3 extra-small text-muted font-monospace overflow-x-auto pb-1" id="ugwTimelineContainer">
+                                <span class="badge bg-light text-muted border"><i class="fa-solid fa-circle-check text-success me-1"></i> تم نشر الاختبار</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Grading & Feedback Editor Panel -->
-                    <div class="card p-3 border-0 bg-white shadow-sm rounded-4 border-start border-4 border-primary">
+                    <!-- Main Grading & Feedback Editor Card -->
+                    <div class="card p-4 border-0 bg-white shadow-sm rounded-4 border-start border-4 border-primary">
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-star text-warning me-2"></i> إدخال الدرجة والتغذية الراجعة:</h6>
-                            <span class="extra-small font-monospace text-muted" id="ugwAutoSaveIndicator"><i class="fa-solid fa-check text-success me-1"></i> تم الحفظ</span>
+                            <h6 class="fw-bold text-dark mb-0 extra-small"><i class="fa-solid fa-pen-to-square text-warning me-2"></i> إدخال الدرجة والتغذية الراجعة:</h6>
+                            <span class="extra-small font-monospace" id="ugwAutoSaveIndicator"><i class="fa-solid fa-check text-success me-1"></i> تم الحفظ — جاهز</span>
                         </div>
 
                         <div class="row g-3 mb-3">
-                            <!-- Numeric Input + Slider -->
+                            <!-- Numerical Score Input + Synced Slider -->
                             <div class="col-12 col-md-5">
                                 <label class="form-label fw-bold text-dark extra-small">الدرجة الممنوحة (من <span id="ugwMaxGradeLabel">100</span>):</label>
-                                <div class="input-group input-group-sm mb-1">
-                                    <input type="number" id="ugwGradeInput" class="form-control font-monospace fw-bold fs-6 text-center" min="0" max="100" step="0.5" placeholder="0.0" oninput="onGradingFormChanged()">
-                                    <span class="input-group-text bg-light text-muted font-monospace">/ <span id="ugwMaxGradeSuffix">100</span></span>
+                                <div class="input-group input-group-lg mb-2">
+                                    <input type="number" id="ugwGradeInput" class="form-control font-monospace fw-bold text-center border-primary shadow-xs" min="0" max="100" step="0.5" placeholder="0.0" oninput="syncGradeSliderFromInput(); onGradingFormChanged();" style="font-size: 1.4rem;">
+                                    <span class="input-group-text bg-light text-muted font-monospace fw-bold">/ <span id="ugwMaxGradeSuffix">100</span></span>
                                 </div>
                                 <div class="invalid-feedback extra-small mb-2" id="ugwGradeValidationError">الدرجة يجب أن تكون برقم صحيح بين 0 والحد الأقصى.</div>
-                                <input type="range" id="ugwGradeSlider" class="form-range" min="0" max="100" step="0.5" oninput="document.getElementById('ugwGradeInput').value=this.value; onGradingFormChanged();">
+                                <input type="range" id="ugwGradeSlider" class="form-range" min="0" max="100" step="0.5" oninput="syncGradeInputFromSlider(); onGradingFormChanged();">
                             </div>
 
                             <!-- Quick Grade Presets Buttons -->
                             <div class="col-12 col-md-7">
                                 <label class="form-label fw-bold text-dark extra-small">درجات سريعة جاهزة:</label>
-                                <div class="d-flex align-items-center gap-1 flex-wrap">
-                                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(100)">100</button>
-                                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(95)">95</button>
-                                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(90)">90</button>
-                                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(80)">80</button>
-                                    <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(70)">70</button>
-                                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(60)">60</button>
-                                    <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 font-monospace fw-bold" onclick="setQuickGrade(0)">0</button>
+                                <div class="d-flex align-items-center gap-1 flex-wrap" id="ugwQuickGradeContainer">
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(100)">100</button>
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(95)">95</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(90)">90</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(80)">80</button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(70)">70</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(60)">60</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(0)">0</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Feedback Editor & Quick Feedback Chips -->
+                        <!-- Feedback Editor & Quick Feedback Templates -->
                         <div class="mb-3">
                             <label class="form-label fw-bold text-dark extra-small">الملاحظات والتغذية الراجعة للمعلم:</label>
-                            <textarea id="ugwFeedbackInput" class="form-control form-control-sm extra-small mb-2" rows="3" placeholder="أدخل الملاحظات والتوجيهات الأكاديمية للطالب..." onkeyup="onGradingFormChanged()"></textarea>
+                            <textarea id="ugwFeedbackInput" class="form-control extra-small mb-2 shadow-xs" rows="3" placeholder="أدخل ملاحظاتك وتوجيهاتك الأكاديمية للطالب..." onkeyup="onGradingFormChanged()"></textarea>
 
                             <div class="d-flex align-items-center gap-1 flex-wrap extra-small">
                                 <span class="text-muted fw-bold me-1">قوالب سريعة:</span>
-                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('عمل ممتاز وإجابة دقيقة متكاملة 👏')">ممتاز</button>
-                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('أداء جيد جداً مع مراعاة التفاصيل الأكاديمية 👍')">جيد جداً</button>
-                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('يرجى إعادة مراجعة الخطوات وتدقيق الإجابة ⚠️')">يحتاج تحسين</button>
-                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2" onclick="addQuickFeedback('التسليم غير مكتمل ويرجى استكمال باقي الفقرات 🔴')">غير مكتمل</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2 me-1 mb-1" onclick="addQuickFeedback('ممتاز، إجابة متكاملة ودقيقة 👏')">ممتاز</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2 me-1 mb-1" onclick="addQuickFeedback('أداء جيد جداً مع التزام بالتفاصيل 👍')">جيد جداً</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2 me-1 mb-1" onclick="addQuickFeedback('يرجى تدقيق الخطوات وإعادة مراجعة الفقرة الأخيرة ⚠️')">يحتاج تحسين</button>
+                                <button type="button" class="btn btn-xs btn-light border rounded-pill px-2 me-1 mb-1" onclick="addQuickFeedback('التسليم غير مكتمل يرجى الاستكمال 🔴')">غير مكتمل</button>
                             </div>
                         </div>
 
-                        <!-- Panel Bottom Buttons -->
+                        <!-- Card Action Buttons -->
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-top pt-3">
                             <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 extra-small" onclick="reopenGradingSubmission()">
                                 <i class="fa-solid fa-rotate-left me-1"></i> إعادة فتح التسليم للطالب
                             </button>
 
                             <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold extra-small shadow-sm" onclick="saveGradingGrade(true)">
-                                    <i class="fa-solid fa-floppy-disk me-1"></i> حفظ والانتقال للطالب التالي ←
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold extra-small shadow-sm" id="ugwSaveNextBtn" onclick="saveGradingGrade(true)">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> <span id="ugwSaveNextBtnLabel">حفظ والانتقال للطالب التالي ←</span>
                                 </button>
                             </div>
                         </div>
@@ -177,10 +204,13 @@
             <!-- Fixed Sticky Navigation & Footer Actions -->
             <div class="p-3 bg-white border-top shadow-lg d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="previousGradingStudent()">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="previousGradingStudent()">
                         <i class="fa-solid fa-arrow-right me-1"></i> الطالب السابق
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="nextGradingStudent()">
+
+                    <span class="badge bg-light text-dark border font-monospace px-3 py-2 fs-7" id="ugwFooterStudentProgress">الطالب 0 من 0</span>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="nextGradingStudent()">
                         الطالب التالي <i class="fa-solid fa-arrow-left ms-1"></i>
                     </button>
                 </div>
@@ -198,6 +228,51 @@
     </div>
 </div>
 
+<!-- PUBLISH CONFIRMATION MODAL -->
+<div class="modal fade font-cairo" id="ugwPublishConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-warning bg-opacity-10 border-0 p-3">
+                <h5 class="modal-title fw-bold text-dark fs-6" id="ugwPublishModalTitle">
+                    <i class="fa-solid fa-paper-plane text-warning me-2"></i> نشر النتائج
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted extra-small mb-3">أنت على وشك نشر نتائج الطلاب. بعد النشر سيتمكن المستخدمون المسموح لهم من الاطلاع على النتائج.</p>
+                
+                <div class="bg-light rounded-3 p-3 border mb-3 font-monospace extra-small">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span>إجمالي الطلاب:</span>
+                        <strong class="text-dark" id="ugwPubTotal">0</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span>عدد الدرجات المصححة:</span>
+                        <strong class="text-success" id="ugwPubGraded">0</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span>عدد الدرجات غير المكتملة:</span>
+                        <strong class="text-warning" id="ugwPubPending">0</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex align-items-center justify-content-between fw-bold text-primary">
+                        <span>النتائج التي سيتم نشرها:</span>
+                        <strong id="ugwPubPublishCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning p-2 extra-small mb-0 d-none" id="ugwPubWarningAlert">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> توجد درجات غير مكتملة، هل ترغب في الاستمرار؟
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light rounded-bottom-4">
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 fw-bold shadow-sm" onclick="executePublishGradingGrades()">تأكيد النشر</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- UNIFIED GRADING WORKSPACE GLOBAL JAVASCRIPT HANDLERS -->
 <script>
 (function() {
@@ -208,6 +283,7 @@
     var ugwAutosaveTimer = null;
     var ugwMaxGrade = 100;
     var ugwHasUnsavedChanges = false;
+    var ugwLastSavedTime = null;
 
     // 1. Open Unified Grading Workspace Function
     window.openGradingWorkspace = function(sourceType, sourceId) {
@@ -233,7 +309,7 @@
             drawerEl.style.visibility = 'visible';
         }
 
-        // Fetch Workspace Meta Data via AJAX
+        // Fetch Workspace Data via AJAX
         fetch('/grading/workspace/' + sourceType + '/' + sourceId)
             .then(function(res) {
                 if (!res.ok) throw new Error('فشل جلب مساحة التصحيح الموحدة');
@@ -254,14 +330,11 @@
                 document.getElementById('ugwMaxGradeLabel').textContent = ugwMaxGrade;
                 document.getElementById('ugwMaxGradeSuffix').textContent = ugwMaxGrade;
 
-                document.getElementById('ugwKpiTotal').textContent = data.total_students;
-                document.getElementById('ugwKpiSubmitted').textContent = data.total_submissions;
-                document.getElementById('ugwKpiPending').textContent = data.pending_grading;
-                document.getElementById('ugwKpiGraded').textContent = data.graded_count;
-                document.getElementById('ugwKpiAvg').textContent = data.average_grade;
-                document.getElementById('ugwKpiHighest').textContent = data.highest_grade;
+                document.getElementById('ugwGradeInput').max = ugwMaxGrade;
+                document.getElementById('ugwGradeSlider').max = ugwMaxGrade;
 
                 ugwStudentsList = data.students || [];
+                updateWorkspaceMetrics();
                 renderStudentRoster(ugwStudentsList);
 
                 // Session Recovery check
@@ -279,13 +352,48 @@
             });
     };
 
+    function updateWorkspaceMetrics() {
+        var total = ugwStudentsList.length;
+        var submitted = 0;
+        var graded = 0;
+        var pending = 0;
+        var missing = 0;
+
+        ugwStudentsList.forEach(function(s) {
+            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
+            var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
+            var isGraded = hasGrade || s.status === 'تم التصحيح' || s.grading_status === 'تم التصحيح';
+
+            if (isGraded) graded++;
+            if (isSubmitted) submitted++;
+            if (isSubmitted && !isGraded) pending++;
+            if (!isSubmitted) missing++;
+        });
+
+        document.getElementById('ugwKpiTotal').textContent = total;
+        document.getElementById('ugwKpiSubmitted').textContent = submitted;
+        document.getElementById('ugwKpiGraded').textContent = graded;
+        document.getElementById('ugwKpiPending').textContent = pending;
+        document.getElementById('ugwKpiMissing').textContent = missing;
+
+        document.getElementById('ugwCntAll').textContent = total;
+        document.getElementById('ugwCntPending').textContent = pending;
+        document.getElementById('ugwCntGraded').textContent = graded;
+        document.getElementById('ugwCntMissing').textContent = missing;
+
+        var pct = total > 0 ? Math.round((graded / total) * 100) : 0;
+        document.getElementById('ugwProgressBar').style.width = pct + '%';
+        document.getElementById('ugwProgressLabel').textContent = pct + '% - تم تصحيح ' + graded + ' من ' + total + ' طلاب';
+    }
+
     function renderStudentRoster(students) {
         var container = document.getElementById('ugwStudentList');
         if (!container) return;
 
         var html = '';
         students.forEach(function(s) {
-            var activeClass = (String(s.student_id) === String(ugwCurrentStudentId)) ? 'bg-primary-subtle border-primary' : 'bg-light border-0';
+            var isSelected = (String(s.student_id) === String(ugwCurrentStudentId));
+            var activeClass = isSelected ? 'bg-primary-subtle border-primary text-primary shadow-xs' : 'bg-light border-0';
             var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
             var scoreVal = hasGrade ? (s.score !== undefined && s.score !== null ? s.score : s.grade) : null;
             var gradeText = hasGrade ? (scoreVal + ' / ' + ugwMaxGrade) : 'لم ترصد';
@@ -293,10 +401,10 @@
             var subStatusText = isSubmitted ? 'تم التسليم' : 'لم يسلم';
             var statusBadge = isSubmitted ? 'bg-success text-white' : 'bg-danger-subtle text-danger border border-danger-subtle';
 
-            html += '<button type="button" class="list-group-item list-group-item-action p-2 mb-1 rounded-3 d-flex align-items-center justify-content-between text-start ' + activeClass + '" onclick="loadGradingStudent(' + s.student_id + ')">';
-            html += '<div><strong class="d-block text-dark">' + s.student_name + '</strong><small class="text-muted font-monospace">درجة: ' + gradeText + '</small></div>';
+            html += '<div class="p-2 mb-1 rounded-3 border d-flex align-items-center justify-content-between text-start cursor-pointer ' + activeClass + '" onclick="loadGradingStudent(' + s.student_id + ')">';
+            html += '<div><strong class="d-block text-dark extra-small mb-1">' + s.student_name + '</strong><small class="text-muted font-monospace extra-small"># ' + (s.academic_id || s.student_id) + ' | ' + gradeText + '</small></div>';
             html += '<span class="badge ' + statusBadge + ' rounded-pill px-2 py-1 extra-small">' + subStatusText + '</span>';
-            html += '</button>';
+            html += '</div>';
         });
         container.innerHTML = html;
     }
@@ -310,14 +418,27 @@
         ugwHasUnsavedChanges = false;
         renderStudentRoster(ugwStudentsList);
 
-        // Store last visited student for session recovery
+        // Session Recovery
         sessionStorage.setItem('ugw_last_student_' + ugwCurrentSourceType + '_' + ugwCurrentSourceId, studentId);
+
+        var idx = ugwStudentsList.findIndex(function(s) { return String(s.student_id) === String(studentId); });
+        var total = ugwStudentsList.length;
+        document.getElementById('ugwFooterStudentProgress').textContent = 'الطالب ' + (idx !== -1 ? (idx + 1) : 0) + ' من ' + total;
+
+        var saveNextLabel = document.getElementById('ugwSaveNextBtnLabel');
+        if (saveNextLabel) {
+            if (idx !== -1 && idx === total - 1) {
+                saveNextLabel.textContent = 'إنهاء التصحيح';
+            } else {
+                saveNextLabel.textContent = 'حفظ والانتقال للطالب التالي ←';
+            }
+        }
 
         fetch('/grading/api/submission?source_type=' + ugwCurrentSourceType + '&source_id=' + ugwCurrentSourceId + '&student_id=' + studentId)
             .then(function(res) { return res.json(); })
             .then(function(sub) {
                 document.getElementById('ugwCurrentStudentName').textContent = sub.student_name;
-                document.getElementById('ugwCurrentStudentCode').textContent = 'رقم الطالب (ID): ' + sub.academic_id;
+                document.getElementById('ugwCurrentStudentCode').textContent = 'رقم الطالب: #' + sub.academic_id;
                 document.getElementById('ugwSubmissionStatus').textContent = sub.submission_status;
                 document.getElementById('ugwSubmissionTime').textContent = sub.submission_date;
 
@@ -328,30 +449,47 @@
                 gradeInput.classList.remove('is-invalid');
 
                 var draftFeedback = sessionStorage.getItem('ugw_draft_feedback_' + studentId);
-                gradeInput.value = sub.grade !== null ? sub.grade : '';
-                gradeSlider.value = sub.grade !== null ? sub.grade : 0;
+                var val = sub.grade !== null ? sub.grade : '';
+                gradeInput.value = val;
+                gradeSlider.value = val !== '' ? val : 0;
                 feedbackInput.value = draftFeedback || sub.feedback || '';
 
                 var filesContainer = document.getElementById('ugwSubmissionFiles');
+                var filesCountBadge = document.getElementById('ugwFilesCountBadge');
                 if (sub.attachments && sub.attachments.length > 0) {
+                    if (filesCountBadge) filesCountBadge.textContent = sub.attachments.length + ' مرفق';
                     var fHtml = '';
                     sub.attachments.forEach(function(f) {
                         var fileIcon = 'fa-file-lines text-primary';
-                        if (f.type === 'pdf') fileIcon = 'fa-file-pdf text-danger';
-                        else if (f.type === 'image' || f.name.match(/\.(jpg|png|jpeg)$/i)) fileIcon = 'fa-file-image text-success';
-                        else if (f.type === 'docx' || f.name.match(/\.docx?$/i)) fileIcon = 'fa-file-word text-info';
-                        else if (f.type === 'zip' || f.name.match(/\.zip$/i)) fileIcon = 'fa-file-zipper text-warning';
+                        if (f.file_type === 'pdf') fileIcon = 'fa-file-pdf text-danger';
+                        else if (f.file_type === 'image' || (f.file_name && f.file_name.match(/\.(jpg|png|jpeg)$/i))) fileIcon = 'fa-file-image text-success';
 
                         fHtml += '<div class="d-flex align-items-center justify-content-between p-2 mb-1 bg-light rounded border">';
-                        fHtml += '<div><i class="fa-solid ' + fileIcon + ' me-2 fs-5"></i><strong class="text-dark extra-small">' + f.name + '</strong> <small class="text-muted">(' + f.size + ')</small></div>';
+                        fHtml += '<div><i class="fa-solid ' + fileIcon + ' me-2 fs-5"></i><strong class="text-dark extra-small">' + f.file_name + '</strong> <small class="text-muted">(' + f.file_size + ')</small></div>';
                         fHtml += '<a href="' + f.url + '" class="btn btn-xs btn-outline-primary rounded-pill px-3" download><i class="fa-solid fa-download me-1"></i> تحميل</a>';
                         fHtml += '</div>';
                     });
                     filesContainer.innerHTML = fHtml;
                 } else {
-                    filesContainer.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد ملفات مرفقة لهذا التسليم.</div>';
+                    if (filesCountBadge) filesCountBadge.textContent = '0 مرفق';
+                    filesContainer.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا توجد مرفقات لهذا التسليم.</div>';
                 }
             });
+    };
+
+    window.syncGradeSliderFromInput = function() {
+        var input = document.getElementById('ugwGradeInput');
+        var slider = document.getElementById('ugwGradeSlider');
+        var val = parseFloat(input.value);
+        if (!isNaN(val)) {
+            slider.value = Math.min(val, ugwMaxGrade);
+        }
+    };
+
+    window.syncGradeInputFromSlider = function() {
+        var input = document.getElementById('ugwGradeInput');
+        var slider = document.getElementById('ugwGradeSlider');
+        input.value = slider.value;
     };
 
     window.onGradingFormChanged = function() {
@@ -378,7 +516,6 @@
         var gradeVal = gradeInput.value;
         var feedbackVal = document.getElementById('ugwFeedbackInput').value;
 
-        // Validation Rule
         if (gradeVal !== '') {
             var g = parseFloat(gradeVal);
             if (isNaN(g) || g < 0 || g > ugwMaxGrade) {
@@ -408,16 +545,20 @@
             var indicator = document.getElementById('ugwAutoSaveIndicator');
             if (res.success) {
                 ugwHasUnsavedChanges = false;
+                ugwLastSavedTime = new Date();
                 if (ugwCurrentStudentId) {
                     sessionStorage.removeItem('ugw_draft_feedback_' + ugwCurrentStudentId);
                 }
 
-                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> تم الحفظ تلقائياً';
+                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> تم الحفظ — منذ لحظات';
                 
                 var st = ugwStudentsList.find(function(s) { return String(s.student_id) === String(ugwCurrentStudentId); });
                 if (st) {
                     st.grade = gradeVal !== '' ? parseFloat(gradeVal) : null;
+                    st.score = st.grade;
                     st.submission_status = 'تم التسليم';
+                    st.grading_status = 'تم التصحيح';
+                    updateWorkspaceMetrics();
                     renderStudentRoster(ugwStudentsList);
                 }
 
@@ -444,8 +585,9 @@
     window.setQuickGrade = function(val) {
         var gradeInput = document.getElementById('ugwGradeInput');
         var gradeSlider = document.getElementById('ugwGradeSlider');
-        gradeInput.value = val;
-        gradeSlider.value = val;
+        var capped = Math.min(val, ugwMaxGrade);
+        gradeInput.value = capped;
+        gradeSlider.value = capped;
         onGradingFormChanged();
     };
 
@@ -475,7 +617,48 @@
         }
     };
 
-    window.publishGradingGrades = function() {
+    window.triggerPublishConfirmation = function() {
+        var total = ugwStudentsList.length;
+        var graded = 0;
+        var pending = 0;
+
+        ugwStudentsList.forEach(function(s) {
+            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
+            if (hasGrade || s.status === 'تم التصحيح' || s.grading_status === 'تم التصحيح') {
+                graded++;
+            } else {
+                pending++;
+            }
+        });
+
+        document.getElementById('ugwPubTotal').textContent = total;
+        document.getElementById('ugwPubGraded').textContent = graded;
+        document.getElementById('ugwPubPending').textContent = pending;
+        document.getElementById('ugwPubPublishCount').textContent = graded;
+
+        var warningAlert = document.getElementById('ugwPubWarningAlert');
+        if (pending > 0 && warningAlert) {
+            warningAlert.classList.remove('d-none');
+        } else if (warningAlert) {
+            warningAlert.classList.add('d-none');
+        }
+
+        var modalEl = document.getElementById('ugwPublishConfirmationModal');
+        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        } else if (confirm('أنت على وشك نشر نتائج الطلاب. هل تريد الاستمرار؟')) {
+            executePublishGradingGrades();
+        }
+    };
+
+    window.executePublishGradingGrades = function() {
+        var modalEl = document.getElementById('ugwPublishConfirmationModal');
+        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
+        }
+
         fetch('/grading/api/publish', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -522,7 +705,7 @@
     window.searchGradingStudents = function(term) {
         var lower = (term || '').toLowerCase();
         var filtered = ugwStudentsList.filter(function(s) {
-            return s.student_name.toLowerCase().indexOf(lower) !== -1 || String(s.academic_id).indexOf(lower) !== -1;
+            return s.student_name.toLowerCase().indexOf(lower) !== -1 || String(s.academic_id || s.student_id).indexOf(lower) !== -1;
         });
         renderStudentRoster(filtered);
     };
@@ -552,7 +735,7 @@
         renderStudentRoster(filtered);
     };
 
-    // Global Keyboard Shortcuts (Ctrl+S, Ctrl+Enter, ArrowUp, ArrowDown, Esc)
+    // Global Keyboard Shortcuts (Ctrl+S, Ctrl+Enter, ArrowUp, ArrowDown)
     document.addEventListener('keydown', function(e) {
         var drawerEl = document.getElementById('unifiedGradingWorkspaceDrawer');
         if (!drawerEl || (!drawerEl.classList.contains('show') && drawerEl.style.display !== 'block')) return;
