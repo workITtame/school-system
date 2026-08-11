@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
+from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 import os
 import io
@@ -725,6 +726,15 @@ def view_student(id):
         joinedload(Student.governorate),
         joinedload(Student.directorate)
     ).get_or_404(id)
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    if user_role == 'teacher':
+        user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+        from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+        teacher = get_teacher_by_user_id(user_id)
+        _, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
+        if not student.CID or student.CID not in class_ids:
+            return jsonify({'error': 'Out-of-scope student profile access forbidden'}), 403
     
     from models import Attendance, Homework, Marks, Message
     

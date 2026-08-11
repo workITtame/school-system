@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from models import db, Subject, Classes, Sections, Student, SchoolTable, Teacher, ExamSchedule, Terms, Marks
@@ -35,15 +35,13 @@ def _get_teacher_subjects_classes_sections(user_id):
     cls_ids = {s.CID for s in slots if s.CID}
     sec_ids = {s.SectionID for s in slots if s.SectionID}
 
-    if not cls_ids:
-        assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-        for st in assigned_students:
-            if st.CID: cls_ids.add(st.CID)
-            if st.SectionID: sec_ids.add(st.SectionID)
+    if teacher and hasattr(teacher, 'subjects') and teacher.subjects:
+        for s in teacher.subjects:
+            if hasattr(s, 'SubID'): sub_ids.add(s.SubID)
 
-    subjects = Subject.query.filter(Subject.SubID.in_(list(sub_ids))).all() if sub_ids else Subject.query.filter_by(Status='نشط').all()
-    classes = Classes.query.filter(Classes.CID.in_(list(cls_ids))).all() if cls_ids else Classes.query.filter_by(is_deleted=False).all()
-    sections = Sections.query.filter(Sections.SectionID.in_(list(sec_ids))).all() if sec_ids else Sections.query.filter_by(is_deleted=False).all()
+    subjects = Subject.query.filter(Subject.SubID.in_(list(sub_ids)), Subject.is_deleted == False).all() if sub_ids else []
+    classes = Classes.query.filter(Classes.CID.in_(list(cls_ids)), Classes.is_deleted == False).all() if cls_ids else []
+    sections = Sections.query.filter(Sections.SectionID.in_(list(sec_ids)), Sections.is_deleted == False).all() if sec_ids else []
 
     return subjects, classes, sections
 
@@ -296,6 +294,36 @@ def index():
         active_term_name=active_term_name
     )
 
+def _check_teacher_exam_scope(user_id, class_id=None, sub_id=None, sched=None):
+    from models import User, Teacher, SchoolTable
+    user = User.query.get(user_id)
+    if user and getattr(user, 'role', '') == 'admin':
+        return True
+    if user and getattr(user, 'role', '') == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+        if not teacher:
+            teacher = Teacher.query.filter_by(Email=user.username).first()
+        if not teacher:
+            return False
+        slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+        cls_ids = {s.CID for s in slots if s.CID}
+        sub_ids = {s.SubID for s in slots if s.SubID}
+        if hasattr(teacher, 'subjects') and teacher.subjects:
+            for s in teacher.subjects:
+                if hasattr(s, 'SubID'): sub_ids.add(s.SubID)
+
+        if sched:
+            if sched.CID and sched.CID not in cls_ids:
+                return False
+            if sched.SubID and sched.SubID not in sub_ids:
+                return False
+        if class_id and class_id not in cls_ids:
+            return False
+        if sub_id and sub_id not in sub_ids:
+            return False
+        return True
+    return False
+
 @exam_bp.route('/add', methods=['POST'])
 @exam_bp.route('/create', methods=['POST'])
 @login_required
@@ -319,6 +347,12 @@ def add_exam():
     if not sub_id or not class_id:
         flash('يرجى تحديد المادة والصف الدراسي', 'warning')
         return redirect(url_for('exams.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, class_id=class_id, sub_id=sub_id):
+            return jsonify({'error': 'Out-of-scope exam creation forbidden'}), 403
 
     try:
         exam_date = datetime.strptime(exam_date_str, '%Y-%m-%d').date() if exam_date_str else date.today()
@@ -358,6 +392,12 @@ def edit_exam(id):
     if not sched:
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, sched=sched):
+            return jsonify({'error': 'Out-of-scope exam modification forbidden'}), 403
 
     exam_type = request.form.get('exam_type') or request.form.get('title')
     sub_id = request.form.get('sub_id', type=int)
@@ -404,6 +444,12 @@ def publish_exam_route(id):
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
 
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, sched=sched):
+            return jsonify({'error': 'Out-of-scope exam publish forbidden'}), 403
+
     sched.Status = 'منشور'
     try:
         db.session.commit()
@@ -421,6 +467,12 @@ def close_exam_route(id):
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
 
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, sched=sched):
+            return jsonify({'error': 'Out-of-scope exam close forbidden'}), 403
+
     sched.Status = 'منتهي'
     try:
         db.session.commit()
@@ -437,6 +489,12 @@ def duplicate_exam_route(id):
     if not sched:
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, sched=sched):
+            return jsonify({'error': 'Out-of-scope exam duplicate forbidden'}), 403
 
     try:
         dup = ExamSchedule(
@@ -464,6 +522,12 @@ def delete_exam(id):
     if not sched:
         flash('الاختبار غير موجود', 'warning')
         return redirect(url_for('exams.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_exam_scope(user_id, sched=sched):
+            return jsonify({'error': 'Out-of-scope exam deletion forbidden'}), 403
 
     try:
         from models.grade import Marks, DetailMarks

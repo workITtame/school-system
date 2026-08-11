@@ -16,10 +16,16 @@ def _get_teacher_and_scope(user_id):
         return teacher or user, set(), set(), set()
 
     teacher = Teacher.query.filter_by(user_id=user_id).first()
+    if not teacher and user:
+        teacher = Teacher.query.filter_by(Email=user.username).first()
     if not teacher:
-        return None, set(), set(), set()
+        if user and getattr(user, 'role', '') == 'teacher':
+            teacher = user
+        else:
+            return None, set(), set(), set()
     
-    slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+    teacher_id = getattr(teacher, 'TeacherID', None)
+    slots = SchoolTable.query.filter_by(TeacherID=teacher_id, is_deleted=False).all() if teacher_id else []
     teacher_class_ids = set()
     teacher_section_ids = set()
     teacher_subject_ids = set()
@@ -29,14 +35,9 @@ def _get_teacher_and_scope(user_id):
         if s.SectionID: teacher_section_ids.add(s.SectionID)
         if s.SubID: teacher_subject_ids.add(s.SubID)
 
-    if not teacher_class_ids:
-        assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-        for st in assigned_students:
-            if st.CID: teacher_class_ids.add(st.CID)
-            if st.SectionID: teacher_section_ids.add(st.SectionID)
-        all_subs = Subject.query.filter_by(Status='نشط').all()
-        for sub in all_subs:
-            teacher_subject_ids.add(sub.SubID)
+    if teacher and hasattr(teacher, 'subjects') and teacher.subjects:
+        for sub in teacher.subjects:
+            if hasattr(sub, 'SubID'): teacher_subject_ids.add(sub.SubID)
 
     return teacher, teacher_class_ids, teacher_section_ids, teacher_subject_ids
 
@@ -78,7 +79,7 @@ def get_teacher_exam_statistics(user_id):
         else:
             active_count += 1
 
-    from models.marks import Marks
+    from models.grade import Marks
     from sqlalchemy import func
     avg_score_raw = db.session.query(func.avg(Marks.Score)).scalar()
     avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0

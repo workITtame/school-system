@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import login_required, current_user
 from models import db, Homework, Subject, Classes, Sections, Student, Teacher, Terms, SchoolTable
 from sqlalchemy import func
@@ -152,15 +152,9 @@ def index():
                 if s.CID: teacher_class_ids.add(s.CID)
                 if s.SectionID: teacher_section_ids.add(s.SectionID)
 
-        if not teacher_class_ids:
-            assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-            for st in assigned_students:
-                if st.CID: teacher_class_ids.add(st.CID)
-                if st.SectionID: teacher_section_ids.add(st.SectionID)
-
         classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
         sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
-        subjects = teacher.subjects if (teacher and teacher.subjects) else Subject.query.filter_by(is_deleted=False).all()
+        subjects = teacher.subjects if (teacher and hasattr(teacher, 'subjects') and teacher.subjects) else []
 
         class_id = request.args.get('class_id', type=int)
         section_id = request.args.get('section_id', type=int)
@@ -213,6 +207,36 @@ def index():
                            pending_count=data['kpi']['pending_count'],
                            late_count=data['kpi']['late_count'])
 
+def _check_teacher_homework_scope(user_id, class_id=None, sub_id=None, hw=None):
+    from models import User, Teacher, SchoolTable
+    user = User.query.get(user_id)
+    if user and getattr(user, 'role', '') == 'admin':
+        return True
+    if user and getattr(user, 'role', '') == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+        if not teacher:
+            teacher = Teacher.query.filter_by(Email=user.username).first()
+        if not teacher:
+            return False
+        slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+        cls_ids = {s.CID for s in slots if s.CID}
+        sub_ids = {s.SubID for s in slots if s.SubID}
+        if hasattr(teacher, 'subjects') and teacher.subjects:
+            for s in teacher.subjects:
+                if hasattr(s, 'SubID'): sub_ids.add(s.SubID)
+
+        if hw:
+            if hw.class_id and hw.class_id not in cls_ids:
+                return False
+            if hw.sub_id and hw.sub_id not in sub_ids:
+                return False
+        if class_id and class_id not in cls_ids:
+            return False
+        if sub_id and sub_id not in sub_ids:
+            return False
+        return True
+    return False
+
 @homework_bp.route('/add', methods=['POST'])
 @homework_bp.route('/create', methods=['POST'])
 @login_required
@@ -232,6 +256,12 @@ def add_homework():
     if not sub_id or not class_id:
         flash('يرجى تحديد المادة والصف الدراسي', 'warning')
         return redirect(url_for('homework.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, class_id=class_id, sub_id=sub_id):
+            return jsonify({'error': 'Out-of-scope homework creation forbidden'}), 403
 
     try:
         due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else datetime.now().date()
@@ -267,6 +297,12 @@ def edit_homework(id):
     if not hw:
         flash('الواجب غير موجود', 'warning')
         return redirect(url_for('homework.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, hw=hw):
+            return jsonify({'error': 'Out-of-scope homework modification forbidden'}), 403
 
     title = request.form.get('title')
     sub_id = request.form.get('sub_id', type=int)
@@ -305,6 +341,12 @@ def publish_homework(id):
         flash('الواجب غير موجود', 'warning')
         return redirect(url_for('homework.index'))
 
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, hw=hw):
+            return jsonify({'error': 'Out-of-scope homework publish forbidden'}), 403
+
     hw.status = 'منشور'
     try:
         db.session.commit()
@@ -322,6 +364,12 @@ def close_homework(id):
         flash('الواجب غير موجود', 'warning')
         return redirect(url_for('homework.index'))
 
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, hw=hw):
+            return jsonify({'error': 'Out-of-scope homework close forbidden'}), 403
+
     hw.status = 'منتهي'
     try:
         db.session.commit()
@@ -338,6 +386,12 @@ def duplicate_homework(id):
     if not hw:
         flash('الواجب غير موجود', 'warning')
         return redirect(url_for('homework.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, hw=hw):
+            return jsonify({'error': 'Out-of-scope homework duplicate forbidden'}), 403
 
     try:
         dup = Homework(
@@ -364,6 +418,12 @@ def delete_homework(id):
     if not hw:
         flash('الواجب غير موجود', 'warning')
         return redirect(url_for('homework.index'))
+
+    user_role = session.get('user_role') or getattr(current_user, 'role', '')
+    user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+    if user_role == 'teacher' and user_id:
+        if not _check_teacher_homework_scope(user_id, hw=hw):
+            return jsonify({'error': 'Out-of-scope homework deletion forbidden'}), 403
 
     try:
         db.session.delete(hw)

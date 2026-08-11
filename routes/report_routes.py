@@ -19,12 +19,22 @@ def index():
     
     metrics = get_reports_dashboard_metrics()
     reports = get_reports_registry()
-    classes = Classes.query.filter_by(is_deleted=False).all()
-    sections = Sections.query.filter_by(is_deleted=False).all()
-    subjects = Subject.query.filter_by(is_deleted=False).all()
-    terms = Terms.query.filter_by(is_deleted=False).all()
-    students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
     
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+        teacher = get_teacher_by_user_id(current_user.id)
+        sub_ids, class_ids, sec_ids = get_teacher_subject_and_class_ids(teacher)
+        classes = Classes.query.filter(Classes.CID.in_(class_ids), Classes.is_deleted == False).all() if class_ids else []
+        sections = Sections.query.filter(Sections.SectionID.in_(sec_ids), Sections.is_deleted == False).all() if sec_ids else []
+        subjects = Subject.query.filter(Subject.SubID.in_(sub_ids), Subject.is_deleted == False).all() if sub_ids else []
+        students = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).order_by(Student.SName).all() if class_ids else []
+    else:
+        classes = Classes.query.filter_by(is_deleted=False).all()
+        sections = Sections.query.filter_by(is_deleted=False).all()
+        subjects = Subject.query.filter_by(is_deleted=False).all()
+        students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
+
+    terms = Terms.query.filter_by(is_deleted=False).all()
     recent_reports = []
 
     return render_template("reports/index.html", 
@@ -47,14 +57,27 @@ def analytics():
 @reports_bp.route("/reports/student")
 @login_required
 def student_report():
-    classes = Classes.query.filter_by(is_deleted=False).all()
-    sections = Sections.query.filter_by(is_deleted=False).all()
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+        teacher = get_teacher_by_user_id(current_user.id)
+        sub_ids, class_ids, sec_ids = get_teacher_subject_and_class_ids(teacher)
+        classes = Classes.query.filter(Classes.CID.in_(class_ids), Classes.is_deleted == False).all() if class_ids else []
+        sections = Sections.query.filter(Sections.SectionID.in_(sec_ids), Sections.is_deleted == False).all() if sec_ids else []
+    else:
+        classes = Classes.query.filter_by(is_deleted=False).all()
+        sections = Sections.query.filter_by(is_deleted=False).all()
     
     sel_class_id = request.args.get('class_id', type=int)
     sel_section_id = request.args.get('section_id', type=int)
     sel_student_id = request.args.get('student_id')
     
     query = Student.query.filter_by(is_deleted=False)
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        if class_ids:
+            query = query.filter(Student.CID.in_(class_ids))
+        else:
+            query = query.filter(Student.CID == -1)
+
     if sel_class_id:
         query = query.filter_by(CID=sel_class_id)
     if sel_section_id:
@@ -73,6 +96,12 @@ def student_report():
             selected_student = None
 
         if selected_student:
+            if hasattr(current_user, 'role') and current_user.role == 'teacher':
+                from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+                teacher = get_teacher_by_user_id(current_user.id)
+                _, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
+                if not selected_student.CID or selected_student.CID not in class_ids:
+                    return jsonify({'error': 'Out-of-scope student report access forbidden'}), 403
             marks = Marks.query.filter_by(SID=selected_student.SID, assessment_type='exam').all()
             report_data = {}
             total_score = 0
@@ -138,6 +167,13 @@ def student_report_pdf_fast(student_id):
     student = Student.query.get(student_id)
     if not student:
         return jsonify({'error': 'Student not found'}), 404
+
+    if hasattr(current_user, 'role') and current_user.role == 'teacher':
+        from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
+        teacher = get_teacher_by_user_id(current_user.id)
+        _, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
+        if not student.CID or student.CID not in class_ids:
+            return jsonify({'error': 'Out-of-scope student pdf report access forbidden'}), 403
 
     term_id = request.args.get('term_id', type=int)
     exam_id = request.args.get('exam_id', type=int)

@@ -15,12 +15,9 @@ def _get_teacher_scope(user_id):
     if not user or getattr(user, 'role', None) != 'teacher':
         raise PermissionError("Access forbidden for non-teacher accounts")
 
-    teacher = Teacher.query.filter_by(user_id=user_id, is_deleted=False).first()
-    if not teacher and hasattr(user, 'email') and user.email:
-        teacher = Teacher.query.filter_by(Email=user.email, is_deleted=False).first()
-
+    teacher = get_teacher_by_user_id(user_id)
     if not teacher:
-        raise PermissionError("Teacher record not found")
+        return user, [], [], []
 
     query, class_ids, section_ids = get_teacher_students_query(teacher)
     students = query.all()

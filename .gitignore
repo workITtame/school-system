@@ -48,3 +48,4 @@ env/
 # Temporary audit & test output files
 *.pdf
 scratch/
+backups/

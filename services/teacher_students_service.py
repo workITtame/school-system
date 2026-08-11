@@ -29,6 +29,8 @@ def get_teacher_students_query(teacher):
         query = query.filter(Student.CID.in_(class_ids))
         if section_ids:
             query = query.filter(or_(Student.SectionID.in_(section_ids), Student.SectionID.is_(None)))
+    else:
+        query = query.filter(Student.CID == -1)
 
     return query, class_ids, section_ids
 
@@ -276,6 +278,12 @@ def get_student_drawer_data(student_id, user_id):
 
         if not student or student.is_deleted:
             return None
+
+        user = User.query.get(user_id)
+        if user and getattr(user, 'role', '') == 'teacher':
+            _, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
+            if not student.CID or student.CID not in class_ids:
+                return None
 
         subject_ids = [s.SubID for s in teacher.subjects] if (teacher and teacher.subjects) else []
 

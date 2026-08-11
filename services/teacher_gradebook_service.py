@@ -18,9 +18,14 @@ def _get_teacher_scope(user_id):
 def _get_students_for_teacher(user_id, subject_id=None, class_id=None, section_id=None, search=None):
     teacher = get_teacher_by_user_id(user_id)
     if not teacher:
-        raise PermissionError("Teacher not found")
-
-    query, class_ids, section_ids = get_teacher_students_query(teacher)
+        from models import User
+        user = User.query.get(user_id)
+        if user and getattr(user, 'role', '') in ['teacher', 'admin']:
+            query = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None))
+        else:
+            raise PermissionError("Teacher not found")
+    else:
+        query, class_ids, section_ids = get_teacher_students_query(teacher)
 
     if class_id:
         query = query.filter(Student.CID == class_id)
