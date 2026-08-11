@@ -173,15 +173,27 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                 letter_grade = 'A' if g_val >= 90 else ('B' if g_val >= 80 else ('C' if g_val >= 70 else ('D' if g_val >= 60 else 'F')))
 
                 if sub_id:
-                    # 1. UPSERT Marks
-                    mark = Marks.query.filter_by(SID=student_id, SubID=sub_id, ExamID=exam_id, T_ID=t_id).first()
+                    # 1. UPSERT Marks for Exam
+                    mark = Marks.query.filter_by(
+                        SID=student_id,
+                        SubID=sub_id,
+                        assessment_type='exam',
+                        ExamID=exam_id
+                    ).first()
                     if not mark:
-                        mark = Marks.query.filter_by(SID=student_id, SubID=sub_id).first()
+                        mark = Marks.query.filter_by(
+                            SID=student_id,
+                            SubID=sub_id,
+                            assessment_type='exam'
+                        ).first()
 
                     if mark:
                         mark.Score = g_val
                         mark.MaxScore = max_score
                         mark.ExamID = exam_id
+                        mark.HomeworkID = None
+                        mark.assessment_type = 'exam'
+                        mark.assessment_id = source_id
                         mark.T_ID = t_id
                         mark.TeacherID = teacher_id
                         mark.Percentage = pct
@@ -191,6 +203,9 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                             SID=student_id,
                             SubID=sub_id,
                             ExamID=exam_id,
+                            HomeworkID=None,
+                            assessment_type='exam',
+                            assessment_id=source_id,
                             T_ID=t_id,
                             TeacherID=teacher_id,
                             Score=g_val,
@@ -201,13 +216,21 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                         )
                         db.session.add(mark)
 
-                    # 2. UPSERT DetailMarks
-                    dm = DetailMarks.query.filter_by(SID=student_id, SubID=sub_id, ExamID=exam_id, T_ID=t_id).first()
+                    # 2. UPSERT DetailMarks for Exam
+                    dm = DetailMarks.query.filter_by(
+                        SID=student_id,
+                        SubID=sub_id,
+                        assessment_type='exam',
+                        ExamID=exam_id
+                    ).first()
                     if not dm:
                         dm = DetailMarks(
                             SID=student_id,
                             SubID=sub_id,
                             ExamID=exam_id,
+                            HomeworkID=None,
+                            assessment_type='exam',
+                            assessment_id=source_id,
                             T_ID=t_id,
                             TeacherID=teacher_id,
                             Score=g_val,
@@ -219,6 +242,10 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                         dm.Score = g_val
                         dm.MaxScore = max_score
                         dm.TeacherID = teacher_id
+                        dm.assessment_type = 'exam'
+                        dm.assessment_id = source_id
+                        dm.ExamID = exam_id
+                        dm.HomeworkID = None
 
                     # 3. Update ExamSchedule status to 'تم التصحيح'
                     if ex:

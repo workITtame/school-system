@@ -213,17 +213,29 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
 
     if grade is not None:
         _MOCK_GRADING_STORE[store_key]['grade'] = float(grade)
-        # Database integration with Marks model
+        # Database integration with Marks model (strictly homework type)
         if hw.sub_id:
             from models.grade import Marks
-            mark = Marks.query.filter_by(SID=student_id, SubID=hw.sub_id).first()
+            mark = Marks.query.filter_by(
+                SID=student_id,
+                SubID=hw.sub_id,
+                assessment_type='homework',
+                HomeworkID=hw.id
+            ).first()
             if mark:
                 mark.Score = float(grade)
+                mark.MaxScore = 100
                 mark.Notes = f"واجب: {hw.title}"
+                mark.assessment_id = hw.id
+                mark.ExamID = None
             else:
                 mark = Marks(
                     SID=student_id,
                     SubID=hw.sub_id,
+                    HomeworkID=hw.id,
+                    assessment_type='homework',
+                    assessment_id=hw.id,
+                    ExamID=None,
                     Score=float(grade),
                     MaxScore=100,
                     Notes=f"واجب: {hw.title}",

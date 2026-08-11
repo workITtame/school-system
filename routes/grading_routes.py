@@ -85,17 +85,28 @@ def api_submission():
 @login_required
 def api_save():
     payload = request.get_json() or {}
-    source_type = payload.get('source_type')
+    source_type = str(payload.get('source_type') or '').lower().strip()
     source_id = payload.get('source_id')
     student_id = payload.get('student_id')
     grade = payload.get('grade')
     feedback = payload.get('feedback')
 
-    if not source_type or not source_id or not student_id:
-        return jsonify({'error': 'Missing parameters'}), 400
+    if not source_type or source_type not in ['homework', 'exam', 'exams']:
+        return jsonify({'error': 'Invalid or missing source_type'}), 400
 
     try:
-        success = save_grade(source_type, int(source_id), int(student_id), current_user.id, grade, feedback)
+        source_id = int(source_id)
+        student_id = int(student_id)
+        if source_id <= 0 or student_id <= 0:
+            return jsonify({'error': 'Invalid source_id or student_id'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Malformed source_id or student_id'}), 400
+
+    if source_type == 'homework' and (payload.get('exam_id') or payload.get('ExamID')):
+        return jsonify({'error': 'ExamID is not allowed for homework assessment'}), 400
+
+    try:
+        success = save_grade(source_type, source_id, student_id, current_user.id, grade, feedback)
         return jsonify({'success': success, 'message': 'تم حفظ الدرجة والملاحظات بنجاح'})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
@@ -103,28 +114,39 @@ def api_save():
         return jsonify({'error': str(ve)}), 400
     except Exception as e:
         logger.error(f"Grading api_save error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
 @grading_bp.route('/api/autosave', methods=['POST'])
 @login_required
 def api_autosave():
     payload = request.get_json() or {}
-    source_type = payload.get('source_type')
+    source_type = str(payload.get('source_type') or '').lower().strip()
     source_id = payload.get('source_id')
     student_id = payload.get('student_id')
     grade = payload.get('grade')
     feedback = payload.get('feedback')
 
-    if not source_type or not source_id or not student_id:
-        return jsonify({'error': 'Missing parameters'}), 400
+    if not source_type or source_type not in ['homework', 'exam', 'exams']:
+        return jsonify({'error': 'Invalid or missing source_type'}), 400
 
     try:
-        success = save_grade(source_type, int(source_id), int(student_id), current_user.id, grade, feedback)
+        source_id = int(source_id)
+        student_id = int(student_id)
+        if source_id <= 0 or student_id <= 0:
+            return jsonify({'error': 'Invalid source_id or student_id'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Malformed source_id or student_id'}), 400
+
+    if source_type == 'homework' and (payload.get('exam_id') or payload.get('ExamID')):
+        return jsonify({'error': 'ExamID is not allowed for homework assessment'}), 400
+
+    try:
+        success = save_grade(source_type, source_id, student_id, current_user.id, grade, feedback)
         return jsonify({'success': success, 'autosaved': True, 'timestamp': datetime.now().strftime('%H:%M:%S')})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
 @grading_bp.route('/api/publish', methods=['POST'])
 @login_required

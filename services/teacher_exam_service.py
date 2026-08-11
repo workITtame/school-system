@@ -203,7 +203,12 @@ def get_exam_details(exam_id, user_id):
     from models.grade import Marks
     if ex.SubID and students:
         sids = [s.SID for s in students]
-        marks_list = Marks.query.filter(Marks.SubID == ex.SubID, Marks.SID.in_(sids)).all()
+        marks_list = Marks.query.filter(
+            Marks.SubID == ex.SubID,
+            Marks.SID.in_(sids),
+            Marks.assessment_type == 'exam',
+            Marks.ExamID == ex.ScheduleID
+        ).all()
         graded_count = len([m for m in marks_list if m.Score is not None])
     else:
         graded_count = 0
@@ -363,7 +368,12 @@ def get_exam_students(exam_id, user_id):
     marks_map = {}
     if sub_id and students:
         sids = [s.SID for s in students]
-        marks_list = Marks.query.filter(Marks.SubID == sub_id, Marks.SID.in_(sids)).all()
+        marks_list = Marks.query.filter(
+            Marks.SubID == sub_id,
+            Marks.SID.in_(sids),
+            Marks.assessment_type == 'exam',
+            Marks.ExamID == exam_id
+        ).all()
         for m in marks_list:
             marks_map[m.SID] = m
 

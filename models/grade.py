@@ -5,7 +5,10 @@ class Marks(db.Model, AuditMixin):
     M_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     SID = db.Column(db.Integer, db.ForeignKey('Student.SID'), index=True)
     SubID = db.Column(db.Integer, db.ForeignKey('Subject.SubID'), index=True)
-    ExamID = db.Column(db.Integer, db.ForeignKey('TypeExams.ExamID'))
+    ExamID = db.Column(db.Integer, db.ForeignKey('TypeExams.ExamID'), nullable=True)
+    HomeworkID = db.Column(db.Integer, db.ForeignKey('homework.id'), nullable=True)
+    assessment_type = db.Column(db.String(20), default='exam', nullable=False)
+    assessment_id = db.Column(db.Integer, nullable=True)
     TeacherID = db.Column(db.Integer, db.ForeignKey('Teacher.TeacherID'))
     Score = db.Column(db.Numeric(5, 2))
     MaxScore = db.Column(db.Numeric(5, 2), default=100)   # الدرجة الكاملة
@@ -16,13 +19,13 @@ class Marks(db.Model, AuditMixin):
 
     __table_args__ = (
         db.CheckConstraint('Score >= 0 AND Score <= 100', name='check_marks_score_range'),
-        db.UniqueConstraint('SID', 'SubID', 'ExamID', 'T_ID', name='uix_student_exam_mark'),
     )
 
     # Relationships
     student = db.relationship('Student')
     subject = db.relationship('Subject')
     exam = db.relationship('TypeExams')
+    homework = db.relationship('Homework')
     teacher = db.relationship('Teacher')
     term = db.relationship('Terms')
 
@@ -30,7 +33,10 @@ class DetailMarks(db.Model, AuditMixin):
     __tablename__ = 'DetailMarks'
     DT_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     SID = db.Column(db.Integer, db.ForeignKey('Student.SID'), index=True)
-    ExamID = db.Column(db.Integer, db.ForeignKey('TypeExams.ExamID'))
+    ExamID = db.Column(db.Integer, db.ForeignKey('TypeExams.ExamID'), nullable=True)
+    HomeworkID = db.Column(db.Integer, db.ForeignKey('homework.id'), nullable=True)
+    assessment_type = db.Column(db.String(20), default='exam', nullable=False)
+    assessment_id = db.Column(db.Integer, nullable=True)
     SubID = db.Column(db.Integer, db.ForeignKey('Subject.SubID'), index=True)
     TeacherID = db.Column(db.Integer, db.ForeignKey('Teacher.TeacherID'))
     Score = db.Column(db.Numeric(5, 2))
@@ -39,12 +45,12 @@ class DetailMarks(db.Model, AuditMixin):
 
     __table_args__ = (
         db.CheckConstraint('Score >= 0 AND Score <= 100', name='check_detail_marks_score_range'),
-        db.UniqueConstraint('SID', 'SubID', 'ExamID', 'T_ID', name='uix_student_exam_detail_mark'),
     )
 
     # Relationships
     student = db.relationship('Student')
     exam = db.relationship('TypeExams')
+    homework = db.relationship('Homework')
     subject = db.relationship('Subject')
     teacher = db.relationship('Teacher')
     term = db.relationship('Terms')

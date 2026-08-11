@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, make_response, send_file, current_app, jsonify
-from routes.auth_routes import login_required
+from flask import Blueprint, render_template, request, make_response, send_file, current_app, jsonify, session
+from flask_login import login_required, current_user
 from models import db, Student, Classes, Sections, Marks, TypeExams, Subject, Terms, Teacher, Attendance, Homework
 from models.extensions import cache
 from utils.pdf_generator import generate_student_pdf
@@ -226,12 +226,16 @@ def export_reports_master_excel():
     section_id = request.args.get('section_id', type=int)
     subject_id = request.args.get('subject_id', type=int)
     term_id = request.args.get('term_id', type=int)
+    student_id = request.args.get('student_id', type=int)
+    report_type = request.args.get('report_type', 'class_grades')
     
     query = Student.query.filter_by(is_deleted=False)
     if class_id:
         query = query.filter_by(CID=class_id)
     if section_id:
         query = query.filter_by(SectionID=section_id)
+    if student_id:
+        query = query.filter_by(SID=student_id)
     
     students = query.order_by(Student.SName).all()
     
@@ -244,7 +248,13 @@ def export_reports_master_excel():
     header_font = Font(color="FFFFFF", bold=True)
     align_center = Alignment(horizontal="center", vertical="center")
     
-    headers = ["#", "الرقم الأكاديمي", "اسم الطالب", "الصف الدراسي", "الشعبة", "عدد المواد", "متوسط الدرجات", "التقدير العام"]
+    if report_type == 'attendance_report':
+        headers = ["#", "الرقم الأكاديمي", "اسم الطالب", "الصف الدراسي", "الشعبة", "إجمالي الأيام", "أيام الحضور", "أيام الغياب", "نسبة الحضور"]
+    elif report_type == 'homework_report':
+        headers = ["#", "الرقم الأكاديمي", "اسم الطالب", "الصف الدراسي", "الشعبة", "إجمالي الواجبات", "حالة الإنجاز", "نسبة الإنجاز"]
+    else:
+        headers = ["#", "الرقم الأكاديمي", "اسم الطالب", "الصف الدراسي", "الشعبة", "عدد المواد", "متوسط الدرجات", "التقدير العام"]
+        
     ws.append(headers)
     for cell in ws[1]:
         cell.fill = header_fill
@@ -255,22 +265,40 @@ def export_reports_master_excel():
         cname = st.school_class.CName if st.school_class else "غير محدد"
         sname = st.section.SectionName if st.section else "غير محدد"
         
-        st_marks = Marks.query.filter_by(SID=st.SID).all()
-        if subject_id:
-            st_marks = [m for m in st_marks if m.SubID == subject_id]
-        if term_id:
-            st_marks = [m for m in st_marks if getattr(m, 'T_ID', None) == term_id]
+        if report_type == 'attendance_report':
+            att_q = Attendance.query.filter_by(SID=st.SID)
+            tot = att_q.count()
+            pres = att_q.filter_by(Status='حاضر').count()
+            absent = att_q.filter_by(Status='غائب').count()
+            rate = f"{round((pres / tot * 100), 1)}%" if tot > 0 else "100%"
+            row = [i, st.SID, st.SName, cname, sname, tot, pres, absent, rate]
+        elif report_type == 'homework_report':
+            hw_q = Homework.query
+            if class_id: hw_q = hw_q.filter_by(class_id=class_id)
+            if section_id: hw_q = hw_q.filter_by(section_id=section_id)
+            if subject_id: hw_q = hw_q.filter_by(sub_id=subject_id)
+            hws = hw_q.all()
+            comp = len([h for h in hws if h.status == 'مكتمل'])
+            rate = f"{round((comp / len(hws) * 100), 1)}%" if hws else "100%"
+            row = [i, st.SID, st.SName, cname, sname, len(hws), f"مكتمل ({comp}/{len(hws)})", rate]
+        else:
+            st_marks = Marks.query.filter_by(SID=st.SID).all()
+            if subject_id:
+                st_marks = [m for m in st_marks if m.SubID == subject_id]
+            if term_id:
+                st_marks = [m for m in st_marks if getattr(m, 'T_ID', None) == term_id]
+                
+            scores = [float(m.Score) for m in st_marks if m.Score is not None]
+            avg = round(sum(scores) / len(scores), 1) if scores else 0.0
             
-        scores = [float(m.Score) for m in st_marks if m.Score is not None]
-        avg = round(sum(scores) / len(scores), 1) if scores else 0.0
-        
-        if avg >= 90: grade_str = 'ممتاز'
-        elif avg >= 80: grade_str = 'جيد جداً'
-        elif avg >= 70: grade_str = 'جيد'
-        elif avg >= 60: grade_str = 'مقبول'
-        else: grade_str = 'دون المستوى' if scores else 'غير مرصود'
-        
-        row = [i, st.SID, st.SName, cname, sname, len(st_marks), f"{avg}%" if scores else "—", grade_str]
+            if avg >= 90: grade_str = 'ممتاز'
+            elif avg >= 80: grade_str = 'جيد جداً'
+            elif avg >= 70: grade_str = 'جيد'
+            elif avg >= 60: grade_str = 'مقبول'
+            else: grade_str = 'دون المستوى' if scores else 'غير مرصود'
+            
+            row = [i, st.SID, st.SName, cname, sname, len(st_marks), f"{avg}%" if scores else "—", grade_str]
+            
         ws.append(row)
         for cell in ws[ws.max_row]:
             cell.alignment = align_center
@@ -290,7 +318,7 @@ def export_reports_master_excel():
     return send_file(
         output,
         as_attachment=True,
-        download_name='academic_reports_master.xlsx',
+        download_name=f'academic_report_{report_type}.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -298,54 +326,204 @@ def export_reports_master_excel():
 @login_required
 def export_reports_master_pdf():
     class_id = request.args.get('class_id', type=int)
-    student = None
-    if class_id:
+    student_id = request.args.get('student_id', type=int)
+    
+    if student_id:
+        student = Student.query.get(student_id)
+    elif class_id:
         student = Student.query.filter_by(CID=class_id, is_deleted=False).first()
-    if not student:
+    else:
         student = Student.query.filter_by(is_deleted=False).first()
+        
     if not student:
         return jsonify({'error': 'No student records available for export'}), 404
         
     return student_report_pdf_fast(student.SID)
 
 @reports_bp.route("/reports/api/filter")
-@login_required
 def api_reports_filter():
+    if not current_user.is_authenticated and not session.get('user_id'):
+        return jsonify({'success': False, 'error': 'Unauthorized', 'students': []}), 401
+        
     class_id = request.args.get('class_id', type=int)
     section_id = request.args.get('section_id', type=int)
     subject_id = request.args.get('subject_id', type=int)
     term_id = request.args.get('term_id', type=int)
+    academic_year = request.args.get('academic_year')
+    student_id = request.args.get('student_id', type=int)
+    report_type = request.args.get('report_type', 'class_grades')
     
     query = Student.query.filter_by(is_deleted=False)
     if class_id:
         query = query.filter_by(CID=class_id)
     if section_id:
         query = query.filter_by(SectionID=section_id)
+    if student_id:
+        query = query.filter_by(SID=student_id)
         
-    students = query.all()
+    students = query.order_by(Student.SName).all()
     
     data = []
-    for st in students:
-        marks = Marks.query.filter_by(SID=st.SID).all()
+    page_target_url = '/reports/performance'
+    
+    if report_type == 'attendance_report':
+        page_target_url = '/attendance'
+        for st in students:
+            att_q = Attendance.query.filter_by(SID=st.SID)
+            tot = att_q.count()
+            pres = att_q.filter_by(Status='حاضر').count()
+            absent = att_q.filter_by(Status='غائب').count()
+            rate = round((pres / tot * 100), 1) if tot > 0 else 100.0
+            data.append({
+                'student_id': st.SID,
+                'name': st.SName,
+                'class_name': st.school_class.CName if st.school_class else '—',
+                'section_name': st.section.SectionName if st.section else '—',
+                'col4': f"{tot} يوم سجل",
+                'col5': f"حاضر {pres} | غائب {absent}",
+                'average': rate,
+                'status_str': f"حضور {rate}% ({pres}/{tot})",
+                'badge': 'انضباط ممتاز' if rate >= 90 else ('حضور متوسط' if rate >= 75 else 'غياب مرتفع'),
+                'page_url': f"/attendance?class_id={st.CID or ''}&section_id={st.SectionID or ''}"
+            })
+    elif report_type == 'homework_report':
+        page_target_url = '/homework'
+        for st in students:
+            hw_q = Homework.query
+            if class_id: hw_q = hw_q.filter_by(class_id=class_id)
+            if section_id: hw_q = hw_q.filter_by(section_id=section_id)
+            if subject_id: hw_q = hw_q.filter_by(sub_id=subject_id)
+            hws = hw_q.all()
+            comp = len([h for h in hws if h.status == 'مكتمل'])
+            rate = round((comp / len(hws) * 100), 1) if hws else 100.0
+            data.append({
+                'student_id': st.SID,
+                'name': st.SName,
+                'class_name': st.school_class.CName if st.school_class else '—',
+                'section_name': st.section.SectionName if st.section else '—',
+                'col4': f"{len(hws)} واجب مسجل",
+                'col5': f"مكتمل ({comp}/{len(hws)})",
+                'average': rate,
+                'status_str': f"مكتمل ({comp}/{len(hws)})",
+                'badge': 'منجز بالكامل' if rate >= 90 else ('مكتمل جزئياً' if rate >= 60 else 'متأخر'),
+                'page_url': '/homework'
+            })
+    elif report_type == 'exam_report':
+        page_target_url = '/exams'
+        subjects_list = Subject.query.filter_by(is_deleted=False)
         if subject_id:
-            marks = [m for m in marks if m.SubID == subject_id]
-        if term_id:
-            marks = [m for m in marks if getattr(m, 'T_ID', None) == term_id]
+            subjects_list = subjects_list.filter_by(SubID=subject_id)
+        for sub in subjects_list.all():
+            m_list = Marks.query.filter_by(SubID=sub.SubID).all()
+            if class_id:
+                m_list = [m for m in m_list if m.student and m.student.CID == class_id]
+            scores = [float(m.Score) for m in m_list if m.Score is not None]
+            avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+            max_s = max(scores) if scores else 0
+            data.append({
+                'student_id': sub.SubID,
+                'name': f"اختبارات مادة {sub.SubName}",
+                'class_name': 'جميع الصفوف' if not class_id else (Classes.query.get(class_id).CName if Classes.query.get(class_id) else '—'),
+                'section_name': 'التقييم الأكاديمي',
+                'col4': f"{len(scores)} طالب مرصود",
+                'col5': f"أعلى درجة: {max_s} %",
+                'average': avg,
+                'status_str': f"المعدل العام: {avg}%",
+                'badge': 'أداء ممتاز' if avg >= 80 else 'أداء متوسط',
+                'page_url': '/exams'
+            })
+    elif report_type == 'subject_report':
+        page_target_url = '/academic/subjects'
+        subjects_list = Subject.query.filter_by(is_deleted=False)
+        if subject_id:
+            subjects_list = subjects_list.filter_by(SubID=subject_id)
+        for sub in subjects_list.all():
+            m_list = Marks.query.filter_by(SubID=sub.SubID).all()
+            scores = [float(m.Score) for m in m_list if m.Score is not None]
+            avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+            data.append({
+                'student_id': sub.SubID,
+                'name': sub.SubName,
+                'class_name': 'منهج مقر',
+                'section_name': 'مادة دراسية',
+                'col4': f"{len(m_list)} درجة مرصودة",
+                'col5': f"متوسط المادة: {avg}%",
+                'average': avg,
+                'status_str': f"متوسط المادة: {avg}%",
+                'badge': 'مادة أساسية',
+                'page_url': '/academic/subjects'
+            })
+    elif report_type == 'student_grades' and student_id:
+        page_target_url = f"/reports/student?student_id={student_id}"
+        st = Student.query.get(student_id)
+        if st:
+            marks = Marks.query.filter_by(SID=st.SID).all()
+            if subject_id: marks = [m for m in marks if m.SubID == subject_id]
+            if term_id: marks = [m for m in marks if getattr(m, 'T_ID', None) == term_id]
+            for m in marks:
+                sub_n = m.subject.SubName if m.subject else 'مادة'
+                sc = float(m.Score) if m.Score is not None else 0.0
+                data.append({
+                    'student_id': st.SID,
+                    'name': f"{st.SName} — مادة ({sub_n})",
+                    'class_name': st.school_class.CName if st.school_class else '—',
+                    'section_name': st.section.SectionName if st.section else '—',
+                    'col4': f"العظمى: {float(m.MaxScore or 100)}",
+                    'col5': f"الدرجة: {sc}",
+                    'average': sc,
+                    'status_str': f"الدرجة: {sc}",
+                    'badge': m.Grade or ('ناجح' if sc >= 50 else 'راسب'),
+                    'page_url': f"/reports/student?student_id={st.SID}"
+                })
+    else:
+        if report_type == 'student_grades': page_target_url = '/reports/student'
+        elif report_type == 'academic_performance': page_target_url = '/reports/analytics'
+        elif report_type == 'class_grades': page_target_url = '/reports/performance'
+        
+        for st in students:
+            marks = Marks.query.filter_by(SID=st.SID).all()
+            if subject_id:
+                marks = [m for m in marks if m.SubID == subject_id]
+            if term_id:
+                marks = [m for m in marks if getattr(m, 'T_ID', None) == term_id]
+                
+            scores = [float(m.Score) for m in marks if m.Score is not None]
+            avg = round(sum(scores) / len(scores), 1) if scores else 0.0
             
-        scores = [float(m.Score) for m in marks if m.Score is not None]
-        avg = round(sum(scores) / len(scores), 1) if scores else 0.0
-        
-        data.append({
-            'student_id': st.SID,
-            'name': st.SName,
-            'class_name': st.school_class.CName if st.school_class else '—',
-            'section_name': st.section.SectionName if st.section else '—',
-            'subjects_count': len(marks),
-            'average': avg
-        })
-        
+            if avg >= 90: grade_str = 'ممتاز'
+            elif avg >= 80: grade_str = 'جيد جداً'
+            elif avg >= 70: grade_str = 'جيد'
+            elif avg >= 60: grade_str = 'مقبول'
+            else: grade_str = 'متعثر' if scores else 'غير مرصود'
+
+            data.append({
+                'student_id': st.SID,
+                'name': st.SName,
+                'class_name': st.school_class.CName if st.school_class else '—',
+                'section_name': st.section.SectionName if st.section else '—',
+                'col4': f"{len(marks)} مواد",
+                'col5': f"المعدل: {avg}%",
+                'average': avg,
+                'status_str': f"المعدل: {avg}%",
+                'badge': grade_str,
+                'page_url': f"/reports/student?student_id={st.SID}&class_id={st.CID or ''}"
+            })
+            
+        if report_type == 'top_students':
+            data = [s for s in data if s['average'] >= 80]
+            data.sort(key=lambda x: x['average'], reverse=True)
+            for idx, s in enumerate(data, start=1):
+                s['badge'] = f"المركز #{idx} - متفوق"
+        elif report_type == 'struggling_students':
+            data = [s for s in data if s['average'] < 60]
+            data.sort(key=lambda x: x['average'])
+            for s in data:
+                s['badge'] = 'يحتاج دعم أكاديمي'
+            
     return jsonify({
         'success': True,
+        'report_type': report_type,
+        'page_target_url': page_target_url,
         'total': len(data),
         'students': data
     })
