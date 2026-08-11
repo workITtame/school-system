@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, jsonify, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from models import db, Student, Teacher, Classes, Sections, Subject, Attendance, ExamSchedule, Homework, User, Message, Days, Lessons, Notification
+from models import db, Student, Teacher, Classes, Sections, Subject, Attendance, ExamSchedule, Homework, User, Message, Days, Lessons, Notification, School
 from models.timetable import SchoolTable
 from models.grade import Marks
 from sqlalchemy import func, text, or_
@@ -839,7 +839,43 @@ def settings():
     if not current_user.is_authenticated or role != 'admin':
         flash('عذراً، هذه الصفحة مخصصة لمدراء النظام فقط', 'danger')
         return redirect(url_for('dashboard.index'))
+
+    school = School.query.first()
+    if not school:
+        school = School(
+            SchoolName='مدرسة المستقبل الأهلية',
+            Phone='0555123456',
+            Email='info@future-school.com',
+            SchoolType='أهلية',
+            City='الرياض',
+            Neighborhood='حي النزهة',
+            EstablishedYear=2020
+        )
+        db.session.add(school)
+        db.session.commit()
+
     if request.method == 'POST':
-        flash('تم حفظ إعدادات النظام بنجاح', 'success')
+        school_name = request.form.get('school_name')
+        school_email = request.form.get('school_email')
+        school_phone = request.form.get('school_phone')
+        school_address = request.form.get('school_address')
+        school_type = request.form.get('school_type')
+        school_city = request.form.get('school_city')
+        school_governorate = request.form.get('school_governorate')
+        established_year = request.form.get('established_year')
+
+        if school_name: school.SchoolName = school_name.strip()
+        if school_email: school.Email = school_email.strip()
+        if school_phone: school.Phone = school_phone.strip()
+        if school_address: school.Neighborhood = school_address.strip()
+        if school_type: school.SchoolType = school_type.strip()
+        if school_city: school.City = school_city.strip()
+        if school_governorate: school.Governorate = school_governorate.strip()
+        if established_year and established_year.isdigit():
+            school.EstablishedYear = int(established_year)
+
+        db.session.commit()
+        flash('تم حفظ بيانات وإعدادات المدرسة بنجاح في قاعدة البيانات', 'success')
         return redirect(url_for('dashboard.settings'))
-    return render_template('settings.html')
+
+    return render_template('settings.html', school=school)

@@ -75,7 +75,7 @@
                         </div>
                     </div>
                     <h3 class="fw-bold text-dark font-monospace mb-1">مكتملة</h3>
-                    <small class="text-success extra-small font-monospace"><i class="fa-solid fa-building-columns me-1"></i> مدرسة المستقبل</small>
+                    <small class="text-success extra-small font-monospace"><i class="fa-solid fa-building-columns me-1"></i> {{ school.SchoolName if school and school.SchoolName else 'مدرسة المستقبل' }}</small>
                 </div>
             </div>
 
@@ -281,7 +281,7 @@
                             <td class="text-start font-monospace extra-small setting-code fw-bold">SET-GEN-01</td>
                             <td class="text-start">
                                 <strong class="d-block text-dark font-monospace extra-small setting-name">اسم المدرسة الرسمي والبيانات</strong>
-                                <small class="text-muted extra-small font-monospace">مدرسة المستقبل الأهلية Model School</small>
+                                <small class="text-muted extra-small font-monospace">{{ school.SchoolName if school and school.SchoolName else 'مدرسة المستقبل الأهلية Model School' }}</small>
                             </td>
                             <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-cat">المدرسة</span></td>
                             <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-3 py-1 font-monospace setting-status">✔ مكتمل</span></td>
@@ -489,19 +489,27 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label extra-small fw-bold text-dark mb-1">اسم المدرسة الرسمي</label>
-                                    <input type="text" name="school_name" value="مدرسة المستقبل الأهلية" class="form-control form-control-modern rounded-pill extra-small" required aria-required="true">
+                                    <input type="text" name="school_name" value="{{ school.SchoolName if school and school.SchoolName else 'مدرسة المستقبل الأهلية' }}" class="form-control form-control-modern rounded-pill extra-small" required aria-required="true">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label extra-small fw-bold text-dark mb-1">البريد الإلكتروني الرسمي</label>
-                                    <input type="email" name="school_email" value="info@future-school.com" class="form-control form-control-modern rounded-pill extra-small" required aria-required="true">
+                                    <input type="email" name="school_email" value="{{ school.Email if school and school.Email else 'info@future-school.com' }}" class="form-control form-control-modern rounded-pill extra-small" required aria-required="true">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label extra-small fw-bold text-dark mb-1">رقم الهاتف التواصل</label>
-                                    <input type="text" name="school_phone" value="0555123456" class="form-control form-control-modern rounded-pill extra-small">
+                                    <input type="text" name="school_phone" value="{{ school.Phone if school and school.Phone else '0555123456' }}" class="form-control form-control-modern rounded-pill extra-small">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label extra-small fw-bold text-dark mb-1">العنوان والمنطقة</label>
-                                    <input type="text" name="school_address" value="الرياض - حي النزهة" class="form-control form-control-modern rounded-pill extra-small">
+                                    <label class="form-label extra-small fw-bold text-dark mb-1">نوع المدرسة / الترخيص</label>
+                                    <input type="text" name="school_type" value="{{ school.SchoolType if school and school.SchoolType else 'أهلية' }}" class="form-control form-control-modern rounded-pill extra-small">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label extra-small fw-bold text-dark mb-1">المدينة / المحافظة</label>
+                                    <input type="text" name="school_city" value="{{ school.City if school and school.City else 'الرياض' }}" class="form-control form-control-modern rounded-pill extra-small">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label extra-small fw-bold text-dark mb-1">العنوان والمنطقة / الحي</label>
+                                    <input type="text" name="school_address" value="{{ school.Neighborhood if school and school.Neighborhood else 'حي النزهة' }}" class="form-control form-control-modern rounded-pill extra-small">
                                 </div>
                             </div>
 
