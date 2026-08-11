@@ -34,15 +34,16 @@ def manage_grades():
     total_marks_count = len(valid_marks)
     
     scores = [float(m.Score) for m in valid_marks if m.Score is not None]
+    from services.grade_calculation_service import calculate_exam_average, is_passing
     if scores:
-        avg_score = round(sum(scores) / len(scores), 1)
+        avg_score = calculate_exam_average(scores) or 0.0
         max_score = max(scores)
         min_score = min(scores)
-        pass_count = sum(1 for s in scores if s >= 60)
-        fail_count = sum(1 for s in scores if s < 60)
+        pass_count = sum(1 for s in scores if is_passing(s))
+        fail_count = sum(1 for s in scores if not is_passing(s))
         pass_rate = round((pass_count / len(scores)) * 100, 1)
         fail_rate = round((fail_count / len(scores)) * 100, 1)
-        rating_label = 'ممتاز' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if avg_score >= 60 else 'ضعيف')))
+        rating_label = 'ممتاز' if avg_score >= 90 else ('جيد جداً' if avg_score >= 80 else ('جيد' if avg_score >= 70 else ('مقبول' if is_passing(avg_score) else 'ضعيف')))
     else:
         avg_score, max_score, min_score, pass_count, fail_count, pass_rate, fail_rate = 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0
         rating_label = '—'

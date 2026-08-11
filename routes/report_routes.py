@@ -130,11 +130,11 @@ def student_report():
                 if exam_name not in report_data:
                     report_data[exam_name] = []
                 report_data[exam_name].append(grade_item)
-                if mark.Score is not None:
-                    total_score += score_val
-                    count += 1
-            if count > 0:
-                average = round(total_score / count, 2)
+            valid_scores = [float(mark.Score) for mark in marks if mark.Score is not None]
+            from services.grade_calculation_service import calculate_exam_average
+            raw_avg = calculate_exam_average(valid_scores)
+            if raw_avg is not None:
+                average = round(raw_avg, 2)
                 
     return render_template("reports/student_report.html",
                            classes=classes,

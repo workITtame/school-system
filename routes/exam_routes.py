@@ -133,11 +133,13 @@ def index():
     ).all()
     scores = [float(m.Score) for m in overall_marks if m.Score is not None]
 
+    from services.grade_calculation_service import calculate_exam_average, is_passing
+
     if scores:
-        avg_score = round(sum(scores) / len(scores), 1)
+        avg_score = calculate_exam_average(scores) or 0.0
         max_score = max(scores)
         min_score = min(scores)
-        pass_count = sum(1 for s in scores if s >= 60)
+        pass_count = sum(1 for s in scores if is_passing(s))
         pass_rate = round((pass_count / len(scores)) * 100, 1)
         fail_rate = round(100.0 - pass_rate, 1)
     else:

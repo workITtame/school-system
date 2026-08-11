@@ -53,15 +53,17 @@ def get_reports_dashboard_metrics():
             except Exception:
                 return float(m.Score)
 
+        from services.grade_calculation_service import calculate_exam_average, is_passing
+
         scores = [sc for sc in [_calc_score(m) for m in all_marks] if sc is not None]
-        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-        pass_count = sum(1 for s in scores if s >= 60)
-        fail_count = sum(1 for s in scores if s < 60)
+        avg_score = calculate_exam_average(scores) or 0.0
+        pass_count = sum(1 for s in scores if is_passing(s))
+        fail_count = sum(1 for s in scores if not is_passing(s))
         pass_rate = round((pass_count / len(scores) * 100), 1) if scores else 0.0
         fail_rate = round((fail_count / len(scores) * 100), 1) if scores else 0.0
 
         top_students_count = sum(1 for s in scores if s >= 90)
-        struggling_students_count = sum(1 for s in scores if s < 60)
+        struggling_students_count = sum(1 for s in scores if not is_passing(s))
 
         # Donut Chart: Grade Distribution
         counts = {'excellent': 0, 'very_good': 0, 'good': 0, 'pass': 0, 'fail': 0}
@@ -69,7 +71,7 @@ def get_reports_dashboard_metrics():
             if s >= 90: counts['excellent'] += 1
             elif s >= 80: counts['very_good'] += 1
             elif s >= 70: counts['good'] += 1
-            elif s >= 60: counts['pass'] += 1
+            elif is_passing(s): counts['pass'] += 1
             else: counts['fail'] += 1
 
         # Bar Chart: Subject Averages
@@ -78,7 +80,7 @@ def get_reports_dashboard_metrics():
         for sub in subjects:
             sub_marks = [m for m in all_marks if m.SubID == sub.SubID]
             sub_scores = [sc for sc in [_calc_score(m) for m in sub_marks] if sc is not None]
-            avg = round(sum(sub_scores) / len(sub_scores), 1) if sub_scores else 0.0
+            avg = calculate_exam_average(sub_scores) or 0.0
             subject_stats.append({"name": sub.SubName, "average": avg})
 
         # Sort for Best & Hardest Subjects

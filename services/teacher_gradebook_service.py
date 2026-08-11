@@ -154,54 +154,28 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
     for a in raw_attendance:
         student_att_map.setdefault(a.SID, []).append(a.Status)
 
+    from services.grade_calculation_service import (
+        calculate_exam_average,
+        calculate_homework_average,
+        calculate_attendance_percentage,
+        calculate_participation,
+        calculate_final_grade,
+        get_letter_grade_badge
+    )
+
     decorated_students = []
     for idx, st in enumerate(raw_students, start=1):
         e_scores = student_exam_map.get(st.SID, [])
         h_scores = student_hw_map.get(st.SID, [])
         att_statuses = student_att_map.get(st.SID, [])
 
-        exam_avg = round(sum(e_scores) / len(e_scores), 1) if e_scores else None
-        hw_avg = round(sum(h_scores) / len(h_scores), 1) if h_scores else None
+        exam_avg = calculate_exam_average(e_scores)
+        hw_avg = calculate_homework_average(h_scores)
+        attendance_pct = calculate_attendance_percentage(att_statuses)
+        participation = calculate_participation(attendance_pct)
 
-        if att_statuses:
-            present_cnt = sum(1 for s in att_statuses if s in ['حاضر', 'present'])
-            attendance_pct = round((present_cnt / len(att_statuses)) * 100, 1)
-        else:
-            attendance_pct = None
-
-        participation = 100.0 if (attendance_pct and attendance_pct >= 90.0) else (attendance_pct if attendance_pct is not None else 0.0)
-
-        # Existing business formula preservation using real DB values
-        hw_val = hw_avg if hw_avg is not None else 0.0
-        exam_val = exam_avg if exam_avg is not None else 0.0
-        att_val = attendance_pct if attendance_pct is not None else 0.0
-        part_val = participation if participation is not None else 0.0
-
-        if hw_avg is not None or exam_avg is not None:
-            final_grade = round((hw_val * 2) + (exam_val * 0.6) + (part_val * 0.1) + (att_val * 0.1), 1)
-        else:
-            final_grade = 0.0
-
-        if final_grade >= 90.0:
-            letter_grade = f"🟢 ممتاز ({final_grade}%)"
-            growth_badge = "مستقر في التقييم الأكاديمي"
-            status_text = 'ممتاز'
-        elif final_grade >= 80.0:
-            letter_grade = f"🟢 جيد جداً ({final_grade}%)"
-            growth_badge = "أداء جيد مستقر"
-            status_text = 'جيد جداً'
-        elif final_grade >= 70.0:
-            letter_grade = f"🟡 جيد ({final_grade}%)"
-            growth_badge = "أداء جيد"
-            status_text = 'جيد'
-        elif final_grade >= 60.0:
-            letter_grade = f"🟠 يحتاج متابعة ({final_grade}%)"
-            growth_badge = "يتطلب متابعة"
-            status_text = 'يحتاج متابعة'
-        else:
-            letter_grade = f"🔴 متعثر ({final_grade}%)"
-            growth_badge = "متعثر أكاديمياً"
-            status_text = 'متعثر'
+        final_grade = calculate_final_grade(exam_avg, hw_avg, participation, attendance_pct)
+        letter_grade, growth_badge, status_text = get_letter_grade_badge(final_grade)
 
         decorated_students.append({
             'student_id': st.SID,
