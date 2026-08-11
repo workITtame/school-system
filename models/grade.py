@@ -54,3 +54,29 @@ class DetailMarks(db.Model, AuditMixin):
     subject = db.relationship('Subject')
     teacher = db.relationship('Teacher')
     term = db.relationship('Terms')
+
+class HomeworkMarks(db.Model, AuditMixin):
+    __tablename__ = 'HomeworkMarks'
+    HM_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    SID = db.Column(db.Integer, db.ForeignKey('Student.SID'), index=True, nullable=False)
+    SubID = db.Column(db.Integer, db.ForeignKey('Subject.SubID'), index=True, nullable=True)
+    HomeworkID = db.Column(db.Integer, db.ForeignKey('homework.id'), index=True, nullable=False)
+    TeacherID = db.Column(db.Integer, db.ForeignKey('Teacher.TeacherID'), nullable=True)
+    Score = db.Column(db.Numeric(5, 2), nullable=True)
+    MaxScore = db.Column(db.Numeric(5, 2), default=100)
+    Percentage = db.Column(db.Numeric(5, 2), nullable=True)
+    Grade = db.Column(db.String(5), nullable=True)
+    T_ID = db.Column(db.Integer, db.ForeignKey('Terms.T_ID'), nullable=True)
+    Notes = db.Column(db.String(255), nullable=True)
+
+    __table_args__ = (
+        db.CheckConstraint('Score >= 0 AND Score <= 100', name='check_homework_marks_score_range'),
+        db.UniqueConstraint('SID', 'HomeworkID', name='uq_student_homework_marks'),
+    )
+
+    # Relationships
+    student = db.relationship('Student')
+    subject = db.relationship('Subject')
+    homework = db.relationship('Homework')
+    teacher = db.relationship('Teacher')
+    term = db.relationship('Terms')

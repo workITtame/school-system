@@ -6,7 +6,7 @@ from .geographic import Country, Governorates, Directorate
 from .academic import Classes, Sections, ClassesSections, Subject, ClassSubject, Days, Lessons, Terms, ExamSchedule
 from .student import Student, Attendance
 from .timetable import SchoolTable, TypeExams, SchoolTableTypeExam
-from .grade import Marks, DetailMarks
+from .grade import Marks, DetailMarks, HomeworkMarks
 from .message import Message
 from .homework import Homework
 from .notification import Notification
@@ -34,6 +34,7 @@ __all__ = [
     'SchoolTableTypeExam',
     'Marks',
     'DetailMarks',
+    'HomeworkMarks',
     'ExamSchedule',
     'Message',
     'Homework',
