@@ -19,6 +19,7 @@ class Marks(db.Model, AuditMixin):
 
     __table_args__ = (
         db.CheckConstraint('Score >= 0 AND Score <= 100', name='check_marks_score_range'),
+        db.UniqueConstraint('SID', 'ExamID', name='uq_student_exam_marks'),
     )
 
     # Relationships

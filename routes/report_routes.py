@@ -96,9 +96,12 @@ def student_report():
             selected_student = None
 
         if selected_student:
-            if hasattr(current_user, 'role') and current_user.role == 'teacher':
+            user_role = session.get('user_role') or getattr(current_user, 'role', '')
+            user_id = session.get('user_id') or (current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None)
+
+            if user_role == 'teacher' and user_id:
                 from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
-                teacher = get_teacher_by_user_id(current_user.id)
+                teacher = get_teacher_by_user_id(user_id)
                 _, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
                 if not selected_student.CID or selected_student.CID not in class_ids:
                     return jsonify({'error': 'Out-of-scope student report access forbidden'}), 403

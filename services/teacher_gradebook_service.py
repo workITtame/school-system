@@ -105,47 +105,114 @@ def get_gradebook_statistics(user_id, subject_id=None, class_id=None, section_id
 def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=None, search=None, page=1, per_page=10):
     teacher, raw_students = _get_students_for_teacher(user_id, subject_id, class_id, section_id, search)
     
-    # Calculate ranks and grades
+    if not raw_students:
+        return {
+            'items': [],
+            'total': 0,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': 1
+        }
+
+    from models.grade import Marks, HomeworkMarks
+    from models import Attendance
+
+    student_ids = [st.SID for st in raw_students]
+
+    # Query real exam marks for scoped students
+    exam_marks_query = Marks.query.filter(
+        Marks.SID.in_(student_ids),
+        Marks.assessment_type == 'exam',
+        Marks.Score.isnot(None)
+    )
+    if subject_id:
+        exam_marks_query = exam_marks_query.filter(Marks.SubID == subject_id)
+    raw_exam_marks = exam_marks_query.all()
+
+    # Query real homework marks for scoped students
+    hw_marks_query = HomeworkMarks.query.filter(
+        HomeworkMarks.SID.in_(student_ids),
+        HomeworkMarks.Score.isnot(None)
+    )
+    if subject_id:
+        hw_marks_query = hw_marks_query.filter(HomeworkMarks.SubID == subject_id)
+    raw_hw_marks = hw_marks_query.all()
+
+    # Query real attendance records
+    raw_attendance = Attendance.query.filter(Attendance.SID.in_(student_ids)).all()
+
+    # Map scores by SID
+    student_exam_map = {}
+    for m in raw_exam_marks:
+        student_exam_map.setdefault(m.SID, []).append(float(m.Score))
+
+    student_hw_map = {}
+    for h in raw_hw_marks:
+        student_hw_map.setdefault(h.SID, []).append(float(h.Score))
+
+    student_att_map = {}
+    for a in raw_attendance:
+        student_att_map.setdefault(a.SID, []).append(a.Status)
+
     decorated_students = []
     for idx, st in enumerate(raw_students, start=1):
-        hw_avg = round(8.5 + (st.SID % 2), 1)
-        exam_avg = round(85.0 + (st.SID % 15), 1)
-        participation = round(90.0 + (st.SID % 10), 1)
-        attendance_pct = round(92.0 + (st.SID % 8), 1)
+        e_scores = student_exam_map.get(st.SID, [])
+        h_scores = student_hw_map.get(st.SID, [])
+        att_statuses = student_att_map.get(st.SID, [])
 
-        final_grade = round((hw_avg * 2) + (exam_avg * 0.6) + (participation * 0.1) + (attendance_pct * 0.1), 1)
-        
+        exam_avg = round(sum(e_scores) / len(e_scores), 1) if e_scores else None
+        hw_avg = round(sum(h_scores) / len(h_scores), 1) if h_scores else None
+
+        if att_statuses:
+            present_cnt = sum(1 for s in att_statuses if s in ['حاضر', 'present'])
+            attendance_pct = round((present_cnt / len(att_statuses)) * 100, 1)
+        else:
+            attendance_pct = None
+
+        participation = 100.0 if (attendance_pct and attendance_pct >= 90.0) else (attendance_pct if attendance_pct is not None else 0.0)
+
+        # Existing business formula preservation using real DB values
+        hw_val = hw_avg if hw_avg is not None else 0.0
+        exam_val = exam_avg if exam_avg is not None else 0.0
+        att_val = attendance_pct if attendance_pct is not None else 0.0
+        part_val = participation if participation is not None else 0.0
+
+        if hw_avg is not None or exam_avg is not None:
+            final_grade = round((hw_val * 2) + (exam_val * 0.6) + (part_val * 0.1) + (att_val * 0.1), 1)
+        else:
+            final_grade = 0.0
+
         if final_grade >= 90.0:
             letter_grade = f"🟢 ممتاز ({final_grade}%)"
-            growth_badge = "+8% مقارنة بالشهر الماضي"
+            growth_badge = "مستقر في التقييم الأكاديمي"
             status_text = 'ممتاز'
         elif final_grade >= 80.0:
             letter_grade = f"🟢 جيد جداً ({final_grade}%)"
-            growth_badge = "+5% مستقر"
+            growth_badge = "أداء جيد مستقر"
             status_text = 'جيد جداً'
         elif final_grade >= 70.0:
             letter_grade = f"🟡 جيد ({final_grade}%)"
-            growth_badge = "+2% أداء جيد"
+            growth_badge = "أداء جيد"
             status_text = 'جيد'
         elif final_grade >= 60.0:
             letter_grade = f"🟠 يحتاج متابعة ({final_grade}%)"
-            growth_badge = "-3% يتطلب متابعة"
+            growth_badge = "يتطلب متابعة"
             status_text = 'يحتاج متابعة'
         else:
             letter_grade = f"🔴 متعثر ({final_grade}%)"
-            growth_badge = "-7% متعثر أكاديمياً"
+            growth_badge = "متعثر أكاديمياً"
             status_text = 'متعثر'
 
         decorated_students.append({
             'student_id': st.SID,
             'student_name': st.SName,
             'academic_id': f"20240{st.SID}",
-            'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
-            'section_name': st.section.SectionName if st.section else 'شعبة أ',
-            'homework_avg': hw_avg,
-            'exam_avg': exam_avg,
-            'participation': participation,
-            'attendance_pct': attendance_pct,
+            'class_name': st.school_class.CName if st.school_class else '',
+            'section_name': st.section.SectionName if st.section else '',
+            'homework_avg': hw_avg if hw_avg is not None else "—",
+            'exam_avg': exam_avg if exam_avg is not None else "—",
+            'participation': participation if participation is not None else 0.0,
+            'attendance_pct': attendance_pct if attendance_pct is not None else "—",
             'final_grade': final_grade,
             'letter_grade': letter_grade,
             'growth_badge': growth_badge,

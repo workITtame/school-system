@@ -34,6 +34,22 @@ def add_column_if_missing(cursor, table, column, definition):
     else:
         print(f"  ⏭  موجود مسبقاً: {table}.{column}")
 
+def constraint_exists(cursor, table, constraint_name):
+    cursor.execute(
+        "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS "
+        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND CONSTRAINT_NAME = %s",
+        (table, constraint_name)
+    )
+    return cursor.fetchone()[0] > 0
+
+def add_unique_constraint_if_missing(cursor, table, constraint_name, columns_sql):
+    if not constraint_exists(cursor, table, constraint_name):
+        sql = f"ALTER TABLE `{table}` ADD CONSTRAINT `{constraint_name}` UNIQUE ({columns_sql})"
+        cursor.execute(sql)
+        print(f"  ✅ أُضيفت الحماية المستقلة: {table}.{constraint_name}")
+    else:
+        print(f"  ⏭  موجود مسبقاً: {table}.{constraint_name}")
+
 def run_migrations():
     conn = get_connection()
     cursor = conn.cursor()
@@ -77,6 +93,7 @@ def run_migrations():
     add_column_if_missing(cursor, 'Marks', 'MaxScore',   "DECIMAL(5,2) DEFAULT 100 COMMENT 'الدرجة الكاملة'")
     add_column_if_missing(cursor, 'Marks', 'Percentage', "DECIMAL(5,2) NULL COMMENT 'النسبة المئوية'")
     add_column_if_missing(cursor, 'Marks', 'Notes',      "VARCHAR(255) NULL COMMENT 'ملاحظات المعلم'")
+    add_unique_constraint_if_missing(cursor, 'Marks', 'uq_student_exam_marks', "`SID`, `ExamID`")
 
     # ── DetailMarks ──────────────────────────────────────────
     print("\n📋 جدول DetailMarks:")
