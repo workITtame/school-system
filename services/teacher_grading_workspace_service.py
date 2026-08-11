@@ -163,7 +163,7 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                 max_score = float(details.get('total_score', 100))
                 
                 ex = ExamSchedule.query.get(source_id)
-                exam_id = getattr(ex, 'ExamID', 1) or 1
+                exam_id = getattr(ex, 'ScheduleID', source_id) if ex else source_id
                 t_id = getattr(ex, 'T_ID', 1) or 1
                 
                 teacher = Teacher.query.filter_by(user_id=user_id).first()
