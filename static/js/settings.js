@@ -318,12 +318,12 @@ function exportSettingsMasterExcel() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Enterprise_Settings_Catalog_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Settings_Catalog_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     if (typeof showToast === 'function') {
-        showToast('تم تصدير كتالوج الإعدادات بنجاح إلى ملف Excel CSV', 'success');
+        showToast('تم تصدير سجل الإعدادات بنجاح إلى ملف Excel CSV', 'success');
     }
 }
