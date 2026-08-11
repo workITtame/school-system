@@ -40,7 +40,7 @@
             <!-- Progress & KPI Metrics Bar -->
             <div class="p-3 bg-white border-bottom shadow-sm">
                 <div class="row g-2 align-items-center">
-                    <div class="col-12 col-lg-8">
+                    <div class="col-12 col-lg-7">
                         <div class="d-flex align-items-center justify-content-between mb-1 extra-small">
                             <span class="fw-bold text-dark"><i class="fa-solid fa-chart-line text-primary me-1"></i> تقدم التصحيح الإجمالي:</span>
                             <span class="font-monospace fw-bold text-primary" id="ugwProgressLabel">0% - تم تصحيح 0 من 0 طلاب</span>
@@ -49,11 +49,11 @@
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated rounded-pill" id="ugwProgressBar" style="width: 0%;"></div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-4">
+                    <div class="col-12 col-lg-5">
                         <div class="d-flex align-items-center justify-content-around text-center extra-small font-monospace bg-light p-2 rounded-3 border">
-                            <div onclick="filterGradingStudents('', document.getElementById('ugwFilterAll'))" style="cursor: pointer;" title="عرض الكل"><small class="text-muted d-block">إجمالي</small><strong class="text-dark fs-6" id="ugwKpiTotal">0</strong></div>
+                            <div onclick="filterGradingStudents('', document.getElementById('ugwFilterAll'))" style="cursor: pointer;" title="عرض إجمالي الطلاب"><small class="text-muted d-block">إجمالي</small><strong class="text-dark fs-6" id="ugwKpiTotal">0</strong></div>
                             <div class="border-end h-100"></div>
-                            <div onclick="filterGradingStudents('', document.getElementById('ugwFilterAll'))" style="cursor: pointer;" title="عرض كل التسليمات"><small class="text-muted d-block">تسليم</small><strong class="text-info fs-6" id="ugwKpiSubmitted">0</strong></div>
+                            <div onclick="filterGradingStudents('تسليم', document.getElementById('ugwFilterSubmitted'))" style="cursor: pointer;" title="فلترة: تم التسليم"><small class="text-muted d-block">تسليم</small><strong class="text-info fs-6" id="ugwKpiSubmitted">0</strong></div>
                             <div class="border-end h-100"></div>
                             <div onclick="filterGradingStudents('تم', document.getElementById('ugwFilterGraded'))" style="cursor: pointer;" title="فلترة: تم التصحيح"><small class="text-muted d-block">مصحح</small><strong class="text-success fs-6" id="ugwKpiGraded">0</strong></div>
                             <div class="border-end h-100"></div>
@@ -79,8 +79,9 @@
                     <!-- Quick Filter Chips with Badges -->
                     <div class="d-flex align-items-center gap-1 overflow-x-auto extra-small pb-2 mb-2 border-bottom">
                         <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 active fw-bold" id="ugwFilterAll" onclick="filterGradingStudents('', this)">الكل (<span id="ugwCntAll">0</span>)</button>
+                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2 fw-bold" id="ugwFilterSubmitted" onclick="filterGradingStudents('تسليم', this)">تسليم (<span id="ugwCntSubmitted">0</span>)</button>
                         <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 fw-bold" id="ugwFilterPending" onclick="filterGradingStudents('بانتظار', this)">بانتظار (<span id="ugwCntPending">0</span>)</button>
-                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 fw-bold" id="ugwFilterGraded" onclick="filterGradingStudents('تم', this)">تم (<span id="ugwCntGraded">0</span>)</button>
+                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 fw-bold" id="ugwFilterGraded" onclick="filterGradingStudents('تم', this)">مصحح (<span id="ugwCntGraded">0</span>)</button>
                         <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 fw-bold" id="ugwFilterMissing" onclick="filterGradingStudents('لم يسلم', this)">لم يسلم (<span id="ugwCntMissing">0</span>)</button>
                     </div>
 
@@ -283,13 +284,14 @@
     var ugwAutosaveTimer = null;
     var ugwMaxGrade = 100;
     var ugwHasUnsavedChanges = false;
-    var ugwLastSavedTime = null;
+    var ugwCurrentFilter = '';
 
     // 1. Open Unified Grading Workspace Function
     window.openGradingWorkspace = function(sourceType, sourceId) {
         ugwCurrentSourceType = sourceType;
         ugwCurrentSourceId = sourceId;
         ugwHasUnsavedChanges = false;
+        ugwCurrentFilter = '';
 
         var drawerEl = document.getElementById('unifiedGradingWorkspaceDrawer');
         var skeletonEl = document.getElementById('unifiedGradingSkeleton');
@@ -335,7 +337,7 @@
 
                 ugwStudentsList = data.students || [];
                 updateWorkspaceMetrics();
-                renderStudentRoster(ugwStudentsList);
+                applyFiltersAndRender();
 
                 // Session Recovery check
                 var savedStudentId = sessionStorage.getItem('ugw_last_student_' + sourceType + '_' + sourceId);
@@ -377,6 +379,7 @@
         document.getElementById('ugwKpiMissing').textContent = missing;
 
         document.getElementById('ugwCntAll').textContent = total;
+        if (document.getElementById('ugwCntSubmitted')) document.getElementById('ugwCntSubmitted').textContent = submitted;
         document.getElementById('ugwCntPending').textContent = pending;
         document.getElementById('ugwCntGraded').textContent = graded;
         document.getElementById('ugwCntMissing').textContent = missing;
@@ -386,12 +389,35 @@
         document.getElementById('ugwProgressLabel').textContent = pct + '% - تم تصحيح ' + graded + ' من ' + total + ' طلاب';
     }
 
+    function applyFiltersAndRender() {
+        var searchTerm = (document.getElementById('ugwStudentSearch')?.value || '').toLowerCase().trim();
+        
+        var filtered = ugwStudentsList.filter(function(s) {
+            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
+            var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
+            var isGraded = hasGrade || s.status === 'تم التصحيح' || s.grading_status === 'تم التصحيح';
+
+            // Search filter
+            var matchesSearch = !searchTerm || s.student_name.toLowerCase().indexOf(searchTerm) !== -1 || String(s.academic_id || s.student_id).indexOf(searchTerm) !== -1;
+            if (!matchesSearch) return false;
+
+            // Status filter
+            if (ugwCurrentFilter === 'تسليم') return isSubmitted;
+            if (ugwCurrentFilter === 'تم' || ugwCurrentFilter === 'مصحح') return isGraded;
+            if (ugwCurrentFilter === 'بانتظار') return !isGraded && isSubmitted;
+            if (ugwCurrentFilter === 'لم يسلم') return !isSubmitted;
+            return true;
+        });
+
+        renderStudentRoster(filtered);
+    }
+
     function renderStudentRoster(students) {
         var container = document.getElementById('ugwStudentList');
         if (!container) return;
 
         if (!students || students.length === 0) {
-            container.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا يوجد طلاب يطابقون خيار الفلترة المSelected.</div>';
+            container.innerHTML = '<div class="p-3 bg-light rounded-3 text-center border text-muted extra-small">لا يوجد طلاب يطابقون خيار الفلترة المحدد.</div>';
             return;
         }
 
@@ -408,7 +434,7 @@
             var subStatusText = isSubmitted ? 'تم التسليم' : 'لم يسلم';
             var statusBadge = isSelected ? 'bg-white text-primary fw-bold' : (isSubmitted ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle');
 
-            html += '<button type="button" class="w-100 p-2 mb-2 rounded-3 border d-flex align-items-center justify-content-between text-start ' + activeClass + '" style="cursor: pointer; transition: all 0.2s;" onclick="loadGradingStudent(' + s.student_id + ')">';
+            html += '<button type="button" class="w-100 p-2 mb-2 rounded-3 border d-flex align-items-center justify-content-between text-start ' + activeClass + '" style="cursor: pointer; transition: all 0.15s ease;" onclick="loadGradingStudent(' + s.student_id + ')">';
             html += '<div><span class="d-block extra-small mb-1">' + s.student_name + '</span><small class="font-monospace extra-small ' + textMutedClass + '">#' + (s.academic_id || s.student_id) + ' | ' + gradeText + '</small></div>';
             html += '<span class="badge ' + statusBadge + ' rounded-pill px-2 py-1 extra-small">' + subStatusText + '</span>';
             html += '</button>';
@@ -423,7 +449,7 @@
 
         ugwCurrentStudentId = studentId;
         ugwHasUnsavedChanges = false;
-        renderStudentRoster(ugwStudentsList);
+        applyFiltersAndRender();
 
         // Session Recovery
         sessionStorage.setItem('ugw_last_student_' + ugwCurrentSourceType + '_' + ugwCurrentSourceId, studentId);
@@ -552,7 +578,6 @@
             var indicator = document.getElementById('ugwAutoSaveIndicator');
             if (res.success) {
                 ugwHasUnsavedChanges = false;
-                ugwLastSavedTime = new Date();
                 if (ugwCurrentStudentId) {
                     sessionStorage.removeItem('ugw_draft_feedback_' + ugwCurrentStudentId);
                 }
@@ -566,7 +591,7 @@
                     st.submission_status = 'تم التسليم';
                     st.grading_status = 'تم التصحيح';
                     updateWorkspaceMetrics();
-                    renderStudentRoster(ugwStudentsList);
+                    applyFiltersAndRender();
                 }
 
                 if (navigateNext) {
@@ -710,50 +735,37 @@
     };
 
     window.searchGradingStudents = function(term) {
-        var lower = (term || '').toLowerCase();
-        var filtered = ugwStudentsList.filter(function(s) {
-            return s.student_name.toLowerCase().indexOf(lower) !== -1 || String(s.academic_id || s.student_id).indexOf(lower) !== -1;
-        });
-        renderStudentRoster(filtered);
+        applyFiltersAndRender();
     };
 
     window.filterGradingStudents = function(status, btn) {
+        ugwCurrentFilter = status || '';
+
         var btnAll = document.getElementById('ugwFilterAll');
+        var btnSubmitted = document.getElementById('ugwFilterSubmitted');
         var btnPending = document.getElementById('ugwFilterPending');
         var btnGraded = document.getElementById('ugwFilterGraded');
         var btnMissing = document.getElementById('ugwFilterMissing');
 
         if (btnAll) btnAll.className = 'btn btn-xs btn-outline-primary rounded-pill px-2 fw-bold';
+        if (btnSubmitted) btnSubmitted.className = 'btn btn-xs btn-outline-info rounded-pill px-2 fw-bold';
         if (btnPending) btnPending.className = 'btn btn-xs btn-outline-warning rounded-pill px-2 fw-bold';
         if (btnGraded) btnGraded.className = 'btn btn-xs btn-outline-success rounded-pill px-2 fw-bold';
         if (btnMissing) btnMissing.className = 'btn btn-xs btn-outline-danger rounded-pill px-2 fw-bold';
 
-        if (!status && btnAll) {
+        if (!ugwCurrentFilter && btnAll) {
             btnAll.className = 'btn btn-xs btn-primary rounded-pill px-2 active fw-bold';
-        } else if (status === 'بانتظار' && btnPending) {
+        } else if (ugwCurrentFilter === 'تسليم' && btnSubmitted) {
+            btnSubmitted.className = 'btn btn-xs btn-info rounded-pill px-2 active fw-bold text-white';
+        } else if (ugwCurrentFilter === 'بانتظار' && btnPending) {
             btnPending.className = 'btn btn-xs btn-warning rounded-pill px-2 active fw-bold text-white';
-        } else if (status === 'تم' && btnGraded) {
+        } else if ((ugwCurrentFilter === 'تم' || ugwCurrentFilter === 'مصحح') && btnGraded) {
             btnGraded.className = 'btn btn-xs btn-success rounded-pill px-2 active fw-bold text-white';
-        } else if (status === 'لم يسلم' && btnMissing) {
+        } else if (ugwCurrentFilter === 'لم يسلم' && btnMissing) {
             btnMissing.className = 'btn btn-xs btn-danger rounded-pill px-2 active fw-bold text-white';
         }
 
-        if (!status) {
-            renderStudentRoster(ugwStudentsList);
-            return;
-        }
-
-        var filtered = ugwStudentsList.filter(function(s) {
-            var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
-            var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
-            var isGraded = hasGrade || s.status === 'تم التصحيح' || s.grading_status === 'تم التصحيح';
-            
-            if (status === 'تم') return isGraded;
-            if (status === 'بانتظار') return !isGraded && isSubmitted;
-            if (status === 'لم يسلم') return !isSubmitted;
-            return true;
-        });
-        renderStudentRoster(filtered);
+        applyFiltersAndRender();
     };
 
     // Global Keyboard Shortcuts (Ctrl+S, Ctrl+Enter, ArrowUp, ArrowDown)
