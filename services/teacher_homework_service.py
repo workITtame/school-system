@@ -89,11 +89,22 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
 
         homeworks = query.order_by(Homework.due_date.desc(), Homework.created_at.desc()).all()
         
+        from models.grade import HomeworkMarks
         result = []
         today_date = date.today()
         for hw in homeworks:
             students = Student.query.filter_by(CID=hw.class_id, is_deleted=False).all()
             total_students = len(students)
+            graded_count = HomeworkMarks.query.filter_by(HomeworkID=hw.id, is_deleted=False).count()
+            
+            if graded_count == 0:
+                grading_status = 'لم يبدأ'
+            elif graded_count < total_students:
+                grading_status = 'قيد الرصد'
+            else:
+                grading_status = 'مكتمل'
+                
+            graded_str = f"{graded_count} / {total_students}"
             
             st_val = hw.status or 'منشور'
             if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
@@ -133,6 +144,9 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
                 'total_students': total_students,
                 'received_count': received_count,
                 'unreceived_count': unreceived_count,
+                'graded_count': graded_count,
+                'grading_status': grading_status,
+                'graded_str': graded_str,
                 'submission_rate': submission_rate,
                 'days_remaining': days_remaining,
                 'days_remaining_str': days_remaining_str

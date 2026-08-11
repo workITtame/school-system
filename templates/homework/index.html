@@ -255,7 +255,8 @@
                                 <th>المادة الدراسية</th>
                                 <th>الصف والشعبة</th>
                                 <th>تاريخ التسليم</th>
-                                <th>الحالة</th>
+                                <th>حالة الواجب</th>
+                                <th>حالة الرصد</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -305,6 +306,24 @@
                                                     <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ hw.status or 'متأخر' }}
                                                 </span>
                                             {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set g_stat = hw.grading_status if hw.grading_status is defined else 'لم يبدأ' %}
+                                            {% set g_str = hw.graded_str if hw.graded_str is defined else '0 / 0' %}
+                                            {% if g_stat == 'مكتمل' %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 d-inline-block mb-1">
+                                                    <i class="fa-solid fa-check-double me-1"></i> مكتمل
+                                                </span>
+                                            {% elif g_stat == 'قيد الرصد' %}
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 d-inline-block mb-1">
+                                                    <i class="fa-solid fa-pen-ruler me-1"></i> قيد الرصد
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 d-inline-block mb-1">
+                                                    <i class="fa-solid fa-clock me-1"></i> لم يبدأ
+                                                </span>
+                                            {% endif %}
+                                            <div class="fw-bold extra-small text-muted">{{ g_str }}</div>
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center justify-content-center gap-1">
