@@ -46,19 +46,91 @@
         </div>
     </div>
 
-    <!-- TOP KPI SUMMARY CARDS USING REUSABLE JINJA MACROS -->
+    <!-- QUICK ACTIONS TOOLBAR -->
+    <div class="card shadow-sm mb-4 border-0 rounded-4 overflow-hidden bg-white p-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="fw-bold text-dark extra-small font-cairo">
+                <i class="fa-solid fa-bolt text-warning me-1"></i> إختصارات سريعة للعمليات:
+            </span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{{ url_for('exams.index') }}" class="btn btn-sm btn-light border text-dark rounded-pill extra-small px-3 shadow-2xs quick-action-btn">
+                    <i class="fa-solid fa-pen-ruler text-danger me-1"></i> تصحيح الاختبارات
+                </a>
+                <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-light border text-dark rounded-pill extra-small px-3 shadow-2xs quick-action-btn">
+                    <i class="fa-solid fa-clipboard-check text-warning me-1"></i> تصحيح الواجبات
+                </a>
+                <a href="{{ url_for('students.home') }}" class="btn btn-sm btn-light border text-dark rounded-pill extra-small px-3 shadow-2xs quick-action-btn">
+                    <i class="fa-solid fa-users text-info me-1"></i> الطلاب
+                </a>
+                <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-light border text-dark rounded-pill extra-small px-3 shadow-2xs quick-action-btn">
+                    <i class="fa-solid fa-calendar-days text-primary me-1"></i> جدول الحصص
+                </a>
+                <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-light border text-dark rounded-pill extra-small px-3 shadow-2xs quick-action-btn">
+                    <i class="fa-solid fa-plus text-success me-1"></i> إضافة واجب
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP OPERATIONAL KPI SUMMARY CARDS -->
     <div class="row g-3 mb-4" role="region" aria-label="مؤشرات المعلم اليومية">
         <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("حصص اليوم", stats.today_classes_count, "لا توجد حصص اليوم", "fa-solid fa-calendar-day", "primary", url_for('timetable.index'), "إجمالي عدد الحصص الدراسية المجدولة لك اليوم") }}
+            <div class="kpi-card h-100 border-start border-4 border-warning hover-lift" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد الواجبات الدراسية بانتظار تصحيح المعلم">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted fw-bold">الواجبات الدراسية</span>
+                    <div class="kpi-icon-circle warning">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2 mb-1">
+                    <h2 class="fw-bold text-dark mb-0 font-monospace">{{ stats.pending_homeworks_count }}</h2>
+                    <span class="extra-small text-warning fw-bold font-cairo">واجبات بانتظار التصحيح</span>
+                </div>
+                <small class="extra-small d-block">
+                    {% if stats.pending_homeworks_count > 0 %}
+                        <a href="{{ url_for('homework.index') }}" class="text-decoration-none text-warning fw-bold">
+                            <i class="fa-solid fa-arrow-left me-1"></i> تصحيح الواجبات
+                        </a>
+                    {% else %}
+                        <span class="text-muted fw-bold"><i class="fa-regular fa-circle-check me-1 text-success"></i> لا توجد واجبات تحتاج تصحيح</span>
+                    {% endif %}
+                </small>
+                <i class="fa-solid fa-clipboard-check kpi-card-icon-bg"></i>
+            </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("عدد الطلاب الذين يدرسهم", stats.total_students_count, "لا يوجد طلاب مضافون", "fa-solid fa-users", "success", url_for('students.home'), "إجمالي الطلاب المقيدين في جميع صفوفك وشعبك") }}
+            {{ macros.render_kpi_card("اختبارات تحتاج تصحيح/رصد", stats.pending_exam_corrections_count, "لا توجد اختبارات بانتظار التصحيح", "fa-solid fa-file-signature", "danger", url_for('exams.index'), "عدد الاختبارات المنتهية بانتظار رصد وتصحيح الدرجات") }}
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("الواجبات بانتظار التصحيح", stats.pending_homeworks_count, "لا توجد واجبات تحتاج تصحيح", "fa-solid fa-clipboard-check", "warning", url_for('homework.index'), "عدد الواجبات الدراسية بانتظار تصحيح الأستاذ") }}
+            {{ macros.render_kpi_card("طلاب يحتاجون متابعة", stats.attention_students_count, "جميع الطلاب بحالة ممتازة", "fa-solid fa-user-ninja", "info", "#studentsNeedingAttentionSection", "عدد الطلاب المحتاجين لمتابعة عاجلة بسبب الغياب أو انخفاض الدرجات") }}
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            {{ macros.render_kpi_card("الاختبارات القادمة", stats.upcoming_exams_count, "لا توجد اختبارات قادمة", "fa-solid fa-file-signature", "danger", url_for('exams.index'), "عدد الاختبارات المجدولة لموادك القادمة") }}
+            {% set next_cls = stats.next_class %}
+            <div class="kpi-card h-100 border-start border-4 border-primary hover-lift" data-bs-toggle="tooltip" data-bs-placement="top" title="تفاصيل الحصة القادمة أو حصص اليوم">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="extra-small text-muted fw-bold">الحصة القادمة / حصص اليوم</span>
+                    <div class="kpi-icon-circle primary">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </div>
+                </div>
+                {% if next_cls %}
+                    <h5 class="fw-bold text-dark mb-1 text-truncate font-cairo" title="{{ next_cls.subject_name }}">{{ next_cls.subject_name }}</h5>
+                    <small class="extra-small text-primary fw-bold d-block font-monospace">
+                        <i class="fa-regular fa-clock me-1"></i> {{ next_cls.start_time }} {% if next_cls.class_name %}({{ next_cls.class_name }}){% endif %}
+                    </small>
+                {% elif stats.today_classes_count > 0 %}
+                    <h6 class="fw-bold text-success mb-1 font-cairo"><i class="fa-solid fa-circle-check me-1"></i> انتهت حصص اليوم</h6>
+                    <small class="extra-small text-muted fw-bold d-block">
+                        اكتملت {{ stats.today_classes_count }} حصص اليوم
+                    </small>
+                {% else %}
+                    <h6 class="fw-bold text-muted mb-1 font-cairo">لا توجد حصة قادمة</h6>
+                    <small class="extra-small text-muted fw-bold d-block">
+                        <i class="fa-regular fa-calendar-xmark me-1"></i> لا توجد حصص مجدولة اليوم
+                    </small>
+                {% endif %}
+                <i class="fa-solid fa-calendar-day kpi-card-icon-bg"></i>
+            </div>
         </div>
     </div>
 
@@ -89,7 +161,7 @@
                         <tbody>
                             {% if today_classes and today_classes|length > 0 %}
                                 {% for cls in today_classes %}
-                                    <tr class="{% if cls.status_code == 'current' %}table-success fw-bold{% elif cls.status_code == 'upcoming' %}table-light{% endif %}">
+                                    <tr class="{% if cls.status_code == 'current' %}table-success fw-bold{% elif cls.status_code == 'upcoming' %}bg-primary-subtle bg-opacity-10 border-start border-3 border-primary{% endif %}">
                                         <td class="ps-3 fw-bold text-dark">
                                             <i class="fa-solid fa-book text-primary me-1"></i> {{ cls.subject_name }}
                                         </td>
@@ -122,24 +194,30 @@
         </div>
 
         <!-- SECTION 2: STUDENTS NEEDING ATTENTION -->
-        <div class="col-12 col-xl-5">
+        <div class="col-12 col-xl-5" id="studentsNeedingAttentionSection">
             <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden">
                 {{ macros.render_section_header("fa-solid fa-user-ninja", "طلاب يحتاجون متابعة", "danger") }}
                 <div class="card-body p-3">
                     {% if attention_students and attention_students|length > 0 %}
                         <div class="d-flex flex-column gap-2">
                             {% for st in attention_students %}
-                                <div class="p-3 rounded-3 bg-light border-start border-4 {% if st.severity_rank == 1 %}border-danger{% else %}border-warning{% endif %} d-flex align-items-center justify-content-between extra-small">
+                                <div class="p-3 rounded-3 bg-light border-start border-4 {% if st.severity_rank == 1 %}border-danger{% else %}border-warning{% endif %} d-flex align-items-center justify-content-between extra-small shadow-2xs">
                                     <div>
-                                        <h6 class="fw-bold text-dark mb-1 fs-6">{{ st.student_name }}</h6>
+                                        <h6 class="fw-bold text-dark mb-1 fs-6 font-cairo">{{ st.student_name }}</h6>
                                         <small class="text-muted d-block mb-1"><i class="fa-solid fa-chalkboard me-1"></i> {{ st.class_name }}</small>
                                         <span class="badge {% if st.severity_rank == 1 %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} rounded-pill">
                                             <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ st.reason_str }}
                                         </span>
                                     </div>
-                                    <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill extra-small px-3">
-                                        متابعة
-                                    </a>
+                                    {% if st.primary_reason_type == 'grade' %}
+                                        <a href="{{ url_for('students.view_student', id=st.student_id) }}" class="btn btn-sm btn-primary rounded-pill extra-small px-3 fw-bold shadow-2xs text-nowrap">
+                                            <i class="fa-solid fa-chart-line me-1"></i> متابعة الأداء
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill extra-small px-3 fw-bold text-nowrap">
+                                            <i class="fa-solid fa-user-check me-1"></i> متابعة الحضور
+                                        </a>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -155,20 +233,20 @@
     <div class="row g-4">
         <!-- SECTION 3: HOMEWORKS -->
         <div class="col-12 col-md-6 col-xl-4">
-            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden">
+            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden d-flex flex-column">
                 {{ macros.render_section_header("fa-solid fa-book-bookmark", "الواجبات الدراسية", "warning", url_for('homework.index'), "عرض الكل") }}
-                <div class="card-body p-3">
+                <div class="card-body p-3 d-flex flex-column justify-content-between flex-grow-1">
                     {% if homeworks and homeworks|length > 0 %}
                         <div class="d-flex flex-column gap-2">
                             {% for hw in homeworks[:5] %}
                                 <div class="p-2 rounded-3 bg-light border d-flex align-items-center justify-content-between extra-small">
                                     <div>
-                                        <strong class="d-block text-dark mb-1">{{ hw.title }}</strong>
-                                        <small class="text-muted d-block"><i class="fa-solid fa-layer-group me-1"></i> {{ hw.subject_name }} | {{ hw.class_name }}</small>
+                                        <strong class="d-block text-dark mb-1 font-cairo">{{ hw.title }}</strong>
+                                        <small class="text-muted d-block mb-1"><i class="fa-solid fa-layer-group me-1"></i> {{ hw.subject_name }} | {{ hw.class_name }}</small>
                                         <small class="text-secondary font-monospace"><i class="fa-regular fa-clock me-1"></i> التسليم: {{ hw.due_date }}</small>
                                     </div>
                                     {% if hw.status_code == 'completed' %}
-                                        {{ macros.render_status_badge("تم التصحيح", "completed") }}
+                                        {{ macros.render_status_badge("مكتمل", "completed") }}
                                     {% elif hw.status_code == 'overdue' %}
                                         {{ macros.render_status_badge("متأخر", "overdue") }}
                                     {% else %}
@@ -178,7 +256,14 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        {{ macros.render_empty_state("fa-solid fa-box-open", "لا توجد واجبات مسجلة", "يمكنك إنشاء واجب جديد لطلابك من صفحة الواجبات.", "إضافة واجب", url_for('homework.index')) }}
+                        <div class="my-auto py-3 text-center text-muted extra-small">
+                            <i class="fa-solid fa-box-open text-warning opacity-25 fs-2 d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1 extra-small font-cairo">لا توجد واجبات مسجلة</h6>
+                            <p class="text-muted mb-2 max-w-sm mx-auto">يمكنك إنشاء واجب جديد لطلابك من صفحة الواجبات.</p>
+                            <a href="{{ url_for('homework.index') }}" class="btn btn-sm btn-outline-warning rounded-pill px-3 extra-small fw-bold">
+                                إضافة واجب
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -186,16 +271,16 @@
 
         <!-- SECTION 4: UPCOMING EXAMS -->
         <div class="col-12 col-md-6 col-xl-4">
-            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden">
+            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden d-flex flex-column">
                 {{ macros.render_section_header("fa-solid fa-file-signature", "الاختبارات القادمة", "danger", url_for('exams.index'), "عرض الكل") }}
-                <div class="card-body p-3">
+                <div class="card-body p-3 d-flex flex-column justify-content-between flex-grow-1">
                     {% if upcoming_exams and upcoming_exams|length > 0 %}
                         <div class="d-flex flex-column gap-2">
                             {% for ex in upcoming_exams[:5] %}
                                 <div class="p-2 rounded-3 bg-light border d-flex align-items-center justify-content-between extra-small">
                                     <div>
-                                        <strong class="d-block text-dark mb-1">{{ ex.title }}</strong>
-                                        <small class="text-muted d-block"><i class="fa-solid fa-book-open me-1"></i> {{ ex.subject_name }} | {{ ex.class_name }}</small>
+                                        <strong class="d-block text-dark mb-1 font-cairo">{{ ex.title }}</strong>
+                                        <small class="text-muted d-block mb-1"><i class="fa-solid fa-book-open me-1"></i> {{ ex.subject_name }} | {{ ex.class_name }}</small>
                                         <small class="text-danger font-monospace"><i class="fa-regular fa-calendar-days me-1"></i> {{ ex.exam_date }} ({{ ex.exam_time }})</small>
                                     </div>
                                     <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">
@@ -205,7 +290,11 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        {{ macros.render_empty_state("fa-solid fa-calendar-check", "لا توجد اختبارات قادمة", "جدول الاختبارات لمادتك خالي في الأيام القادمة.") }}
+                        <div class="my-auto py-3 text-center text-muted extra-small">
+                            <i class="fa-solid fa-calendar-check text-danger opacity-25 fs-2 d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1 extra-small font-cairo">لا توجد اختبارات قادمة</h6>
+                            <p class="text-muted mb-0 max-w-sm mx-auto">جدول الاختبارات لمادتك خالي في الأيام القادمة.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -213,9 +302,9 @@
 
         <!-- SECTION 5: CATEGORIZED NOTIFICATIONS -->
         <div class="col-12 col-xl-4">
-            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden">
+            <div class="card rounded-4 shadow-sm border-0 h-100 overflow-hidden d-flex flex-column">
                 {{ macros.render_section_header("fa-solid fa-bell", "آخر الإشعارات للمعلم", "primary", url_for('notifications.index'), "عرض الكل") }}
-                <div class="card-body p-3">
+                <div class="card-body p-3 d-flex flex-column justify-content-between flex-grow-1">
                     {% if notifications and notifications|length > 0 %}
                         <div class="d-flex flex-column gap-2">
                             {% for n in notifications[:5] %}
@@ -226,7 +315,7 @@
                                             <span class="badge {{ meta.bg_class }} rounded-pill px-2 py-1">
                                                 <i class="{{ meta.icon }} me-1"></i> {{ meta.title }}
                                             </span>
-                                            <strong class="text-dark">{{ n.title }}</strong>
+                                            <strong class="text-dark font-cairo">{{ n.title }}</strong>
                                         </div>
                                         <span class="text-muted font-monospace opacity-75 extra-small">{{ n.timestamp | format_relative_time }}</span>
                                     </div>
@@ -235,7 +324,11 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        {{ macros.render_empty_state("fa-solid fa-bell-slash", "لا توجد إشعارات جديدة", "أنت على دراية بكافة تنبيهات وإشعارات النظام.") }}
+                        <div class="my-auto py-3 text-center text-muted extra-small">
+                            <i class="fa-solid fa-bell-slash text-primary opacity-25 fs-2 d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1 extra-small font-cairo">لا توجد إشعارات جديدة</h6>
+                            <p class="text-muted mb-0 max-w-sm mx-auto">أنت على دراية بكافة تنبيهات وإشعارات النظام.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>

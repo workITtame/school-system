@@ -22,9 +22,9 @@
                             </h4>
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
-                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName }}</span> | 
-                            المادة: <span class="text-white fw-bold">{{ current_lesson.subject }}</span> | 
-                            الصف: <span class="text-white fw-bold">{{ current_lesson.class_name }} - {{ current_lesson.section_name }}</span>
+                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName }}</span> |
+                            المادة: <span class="text-white fw-bold">{{ teacher_info.subjects_str }}</span> |
+                            الصفوف والشعب: <span class="text-white fw-bold">{{ teacher_info.assigned_scope_str }}</span>
                         </h6>
                     </div>
                 </div>
@@ -74,16 +74,13 @@
                         </span>
                         <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1"></i> التوقيت: {{ current_lesson.time }}</small>
                     </div>
-                    <h5 class="fw-bold text-white mb-0">{{ current_lesson.subject }} — {{ current_lesson.class_name }} ({{ current_lesson.section_name }})</h5>
+                    <h5 class="fw-bold text-white mb-0">{{ current_lesson.subject }} — {{ current_lesson.class_sec_label }}</h5>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3 flex-wrap text-white-50 extra-small">
                 <span><i class="fa-solid fa-users text-success me-1"></i> {{ current_lesson.students_count }} طالب مسجل</span>
-                <span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> {{ current_lesson.remaining_minutes or '25 دقيقة متبقية' }}</span>
-                {% if active_slot_id %}
-                    <button type="button" id="btnOpenLessonDrawer" class="btn btn-sm btn-light text-primary rounded-pill px-3 fw-bold extra-small" data-action="open-lesson-drawer" data-slot-id="{{ active_slot_id }}" onclick="openLessonDrawer({{ active_slot_id }})">
-                        <i class="fa-solid fa-chalkboard-user me-1"></i> فتح Lesson Workspace
-                    </button>
+                {% if current_lesson.remaining_minutes %}
+                    <span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> {{ current_lesson.remaining_minutes }}</span>
                 {% endif %}
             </div>
         </div>
@@ -97,7 +94,7 @@
                 <div class="col-12 col-md-3">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="attendanceLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="filterPageAttendanceList(this.value)">
+                        <input type="text" id="attendanceLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو رقم الطالب (#SID)..." onkeyup="filterPageAttendanceList(this.value)">
                     </div>
                 </div>
 
@@ -197,7 +194,7 @@
                     <tr>
                         <th style="width: 40px;" class="text-center ps-3">#</th>
                         <th>الطالب</th>
-                        <th>الرقم الأكاديمي</th>
+                        <th>رقم الطالب</th>
                         <th>الصف والشعبة</th>
                         <th class="text-center" style="min-width: 320px;">حالة الحضور والغياب</th>
                         <th class="text-center">وقت التسجيل</th>
@@ -215,7 +212,7 @@
                                         </div>
                                         <div>
                                             <strong class="text-dark d-block mb-0 fs-6">{{ st.SName }}</strong>
-                                            <small class="text-muted extra-small">طالب مقيد بنظام المدرسه</small>
+                                            <small class="text-muted extra-small">طالب منتظم</small>
                                         </div>
                                     </div>
                                 </td>
@@ -231,7 +228,7 @@
                                     </div>
                                 </td>
                                 <td class="text-center font-monospace text-muted extra-small">
-                                    <i class="fa-regular fa-clock me-1 text-primary"></i> 08:30 ص
+                                    <i class="fa-regular fa-clock me-1 text-primary"></i> {{ st.time_recorded or '—' }}
                                 </td>
                             </tr>
                         {% endfor %}
@@ -318,48 +315,6 @@
 <script>
 (function() {
     window.pageAttendanceEdits = window.pageAttendanceEdits || {};
-
-    // 1. Open Lesson Workspace Drawer Function
-    window.openLessonDrawer = function(slotId) {
-        var drawerEl = document.getElementById('lessonDetailDrawer');
-        var drawerBody = document.getElementById('lessonDrawerBodyContent');
-        if (!drawerEl || !drawerBody) return;
-        
-        if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
-            var bsDrawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
-            bsDrawer.show();
-        } else {
-            drawerEl.classList.add('show');
-            drawerEl.style.display = 'block';
-            drawerEl.style.visibility = 'visible';
-            drawerEl.removeAttribute('aria-hidden');
-        }
-
-        drawerBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="extra-small text-muted mt-2">جاري تحميل مساحة العمل...</p></div>';
-
-        fetch('/timetable/api/drawer/' + (slotId || 1))
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var html = '<div class="font-cairo p-2"><div class="card bg-primary text-white p-3 rounded-3 mb-3">';
-                html += '<h5 class="fw-bold mb-1"><i class="fa-solid fa-chalkboard-user me-2"></i>' + (data.subject_name || 'المادة الدراسية') + ' — ' + (data.class_name || 'الصف') + ' (' + (data.section_name || 'أ') + ')</h5>';
-                html += '<small class="text-white-50">عدد الطلاب المسجلين: <strong class="text-white">' + (data.students ? data.students.length : 0) + ' طالباً</strong></small></div>';
-
-                if (data.students && data.students.length > 0) {
-                    html += '<h6 class="fw-bold text-dark mb-2">كشف طلاب الحصة:</h6><div class="list-group extra-small mb-3">';
-                    data.students.forEach(function(s) {
-                        html += '<div class="list-group-item d-flex align-items-center justify-content-between p-2 rounded mb-1 bg-light border-0">';
-                        html += '<div><strong class="d-block text-dark">' + s.SName + '</strong><small class="text-muted">الرقم الأكاديمي: ' + (s.academic_id || '---') + '</small></div>';
-                        html += '<span class="badge ' + (s.attendance_status === 'حاضر' ? 'bg-success' : 'bg-danger') + ' rounded-pill">' + s.attendance_status + '</span></div>';
-                    });
-                    html += '</div>';
-                }
-                html += '</div>';
-                drawerBody.innerHTML = html;
-            })
-            .catch(function(err) {
-                drawerBody.innerHTML = '<div class="alert alert-danger p-3 extra-small">فشل تحميل مساحة عمل الحصة: ' + err.message + '</div>';
-            });
-    };
 
     // 2. Set Student Attendance Status Function
     window.setPageStudentAttendance = function(sid, newStatus) {
@@ -502,15 +457,6 @@
 
     // Initialize Event Listeners
     function initAttendancePageInteractivity() {
-        var workspaceBtn = document.getElementById('btnOpenLessonDrawer');
-        if (workspaceBtn) {
-            workspaceBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
-                window.openLessonDrawer(parseInt(slotId));
-            });
-        }
-
         var dropdownBtn = document.getElementById('btnActionsDropdown');
         if (dropdownBtn) {
             dropdownBtn.addEventListener('click', function(e) {

@@ -184,14 +184,17 @@ def get_students_needing_attention(teacher):
                 
                 severity_rank = 1 if (abs_cnt >= 4 or st.SID in low_grade_sids) else 2
                 severity_label = 'عالي' if severity_rank == 1 else 'متوسط'
+                primary_reason_type = 'grade' if st.SID in low_grade_sids else 'attendance'
 
                 attention_list.append({
+                    'student_id': st.SID,
                     'student_name': st.SName,
                     'class_name': full_cls,
                     'reasons': reasons,
                     'reason_str': "، ".join(reasons),
                     'severity_rank': severity_rank,
-                    'severity_label': severity_label
+                    'severity_label': severity_label,
+                    'primary_reason_type': primary_reason_type
                 })
 
         attention_list = sorted(attention_list, key=lambda x: x['severity_rank'])
@@ -200,10 +203,54 @@ def get_students_needing_attention(teacher):
         logger.exception("Error in get_students_needing_attention: %s", str(e))
         return []
 
+def get_pending_exam_corrections(teacher):
+    """
+    Fetch ended exams for teacher's subjects that require grade entry in Marks.
+    """
+    try:
+        subject_ids, class_ids, _ = get_teacher_subject_and_class_ids(teacher)
+        if not subject_ids and not class_ids:
+            return []
+
+        today = datetime.now().date()
+
+        query = ExamSchedule.query.options(
+            joinedload(ExamSchedule.subject),
+            joinedload(ExamSchedule.school_class),
+            joinedload(ExamSchedule.section)
+        ).filter(
+            ExamSchedule.is_deleted == False,
+            ExamSchedule.ExamDate <= today
+        )
+
+        if subject_ids:
+            query = query.filter(ExamSchedule.SubID.in_(subject_ids))
+        if class_ids:
+            query = query.filter(ExamSchedule.CID.in_(class_ids))
+
+        ended_exams = query.order_by(ExamSchedule.ExamDate.desc()).all()
+        if not ended_exams:
+            return []
+
+        ended_exam_ids = [ex.ScheduleID for ex in ended_exams]
+        graded_exam_ids = set(
+            g[0] for g in db.session.query(Marks.ExamID).filter(
+                Marks.ExamID.in_(ended_exam_ids),
+                Marks.assessment_type == 'exam',
+                Marks.Score.isnot(None)
+            ).distinct().all()
+        )
+
+        pending_exams = [ex for ex in ended_exams if ex.ScheduleID not in graded_exam_ids]
+        return pending_exams
+    except Exception as e:
+        logger.exception("Error in get_pending_exam_corrections: %s", str(e))
+        return []
+
 def get_pending_homeworks(teacher):
     """
     Fetch homeworks created for teacher's subjects sorted by:
-    1. Pending/Uncorrected first
+    1. Pending/Uncorrected first (based on actual HomeworkMarks submissions needing correction)
     2. Nearest due date
     """
     try:
@@ -221,10 +268,24 @@ def get_pending_homeworks(teacher):
 
         if subject_ids:
             query = query.filter(Homework.sub_id.in_(subject_ids))
-        elif class_ids:
+        if class_ids:
             query = query.filter(Homework.class_id.in_(class_ids))
 
         homeworks = query.order_by(Homework.due_date.asc()).all()
+        if not homeworks:
+            return []
+
+        # Query actual HomeworkMarks records for teacher's scoped homeworks
+        hw_ids = [hw.id for hw in homeworks]
+        from models.grade import HomeworkMarks
+        hm_records = HomeworkMarks.query.filter(
+            HomeworkMarks.HomeworkID.in_(hw_ids),
+            HomeworkMarks.is_deleted == False
+        ).all()
+
+        hm_by_hw = {}
+        for hm in hm_records:
+            hm_by_hw.setdefault(hm.HomeworkID, []).append(hm)
 
         result = []
         for hw in homeworks:
@@ -233,7 +294,14 @@ def get_pending_homeworks(teacher):
             sec_name = hw.section.SectionName if hw.section else ''
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
 
-            if hw.status == 'مكتمل':
+            marks_list = hm_by_hw.get(hw.id, [])
+            has_submissions = len(marks_list) > 0
+            has_unscored = any(hm.Score is None for hm in marks_list)
+
+            # A homework is pending correction ONLY if it has actual student submissions/marks in HomeworkMarks AND is not completed
+            is_pending_correction = has_submissions and (hw.status != 'مكتمل' or has_unscored)
+
+            if hw.status == 'مكتمل' and not has_unscored:
                 status_code = 'completed'
             elif hw.due_date and hw.due_date < today:
                 status_code = 'overdue'
@@ -246,7 +314,7 @@ def get_pending_homeworks(teacher):
                 'class_name': full_cls,
                 'due_date': hw.due_date,
                 'status_code': status_code,
-                'is_pending': hw.status != 'مكتمل'
+                'is_pending': is_pending_correction
             })
 
         result = sorted(result, key=lambda x: (0 if x['is_pending'] else 1, x['due_date'] or today))
@@ -305,25 +373,43 @@ def get_upcoming_exams(teacher):
 
 def get_teacher_notifications(user_id):
     """
-    Fetch latest 5 notifications/messages strictly for current teacher sorted by unread first.
+    Fetch latest 5 notifications/messages merging Notification model and Message model.
     """
     try:
+        from models import Notification
+
+        # System notifications
+        sys_notifs = Notification.query.filter(
+            or_(Notification.user_id == user_id, Notification.user_id.is_(None))
+        ).order_by(Notification.created_at.desc()).limit(5).all()
+
+        # Messages
         messages = Message.query.filter(
             or_(Message.recipient_id == user_id, Message.sender_id == user_id)
-        ).order_by(Message.is_read.asc(), Message.timestamp.desc()).limit(5).all()
+        ).order_by(Message.timestamp.desc()).limit(5).all()
 
-        result = []
-        for m in messages:
-            sender_name = m.sender.name if (hasattr(m, 'sender') and m.sender) else 'نظام المدرسة'
-            result.append({
-                'title': f"رسالة من {sender_name}",
-                'content': m.content,
-                'timestamp': m.timestamp,
-                'category': 'رسالة',
-                'is_read': m.is_read
+        combined = []
+        for n in sys_notifs:
+            combined.append({
+                'title': n.title or 'تنبيه النظام',
+                'content': n.message or '',
+                'timestamp': n.created_at or datetime.now(),
+                'category': 'إشعار',
+                'is_read': bool(n.is_read)
             })
 
-        return result[:5]
+        for m in messages:
+            sender_name = m.sender.name if (hasattr(m, 'sender') and m.sender) else 'نظام المدرسة'
+            combined.append({
+                'title': f"رسالة من {sender_name}",
+                'content': m.content or '',
+                'timestamp': m.timestamp or datetime.now(),
+                'category': 'رسالة',
+                'is_read': bool(m.is_read)
+            })
+
+        combined.sort(key=lambda x: (0 if not x['is_read'] else 1, x['timestamp'] or datetime.now()), reverse=True)
+        return combined[:5]
     except Exception as e:
         logger.exception("Error in get_teacher_notifications: %s", str(e))
         return []
@@ -336,6 +422,7 @@ def get_dashboard_statistics(teacher):
         today_classes = get_today_classes(teacher.TeacherID if teacher else None)
         today_classes_count = len(today_classes)
         remaining_classes_count = sum(1 for c in today_classes if c['status_code'] != 'ended')
+        next_class = next((c for c in today_classes if c['status_code'] in ('current', 'upcoming')), None)
 
         students = get_teacher_students(teacher)
         total_students_count = len(students)
@@ -345,6 +432,12 @@ def get_dashboard_statistics(teacher):
 
         exams = get_upcoming_exams(teacher)
         upcoming_exams_count = len(exams)
+
+        pending_exam_corrections = get_pending_exam_corrections(teacher)
+        pending_exam_corrections_count = len(pending_exam_corrections)
+
+        attention_students = get_students_needing_attention(teacher)
+        attention_students_count = len(attention_students)
 
         teacher_name = teacher.TeacherName if teacher else 'المعلم الأكاديمي'
         teacher_title = teacher.TeacherTitle if (teacher and teacher.TeacherTitle) else 'معلم أكاديمي'
@@ -360,9 +453,12 @@ def get_dashboard_statistics(teacher):
         return {
             'today_classes_count': today_classes_count,
             'remaining_classes_count': remaining_classes_count,
+            'next_class': next_class,
             'total_students_count': total_students_count,
             'pending_homeworks_count': pending_homeworks_count,
             'upcoming_exams_count': upcoming_exams_count,
+            'pending_exam_corrections_count': pending_exam_corrections_count,
+            'attention_students_count': attention_students_count,
             'teacher_name': teacher_name,
             'teacher_title': teacher_title,
             'subjects_str': subjects_str,
@@ -376,9 +472,12 @@ def get_dashboard_statistics(teacher):
         return {
             'today_classes_count': 0,
             'remaining_classes_count': 0,
+            'next_class': None,
             'total_students_count': 0,
             'pending_homeworks_count': 0,
             'upcoming_exams_count': 0,
+            'pending_exam_corrections_count': 0,
+            'attention_students_count': 0,
             'teacher_name': 'المعلم الأكاديمي',
             'teacher_title': 'معلم أكاديمي',
             'subjects_str': 'المواد الدراسية',

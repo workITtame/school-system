@@ -99,7 +99,7 @@ function openStudentDrawer(studentId) {
                 <div class="text-center mb-4">
                     ${data.image ? `<img src="${data.image.startsWith('static/') || data.image.startsWith('/static/') ? (data.image.startsWith('/') ? data.image : '/' + data.image) : '/static/' + (data.image.startsWith('/') ? data.image.substring(1) : data.image)}" alt="${data.student_name}" class="rounded-circle shadow mb-2 object-fit-cover" style="width: 72px; height: 72px;">` : `<div class="rounded-circle bg-primary text-white fw-bold font-monospace fs-1 d-inline-flex align-items-center justify-content-center shadow mb-2" style="width: 72px; height: 72px;">${data.student_name ? data.student_name[0] : 'ط'}</div>`}
                     <h5 class="fw-bold text-dark mb-1">${data.student_name}</h5>
-                    <p class="text-muted extra-small mb-0">رقم الطالب (ID): <span class="font-monospace fw-bold">${data.academic_id}</span></p>
+                    <p class="text-muted extra-small mb-0">رقم الطالب: <span class="font-monospace fw-bold">#${data.student_id}</span></p>
                     <span class="badge bg-light text-dark border rounded-pill mt-1 extra-small">${data.full_class}</span>
                 </div>
 
@@ -204,7 +204,17 @@ function openLessonDrawer(slotId) {
             // Build Students List HTML for Students Tab
             let studentsListHtml = '';
             if (data.students && data.students.length > 0) {
-                studentsListHtml = data.students.map(s => `
+                studentsListHtml = data.students.map(s => {
+                    const gradeBadgeHtml = s.latest_score ?
+                        `<span class="badge bg-white text-dark border font-monospace">درجة: ${s.latest_score}</span>` :
+                        `<span class="badge bg-light text-muted border extra-small">لا توجد درجة مرصودة</span>`;
+
+                    const attBadgeClass = s.attendance_status === 'حاضر' ? 'bg-success-subtle text-success border border-success-subtle' :
+                        (s.attendance_status === 'غائب' ? 'bg-danger-subtle text-danger border border-danger-subtle' :
+                        (s.attendance_status === 'متأخر' ? 'bg-warning-subtle text-warning border border-warning-subtle' :
+                        (s.attendance_status === 'بعذر' ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle')));
+
+                    return `
                     <div class="card rounded-3 border-0 bg-light p-2 mb-2 student-workspace-item">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2">
@@ -213,31 +223,30 @@ function openLessonDrawer(slotId) {
                                 </div>
                                 <div>
                                     <strong class="text-dark d-block extra-small mb-0">${s.SName}</strong>
-                                    <small class="text-muted font-monospace extra-small">الرقم الأكاديمي: ${s.academic_id}</small>
+                                    <small class="text-muted font-monospace extra-small">رقم الطالب: #${s.SID}</small>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-wrap extra-small">
-                                <span class="badge ${s.attendance_status === 'حاضر' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} rounded-pill">
+                                <span class="badge ${attBadgeClass} rounded-pill">
                                     ${s.attendance_status}
                                 </span>
-                                <span class="badge bg-white text-dark border font-monospace">درجة: ${s.latest_score}%</span>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-light border rounded-circle extra-small p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="إجراءات الطالب">
                                         <i class="fa-solid fa-ellipsis-vertical text-muted"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
                                         <li>
-                                            <button class="dropdown-item py-1" type="button" onclick="alert('تسجيل حضور الطالب: ${s.SName}')">
+                                            <button class="dropdown-item py-1" type="button" onclick="switchWorkspaceTab('ws-attendance')">
                                                 <i class="fa-solid fa-clipboard-user text-warning me-2"></i> تسجيل حضور
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="dropdown-item py-1" type="button" onclick="alert('إدخال درجة الطالب: ${s.SName}')">
+                                            <button class="dropdown-item py-1" type="button" onclick="switchWorkspaceTab('ws-grades')">
                                                 <i class="fa-solid fa-star text-warning me-2"></i> إدخال درجة
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="dropdown-item py-1" type="button" onclick="alert('إرسال رسالة للطالب: ${s.SName}')">
+                                            <button class="dropdown-item py-1" type="button" onclick="window.location.href='/messages/?recipients=${s.SID}'">
                                                 <i class="fa-regular fa-paper-plane text-info me-2"></i> إرسال رسالة
                                             </button>
                                         </li>
@@ -246,7 +255,7 @@ function openLessonDrawer(slotId) {
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `;}).join('');
             } else {
                 studentsListHtml = `
                     <div class="py-4 text-center text-muted extra-small">
@@ -366,7 +375,7 @@ function openLessonDrawer(slotId) {
                     <!-- 1. STUDENTS TAB (FULLY FUNCTIONAL) -->
                     <div class="tab-pane fade show active" id="ws-students" role="tabpanel" aria-labelledby="ws-students-tab">
                         <div class="mb-2">
-                            <input type="text" id="workspaceStudentSearch" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="filterWorkspaceStudents(this.value)">
+                            <input type="text" id="workspaceStudentSearch" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب..." onkeyup="filterWorkspaceStudents(this.value)">
                         </div>
                         <div id="workspaceStudentsListContainer" style="max-height: 360px; overflow-y: auto;">
                             ${studentsListHtml}
@@ -407,7 +416,6 @@ function openLessonDrawer(slotId) {
 
                 </div>
             `;
-        })
             // Initialize Attendance Module inside Tab
             renderWorkspaceAttendanceTab();
         })
@@ -462,7 +470,7 @@ function renderWorkspaceAttendanceTab() {
                             </div>
                             <div>
                                 <strong class="text-dark d-block extra-small mb-0">${s.SName}</strong>
-                                <small class="text-muted font-monospace extra-small">${s.academic_id}</small>
+                                <small class="text-muted font-monospace extra-small">#${s.SID}</small>
                             </div>
                         </div>
                         
@@ -561,7 +569,7 @@ function renderWorkspaceAttendanceTab() {
 
         <!-- SEARCH INPUT -->
         <div class="mb-2">
-            <input type="text" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب أو الرقم الأكاديمي..." onkeyup="filterAttendanceStudents(this.value)">
+            <input type="text" class="form-control form-control-sm rounded-pill extra-small" placeholder="بحث باسم الطالب..." onkeyup="filterAttendanceStudents(this.value)">
         </div>
 
         <!-- STUDENTS ATTENDANCE ROSTER -->
@@ -783,6 +791,9 @@ function savePageAttendanceBulk(slotId) {
         });
     }
 
+    const dateInput = document.querySelector('input[name="date"]');
+    const dateStr = dateInput ? dateInput.value : null;
+
     fetch('/attendance/api/save', {
         method: 'POST',
         headers: {
@@ -790,7 +801,8 @@ function savePageAttendanceBulk(slotId) {
         },
         body: JSON.stringify({
             slot_id: slotId || 1,
-            attendance: attendancePayload
+            attendance: attendancePayload,
+            date_str: dateStr
         })
     })
     .then(res => {
@@ -803,16 +815,25 @@ function savePageAttendanceBulk(slotId) {
         
         document.querySelectorAll('.page-att-row').forEach(r => r.classList.remove('modified-row'));
         
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-        const indicator = document.getElementById('lastSaveTimeIndicator');
-        if (indicator) indicator.textContent = timeStr;
-
         if (saveBtn) {
             saveBtn.disabled = false;
             updateStickySaveBarLabel();
         }
-        alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!',
+                showConfirmButton: false,
+                timer: 2000
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
+            window.location.reload();
+        }
     })
     .catch(err => {
         alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
@@ -876,6 +897,80 @@ function bulkSendMessage() {
     window.location.href = `/messages/?recipients=${ids.join(',')}`;
 }
 
+// Function to switch drawer tabs programmatically
+function switchWorkspaceTab(tabId) {
+    const tabTriggerEl = document.getElementById(tabId + '-tab');
+    if (tabTriggerEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+            const tab = bootstrap.Tab.getOrCreateInstance(tabTriggerEl);
+            tab.show();
+        } else {
+            tabTriggerEl.click();
+        }
+    }
+}
+
+// Save Lesson Workspace Attendance Bulk
+function saveLessonAttendanceBulk(slotId) {
+    const saveBtn = document.getElementById('saveAttendanceBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+    }
+
+    const state = window.lessonAttendanceState || {};
+    const students = (window.currentLessonWorkspaceData && window.currentLessonWorkspaceData.students) || [];
+
+    const attendancePayload = students.map(s => ({
+        student_id: s.SID,
+        status: state[s.SID] || 'غير مسجل'
+    }));
+
+    fetch('/attendance/api/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            slot_id: slotId,
+            attendance: attendancePayload
+        })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('فشل حفظ التعديلات في قاعدة البيانات.');
+        return res.json();
+    })
+    .then(resData => {
+        window.hasUnsavedAttendanceChanges = false;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> تم الحفظ!';
+        }
+        // Refresh workspace drawer payload from DB to update summary stats & badges
+        openLessonDrawer(slotId);
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        } else {
+            alert('✅ تم حفظ سجل الحضور والغياب بنجاح في قاعدة البيانات!');
+        }
+    })
+    .catch(err => {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> حفظ سجل الحضور';
+        }
+        alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
+    });
+}
+
 // Explicitly expose functions to global window object for reliable inline event invocation
 window.openLessonDrawer = openLessonDrawer;
 window.setPageStudentAttendance = setPageStudentAttendance;
@@ -887,22 +982,79 @@ window.savePageAttendanceBulk = savePageAttendanceBulk;
 window.setStudentAttendanceStatus = setStudentAttendanceStatus;
 window.markAllAttendanceBulk = markAllAttendanceBulk;
 window.saveLessonAttendanceBulk = saveLessonAttendanceBulk;
+window.switchWorkspaceTab = switchWorkspaceTab;
 window.switchTimetableTab = switchTimetableTab;
 window.toggleSelectAllStudents = toggleSelectAllStudents;
 window.updateBulkToolbar = updateBulkToolbar;
 window.clearBulkSelection = clearBulkSelection;
 window.bulkSendMessage = bulkSendMessage;
 
-// Document-level event delegation to guarantee 100% button execution across all browsers & Turbo page transitions
+function toggleStudentActionMenu(btn, event) {
+    if (event) {
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+    const container = btn.closest('.dropdown');
+    if (!container) return;
+    const menu = container.querySelector('.dropdown-menu');
+    if (!menu) return;
+
+    const isShown = menu.classList.contains('show');
+
+    document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+        m.classList.remove('show');
+        m.style.position = '';
+        m.style.top = '';
+        m.style.left = '';
+        m.style.right = '';
+    });
+
+    if (!isShown) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (rect.bottom + 4) + 'px';
+        const menuWidth = 180;
+        let leftPos = rect.right - menuWidth;
+        if (leftPos < 10) leftPos = 10;
+        menu.style.left = leftPos + 'px';
+        menu.style.right = 'auto';
+        menu.style.zIndex = '1095';
+        menu.classList.add('show');
+        btn.setAttribute('aria-expanded', 'true');
+    } else {
+        menu.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+    }
+}
+
+window.toggleStudentActionMenu = toggleStudentActionMenu;
+
 document.addEventListener('click', function (e) {
-    const target = e.target.closest('[data-action], .btn-att-chip, [data-bs-toggle="dropdown"], .dropdown-toggle, #stickyPageSaveBtn');
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+            m.classList.remove('show');
+            m.style.position = '';
+            m.style.top = '';
+            m.style.left = '';
+            m.style.right = '';
+        });
+    }
+
+    const target = e.target.closest('[data-action], .btn-att-chip, #stickyPageSaveBtn');
     if (!target) return;
 
     const action = target.getAttribute('data-action');
 
     if (action === 'open-lesson-drawer' || (target.getAttribute('onclick') && target.getAttribute('onclick').includes('openLessonDrawer'))) {
-        const slotId = target.getAttribute('data-slot-id') || 1;
-        if (window.openLessonDrawer) {
+        let slotId = target.getAttribute('data-slot-id');
+        if (!slotId && target.getAttribute('onclick')) {
+            const match = target.getAttribute('onclick').match(/openLessonDrawer\((\d+)\)/);
+            if (match && match[1]) {
+                slotId = match[1];
+            }
+        }
+        if (slotId && window.openLessonDrawer) {
             window.openLessonDrawer(parseInt(slotId));
         }
     }
@@ -925,19 +1077,11 @@ document.addEventListener('click', function (e) {
             window.savePageAttendanceBulk(parseInt(slotId));
         }
     }
-    else if (target.matches('[data-bs-toggle="dropdown"], .dropdown-toggle') || target.closest('.dropdown-toggle')) {
-        const dropdownBtn = target.closest('.dropdown-toggle') || target;
-        const parent = dropdownBtn.closest('.dropdown');
-        if (parent) {
-            const menu = parent.querySelector('.dropdown-menu');
-            if (menu) {
-                const isShown = menu.classList.contains('show');
-                document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
-                if (!isShown) {
-                    menu.classList.add('show');
-                }
-                e.stopPropagation();
-            }
-        }
-    }
 });
+
+window.addEventListener('scroll', function() {
+    document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+        m.classList.remove('show');
+        m.style.position = '';
+    });
+}, { passive: true });

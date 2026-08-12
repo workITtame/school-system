@@ -188,6 +188,23 @@
     pointer-events: none;
 }
 
+/* Quick Actions Toolbar Button Styling */
+.quick-action-btn {
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+
+.quick-action-btn:hover {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    transform: translateY(-1px);
+}
+
 /* Table Enhancements & Sticky Header */
 .sticky-table-container {
     max-height: 320px;

@@ -21,6 +21,7 @@ class TestPhase2HomeworkMarks(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        db.session.rollback()
         self.app_context.pop()
 
     def test_01_hw_grade_creates_homeworkmarks_only(self):
@@ -89,13 +90,38 @@ class TestPhase2HomeworkMarks(unittest.TestCase):
         m_record = Marks.query.filter_by(SID=1, ExamID=1, assessment_type='exam').first()
         self.assertEqual(float(m_record.Score), 98.0)
 
-    def test_05_gradebook_averages_isolated(self):
-        """Gradebook separates Exam and Homework averages cleanly"""
-        t = Teacher.query.first()
-        if t:
-            stats = get_gradebook_statistics(user_id=t.user_id)
-            self.assertIn('exam_average', stats)
-            self.assertIn('homework_average', stats)
+    def test_06_pending_homeworks_calculation_uses_homeworkmarks(self):
+        """Pending homeworks counter relies on HomeworkMarks submissions needing correction"""
+        from services.teacher_dashboard_service import get_pending_homeworks
+        teacher = Teacher.query.first()
+        if not teacher:
+            return
+
+        # 1. Fetch pending homeworks
+        hws = get_pending_homeworks(teacher)
+        initial_pending = sum(1 for h in hws if h['is_pending'])
+
+        # 2. Add homework with NO HomeworkMarks -> Should NOT be counted as pending
+        hw_no_marks = Homework(title="Test No Marks Homework", sub_id=teacher.subjects[0].SubID if teacher.subjects else 1, class_id=1, due_date=db.func.current_date(), status="نشط")
+        db.session.add(hw_no_marks)
+        db.session.flush()
+
+        hws_after = get_pending_homeworks(teacher)
+        pending_after_no_marks = sum(1 for h in hws_after if h['is_pending'])
+        self.assertEqual(pending_after_no_marks, initial_pending, "Homework with 0 HomeworkMarks records must NOT be counted as pending correction")
+
+        # 3. Add HomeworkMarks record -> Should BE counted as pending
+        hm_unscored = HomeworkMarks(SID=1, HomeworkID=hw_no_marks.id, SubID=teacher.subjects[0].SubID if teacher.subjects else 1, Score=None)
+        db.session.add(hm_unscored)
+        db.session.flush()
+
+        hws_after_unscored = get_pending_homeworks(teacher)
+        pending_after_unscored = sum(1 for h in hws_after_unscored if h['is_pending'])
+        self.assertEqual(pending_after_unscored, initial_pending + 1, "Homework with unscored HomeworkMarks submission MUST be counted as pending correction")
+
+        db.session.delete(hm_unscored)
+        db.session.delete(hw_no_marks)
+        db.session.rollback()
 
 if __name__ == '__main__':
     unittest.main()

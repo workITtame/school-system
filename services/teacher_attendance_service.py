@@ -95,15 +95,21 @@ def get_lesson_attendance(slot_id, user_id, date_str=None):
             else:
                 unregistered_cnt += 1
 
+            rec_time = None
+            if rec and getattr(rec, 'created_at', None):
+                h = rec.created_at.strftime('%I:%M').lstrip('0')
+                am_pm = 'ص' if rec.created_at.strftime('%p') == 'AM' else 'م'
+                rec_time = f"{h}:{rec.created_at.strftime('%M')} {am_pm}"
+
             student_list.append({
                 'SID': st.SID,
                 'SName': st.SName,
-                'academic_id': f"2024{st.SID:03d}",
+                'academic_id': f"#{st.SID}",
                 'class_name': st_cls,
                 'section_name': st_sec,
                 'full_class': f"{st_cls} - {st_sec}".strip(" -"),
                 'attendance_status': status,
-                'time_recorded': rec.time_recorded if hasattr(rec, 'time_recorded') else None,
+                'time_recorded': rec_time,
                 'image': st.Image or None
             })
 

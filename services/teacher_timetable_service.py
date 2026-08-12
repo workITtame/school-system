@@ -4,13 +4,54 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from models import db, Student, Teacher, Classes, Sections, Subject, Attendance, ExamSchedule, Homework, User, Message, Days, Lessons
 from models.timetable import SchoolTable
-from models.grade import Marks
+from models.grade import Marks, HomeworkMarks
 from services.teacher_dashboard_service import get_teacher_by_user_id, get_teacher_subject_and_class_ids
 
 logger = logging.getLogger(__name__)
 
 ARABIC_WEEKDAYS = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
 ORDERED_WEEKDAYS = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+
+def _get_student_counts_map_for_slots(slots):
+    """
+    Batch fetches student count for slots accounting for both CID and SectionID using GROUP BY to prevent N+1 queries.
+    Returns a dict mapping slot.SchoolTableID -> count.
+    """
+    if not slots:
+        return {}
+
+    cids = list(set([s.CID for s in slots if s.CID]))
+    if not cids:
+        return {s.SchoolTableID: 0 for s in slots}
+
+    try:
+        counts = db.session.query(
+            Student.CID, Student.SectionID, func.count(Student.SID)
+        ).filter(
+            Student.CID.in_(cids),
+            Student.is_deleted == False
+        ).group_by(Student.CID, Student.SectionID).all()
+
+        count_dict = {(cid, sec_id): cnt for cid, sec_id, cnt in counts}
+
+        result_map = {}
+        for s in slots:
+            if not s.CID:
+                result_map[s.SchoolTableID] = 0
+                continue
+
+            if s.SectionID is not None:
+                exact_count = count_dict.get((s.CID, s.SectionID), 0)
+                none_sec_count = count_dict.get((s.CID, None), 0)
+                result_map[s.SchoolTableID] = exact_count + none_sec_count
+            else:
+                total_cid_count = sum(cnt for (cid, sec_id), cnt in count_dict.items() if cid == s.CID)
+                result_map[s.SchoolTableID] = total_cid_count
+
+        return result_map
+    except Exception as e:
+        logger.exception("Error fetching student counts map for slots: %s", str(e))
+        return {s.SchoolTableID: 0 for s in slots}
 
 def get_teacher_timetable_stats(user_id):
     """
@@ -62,6 +103,9 @@ def get_teacher_timetable_stats(user_id):
         remaining_classes_count = 0
         has_found_next = False
 
+        # Batch fetch student counts for slots by CID & SectionID
+        student_counts_map = _get_student_counts_map_for_slots(sorted_today)
+
         for slot in sorted_today:
             start_t = slot.lesson.StartTime if (slot.lesson and slot.lesson.StartTime) else '08:00'
             end_t = slot.lesson.EndTime if (slot.lesson and slot.lesson.EndTime) else '08:45'
@@ -70,8 +114,8 @@ def get_teacher_timetable_stats(user_id):
             sec_name = slot.section.SectionName if slot.section else ''
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
 
-            # Student count for class
-            st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 0
+            # Student count for slot (filtered by CID and SectionID)
+            st_count = student_counts_map.get(slot.SchoolTableID, 0)
 
             item = {
                 'TableID': slot.SchoolTableID,
@@ -154,6 +198,9 @@ def get_teacher_today_schedule(user_id):
             key=lambda s: (s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '00:00')
         )
 
+        # Batch fetch student counts for slots by CID & SectionID
+        student_counts_map = _get_student_counts_map_for_slots(sorted_today)
+
         result = []
         for slot in sorted_today:
             start_t = slot.lesson.StartTime if (slot.lesson and slot.lesson.StartTime) else '08:00'
@@ -162,7 +209,7 @@ def get_teacher_today_schedule(user_id):
             cls_name = slot.school_class.CName if slot.school_class else ''
             sec_name = slot.section.SectionName if slot.section else ''
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
-            st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 25
+            st_count = student_counts_map.get(slot.SchoolTableID, 0)
 
             if end_t < now_time_str:
                 status_code = 'ended'
@@ -214,6 +261,9 @@ def get_teacher_weekly_schedule(user_id):
             SchoolTable.is_deleted == False
         ).all()
 
+        # Batch fetch student counts for all teacher slots by CID & SectionID
+        student_counts_map = _get_student_counts_map_for_slots(slots)
+
         for slot in slots:
             d_name = slot.day.DName if slot.day else ''
             if d_name in weekly:
@@ -223,7 +273,7 @@ def get_teacher_weekly_schedule(user_id):
                 cls_name = slot.school_class.CName if slot.school_class else ''
                 sec_name = slot.section.SectionName if slot.section else ''
                 full_cls = f"{cls_name} - {sec_name}".strip(" -")
-                st_count = Student.query.filter_by(CID=slot.CID, is_deleted=False).count() if slot.CID else 25
+                st_count = student_counts_map.get(slot.SchoolTableID, 0)
 
                 weekly[d_name].append({
                     'TableID': slot.SchoolTableID,
@@ -276,33 +326,75 @@ def get_lesson_drawer_data(slot_id, user_id):
         start_t = slot.lesson.StartTime if (slot.lesson and slot.lesson.StartTime) else '08:00'
         end_t = slot.lesson.EndTime if (slot.lesson and slot.lesson.EndTime) else '08:45'
 
-        # Enrolled students for this class/section (filtered by is_deleted=False and valid CID)
+        # Real Enrolled students for this class/section (filtered by is_deleted=False and valid CID)
         st_query = Student.query.filter(Student.is_deleted == False)
         if slot.CID:
             st_query = st_query.filter(Student.CID == slot.CID)
             if slot.SectionID:
                 st_query = st_query.filter(or_(Student.SectionID == slot.SectionID, Student.SectionID.is_(None)))
 
-        students = st_query.all()
+        students = st_query.order_by(Student.SID.asc()).all()
+        student_sids = [st.SID for st in students]
+
+        # 1. Fetch real attendance for today from Attendance table
+        today = datetime.now().date()
+        att_by_sid = {}
+        if student_sids:
+            att_records = Attendance.query.filter(
+                Attendance.Date == today,
+                Attendance.SID.in_(student_sids),
+                Attendance.is_deleted == False
+            ).all()
+            for att in att_records:
+                att_by_sid[att.SID] = att.Status
+
+        # 2. Fetch real latest scores for these students in this subject (slot.SubID)
+        score_by_sid = {}
+        if student_sids and slot.SubID:
+            marks_records = Marks.query.filter(
+                Marks.SID.in_(student_sids),
+                Marks.SubID == slot.SubID,
+                Marks.Score.isnot(None),
+                Marks.is_deleted == False
+            ).all()
+            for m in marks_records:
+                if m.Score is not None:
+                    score_by_sid[m.SID] = float(m.Score)
+
+            hm_records = HomeworkMarks.query.filter(
+                HomeworkMarks.SID.in_(student_sids),
+                HomeworkMarks.SubID == slot.SubID,
+                HomeworkMarks.Score.isnot(None),
+                HomeworkMarks.is_deleted == False
+            ).all()
+            for hm in hm_records:
+                if hm.Score is not None:
+                    score_by_sid[hm.SID] = float(hm.Score)
+
         student_list = []
-        for idx, st in enumerate(students, start=1):
+        for st in students:
             st_cls = st.school_class.CName if st.school_class else cls_name
             st_sec = st.section.SectionName if st.section else sec_name
+            att_status = att_by_sid.get(st.SID, 'غير مسجل')
+            score_val = score_by_sid.get(st.SID, None)
+
+            score_str = None
+            if score_val is not None:
+                score_str = f"{int(score_val)}%" if score_val == int(score_val) else f"{score_val}%"
+
             student_list.append({
                 'SID': st.SID,
                 'SName': st.SName,
-                'academic_id': f"2024{st.SID:03d}",
+                'student_id': st.SID,
                 'class_name': st_cls,
                 'section_name': st_sec,
                 'full_class': f"{st_cls} - {st_sec}".strip(" -"),
-                'attendance_status': 'حاضر' if idx % 5 != 0 else 'غائب',
-                'latest_score': 90 - (idx * 2 % 25),
-                'latest_hw': 'تسليم أسبوعي 1',
+                'attendance_status': att_status,
+                'latest_score': score_str,
                 'image': st.Image or None
             })
 
         # Homeworks & Exams
-        today = datetime.now().date()
         homeworks = Homework.query.filter_by(sub_id=slot.SubID, class_id=slot.CID).order_by(Homework.due_date.asc()).limit(3).all() if slot.CID else []
         hw_list = [{'title': h.title, 'due_date': h.due_date.strftime('%Y-%m-%d') if h.due_date else ''} for h in homeworks]
 
@@ -321,8 +413,9 @@ def get_lesson_drawer_data(slot_id, user_id):
         else:
             status_code = 'upcoming'
 
-        present_cnt = sum(1 for s in student_list if s['attendance_status'] == 'حاضر')
-        absent_cnt = len(student_list) - present_cnt
+        present_cnt = sum(1 for s in student_list if s['attendance_status'] in ['حاضر', 'متأخر'])
+        absent_cnt = sum(1 for s in student_list if s['attendance_status'] == 'غائب')
+        unregistered_cnt = sum(1 for s in student_list if s['attendance_status'] == 'غير مسجل')
 
         return {
             'slot_id': slot.SchoolTableID,

@@ -168,23 +168,6 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
             if target_sub:
                 subjects_str_default = target_sub.SubName
 
-        from models.grade import HomeworkMarks
-        all_marks = []
-        filter_sub_ids = [subject_id] if subject_id else subject_ids
-        if student_ids and filter_sub_ids:
-            exam_m = Marks.query.filter(Marks.SID.in_(student_ids), Marks.SubID.in_(filter_sub_ids), Marks.assessment_type == 'exam').all()
-            hw_m = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids), HomeworkMarks.SubID.in_(filter_sub_ids)).all()
-            all_marks = exam_m + hw_m
-        elif student_ids:
-            exam_m = Marks.query.filter(Marks.SID.in_(student_ids), Marks.assessment_type == 'exam').all()
-            hw_m = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids)).all()
-            all_marks = exam_m + hw_m
-
-        marks_by_sid = {}
-        for m in all_marks:
-            if m.Score is not None:
-                marks_by_sid.setdefault(m.SID, []).append(float(m.Score))
-
         all_attendance = []
         if student_ids:
             all_attendance = Attendance.query.filter(Attendance.SID.in_(student_ids)).all()
@@ -195,24 +178,23 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
 
         student_list = []
         for idx, st in enumerate(all_students, start=1):
-            scores = marks_by_sid.get(st.SID, [])
-            avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-
             atts = att_by_sid.get(st.SID, [])
             if atts:
                 present_cnt = sum(1 for status in atts if status in ['حاضر', 'متأخر'])
                 absent_cnt = sum(1 for status in atts if status == 'غائب')
                 att_rate = round((present_cnt / len(atts)) * 100, 1)
+                attendance_rate_display = f"{att_rate}%"
             else:
-                att_rate = 0.0
+                att_rate = None
+                attendance_rate_display = "لا توجد بيانات مسجلة"
                 absent_cnt = 0
 
             # Determine Status Code: excellent, good, attention, absent
-            if absent_cnt >= 3 or att_rate < 75:
+            if absent_cnt >= 3:
                 status_code = 'absent'
-            elif att_rate < 85 or avg_score < 65:
+            elif att_rate is not None and att_rate < 85:
                 status_code = 'attention'
-            elif avg_score >= 90:
+            elif att_rate is not None and att_rate >= 90:
                 status_code = 'excellent'
             else:
                 status_code = 'good'
@@ -221,7 +203,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
             if status_filter and status_filter != 'all' and status_code != status_filter:
                 continue
 
-            cls_name = st.school_class.CName if st.school_class else 'الصف الثالث الثانوي'
+            cls_name = st.school_class.CName if st.school_class else 'الصف الأول'
             sec_name = st.section.SectionName if st.section else 'الشعبة الأولى'
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
             academic_id = f"#{st.SID}"
@@ -235,7 +217,7 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
                 'full_class': full_cls,
                 'subjects_str': subjects_str_default,
                 'attendance_rate': att_rate,
-                'avg_score': avg_score,
+                'attendance_rate_display': attendance_rate_display,
                 'absent_count': absent_cnt,
                 'status_code': status_code,
                 'image': st.Image or None

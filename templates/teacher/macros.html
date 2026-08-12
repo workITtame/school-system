@@ -122,7 +122,7 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-light text-success fw-bold rounded-pill px-4 py-2 shadow-sm extra-small" onclick="openLessonDrawer({{ current_lesson.TableID }})">
+            <button type="button" class="btn btn-light text-success fw-bold rounded-pill px-4 py-2 shadow-sm extra-small" data-action="open-lesson-drawer" data-slot-id="{{ current_lesson.TableID }}" onclick="openLessonDrawer({{ current_lesson.TableID }})">
                 <i class="fa-solid fa-chalkboard-user me-1"></i>▶ بدء الحصة المباشرة
             </button>
         </div>
@@ -141,7 +141,7 @@
                 <small class="text-muted font-monospace"><i class="fa-regular fa-clock me-1"></i> تبدأ الساعة: {{ upcoming_lesson.start_time }}</small>
             </div>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 extra-small" onclick="openLessonDrawer({{ upcoming_lesson.TableID }})">
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 extra-small" data-action="open-lesson-drawer" data-slot-id="{{ upcoming_lesson.TableID }}" onclick="openLessonDrawer({{ upcoming_lesson.TableID }})">
             عرض تحضير الحصة
         </button>
     </div>
@@ -152,28 +152,33 @@
 {# 8. Student Dropdown Action Menu Macro #}
 {% macro render_student_action_menu(student_id) %}
 <div class="dropdown">
-    <button class="btn btn-sm btn-light border rounded-pill px-3 extra-small dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <button class="btn btn-sm btn-light border rounded-pill px-3 extra-small dropdown-toggle" type="button" aria-expanded="false" onclick="toggleStudentActionMenu(this, event)">
         إجراءات <i class="fa-solid fa-chevron-down ms-1 extra-small"></i>
     </button>
     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
         <li>
             <button class="dropdown-item py-2" type="button" onclick="openStudentDrawer({{ student_id }})">
-                <i class="fa-regular fa-id-card text-primary me-2"></i> عرض الملف الجانبي
+                <i class="fa-regular fa-id-card text-primary me-2"></i> تفاصيل الطالب
             </button>
         </li>
         <li>
             <a class="dropdown-item py-2" href="{{ url_for('attendance.index') }}">
-                <i class="fa-solid fa-clipboard-user text-warning me-2"></i> تسجيل حضور
+                <i class="fa-solid fa-clipboard-user text-success me-2"></i> عرض/إدارة الحضور
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="{{ url_for('homework.index') }}">
+                <i class="fa-solid fa-book-open text-info me-2"></i> إدارة الواجبات
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="{{ url_for('exams.index') }}">
+                <i class="fa-solid fa-file-signature text-danger me-2"></i> إدارة الاختبارات
             </a>
         </li>
         <li>
             <a class="dropdown-item py-2" href="{{ url_for('gradebook.index') }}">
-                <i class="fa-solid fa-star text-warning me-2"></i> إدخال درجة
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item py-2" href="{{ url_for('messages.index') }}">
-                <i class="fa-regular fa-paper-plane text-info me-2"></i> إرسال رسالة
+                <i class="fa-solid fa-star text-warning me-2"></i> سجل الدرجات
             </a>
         </li>
     </ul>

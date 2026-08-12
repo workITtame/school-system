@@ -111,7 +111,7 @@
                                         </div>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <button type="button" class="btn btn-sm {% if slot.status_code == 'current' %}btn-success{% else %}btn-outline-primary{% endif %} rounded-pill px-3 extra-small" onclick="openLessonDrawer({{ slot.TableID }})">
+                                        <button type="button" class="btn btn-sm {% if slot.status_code == 'current' %}btn-success{% else %}btn-outline-primary{% endif %} rounded-pill px-3 extra-small" data-action="open-lesson-drawer" data-slot-id="{{ slot.TableID }}" onclick="openLessonDrawer({{ slot.TableID }})">
                                             <i class="fa-solid fa-chalkboard-user me-1"></i> {% if slot.status_code == 'current' %}بدء الحصة المباشرة{% else %}إدارة الحصة{% endif %}
                                         </button>
                                     </div>
@@ -138,7 +138,7 @@
                                 <div class="card-body p-2 d-flex flex-column gap-2">
                                     {% if weekly_schedule[day_name] and weekly_schedule[day_name]|length > 0 %}
                                         {% for slot in weekly_schedule[day_name] %}
-                                            <div class="p-2 rounded bg-white border extra-small hover-lift" onclick="openLessonDrawer({{ slot.TableID }})" style="cursor: pointer;">
+                                            <div class="p-2 rounded bg-white border extra-small hover-lift" data-action="open-lesson-drawer" data-slot-id="{{ slot.TableID }}" onclick="openLessonDrawer({{ slot.TableID }})" style="cursor: pointer;">
                                                 <strong class="d-block text-dark mb-1 text-truncate">{{ slot.subject_name }}</strong>
                                                 <small class="text-muted d-block extra-small">{{ slot.full_class }}</small>
                                                 <small class="text-primary font-monospace extra-small"><i class="fa-regular fa-clock me-1"></i> {{ slot.start_time }}</small>
@@ -159,25 +159,5 @@
         </div>
     </div>
 
-</div>
-
-<!-- LESSON WORKSPACE SIDE DRAWER (OFFCANVAS 720px) -->
-<div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="lessonDetailDrawer" aria-labelledby="lessonDetailDrawerLabel" style="width: 720px; max-width: 95vw;">
-    <div class="offcanvas-header bg-primary text-white p-3">
-        <h6 class="offcanvas-title fw-bold mb-0" id="lessonDetailDrawerLabel">
-            <i class="fa-solid fa-chalkboard-user me-2"></i> مساحة عمل الحصة الموحدة (Lesson Workspace)
-        </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
-    </div>
-    
-    <div class="offcanvas-body p-4" id="lessonDrawerBodyContent">
-        <!-- Spinner Loader -->
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">جاري التحميل...</span>
-            </div>
-            <p class="extra-small text-muted mt-2">جاري تجهيز مساحة عمل الحصة الموحدة...</p>
-        </div>
-    </div>
 </div>
 {% endblock %}
