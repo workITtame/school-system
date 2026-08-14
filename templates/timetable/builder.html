@@ -1,0 +1,337 @@
+{% extends 'layout.html' %}
+
+{% block title %}منشئ الجدول المدرسي التفاعلي | نظام المستقبل{% endblock %}
+{% block page_title %}منشئ الجدول المدرسي التفاعلي{% endblock %}
+{% block page_subtitle %}تخطي التعارض، تسكين الحصص، وتصميم الجدول الأسبوعي للمدرسة{% endblock %}
+
+{% block content %}
+<div class="fade-in timetable-builder-container font-cairo pb-5 mb-5" style="max-width: 1400px; margin: 0 auto;">
+
+    <!-- =================================================================== -->
+    <!-- SECTION 1: HERO HEADER & FILTER BAR                                 -->
+    <!-- =================================================================== -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <nav aria-label="breadcrumb" class="mb-2">
+                        <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
+                            <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('timetable.index') }}" class="text-white text-decoration-none">الجدول الدراسي</a></li>
+                            <li class="breadcrumb-item active text-white opacity-75" aria-current="page">منشئ الجدول التفاعلي</li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <h3 class="fw-bold text-white mb-0 font-cairo"><i class="fa-solid fa-calendar-check text-warning me-2"></i>منشئ ومخطط الجدول المدرسي التفاعلي</h3>
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace extra-small fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> الكشف الذكي عن التعارض مفعّل</span>
+                    </div>
+                    <p class="text-white-50 extra-small font-monospace mt-1 mb-0">حدد الصف والشعبة لبناء الجدول وتوزيع الحصص الأسبوعية بمرونة عالية لمنع تضارب المعلمين والقاعات.</p>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{{ url_for('timetable.export_timetable_excel', class_id=sel_class_id) }}" class="btn btn-success rounded-pill px-3 py-2 font-monospace extra-small fw-bold shadow-sm">
+                        <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+                    </a>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 font-monospace extra-small fw-bold shadow-sm" onclick="window.print()">
+                        <i class="fa-solid fa-print me-1"></i> طباعة / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER TOOLBAR -->
+        <div class="card-body bg-light border-top py-3 px-4">
+            <form method="GET" action="{{ url_for('timetable.builder') }}" id="builderFilterForm" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-dark extra-small font-monospace mb-1"><i class="fa-solid fa-school text-primary me-1"></i> الصف الدراسي المعني</label>
+                    <select name="class_id" class="form-select font-monospace text-dark fw-bold border-primary-subtle" onchange="document.getElementById('builderFilterForm').submit()">
+                        {% for c in classes %}
+                            <option value="{{ c.CID }}" {% if c.CID == sel_class_id %}selected{% endif %}>{{ c.CName }} ({{ c.Stage or 'المرحلة العامة' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-dark extra-small font-monospace mb-1"><i class="fa-solid fa-users-rectangle text-info me-1"></i> الشعبة الدراسية</label>
+                    <select name="section_id" class="form-select font-monospace text-dark fw-bold border-info-subtle" onchange="document.getElementById('builderFilterForm').submit()">
+                        {% for sec in sections %}
+                            <option value="{{ sec.SectionID }}" {% if sec.SectionID == sel_sec_id %}selected{% endif %}>الشعبة {{ sec.SectionName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-dark extra-small font-monospace mb-1"><i class="fa-regular fa-calendar text-warning me-1"></i> الفصل الدراسي</label>
+                    <select name="term_id" class="form-select font-monospace text-dark fw-bold" onchange="document.getElementById('builderFilterForm').submit()">
+                        {% for t in terms %}
+                            <option value="{{ t.T_ID }}" {% if t.T_ID == sel_term_id %}selected{% endif %}>{{ t.T_Name }} ({{ t.AcademicYear or '2025/2026' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SECTION 2: TIMETABLE BUILDER MATRIX                                 -->
+    <!-- =================================================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark font-cairo"><i class="fa-solid fa-table-cells text-primary me-2"></i>ماتريكس الحصص الأسبوعي (Weekly Timetable Matrix)</h5>
+            <span class="text-muted extra-small font-monospace"><i class="fa-solid fa-circle-info text-info me-1"></i> اضغط على أي حصة لتسكين أو تعديل المادة والمعلم</span>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle text-center mb-0 font-monospace" style="min-width: 1000px; border-color: #e2e8f0;">
+                    <thead class="table-light">
+                        <tr class="align-middle">
+                            <th style="width: 140px;" class="py-3 bg-light text-dark fw-bold">الحصة / اليوم</th>
+                            {% for day in days %}
+                                <th class="py-3 text-dark fw-bold" style="width: 18%;">
+                                    <i class="fa-regular fa-calendar-days text-primary me-1"></i> {{ day.DName }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                            <tr>
+                                <!-- LESSON HEADER -->
+                                <td class="bg-light fw-bold text-dark py-3">
+                                    <span class="d-block text-primary fw-bold font-cairo">{{ lesson.LessonName }}</span>
+                                    <small class="text-muted extra-small font-monospace">{{ lesson.StartTime or '08:00' }} - {{ lesson.EndTime or '08:45' }}</small>
+                                </td>
+
+                                <!-- DAY CELLS -->
+                                {% for day in days %}
+                                    {% set cell_key = day.DayID ~ '_' ~ lesson.LessonID %}
+                                    {% set slot_data = grid.get(cell_key) %}
+
+                                    <td class="p-2 align-middle transition-all" style="height: 105px; vertical-align: middle;">
+                                        {% if slot_data %}
+                                            <!-- POPULATED SLOT CARD -->
+                                            <div class="slot-card p-2 rounded-3 shadow-sm border text-start position-relative h-100 d-flex flex-column justify-content-between" style="background-color: {{ slot_data.color }}15; border-color: {{ slot_data.color }}50 !important;">
+                                                <div>
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="badge rounded-pill text-white fw-bold extra-small" style="background-color: {{ slot_data.color }};">
+                                                            {{ slot_data.subject_name }}
+                                                        </span>
+                                                        <div class="slot-actions">
+                                                            <button type="button" class="btn btn-link text-muted p-0 me-1" onclick="openAssignModal({{ day.DayID }}, {{ lesson.LessonID }}, '{{ day.DName }}', '{{ lesson.LessonName }}', {{ slot_data.slot_id }}, {{ slot_data.subject_id }}, {{ slot_data.teacher_id }})" title="تعديل الحصة">
+                                                                <i class="fa-solid fa-pen-to-square text-primary extra-small"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-link text-danger p-0" onclick="deleteSlot({{ slot_data.slot_id }})" title="إزالة الحصة">
+                                                                <i class="fa-solid fa-trash-can extra-small"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <strong class="d-block extra-small text-dark font-cairo"><i class="fa-solid fa-user-tie text-muted me-1"></i> {{ slot_data.teacher_name }}</strong>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="text-muted" style="font-size: 9px;"><i class="fa-solid fa-circle-check text-success me-1"></i>مكتملة</span>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <!-- EMPTY CELL BUTTON -->
+                                            <button type="button" class="btn btn-outline-dashed w-100 h-100 py-3 border-dashed rounded-3 text-muted extra-small d-flex flex-column align-items-center justify-content-center gap-1 hover-shadow" onclick="openAssignModal({{ day.DayID }}, {{ lesson.LessonID }}, '{{ day.DName }}', '{{ lesson.LessonName }}')">
+                                                <i class="fa-solid fa-plus text-primary fs-6"></i>
+                                                <span class="font-cairo extra-small">تسكين حصة</span>
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- =================================================================== -->
+<!-- ASSIGN SLOT MODAL                                                   -->
+<!-- =================================================================== -->
+<div class="modal fade font-cairo" id="assignSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3 border-0">
+                <h5 class="modal-title fw-bold font-cairo mb-0" id="assignModalTitle"><i class="fa-solid fa-calendar-plus me-2"></i> تسكين حصة دراسية جديدة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="assignSlotForm" onsubmit="saveSlotAssignment(event)">
+                <div class="modal-body p-4">
+                    <!-- HIDDEN FIELDS -->
+                    <input type="hidden" id="modalDayId" name="day_id">
+                    <input type="hidden" id="modalLessonId" name="lesson_id">
+                    <input type="hidden" id="modalSlotId" name="slot_id">
+
+                    <!-- TIME & SLOT INFO BADGE -->
+                    <div class="alert alert-primary border-0 rounded-3 d-flex align-items-center justify-content-between p-3 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-clock text-primary fs-4"></i>
+                            <div>
+                                <strong class="d-block text-dark font-monospace extra-small" id="modalDayName">اليوم</strong>
+                                <span class="text-primary fw-bold font-monospace extra-small" id="modalLessonName">الحصة</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-white text-primary border font-monospace extra-small px-3 py-2 rounded-pill">تعديل فوري</span>
+                    </div>
+
+                    <!-- CONFLICT WARNING BANNER (Hidden by default) -->
+                    <div class="alert alert-warning border-warning border-start border-4 rounded-3 p-3 mb-3 d-none" id="conflictWarningBanner">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-warning fs-4"></i>
+                            <span class="extra-small font-monospace fw-bold text-dark" id="conflictMessageText">تنبه وجود تعارض</span>
+                        </div>
+                    </div>
+
+                    <!-- SUBJECT SELECT -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark extra-small font-monospace">المادة الدراسية <span class="text-danger">*</span></label>
+                        <select class="form-select font-monospace" id="modalSubjectSelect" name="subject_id" required>
+                            <option value="">-- اختر المادة الدراسية --</option>
+                            {% for sub in subjects %}
+                                <option value="{{ sub.SubID }}">{{ sub.SubName }} ({{ sub.Type or 'أساسية' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- TEACHER SELECT -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark extra-small font-monospace">المعلم المسؤول <span class="text-danger">*</span></label>
+                        <select class="form-select font-monospace" id="modalTeacherSelect" name="teacher_id" required onchange="triggerConflictCheck()">
+                            <option value="">-- اختر المعلم المسؤول --</option>
+                            {% for t in teachers %}
+                                <option value="{{ t.TeacherID }}">{{ t.TeacherName }} ({{ t.Specialization or 'معلم' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light p-3 border-top gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 font-monospace extra-small" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 font-monospace extra-small fw-bold shadow-sm" id="saveSlotBtn">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> حفظ وتسكين الحصة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let assignModalInstance = null;
+
+document.addEventListener("DOMContentLoaded", function() {
+    assignModalInstance = new bootstrap.Modal(document.getElementById('assignSlotModal'));
+});
+
+function openAssignModal(dayId, lessonId, dayName, lessonName, slotId = null, subjectId = null, teacherId = null) {
+    document.getElementById('modalDayId').value = dayId;
+    document.getElementById('modalLessonId').value = lessonId;
+    document.getElementById('modalSlotId').value = slotId || '';
+    document.getElementById('modalDayName').innerText = dayName;
+    document.getElementById('modalLessonName').innerText = lessonName;
+
+    document.getElementById('modalSubjectSelect').value = subjectId || '';
+    document.getElementById('modalTeacherSelect').value = teacherId || '';
+
+    document.getElementById('conflictWarningBanner').classList.add('d-none');
+    document.getElementById('assignModalTitle').innerHTML = slotId ? 
+        '<i class="fa-solid fa-pen-to-square me-2"></i> تعديل الحصة المجدولة' : 
+        '<i class="fa-solid fa-calendar-plus me-2"></i> تسكين حصة دراسية جديدة';
+
+    assignModalInstance.show();
+}
+
+function triggerConflictCheck() {
+    const teacherId = document.getElementById('modalTeacherSelect').value;
+    const dayId = document.getElementById('modalDayId').value;
+    const lessonId = document.getElementById('modalLessonId').value;
+    const slotId = document.getElementById('modalSlotId').value;
+    const classId = "{{ sel_class_id }}";
+    const sectionId = "{{ sel_sec_id }}";
+
+    if (!teacherId || !dayId || !lessonId) return;
+
+    fetch('/timetable/api/check-conflict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacher_id: teacherId, day_id: dayId, lesson_id: lessonId, class_id: classId, section_id: sectionId, slot_id: slotId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const banner = document.getElementById('conflictWarningBanner');
+        const text = document.getElementById('conflictMessageText');
+        if (data.has_conflict) {
+            text.innerText = data.message;
+            banner.classList.remove('d-none');
+        } else {
+            banner.classList.add('d-none');
+        }
+    });
+}
+
+function saveSlotAssignment(e) {
+    e.preventDefault();
+    const class_id = "{{ sel_class_id }}";
+    const section_id = "{{ sel_sec_id }}";
+    const term_id = "{{ sel_term_id }}";
+    const day_id = document.getElementById('modalDayId').value;
+    const lesson_id = document.getElementById('modalLessonId').value;
+    const slot_id = document.getElementById('modalSlotId').value;
+    const subject_id = document.getElementById('modalSubjectSelect').value;
+    const teacher_id = document.getElementById('modalTeacherSelect').value;
+
+    fetch('/timetable/api/assign-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class_id, section_id, term_id, day_id, lesson_id, slot_id, subject_id, teacher_id })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            assignModalInstance.hide();
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الحفظ بنجاح',
+                text: data.message,
+                timer: 1500,
+                showConfirmButton: false
+            });
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            Swal.fire('تعارض أو خطأ', data.error || 'فشل حفظ الحصة', 'error');
+        }
+    })
+    .catch(err => Swal.fire('خطأ', 'حدث خطأ بالاتصال بالخادم', 'error'));
+}
+
+function deleteSlot(slotId) {
+    Swal.fire({
+        title: 'هل أنت أصلح من إزالة هذه الحصة؟',
+        text: 'سيتم تفريغ الخلية بالجدول المدرسي.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، إزالة الحصة',
+        cancelButtonText: 'إلغاء'
+    }).then(res => {
+        if (res.isConfirmed) {
+            fetch(`/timetable/api/delete-slot/${slotId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'تمت الإزالة', timer: 1500, showConfirmButton: false });
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    Swal.fire('خطأ', data.error || 'فشل إزالة الحصة', 'error');
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -87,7 +87,10 @@
                 <li class="{% if request.blueprint == 'academic' and 'subjects' in request.path %}active{% endif %}">
                     <a href="{{ url_for('academic.subjects') }}"><i class="fa-solid fa-book-open"></i> المواد الدراسية</a>
                 </li>
-                <li class="{% if request.blueprint == 'timetable' %}active{% endif %}">
+                <li class="{% if request.blueprint == 'timetable' and 'builder' in request.path %}active{% endif %}">
+                    <a href="{{ url_for('timetable.builder') }}"><i class="fa-solid fa-calendar-check text-warning"></i> منشئ الجدول التفاعلي</a>
+                </li>
+                <li class="{% if request.blueprint == 'timetable' and 'builder' not in request.path %}active{% endif %}">
                     <a href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days"></i> الجداول الدراسية</a>
                 </li>
                 <li class="{% if request.blueprint == 'attendance' %}active{% endif %}">

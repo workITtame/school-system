@@ -381,3 +381,238 @@ def export_timetable_excel():
 
     filename = f"timetable_class_{class_id}.xlsx" if class_id else "timetable_full.xlsx"
     return send_file(stream, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+def _ensure_default_days_and_lessons():
+    if Days.query.count() == 0:
+        day_names = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+        for d in day_names:
+            db.session.add(Days(DName=d))
+        db.session.commit()
+
+    if Lessons.query.count() == 0:
+        lesson_times = [
+            ('الحصة الأولى', '08:00', '08:45'),
+            ('الحصة الثانية', '08:45', '09:30'),
+            ('الحصة الثالثة', '09:30', '10:15'),
+            ('الحصة الرابعة', '10:30', '11:15'),
+            ('الحصة الخامسة', '11:15', '12:00'),
+            ('الحصة السادسة', '12:00', '12:45'),
+            ('الحصة السابعة', '12:45', '01:30'),
+        ]
+        for name, start, end in lesson_times:
+            db.session.add(Lessons(LessonName=name, StartTime=start, EndTime=end))
+        db.session.commit()
+
+@timetable_bp.route('/builder', methods=['GET'])
+@login_required
+def builder():
+    _ensure_default_days_and_lessons()
+
+    classes = Classes.query.filter_by(is_deleted=False).order_by(Classes.CName.asc()).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
+    teachers = Teacher.query.filter_by(is_deleted=False).order_by(Teacher.TeacherName.asc()).all()
+    subjects = Subject.query.filter_by(is_deleted=False).order_by(Subject.SubName.asc()).all()
+    terms = Terms.query.filter_by(is_deleted=False).all()
+
+    days = Days.query.filter_by(is_deleted=False).order_by(Days.DayID.asc()).all()
+    lessons = Lessons.query.filter_by(is_deleted=False).order_by(Lessons.LessonID.asc()).all()
+
+    sel_class_id = request.args.get('class_id', type=int) or (classes[0].CID if classes else None)
+    sel_sec_id = request.args.get('section_id', type=int) or (sections[0].SectionID if sections else None)
+    sel_term_id = request.args.get('term_id', type=int) or (terms[0].T_ID if terms else None)
+
+    slots_query = SchoolTable.query.options(
+        joinedload(SchoolTable.subject),
+        joinedload(SchoolTable.teacher),
+        joinedload(SchoolTable.school_class),
+        joinedload(SchoolTable.section),
+        joinedload(SchoolTable.day),
+        joinedload(SchoolTable.lesson)
+    ).filter(SchoolTable.is_deleted == False)
+
+    if sel_class_id:
+        slots_query = slots_query.filter(SchoolTable.CID == sel_class_id)
+    if sel_sec_id:
+        slots_query = slots_query.filter(SchoolTable.SectionID == sel_sec_id)
+
+    raw_slots = slots_query.all()
+
+    grid = {}
+    for slot in raw_slots:
+        key = f"{slot.DayID}_{slot.LessonID}"
+        grid[key] = {
+            'slot_id': slot.SchoolTableID,
+            'subject_id': slot.SubID,
+            'subject_name': slot.subject.SubName if slot.subject else '',
+            'color': getattr(slot.subject, 'Color', '#3b82f6') if slot.subject else '#3b82f6',
+            'teacher_id': slot.TeacherID,
+            'teacher_name': slot.teacher.TeacherName if slot.teacher else '',
+            'class_name': slot.school_class.CName if slot.school_class else '',
+            'section_name': slot.section.SectionName if slot.section else ''
+        }
+
+    return render_template(
+        'timetable/builder.html',
+        classes=classes,
+        sections=sections,
+        teachers=teachers,
+        subjects=subjects,
+        terms=terms,
+        days=days,
+        lessons=lessons,
+        sel_class_id=sel_class_id,
+        sel_sec_id=sel_sec_id,
+        sel_term_id=sel_term_id,
+        grid=grid
+    )
+
+@timetable_bp.route('/api/check-conflict', methods=['POST'])
+@login_required
+def check_conflict():
+    data = request.get_json(silent=True) or {}
+    teacher_id = data.get('teacher_id')
+    day_id = data.get('day_id')
+    lesson_id = data.get('lesson_id')
+    class_id = data.get('class_id')
+    section_id = data.get('section_id')
+    current_slot_id = data.get('slot_id')
+
+    if not teacher_id or not day_id or not lesson_id:
+        return jsonify({'has_conflict': False})
+
+    # Check Teacher Conflict
+    t_query = SchoolTable.query.filter(
+        SchoolTable.TeacherID == teacher_id,
+        SchoolTable.DayID == day_id,
+        SchoolTable.LessonID == lesson_id,
+        SchoolTable.is_deleted == False
+    )
+    if current_slot_id:
+        t_query = t_query.filter(SchoolTable.SchoolTableID != current_slot_id)
+
+    conflict_t = t_query.first()
+    if conflict_t:
+        t_name = conflict_t.teacher.TeacherName if conflict_t.teacher else 'المعلم'
+        c_name = conflict_t.school_class.CName if conflict_t.school_class else ''
+        s_name = conflict_t.section.SectionName if conflict_t.section else ''
+        return jsonify({
+            'has_conflict': True,
+            'type': 'teacher',
+            'message': f"⚠️ المعلم ({t_name}) معين في حصة أخرى بهذا التوقيت في ({c_name} - {s_name})!"
+        })
+
+    # Check Class / Section Conflict
+    if class_id and section_id:
+        c_query = SchoolTable.query.filter(
+            SchoolTable.CID == class_id,
+            SchoolTable.SectionID == section_id,
+            SchoolTable.DayID == day_id,
+            SchoolTable.LessonID == lesson_id,
+            SchoolTable.is_deleted == False
+        )
+        if current_slot_id:
+            c_query = c_query.filter(SchoolTable.SchoolTableID != current_slot_id)
+
+        conflict_c = c_query.first()
+        if conflict_c:
+            sub_name = conflict_c.subject.SubName if conflict_c.subject else ''
+            return jsonify({
+                'has_conflict': True,
+                'type': 'class',
+                'message': f"⚠️ هذا الصف والشعبة لديه حصة مجدولة بالفعل ({sub_name}) في هذا التوقيت!"
+            })
+
+    return jsonify({'has_conflict': False})
+
+@timetable_bp.route('/api/assign-slot', methods=['POST'])
+@login_required
+def assign_slot():
+    data = request.get_json(silent=True) or {}
+    class_id = data.get('class_id')
+    section_id = data.get('section_id')
+    day_id = data.get('day_id')
+    lesson_id = data.get('lesson_id')
+    subject_id = data.get('subject_id')
+    teacher_id = data.get('teacher_id')
+    term_id = data.get('term_id')
+    slot_id = data.get('slot_id')
+
+    if not all([class_id, section_id, day_id, lesson_id, subject_id, teacher_id]):
+        return jsonify({'error': 'جميع الحقول مطلوبة لتسكين الحصة في الجدول'}), 400
+
+    existing_slot = SchoolTable.query.filter_by(
+        CID=class_id, SectionID=section_id, DayID=day_id, LessonID=lesson_id, is_deleted=False
+    ).first()
+    target_slot_id = slot_id or (existing_slot.SchoolTableID if existing_slot else None)
+
+    # Conflict Check
+    t_conflict = SchoolTable.query.filter(
+        SchoolTable.TeacherID == teacher_id,
+        SchoolTable.DayID == day_id,
+        SchoolTable.LessonID == lesson_id,
+        SchoolTable.is_deleted == False
+    )
+    if target_slot_id:
+        t_conflict = t_conflict.filter(SchoolTable.SchoolTableID != target_slot_id)
+
+    if t_conflict.first():
+        conflict_obj = t_conflict.first()
+        t_name = conflict_obj.teacher.TeacherName if conflict_obj.teacher else ''
+        c_name = conflict_obj.school_class.CName if conflict_obj.school_class else ''
+        return jsonify({'error': f"عفواً، المعلم ({t_name}) لديه حصة أخرى في نفس التوقيت في ({c_name})"}), 400
+
+    if slot_id:
+        slot = db.session.get(SchoolTable, slot_id)
+        if not slot:
+            return jsonify({'error': 'الحصة غير موجودة'}), 404
+        slot.CID = class_id
+        slot.SectionID = section_id
+        slot.DayID = day_id
+        slot.LessonID = lesson_id
+        slot.SubID = subject_id
+        slot.TeacherID = teacher_id
+        if term_id:
+            slot.T_ID = term_id
+    elif existing_slot:
+        slot = existing_slot
+        slot.SubID = subject_id
+        slot.TeacherID = teacher_id
+        if term_id:
+            slot.T_ID = term_id
+    else:
+        slot = SchoolTable(
+            CID=class_id,
+            SectionID=section_id,
+            DayID=day_id,
+            LessonID=lesson_id,
+            SubID=subject_id,
+            TeacherID=teacher_id,
+            T_ID=term_id
+        )
+        db.session.add(slot)
+
+    db.session.commit()
+
+    # Return refreshed slot object
+    slot_ref = db.session.get(SchoolTable, slot.SchoolTableID)
+    return jsonify({
+        'success': True,
+        'message': 'تم تسكين الحصة في الجدول بنجاح 🟢',
+        'slot': {
+            'slot_id': slot_ref.SchoolTableID,
+            'subject_name': slot_ref.subject.SubName if slot_ref.subject else '',
+            'teacher_name': slot_ref.teacher.TeacherName if slot_ref.teacher else '',
+            'color': getattr(slot_ref.subject, 'Color', '#3b82f6') if slot_ref.subject else '#3b82f6'
+        }
+    })
+
+@timetable_bp.route('/api/delete-slot/<int:slot_id>', methods=['POST', 'DELETE'])
+@login_required
+def delete_slot(slot_id):
+    slot = db.session.get(SchoolTable, slot_id)
+    if not slot:
+        return jsonify({'error': 'الحصة غير موجودة'}), 404
+
+    slot.is_deleted = True
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'تم إزالة الحصة من الجدول بنجاح'})
