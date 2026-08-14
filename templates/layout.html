@@ -206,7 +206,7 @@
                         <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ session.user_name }}&background=2563eb&color=fff'">
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="Swal.fire('الملف الشخصي', 'المستخدم: {{ session.user_name }}<br>الدور: {{ session.user_role }}', 'info')"><i class="fa-solid fa-user me-2 text-muted"></i> الملف الشخصي</a></li>
+                        <li><a class="dropdown-item py-2" href="{{ url_for('profile.index') }}"><i class="fa-solid fa-user-gear me-2 text-primary"></i> الملف الشخصي والإعدادات</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger py-2" href="{{ url_for('auth.logout') }}" data-turbo="false"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
                     </ul>

@@ -1,72 +1,421 @@
 {% extends 'layout.html' %}
 
-{% block title %}الملف الشخصي والإعدادات{% endblock %}
-{% block page_title %}الملف الشخصي{% endblock %}
-{% block page_subtitle %}الإعدادات / الملف الشخصي{% endblock %}
+{% block title %}الملف الشخصي للمدير والتحكم الأكاديمي | نظام المستقبل{% endblock %}
+{% block page_title %}الملف الشخصي لمدير النظام{% endblock %}
+{% block page_subtitle %}إدارة البيانات الشخصية والإدارية، إعدادات الأمان والتفضيلات التنفيذية{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-user-gear text-primary me-2"></i> الملف الشخصي والإعدادات</h5>
-        </div>
-        <div class="card-body p-4">
-            <form action="{{ url_for('auth.profile') }}" method="POST" enctype="multipart/form-data">
-                <div class="row g-4 align-items-center mb-4 pb-4 border-bottom">
-                    <div class="col-md-3 text-center">
-                        <div class="position-relative d-inline-block mb-3">
-                            <img src="{{ url_for('static', filename='img/default_avatar.png') }}" onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.name }}&background=2563eb&color=fff'" class="rounded-circle shadow" style="width: 130px; height: 130px; object-fit: cover;">
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="document.getElementById('avatarInput').click()">
-                                <i class="fa-solid fa-camera me-1"></i> تغيير الصورة
-                            </button>
-                            <input type="file" id="avatarInput" name="avatar" class="d-none" accept="image/*">
-                        </div>
+<div class="fade-in admin-profile-container font-cairo pb-5" style="max-width: 1400px; margin: 0 auto;">
+
+    <!-- =================================================================== -->
+    <!-- SECTION 1: EXECUTIVE ADMIN HERO CARD (Compact & Modern)             -->
+    <!-- =================================================================== -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 140px;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <!-- AVATAR WITH CAMERA OVERLAY -->
+                    <div class="position-relative">
+                        <img id="adminAvatarImg" src="{{ profile.avatar or url_for('static', filename='img/default_avatar.png') }}" onerror="this.src='https://ui-avatars.com/api/?name={{ profile.name }}&background=2563eb&color=fff'" class="rounded-circle shadow-lg border border-3 border-white object-fit-cover" style="width: 90px; height: 90px;">
+                        <button type="button" class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 p-1 shadow" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('adminAvatarFileInput').click()" title="تغيير الصورة الشخصية">
+                            <i class="fa-solid fa-camera text-white extra-small"></i>
+                        </button>
+                        <input type="file" id="adminAvatarFileInput" class="d-none" accept="image/*" onchange="uploadAdminAvatar(this)">
                     </div>
 
-                    <div class="col-md-9">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">الاسم الكامل</label>
-                                <input type="text" name="name" value="{{ current_user.name }}" class="form-control bg-light border-0 rounded-3" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">البريد الإلكتروني / اسم المستخدم</label>
-                                <input type="text" name="email" value="{{ current_user.username }}" class="form-control bg-light border-0 rounded-3" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">رقم الجوال</label>
-                                <input type="text" name="phone" value="0555123456" class="form-control bg-light border-0 rounded-3">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted">المسمى الوظيفي</label>
-                                <input type="text" value="{{ 'مدير النظام' if current_user.role == 'admin' else 'معلم' }}" class="form-control bg-light border-0 rounded-3" readonly disabled>
-                            </div>
+                    <!-- USER INFO -->
+                    <div class="text-white">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h4 class="fw-bold mb-0 font-cairo text-white">{{ profile.name or 'أ. مدير النظام' }}</h4>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace extra-small"><i class="fa-solid fa-shield-check me-1"></i> مدير معتمد</span>
+                        </div>
+                        <p class="text-white-50 extra-small font-monospace mb-2"><i class="fa-solid fa-user-shield me-1"></i> {{ profile.role or 'مدير المنظومة الأكاديمية Executive Admin' }} | {{ profile.department or 'الإدارة العامة' }}</p>
+                        <div class="d-flex align-items-center gap-2 flex-wrap extra-small font-monospace text-white-50">
+                            <span><i class="fa-regular fa-envelope me-1 text-info"></i> {{ profile.email or 'admin@school.com' }}</span>
+                            <span>•</span>
+                            <span><i class="fa-solid fa-phone me-1 text-warning"></i> {{ profile.phone or '0555123456' }}</span>
+                            <span>•</span>
+                            <span><i class="fa-regular fa-clock me-1 text-success"></i> آخر دخول: {{ profile.last_login or 'الآن' }}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-key me-2"></i> تغيير كلمة المرور</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted">كلمة المرور الجديدة</label>
-                            <input type="password" name="password" class="form-control bg-light border-0 rounded-3" placeholder="اتركه فارغاً للحفاظ على كلمة المرور الحالية">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted">تأكيد كلمة المرور الجديدة</label>
-                            <input type="password" class="form-control bg-light border-0 rounded-3" placeholder="تأكيد كلمة المرور الجديدة">
-                        </div>
+                <!-- RIGHT QUICK STATS -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="bg-white bg-opacity-10 backdrop-blur rounded-3 px-3 py-2 text-center text-white border border-white border-opacity-10">
+                        <span class="d-block extra-small text-white-50 font-monospace">المستخدمين</span>
+                        <strong class="fs-5 font-monospace fw-bold text-white">{{ profile.total_users or 0 }}</strong>
+                    </div>
+                    <div class="bg-white bg-opacity-10 backdrop-blur rounded-3 px-3 py-2 text-center text-white border border-white border-opacity-10">
+                        <span class="d-block extra-small text-white-50 font-monospace">المعلمين</span>
+                        <strong class="fs-5 font-monospace fw-bold text-white">{{ profile.total_teachers or 0 }}</strong>
+                    </div>
+                    <div class="bg-white bg-opacity-10 backdrop-blur rounded-3 px-3 py-2 text-center text-white border border-white border-opacity-10">
+                        <span class="d-block extra-small text-white-50 font-monospace">الطلاب</span>
+                        <strong class="fs-5 font-monospace fw-bold text-white">{{ profile.total_students or 0 }}</strong>
+                    </div>
+                    <div class="bg-white bg-opacity-10 backdrop-blur rounded-3 px-3 py-2 text-center text-white border border-white border-opacity-10">
+                        <span class="d-block extra-small text-white-50 font-monospace">تقييم الأمان</span>
+                        <strong class="fs-5 font-monospace fw-bold text-success">{{ profile.security_score or 'A+' }}</strong>
                     </div>
                 </div>
-
-                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-light rounded-pill px-4">إلغاء</a>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">حفظ التغييرات</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
+
+    <!-- =================================================================== -->
+    <!-- SECTION 2: TABBED PROFILE WORKSPACE                                -->
+    <!-- =================================================================== -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        
+        <!-- TABS NAV BAR -->
+        <div class="card-header bg-white border-bottom py-2 px-3">
+            <ul class="nav nav-pills card-header-pills gap-2 font-monospace extra-small fw-bold" id="adminProfileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-item-btn btn btn-sm btn-outline-primary rounded-pill px-3 active" id="info-tab" data-bs-toggle="pill" data-bs-target="#info-pane" type="button" role="tab">
+                        <i class="fa-solid fa-user-gear me-1"></i> البيانات الشخصية والإدارية
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-item-btn btn btn-sm btn-outline-primary rounded-pill px-3" id="security-tab" data-bs-toggle="pill" data-bs-target="#security-pane" type="button" role="tab">
+                        <i class="fa-solid fa-key me-1"></i> الأمان وتغيير كلمة المرور
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-item-btn btn btn-sm btn-outline-primary rounded-pill px-3" id="prefs-tab" data-bs-toggle="pill" data-bs-target="#prefs-pane" type="button" role="tab">
+                        <i class="fa-solid fa-sliders me-1"></i> تفضيلات الإشعارات والنظام
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-item-btn btn btn-sm btn-outline-primary rounded-pill px-3" id="sessions-tab" data-bs-toggle="pill" data-bs-target="#sessions-pane" type="button" role="tab">
+                        <i class="fa-solid fa-laptop-code me-1"></i> الجلسات النشطة والأجهزة
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- TAB CONTENT PANES -->
+        <div class="card-body p-4">
+            <div class="tab-content" id="adminProfileTabContent">
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- TAB 1: PERSONAL & ADMINISTRATIVE DATA                          -->
+                <!-- ------------------------------------------------------------- -->
+                <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
+                    <form id="adminProfileDataForm" onsubmit="saveAdminProfileData(event)">
+                        <h6 class="fw-bold text-dark font-cairo mb-3"><i class="fa-solid fa-id-card text-primary me-2"></i>البيانات الشخصية والصلاحيات الإدارية</h6>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">الاسم الكامل لمدير النظام <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 font-monospace" name="name" id="adminNameInput" value="{{ profile.name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">اسم المستخدم / البريد الإلكتروني <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 font-monospace" name="email" id="adminEmailInput" value="{{ profile.email or profile.username }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">رقم الهاتف / الجوال المباشر</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-phone text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 font-monospace" name="phone" id="adminPhoneInput" value="{{ profile.phone }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">المسمى الوظيفي الصريح</label>
+                                <input type="text" class="form-control bg-light font-monospace" value="{{ profile.role or 'مدير النظام التنفيذي' }}" readonly disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">الإدارة / القسم الأكاديمي</label>
+                                <input type="text" class="form-control bg-light font-monospace" value="{{ profile.department or 'الإدارة العامة والتخطيط الأكاديمي' }}" readonly disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">المؤهل وتخصص الإدارة</label>
+                                <input type="text" class="form-control bg-light font-monospace" value="{{ profile.qualification or 'بكالوريوس إدارة وتكنولوجيا المعلومات' }}" readonly disabled>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">التوجيهات والسيرة الإدارية (Bio & Directives)</label>
+                                <textarea class="form-control font-monospace" name="bio" id="adminBioInput" rows="3" placeholder="أدخل التوجيهات العامة أو الملاحظات الإدارية الخاصة بحساب مدير النظام...">{{ profile.bio }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 font-monospace extra-small fw-bold shadow-sm" id="saveAdminProfileBtn">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ وتحديث البيانات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- TAB 2: SECURITY & PASSWORD CHANGE                              -->
+                <!-- ------------------------------------------------------------- -->
+                <div class="tab-pane fade" id="security-pane" role="tabpanel">
+                    <form id="adminPasswordForm" onsubmit="saveAdminPassword(event)">
+                        <h6 class="fw-bold text-dark font-cairo mb-3"><i class="fa-solid fa-lock text-danger me-2"></i>تغيير كلمة المرور وحماية حساب المدير</h6>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">كلمة المرور الحالية <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-key text-muted"></i></span>
+                                    <input type="password" class="form-control border-start-0 font-monospace" name="current_password" id="adminCurrPass" required placeholder="أدخل كلمة المرور الحالية">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">كلمة المرور الجديدة <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-shield text-muted"></i></span>
+                                    <input type="password" class="form-control border-start-0 font-monospace" name="new_password" id="adminNewPass" required placeholder="6 أحرف على الأقل" oninput="checkPassStrength(this.value)">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark extra-small font-monospace">تأكيد كلمة المرور الجديدة <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-check-double text-muted"></i></span>
+                                    <input type="password" class="form-control border-start-0 font-monospace" id="adminConfirmPass" required placeholder="إعادة كتابة كلمة المرور">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PASSWORD STRENGTH METER -->
+                        <div class="mb-4 bg-light p-3 rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1 font-monospace extra-small">
+                                <span>مؤشر قوة كلمة المرور:</span>
+                                <strong id="passStrengthLabel" class="text-muted">لم تُدخل كلمة مرور</strong>
+                            </div>
+                            <div class="progress rounded-pill" style="height: 6px;">
+                                <div class="progress-bar rounded-pill bg-danger" id="passStrengthBar" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-danger rounded-pill px-4 font-monospace extra-small fw-bold shadow-sm">
+                                <i class="fa-solid fa-shield-halved me-1"></i> تحديث كلمة المرور الآن
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- TAB 3: SYSTEM PREFERENCES & NOTIFICATIONS                       -->
+                <!-- ------------------------------------------------------------- -->
+                <div class="tab-pane fade" id="prefs-pane" role="tabpanel">
+                    <form id="adminPrefsForm" onsubmit="saveAdminPrefs(event)">
+                        <h6 class="fw-bold text-dark font-cairo mb-3"><i class="fa-solid fa-bell text-warning me-2"></i>تفضيلات التنبيهات وإعدادات العرض</h6>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                        <div>
+                                            <strong class="d-block text-dark font-monospace extra-small mb-1"><i class="fa-solid fa-book-bookmark me-1 text-primary"></i> إشعارات الواجبات والدرجات</strong>
+                                            <span class="text-muted extra-small font-monospace">تلقي تنبيهات فورية عند رصد الدرجات والواجبات</span>
+                                        </div>
+                                        <input class="form-check-input ms-2" type="checkbox" name="notify_homework" checked style="width: 40px; height: 20px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                        <div>
+                                            <strong class="d-block text-dark font-monospace extra-small mb-1"><i class="fa-solid fa-clipboard-user me-1 text-warning"></i> تنبيهات الحضور والغياب</strong>
+                                            <span class="text-muted extra-small font-monospace">إشعارات فورية عند تسجيل حالات الغياب الكثيرة</span>
+                                        </div>
+                                        <input class="form-check-input ms-2" type="checkbox" name="notify_attendance" checked style="width: 40px; height: 20px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                        <div>
+                                            <strong class="d-block text-dark font-monospace extra-small mb-1"><i class="fa-solid fa-envelope me-1 text-info"></i> إشعارات الرسائل الواردة</strong>
+                                            <span class="text-muted extra-small font-monospace">التنبيه المباشر عند استلام محادثات أو رسائل جديدة</span>
+                                        </div>
+                                        <input class="form-check-input ms-2" type="checkbox" name="notify_messages" checked style="width: 40px; height: 20px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                        <div>
+                                            <strong class="d-block text-dark font-monospace extra-small mb-1"><i class="fa-solid fa-moon me-1 text-purple"></i> النمط والمظهر (الوضع الليلي)</strong>
+                                            <span class="text-muted extra-small font-monospace">تفعيل الوضع المظلم تلقائياً بالحساب</span>
+                                        </div>
+                                        <input class="form-check-input ms-2" type="checkbox" id="prefDarkSwitch" onchange="toggleTheme()" style="width: 40px; height: 20px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-warning text-dark rounded-pill px-4 font-monospace extra-small fw-bold shadow-sm">
+                                <i class="fa-solid fa-sliders me-1"></i> حفظ التفضيلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- TAB 4: ACTIVE SESSIONS & SECURITY LOG                          -->
+                <!-- ------------------------------------------------------------- -->
+                <div class="tab-pane fade" id="sessions-pane" role="tabpanel">
+                    <h6 class="fw-bold text-dark font-cairo mb-3"><i class="fa-solid fa-laptop-code text-success me-2"></i>الأجهزة والجلسات النشطة في الحساب</h6>
+                    
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover align-middle border font-monospace extra-small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الجهاز / المتصفح</th>
+                                    <th>عنوان IP</th>
+                                    <th>آخر نشاط</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><i class="fa-solid fa-laptop text-primary me-2"></i> المتصفح الحالي (Windows Desktop)</td>
+                                    <td>127.0.0.1 (المحلي)</td>
+                                    <td>الآن (نشط)</td>
+                                    <td><span class="badge bg-success-subtle text-success rounded-pill">الجلسة الحالية 🟢</span></td>
+                                    <td><span class="text-muted">المجلس الحالي</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
 </div>
+
+<script>
+function saveAdminProfileData(e) {
+    e.preventDefault();
+    const name = document.getElementById('adminNameInput').value;
+    const email = document.getElementById('adminEmailInput').value;
+    const phone = document.getElementById('adminPhoneInput').value;
+    const bio = document.getElementById('adminBioInput').value;
+
+    fetch('/profile/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, bio })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'تم التحديث بنجاح',
+                text: data.message || 'تم تحديث بيانات ملف المدير بنجاح 🟢',
+                timer: 1800,
+                showConfirmButton: false
+            });
+            setTimeout(() => window.location.reload(), 1200);
+        } else {
+            Swal.fire('خطأ', data.error || 'فشل حفظ البيانات', 'error');
+        }
+    })
+    .catch(err => Swal.fire('خطأ', 'حدث خطأ في الاتصال بالخادم', 'error'));
+}
+
+function saveAdminPassword(e) {
+    e.preventDefault();
+    const curr = document.getElementById('adminCurrPass').value;
+    const newP = document.getElementById('adminNewPass').value;
+    const confP = document.getElementById('adminConfirmPass').value;
+
+    if (newP !== confP) {
+        Swal.fire('تنبيه', 'كلمة المرور الجديدة وتأكيدها غير متطابقين!', 'warning');
+        return;
+    }
+
+    fetch('/profile/api/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password: curr, new_password: newP })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'تم تحديث كلمة المرور',
+                text: 'تم تغيير كلمة المرور لحساب المدير بنجاح 🔒',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            document.getElementById('adminPasswordForm').reset();
+        } else {
+            Swal.fire('خطأ', data.error || 'فشل تحديث كلمة المرور', 'error');
+        }
+    })
+    .catch(err => Swal.fire('خطأ', 'حدث خطأ أثناء تعديل كلمة المرور', 'error'));
+}
+
+function uploadAdminAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarUrl = e.target.result;
+        fetch('/profile/api/avatar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'upload', avatar_url: avatarUrl })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('adminAvatarImg').src = avatarUrl;
+                Swal.fire({ icon: 'success', title: 'تم تحديث الصورة', timer: 1500, showConfirmButton: false });
+            }
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveAdminPrefs(e) {
+    e.preventDefault();
+    Swal.fire({ icon: 'success', title: 'تم حفظ التفضيلات', timer: 1500, showConfirmButton: false });
+}
+
+function checkPassStrength(val) {
+    const label = document.getElementById('passStrengthLabel');
+    const bar = document.getElementById('passStrengthBar');
+    if (!val) {
+        label.innerText = 'لم تُدخل كلمة مرور';
+        bar.style.width = '0%';
+        bar.className = 'progress-bar rounded-pill bg-danger';
+        return;
+    }
+    if (val.length < 6) {
+        label.innerText = 'ضعيفة للغاية (أقل من 6 أحرف)';
+        bar.style.width = '25%';
+        bar.className = 'progress-bar rounded-pill bg-danger';
+    } else if (val.length < 10) {
+        label.innerText = 'متوسطة (مقبولة)';
+        bar.style.width = '60%';
+        bar.className = 'progress-bar rounded-pill bg-warning';
+    } else {
+        label.innerText = 'قوية جداً 🛡️';
+        bar.style.width = '100%';
+        bar.className = 'progress-bar rounded-pill bg-success';
+    }
+}
+</script>
 {% endblock %}

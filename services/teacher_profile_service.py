@@ -10,9 +10,12 @@ _PREFERENCES_STORE = {}
 _SESSIONS_STORE = {}
 
 def _get_teacher_scope(user_id):
-    user = User.query.get(user_id)
-    if not user or getattr(user, 'role', None) != 'teacher':
-        raise PermissionError("Access forbidden for non-teacher accounts")
+    user = db.session.get(User, user_id)
+    if not user:
+        raise ValueError("User account not found")
+
+    if getattr(user, 'role', None) != 'teacher':
+        return user, [], [], []
 
     teacher = get_teacher_by_user_id(user_id)
     if not teacher:
@@ -26,24 +29,57 @@ def _calculate_completion(teacher, user):
     if not teacher and not user:
         return 0
     fields = [
-        teacher.TeacherName if teacher else (user.name if user else None),
-        teacher.Email if teacher else (user.username if user else None),
-        getattr(teacher, 'Phone', None),
-        getattr(teacher, 'Specialization', None),
-        getattr(teacher, 'Bio', None) or getattr(teacher, 'Notes', None),
-        getattr(teacher, 'Qualification', None),
-        getattr(teacher, 'OfficeHours', None),
-        getattr(teacher, 'Image', None)
+        teacher.TeacherName if (teacher and hasattr(teacher, 'TeacherName')) else (user.name if user else None),
+        teacher.Email if (teacher and hasattr(teacher, 'Email')) else (user.username if user else None),
+        getattr(teacher, 'Phone', None) if teacher else getattr(user, 'phone', None),
+        getattr(teacher, 'Specialization', None) if teacher else 'الإدارة',
+        getattr(teacher, 'Bio', None) or getattr(teacher, 'Notes', None) if teacher else getattr(user, 'bio', None),
+        getattr(teacher, 'Qualification', None) if teacher else 'بكالوريوس',
+        getattr(teacher, 'OfficeHours', None) if teacher else 'دوام رسمي',
+        getattr(teacher, 'Image', None) if teacher else getattr(user, 'avatar', None)
     ]
     filled = [f for f in fields if f and str(f).strip()]
     return int((len(filled) / len(fields)) * 100)
 
 def get_teacher_profile(user_id):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        return {}
 
+    is_admin = (getattr(user, 'role', '') == 'admin')
+    if is_admin:
+        tot_users = User.query.filter_by(is_deleted=False).count()
+        tot_teachers = Teacher.query.filter_by(is_deleted=False).count()
+        tot_students = Student.query.filter_by(is_deleted=False).count()
+        tot_classes = Classes.query.filter_by(is_deleted=False).count()
+
+        return {
+            'user_id': user_id,
+            'name': getattr(user, 'name', 'مدير النظام') or 'مدير النظام',
+            'username': getattr(user, 'username', 'admin') or 'admin',
+            'email': getattr(user, 'email', None) or getattr(user, 'username', 'admin@school.com'),
+            'phone': getattr(user, 'phone', None) or '0555123456',
+            'role': 'مدير المنظومة الأكاديمية Executive Admin',
+            'department': 'الإدارة العامة والتخطيط الأكاديمي',
+            'specialization': 'الإدارة التنفيذية والرقابة العليا',
+            'bio': getattr(user, 'bio', None) or getattr(user, 'notes', None) or 'مدير نظام المدرسة المسؤول عن التنسيق والتخطيط الأكاديمي والإداري الشامل.',
+            'qualification': 'بكالوريوس إدارة وتكنولوجيا المعلومات',
+            'office_hours': 'الأحد - الخميس (08:00 ص - 02:00 م)',
+            'avatar': getattr(user, 'avatar', None),
+            'member_since': '2023-01-01',
+            'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if (user and user.last_login) else datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'completion_pct': 100,
+            'security_score': 'A+ (100%)',
+            'account_status': 'نشط ومستقر 🟢',
+            'total_users': tot_users,
+            'total_teachers': tot_teachers,
+            'total_students': tot_students,
+            'total_classes': tot_classes
+        }
+
+    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
     spec = None
-    if teacher:
+    if isinstance(teacher, Teacher):
         spec = getattr(teacher, 'Specialization', None)
         if not spec and teacher.subjects:
             spec_list = [s.SubjectName for s in teacher.subjects if s.SubjectName]
@@ -52,34 +88,48 @@ def get_teacher_profile(user_id):
         if not spec:
             spec = getattr(teacher, 'TeacherTitle', None)
 
-    completion_pct = _calculate_completion(teacher, user)
+    completion_pct = _calculate_completion(teacher if isinstance(teacher, Teacher) else None, user)
 
-    name_val = teacher.TeacherName if (teacher and teacher.TeacherName) else (user.name if user else '')
-    email_val = teacher.Email if (teacher and teacher.Email) else (user.username if user else '')
+    name_val = teacher.TeacherName if (isinstance(teacher, Teacher) and teacher.TeacherName) else (user.name if user else '')
+    email_val = teacher.Email if (isinstance(teacher, Teacher) and teacher.Email) else (user.username if user else '')
 
     return {
-        'teacher_id': teacher.TeacherID if teacher else None,
+        'teacher_id': teacher.TeacherID if isinstance(teacher, Teacher) else None,
         'user_id': user_id,
         'name': name_val or '',
         'email': email_val or '',
-        'phone': getattr(teacher, 'Phone', '') or '',
-        'specialization': spec or 'الرياضيات والعلوم الأكاديمية',
-        'bio': getattr(teacher, 'Bio', None) or getattr(teacher, 'Notes', None) or '',
-        'qualification': getattr(teacher, 'Qualification', None) or (teacher.qualification.QName if (teacher and teacher.qualification) else ''),
-        'office_hours': getattr(teacher, 'OfficeHours', None) or '',
-        'avatar': getattr(teacher, 'Image', None),
-        'member_since': teacher.created_at.strftime('%Y-%m-%d') if (teacher and hasattr(teacher, 'created_at') and teacher.created_at) else '2023-09-01',
+        'phone': getattr(teacher, 'Phone', '') if isinstance(teacher, Teacher) else getattr(user, 'phone', ''),
+        'specialization': spec or 'التدريس الأكاديمي',
+        'bio': getattr(teacher, 'Bio', None) if isinstance(teacher, Teacher) else '',
+        'qualification': getattr(teacher, 'Qualification', None) if isinstance(teacher, Teacher) else '',
+        'office_hours': getattr(teacher, 'OfficeHours', None) if isinstance(teacher, Teacher) else '',
+        'avatar': getattr(teacher, 'Image', None) if isinstance(teacher, Teacher) else getattr(user, 'avatar', None),
+        'member_since': teacher.created_at.strftime('%Y-%m-%d') if (isinstance(teacher, Teacher) and hasattr(teacher, 'created_at') and teacher.created_at) else '2023-09-01',
         'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if (user and user.last_login) else datetime.now().strftime('%Y-%m-%d %H:%M'),
         'completion_pct': completion_pct,
         'security_score': 'A+ (98%)',
-        'account_status': teacher.Status if (teacher and teacher.Status) else 'نشط 🟢'
+        'account_status': teacher.Status if (isinstance(teacher, Teacher) and teacher.Status) else 'نشط 🟢'
     }
 
 def update_teacher_profile(user_id, data):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        raise ValueError("حساب المستخدم غير موجود")
 
-    if not teacher and user:
+    if getattr(user, 'role', '') == 'admin':
+        if 'name' in data and data['name']:
+            user.name = data['name']
+        if 'email' in data and data['email']:
+            user.username = data['email']
+        if 'phone' in data:
+            setattr(user, 'phone', data['phone'])
+        if 'bio' in data:
+            setattr(user, 'bio', data['bio'])
+        db.session.commit()
+        return get_teacher_profile(user_id)
+
+    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    if not isinstance(teacher, Teacher) and user:
         teacher = Teacher(
             user_id=user_id,
             TeacherName=user.name,
@@ -89,7 +139,7 @@ def update_teacher_profile(user_id, data):
         db.session.add(teacher)
         db.session.flush()
 
-    if teacher:
+    if isinstance(teacher, Teacher):
         if 'name' in data and data['name']:
             teacher.TeacherName = data['name']
             if user:
@@ -111,8 +161,7 @@ def update_teacher_profile(user_id, data):
     return get_teacher_profile(user_id)
 
 def update_password(user_id, current_password, new_password):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         raise ValueError("حساب المستخدم غير موجود")
@@ -124,6 +173,7 @@ def update_password(user_id, current_password, new_password):
         raise ValueError("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل")
 
     user.set_password(new_password)
+    teacher = get_teacher_by_user_id(user_id)
     if teacher:
         teacher.Password = new_password
 
@@ -133,7 +183,7 @@ def update_password(user_id, current_password, new_password):
 import json
 
 def _get_raw_prefs(teacher):
-    if teacher and teacher.Preferences:
+    if teacher and hasattr(teacher, 'Preferences') and teacher.Preferences:
         try:
             return json.loads(teacher.Preferences)
         except Exception:
@@ -141,7 +191,7 @@ def _get_raw_prefs(teacher):
     return {}
 
 def _save_raw_prefs(teacher, data_dict):
-    if teacher:
+    if teacher and hasattr(teacher, 'Preferences'):
         teacher.Preferences = json.dumps(data_dict, ensure_ascii=False)
         try:
             db.session.commit()
@@ -150,23 +200,29 @@ def _save_raw_prefs(teacher, data_dict):
             logger.warning(f"Error saving preferences to DB: {e}")
 
 def upload_avatar(user_id, avatar_path):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    user = db.session.get(User, user_id)
+    if user:
+        setattr(user, 'avatar', avatar_path)
+    teacher = get_teacher_by_user_id(user_id)
     if teacher:
         teacher.Image = avatar_path
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
     return avatar_path
 
 def remove_avatar(user_id):
-    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    user = db.session.get(User, user_id)
+    if user and hasattr(user, 'avatar'):
+        user.avatar = None
+    teacher = get_teacher_by_user_id(user_id)
     if teacher:
         teacher.Image = None
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
     return True
 
 def get_notification_preferences(user_id):

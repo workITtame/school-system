@@ -42,20 +42,18 @@ def index():
     sections = Sections.query.filter_by(is_deleted=False).all()
 
     if user_role != 'teacher':
-        profile = {
-            'name': getattr(current_user, 'name', 'مدير النظام'),
-            'email': getattr(current_user, 'username', 'admin'),
-            'role': 'مدير النظام',
-            'phone': '770000000',
-            'address': 'الإدارة العامة'
-        }
+        profile = get_teacher_profile(user_id)
+        notif_prefs = get_notification_preferences(user_id)
+        dash_prefs = get_dashboard_preferences(user_id)
+        sessions = get_active_sessions(user_id)
+        history = get_login_history(user_id)
         return render_template(
             'profile.html',
             profile=profile,
-            notif_prefs={},
-            dash_prefs={},
-            sessions=[],
-            login_history=[],
+            notif_prefs=notif_prefs,
+            dash_prefs=dash_prefs,
+            sessions=sessions,
+            login_history=history,
             subjects=subjects,
             classes=classes,
             sections=sections,
