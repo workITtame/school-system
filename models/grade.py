@@ -64,7 +64,7 @@ class HomeworkMarks(db.Model, AuditMixin):
     HomeworkID = db.Column(db.Integer, db.ForeignKey('homework.id'), index=True, nullable=False)
     TeacherID = db.Column(db.Integer, db.ForeignKey('Teacher.TeacherID'), nullable=True)
     Score = db.Column(db.Numeric(5, 2), nullable=True)
-    MaxScore = db.Column(db.Numeric(5, 2), default=100)
+    MaxScore = db.Column(db.Numeric(5, 2), default=10)
     Percentage = db.Column(db.Numeric(5, 2), nullable=True)
     Grade = db.Column(db.String(5), nullable=True)
     T_ID = db.Column(db.Integer, db.ForeignKey('Terms.T_ID'), nullable=True)

@@ -687,6 +687,19 @@ def get_admin_dashboard_data():
             'url': url_for('dashboard.settings')
         })
 
+    from services.teacher_students_service import get_teacher_student_stats
+    admin_st_stats = get_teacher_student_stats(uid)
+    admin_needing_attention_cnt = admin_st_stats.get('needing_attention_count', 0) if admin_st_stats else 0
+    if admin_needing_attention_cnt > 0:
+        smart_attention_items.append({
+            'icon': 'fa-user-clock',
+            'title': 'طلاب يحتاجون متابعة أكاديمية',
+            'count': admin_needing_attention_cnt,
+            'priority': 'عالية',
+            'color': 'warning',
+            'url': url_for('students.index')
+        })
+
     last_updated_time = datetime.now().strftime('%H:%M:%S')
 
     return {

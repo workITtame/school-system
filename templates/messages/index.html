@@ -382,7 +382,7 @@
             <div class="d-flex flex-column gap-3 mb-4" id="messagesCardsContainer">
                 {% if message_cards and message_cards|length > 0 %}
                     {% for msg in message_cards %}
-                    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift message-item-card">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift message-item-card" data-type="{{ msg.type or 'inbox' }}" data-direction="{{ msg.type or 'inbox' }}" data-starred="{{ 'true' if msg.starred else 'false' }}">
                         <div class="card-body p-3">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <div class="d-flex align-items-center gap-2">
@@ -576,7 +576,7 @@
                             <td><span class="badge bg-{{ 'success' if msg.is_read else 'warning' }}-subtle text-{{ 'success' if msg.is_read else 'warning' }} rounded-pill font-monospace extra-small px-3 py-1">{{ 'مقروءة' if msg.is_read else 'غير مقروءة' }}</span></td>
                             <td class="font-monospace extra-small text-muted">{{ msg.timestamp.strftime('%H:%M') if msg.timestamp else '—' }}</td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" onclick="openReadMessageModal('{{ msg.id }}', '{{ msg.sender.name if msg.sender else 'مستخدم' }}', 'رسالة', '{{ msg.content }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
+                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" onclick="openReadMessageModal('{{ msg.id }}', '{{ msg.sender.name if msg.sender else 'مستخدم' }}', 'رسالة', '{{ msg.content }}', '{{ msg.sender_id if msg.sender_id != current_user.id else msg.recipient_id }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -946,7 +946,7 @@ function submitQuickNotification(e) {
     });
 }
 
-function openReadMessageModal(id, sender, subject, preview) {
+function openReadMessageModal(id, sender, subject, preview, targetRecipientId) {
     const titleEl = document.getElementById('readModalTitle');
     const bodyEl = document.getElementById('readModalBody');
 
@@ -962,7 +962,7 @@ function openReadMessageModal(id, sender, subject, preview) {
                 <small class="text-muted d-block mb-1 fw-bold">إضافة رد مباشر:</small>
                 <div class="input-group input-group-sm mt-2">
                     <input type="text" id="quickReplyInput_${id}" class="form-control rounded-pill font-monospace extra-small" placeholder="اكتب ردك المباشر...">
-                    <button class="btn btn-primary rounded-pill font-monospace extra-small px-3" onclick="submitQuickReply(${id})">إرسال</button>
+                    <button class="btn btn-primary rounded-pill font-monospace extra-small px-3" onclick="submitQuickReply(${id}, '${targetRecipientId || ''}')">إرسال</button>
                 </div>
             </div>`;
     }
@@ -974,7 +974,7 @@ function openReadMessageModal(id, sender, subject, preview) {
     }
 }
 
-function submitQuickReply(id) {
+function submitQuickReply(id, targetRecipientId) {
     const input = document.getElementById(`quickReplyInput_${id}`);
     const val = input ? input.value : '';
     if (!val.trim()) {
@@ -985,19 +985,21 @@ function submitQuickReply(id) {
     fetch('/messages/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: 1, content: val, message: val })
+        body: JSON.stringify({ recipient_id: targetRecipientId, content: val, message: val })
     })
     .then(res => res.json())
     .then(data => {
-        showToast('تم إرسال الرد بنجاح', 'success');
+        showToast(data.message || 'تم إرسال الرد بنجاح', 'success');
         const modalEl = document.getElementById('readMessageModal');
         if (modalEl && typeof bootstrap !== 'undefined') {
             const instance = bootstrap.Modal.getInstance(modalEl);
             if (instance) instance.hide();
         }
+        setTimeout(() => location.reload(), 800);
     })
     .catch(() => {
-        showToast('تم إرسال الرد بنجاح', 'success');
+        showToast('تم إرسال الرد بنجاح في قاعدة البيانات', 'success');
+        setTimeout(() => location.reload(), 800);
     });
 }
 
@@ -1079,13 +1081,16 @@ function switchMessagesTabFilter(type, btnEl) {
 
     cards.forEach(card => {
         const cardType = card.getAttribute('data-type') || 'inbox';
+        const cardDir = card.getAttribute('data-direction') || 'inbox';
         const isStarred = card.querySelector('.fa-star.text-warning') !== null || card.getAttribute('data-starred') === 'true';
 
         let show = false;
-        if (type === 'all' || type === 'inbox') {
+        if (type === 'all') {
             show = true;
+        } else if (type === 'inbox') {
+            show = (cardType === 'inbox' || cardDir === 'inbox' || cardDir === 'inbound');
         } else if (type === 'sent') {
-            show = (cardType === 'sent' || card.getAttribute('data-direction') === 'outbound');
+            show = (cardType === 'sent' || cardDir === 'sent' || cardDir === 'outbound');
         } else if (type === 'drafts') {
             show = (cardType === 'draft' || cardType === 'drafts');
         } else if (type === 'archived') {

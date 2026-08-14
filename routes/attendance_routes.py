@@ -9,7 +9,7 @@ from services.teacher_attendance_service import get_lesson_attendance, save_less
 
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 
-def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_date=None):
+def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_date=None, subject_id=None):
     today = target_date if target_date else date.today()
     now_time_str = datetime.now().strftime('%H:%M')
     arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
@@ -20,7 +20,8 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     if not teacher:
         teacher_name = 'مدير النظام'
         teacher_title = 'إدارة النظام'
-        sub_names = []
+        teacher_subjects = Subject.query.filter_by(is_deleted=False).all()
+        sub_names = [s.SubName for s in teacher_subjects]
         slots = SchoolTable.query.options(
             joinedload(SchoolTable.subject),
             joinedload(SchoolTable.school_class),
@@ -31,7 +32,6 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     else:
         teacher_name = teacher.TeacherName
         teacher_title = teacher.TeacherTitle or 'معلم أكاديمي'
-        sub_names = [s.SubName for s in teacher.subjects] if teacher.subjects else []
         slots = SchoolTable.query.options(
             joinedload(SchoolTable.subject),
             joinedload(SchoolTable.school_class),
@@ -39,6 +39,17 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
             joinedload(SchoolTable.day),
             joinedload(SchoolTable.lesson)
         ).filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+
+        slot_subs = [s.subject for s in slots if s.subject and not s.subject.is_deleted]
+        t_subs = list(teacher.subjects) if teacher.subjects else []
+        all_subs_map = {}
+        for sub in (t_subs + slot_subs):
+            if sub and sub.SubID not in all_subs_map and not getattr(sub, 'is_deleted', False):
+                all_subs_map[sub.SubID] = sub
+        teacher_subjects = list(all_subs_map.values()) if all_subs_map else Subject.query.filter_by(is_deleted=False).all()
+        sub_names = [s.SubName for s in teacher_subjects]
+
+    today_display = f"{today_day_name} {today.strftime('%Y-%m-%d')}"
 
     subjects_str = " | ".join(sub_names) if sub_names else 'المواد الدراسية'
     teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
@@ -75,8 +86,25 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     if not current_slot and today_slots_sorted:
         current_slot = today_slots_sorted[0]
 
-    if current_slot:
+    selected_subid = None
+    selected_sub_name = None
+    if subject_id is not None and str(subject_id).strip() != '':
+        try:
+            selected_subid = int(subject_id)
+            sub_obj = Subject.query.get(selected_subid)
+            if sub_obj:
+                selected_sub_name = sub_obj.SubName
+        except (ValueError, TypeError):
+            selected_subid = None
+
+    if selected_sub_name:
+        cur_sub = selected_sub_name
+    elif current_slot:
         cur_sub = current_slot.subject.SubName if current_slot.subject else (sub_names[0] if sub_names else 'المادة الدراسية')
+    else:
+        cur_sub = sub_names[0] if sub_names else 'المادة الدراسية'
+
+    if current_slot:
         cur_cls = current_slot.school_class.CName if current_slot.school_class else 'الصف الأول'
         cur_sec = current_slot.section.SectionName if current_slot.section else 'شعبة أ'
         cur_st_time = current_slot.lesson.StartTime if (current_slot.lesson and current_slot.lesson.StartTime) else 'غير محدد'
@@ -84,7 +112,6 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         selected_cid = current_slot.CID
         selected_secid = current_slot.SectionID
     else:
-        cur_sub = sub_names[0] if sub_names else 'المادة الدراسية'
         cur_st_time = 'غير محدد'
         cur_en_time = 'غير محدد'
         selected_cid = teacher_class_ids[0] if teacher_class_ids else None
@@ -138,11 +165,19 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         query = query.filter_by(SectionID=selected_secid)
 
     students = query.all()
-
     student_ids = [s.SID for s in students]
-    att_records = Attendance.query.filter(Attendance.SID.in_(student_ids), Attendance.Date == today).all() if student_ids else []
-    att_rec_map = {a.SID: a for a in att_records}
-    att_dict = {a.SID: a.Status for a in att_records}
+
+    att_records = Attendance.query.filter(
+        Attendance.SID.in_(student_ids), Attendance.Date == today
+    ).order_by(
+        Attendance.updated_at.desc(), Attendance.created_at.desc(), Attendance.AttendanceID.desc()
+    ).all() if student_ids else []
+
+    att_rec_map = {}
+    for a in att_records:
+        if a.SID not in att_rec_map:
+            att_rec_map[a.SID] = a
+    att_dict = {sid: a.Status for sid, a in att_rec_map.items()}
 
     present_c = sum(1 for status in att_dict.values() if status in ['Present', 'حاضر'])
     absent_c = sum(1 for status in att_dict.values() if status in ['Absent', 'غائب'])
@@ -193,10 +228,14 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         sec_n = st.section.SectionName if st.section else cur_sec
 
         rec_time = '—'
-        if rec and getattr(rec, 'created_at', None):
-            h = rec.created_at.strftime('%I:%M').lstrip('0')
-            am_pm = 'ص' if rec.created_at.strftime('%p') == 'AM' else 'م'
-            rec_time = f"{h}:{rec.created_at.strftime('%M')} {am_pm}"
+        rec_dt = getattr(rec, 'updated_at', None) or getattr(rec, 'created_at', None) if rec else None
+        if rec and rec_dt:
+            h = rec_dt.strftime('%I').lstrip('0')
+            if not h: h = '12'
+            m = rec_dt.strftime('%M')
+            s = rec_dt.strftime('%S')
+            am_pm = 'ص' if rec_dt.strftime('%p') == 'AM' else 'م'
+            rec_time = f"{h}:{m}:{s} {am_pm}"
 
         attendance_cards.append({
             'SID': st.SID,
@@ -204,6 +243,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
             'student_code': f"#{st.SID}",
             'class_name': cls_n,
             'section_name': sec_n,
+            'subject_name': cur_sub,
             'status': st_status_clean,
             'status_color': st_status_color,
             'time_recorded': rec_time
@@ -293,7 +333,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     }
 
     current_lesson_info = {
-        'subject': cur_sub if current_slot else (sub_names[0] if sub_names else 'المادة الدراسية'),
+        'subject': cur_sub,
         'time': f"{cur_st_time} - {cur_en_time}" if current_slot else 'غير محدد',
         'class_name': cur_cls if cur_cls else 'جميع الصفوف',
         'section_name': cur_sec if cur_sec else 'جميع الشعب',
@@ -319,7 +359,11 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'most_absent': most_absent,
         'alerts': alerts,
         'selected_cid': selected_cid,
-        'selected_secid': selected_secid
+        'selected_secid': selected_secid,
+        'selected_subid': selected_subid,
+        'teacher_subjects': teacher_subjects,
+        'today_day_name': today_day_name,
+        'today_display': today_display
     }
 
 @attendance_bp.route('/api/lesson/<int:slot_id>')
@@ -354,6 +398,9 @@ def index():
     if hasattr(current_user, 'role') and current_user.role == 'teacher':
         teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         date_str = request.args.get('date')
+        class_id = request.args.get('class_id')
+        section_id = request.args.get('section_id')
+        subject_id = request.args.get('subject_id')
 
         target_date = date.today()
         if date_str:
@@ -378,9 +425,6 @@ def index():
 
         classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
         sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
-        
-        class_id = request.args.get('class_id')
-        section_id = request.args.get('section_id')
 
         if class_id and teacher_class_ids:
             try:
@@ -389,7 +433,7 @@ def index():
             except ValueError:
                 pass
         
-        data = get_teacher_attendance_data(current_user.id, class_id=class_id, section_id=section_id, target_date=target_date)
+        data = get_teacher_attendance_data(current_user.id, class_id=class_id, section_id=section_id, target_date=target_date, subject_id=subject_id)
 
         active_slot_id = None
         if teacher:
@@ -400,7 +444,11 @@ def index():
         return render_template('teacher/attendance.html',
                                classes=classes,
                                sections=sections,
+                               teacher_subjects=data.get('teacher_subjects', []),
+                               selected_subject_id=subject_id or '',
                                today=target_date.strftime('%Y-%m-%d'),
+                               today_day_name=data.get('today_day_name', ''),
+                               today_display=data.get('today_display', ''),
                                teacher_info=data['teacher_info'],
                                current_lesson=data['current_lesson'],
                                kpi=data['kpi'],
@@ -520,11 +568,19 @@ def mark_attendance():
     if not student:
         return jsonify({'success': False, 'message': 'الطالب غير موجود في النظام'}), 404
         
-    att = Attendance.query.filter_by(SID=sid, Date=target_date).first()
-    if att:
+    now_dt = datetime.now()
+    existing_records = Attendance.query.filter_by(SID=sid, Date=target_date).order_by(
+        Attendance.updated_at.desc(), Attendance.created_at.desc(), Attendance.AttendanceID.desc()
+    ).all()
+
+    if existing_records:
+        att = existing_records[0]
         att.Status = status
+        att.updated_at = now_dt
+        for dup in existing_records[1:]:
+            db.session.delete(dup)
     else:
-        att = Attendance(SID=sid, Date=target_date, Status=status)
+        att = Attendance(SID=sid, Date=target_date, Status=status, created_at=now_dt, updated_at=now_dt)
         db.session.add(att)
         
     try:
@@ -536,21 +592,117 @@ def mark_attendance():
 
 @attendance_bp.route('/export')
 def export_attendance():
-    if 'user_id' not in session:
+    if 'user_id' not in session and not getattr(current_user, 'is_authenticated', False):
         return redirect(url_for('auth.login'))
         
     class_id = request.args.get('class_id')
     section_id = request.args.get('section_id')
-    target_date = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    subject_id = request.args.get('subject_id')
+    target_date = request.args.get('date') or date.today().strftime('%Y-%m-%d')
+    export_type = request.args.get('type')
+    status_filter = request.args.get('status')
+    only_recorded = request.args.get('only_recorded', type=int)
+    sids_param = request.args.get('sids')
+
+    user_id = session.get('user_id', current_user.id if getattr(current_user, 'is_authenticated', False) else 1)
+    teacher = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(user_id=user_id).first()
     
-    query = Student.query.filter_by(Status='نشط')
-    if class_id:
-        query = query.filter_by(CID=class_id)
-    if section_id:
-        query = query.filter_by(SectionID=section_id)
-        
-    students = query.all()
+    teacher_class_ids = set()
+    teacher_section_ids = set()
+    teacher_sub_name = None
+
+    if teacher:
+        slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+        for s in slots:
+            if s.CID: teacher_class_ids.add(s.CID)
+            if s.SectionID: teacher_section_ids.add(s.SectionID)
+        if teacher.subjects:
+            teacher_sub_name = teacher.subjects[0].SubName
+
+    if not teacher_class_ids and teacher:
+        assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
+        for st in assigned_students:
+            if st.CID: teacher_class_ids.add(st.CID)
+            if st.SectionID: teacher_section_ids.add(st.SectionID)
+
+    sub_name = 'جميع المواد'
+    if subject_id and subject_id.isdigit():
+        try:
+            sub_obj = Subject.query.get(int(subject_id))
+            if sub_obj: sub_name = sub_obj.SubName
+        except (ValueError, TypeError):
+            pass
+    elif teacher_sub_name:
+        sub_name = teacher_sub_name
+
+    query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None))
     
+    if class_id and class_id.isdigit():
+        try:
+            query = query.filter(Student.CID == int(class_id))
+        except (ValueError, TypeError):
+            pass
+    elif teacher_class_ids:
+        query = query.filter(Student.CID.in_(list(teacher_class_ids)))
+
+    if section_id and section_id.isdigit():
+        try:
+            query = query.filter(Student.SectionID == int(section_id))
+        except (ValueError, TypeError):
+            pass
+    elif teacher_section_ids and not class_id:
+        query = query.filter(Student.SectionID.in_(list(teacher_section_ids)))
+
+    if sids_param:
+        try:
+            sid_list = [int(s) for s in sids_param.split(',') if s.strip().isdigit()]
+            if sid_list:
+                query = query.filter(Student.SID.in_(sid_list))
+        except Exception:
+            pass
+
+    students = query.order_by(Student.SID.asc()).all()
+    student_ids = [s.SID for s in students]
+
+    att_records = {}
+    if student_ids:
+        att_rows = Attendance.query.filter(Attendance.SID.in_(student_ids), Attendance.Date == target_date).all()
+        att_records = {a.SID: a.Status for a in att_rows}
+
+    # Filter export list based on requested status or recorded filter
+    export_students = []
+    for st in students:
+        st_status = att_records.get(st.SID, 'لم يسجل')
+
+        if only_recorded or status_filter in ['recorded', 'محضرين']:
+            if st_status == 'لم يسجل':
+                continue
+        elif status_filter and status_filter in ['حاضر', 'غائب', 'متأخر', 'مستأذن']:
+            if st_status != status_filter:
+                continue
+        elif status_filter in ['unrecorded', 'غير محضرين']:
+            if st_status != 'لم يسجل':
+                continue
+
+        export_students.append((st, st_status))
+
+    if export_type == 'pdf':
+        cards = []
+        for st, st_status in export_students:
+            cards.append({
+                'SID': st.SID,
+                'SName': st.SName,
+                'class_name': st.school_class.CName if st.school_class else '—',
+                'section_name': st.section.SectionName if st.section else '—',
+                'subject_name': sub_name,
+                'status': st_status
+            })
+        return render_template('teacher/attendance_pdf.html',
+                               students=cards,
+                               today=target_date,
+                               subject_name=sub_name,
+                               generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
+
     import openpyxl
     from openpyxl.styles import Font, Alignment, PatternFill
     import io
@@ -565,7 +717,7 @@ def export_attendance():
     header_font = Font(color="FFFFFF", bold=True)
     align_center = Alignment(horizontal="center", vertical="center")
     
-    headers = ["الرقم الطلابي", "اسم الطالب", "الحالة", "تاريخ الحضور"]
+    headers = ["الرقم الطلابي", "اسم الطالب", "الصف والشعبة", "المادة الدراسية", "الحالة", "تاريخ الحضور"]
     ws.append(headers)
     
     for cell in ws[1]:
@@ -573,21 +725,20 @@ def export_attendance():
         cell.font = header_font
         cell.alignment = align_center
         
-    student_ids = [s.SID for s in students]
-    att_records = {a.SID: a.Status for a in Attendance.query.filter(Attendance.SID.in_(student_ids), Attendance.Date == target_date).all()} if student_ids else {}
-    
-    for st in students:
-        st_status = att_records.get(st.SID, 'لم يسجل')
-        row = [st.SID, st.SName, st_status, target_date]
+    for st, st_status in export_students:
+        cls_sec = f"{st.school_class.CName if st.school_class else '—'} - {st.section.SectionName if st.section else '—'}"
+        row = [st.SID, st.SName, cls_sec, sub_name, st_status, str(target_date)]
         ws.append(row)
         for cell in ws[ws.max_row]:
             cell.alignment = align_center
             
-    for col in ['A', 'B', 'C', 'D']:
+    for col in ['A', 'B', 'C', 'D', 'E', 'F']:
         ws.column_dimensions[col].width = 25
         
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
     
-    return send_file(output, as_attachment=True, download_name='attendance_export.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"attendance_export_{target_date}.xlsx"
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+

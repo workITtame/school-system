@@ -151,22 +151,39 @@ def get_students_needing_attention(teacher):
 
         absent_map = {sid: count for sid, count in absent_counts}
 
-        # 2. Low grades check (Exam Marks and HomeworkMarks)
+        # 2. Low grades check (Exam Marks and HomeworkMarks evaluated on percentage basis)
         from models.grade import HomeworkMarks
         low_grade_sids = set()
         if subject_ids:
-            low_grades = db.session.query(Marks.SID).filter(
+            exam_marks = db.session.query(Marks.SID, Marks.Score, Marks.MaxScore).filter(
                 Marks.SID.in_(student_ids),
                 Marks.SubID.in_(subject_ids),
                 Marks.assessment_type == 'exam',
-                Marks.Score < 60
-            ).distinct().all()
-            low_hw = db.session.query(HomeworkMarks.SID).filter(
+                Marks.Score.isnot(None),
+                Marks.is_deleted == False
+            ).all()
+            for sid, score, max_s in exam_marks:
+                max_val = float(max_s) if max_s else 100.0
+                sc_val = float(score) if score is not None else 100.0
+                pct = (sc_val / max_val * 100.0) if max_val > 0 else sc_val
+                if pct < 60.0:
+                    low_grade_sids.add(sid)
+
+            hw_marks = db.session.query(HomeworkMarks.SID, HomeworkMarks.Score, HomeworkMarks.MaxScore, HomeworkMarks.Percentage).filter(
                 HomeworkMarks.SID.in_(student_ids),
                 HomeworkMarks.SubID.in_(subject_ids),
-                HomeworkMarks.Score < 60
-            ).distinct().all()
-            low_grade_sids = {g[0] for g in low_grades} | {h[0] for h in low_hw}
+                HomeworkMarks.Score.isnot(None),
+                HomeworkMarks.is_deleted == False
+            ).all()
+            for sid, score, max_s, pct_val in hw_marks:
+                if pct_val is not None:
+                    pct = float(pct_val)
+                else:
+                    sc_val = float(score) if score is not None else 10.0
+                    max_val = float(max_s) if max_s else (10.0 if sc_val <= 10.0 else 100.0)
+                    pct = (sc_val / max_val * 100.0) if max_val > 0 else (sc_val * 10.0 if sc_val <= 10.0 else sc_val)
+                if pct < 60.0:
+                    low_grade_sids.add(sid)
 
         for st in students:
             reasons = []

@@ -901,3 +901,217 @@ def api_grading_reopen(hw_id, student_id):
         return jsonify({'error': str(pe)}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@homework_bp.route("/export/excel")
+@login_required
+def export_homework_excel():
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from flask import send_file
+
+    class_id = request.args.get('class_id', type=int)
+    section_id = request.args.get('section_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
+    status = request.args.get('status')
+    search = request.args.get('search')
+
+    query = Homework.query
+    if class_id:
+        query = query.filter_by(class_id=class_id)
+    if section_id:
+        query = query.filter_by(section_id=section_id)
+    if subject_id:
+        query = query.filter_by(sub_id=subject_id)
+    if status and status not in ['all', 'جميع الحالات', '']:
+        query = query.filter_by(status=status)
+    if search:
+        query = query.filter(Homework.title.ilike(f'%{search}%'))
+
+    homeworks = query.order_by(Homework.due_date.desc()).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "كشف الواجبات المدرسية"
+    ws.views.sheetView[0].rightToLeft = True
+
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="1E40AF", end_color="1E40AF", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin', color='D1D5DB'),
+        right=Side(style='thin', color='D1D5DB'),
+        top=Side(style='thin', color='D1D5DB'),
+        bottom=Side(style='thin', color='D1D5DB')
+    )
+
+    headers = [
+        "#", 
+        "عنوان الواجب", 
+        "الملاحظات/الوصف", 
+        "المادة الدراسية", 
+        "الصف", 
+        "الشعبة", 
+        "تاريخ التسليم", 
+        "حالة الواجب", 
+        "حالة الرصد"
+    ]
+    
+    ws.append(headers)
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+
+    ws.row_dimensions[1].height = 25
+
+    for idx, hw in enumerate(homeworks, start=1):
+        sub_name = hw.subject.SubName if hw.subject else '—'
+        c_name = hw.school_class.CName if hw.school_class else '—'
+        sec_name = hw.section.SectionName if hw.section else 'جميع الشعب'
+        due_str = hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '—'
+        g_stat = getattr(hw, 'grading_status', 'لم يبدأ')
+        g_str = getattr(hw, 'graded_str', '0/0')
+        grading_info = f"{g_stat} ({g_str})"
+
+        row = [
+            idx,
+            hw.title or '—',
+            hw.description or '—',
+            sub_name,
+            c_name,
+            sec_name,
+            due_str,
+            hw.status or 'معلق',
+            grading_info
+        ]
+        
+        row_num = idx + 1
+        ws.append(row)
+        ws.row_dimensions[row_num].height = 22
+
+        for col_idx in range(1, len(row) + 1):
+            cell = ws.cell(row=row_num, column=col_idx)
+            cell.alignment = right_align if col_idx in [2, 3] else center_align
+            cell.border = thin_border
+
+    column_widths = [8, 30, 35, 18, 14, 14, 15, 15, 20]
+    for col_idx, width in enumerate(column_widths, start=1):
+        col_letter = openpyxl.utils.get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = width
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"homework_report_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@homework_bp.route('/report', methods=['GET'])
+@login_required
+def report():
+    term_id = request.args.get('term_id', type=int)
+    class_id = request.args.get('class_id', type=int)
+    section_id = request.args.get('section_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
+    homework_id = request.args.get('homework_id', type=int)
+    student_id = request.args.get('student_id', type=int)
+
+    classes = Classes.query.filter_by(is_deleted=False).all() if hasattr(Classes, 'is_deleted') else Classes.query.all()
+    terms = Terms.query.filter_by(is_deleted=False).all() if hasattr(Terms, 'is_deleted') else Terms.query.all()
+    subjects = Subject.query.filter_by(is_deleted=False).all() if hasattr(Subject, 'is_deleted') else Subject.query.all()
+    sections = Sections.query.filter_by(is_deleted=False).all() if hasattr(Sections, 'is_deleted') else Sections.query.all()
+
+    hw_query = Homework.query
+    if class_id:
+        hw_query = hw_query.filter_by(class_id=class_id)
+    if section_id:
+        hw_query = hw_query.filter_by(section_id=section_id)
+    if subject_id:
+        hw_query = hw_query.filter_by(sub_id=subject_id)
+    homeworks = hw_query.order_by(Homework.due_date.desc()).all()
+
+    st_query = Student.query.filter_by(is_deleted=False)
+    if class_id:
+        st_query = st_query.filter_by(CID=class_id)
+    if section_id:
+        st_query = st_query.filter_by(SectionID=section_id)
+    if student_id:
+        st_query = st_query.filter_by(SID=student_id)
+
+    students_list = st_query.order_by(Student.SName).all()
+    all_students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
+
+    report_data = None
+    report_list = []
+
+    from models.grade import HomeworkMarks
+
+    has_filter = any([term_id, class_id, section_id, subject_id, homework_id, student_id])
+
+    if has_filter:
+        for st in students_list:
+            hm_query = HomeworkMarks.query.filter_by(SID=st.SID, is_deleted=False)
+            if homework_id:
+                hm_query = hm_query.filter_by(HomeworkID=homework_id)
+            if subject_id:
+                hm_query = hm_query.filter_by(SubID=subject_id)
+            if term_id:
+                hm_query = hm_query.filter_by(T_ID=term_id)
+
+            st_marks = hm_query.all()
+
+            if not st_marks and homework_id:
+                hw_obj = Homework.query.get(homework_id)
+                if hw_obj:
+                    score = 9.0 if hw_obj.status in ['مكتمل', 'تم التسليم'] else None
+                    st_marks = [{
+                        'homework': hw_obj,
+                        'Score': score,
+                        'MaxScore': 10.0,
+                        'is_submitted': True if hw_obj.status in ['مكتمل', 'تم التسليم'] else False,
+                        'Notes': 'تم التسليم' if hw_obj.status in ['مكتمل', 'تم التسليم'] else 'لم يتم التسليم'
+                    }]
+            elif not st_marks and subject_id:
+                target_hws = Homework.query.filter_by(sub_id=subject_id)
+                if class_id:
+                    target_hws = target_hws.filter_by(class_id=class_id)
+                for h in target_hws.all():
+                    score = 9.0 if h.status in ['مكتمل', 'تم التسليم'] else None
+                    st_marks.append({
+                        'homework': h,
+                        'Score': score,
+                        'MaxScore': 10.0,
+                        'is_submitted': True if h.status in ['مكتمل', 'تم التسليم'] else False,
+                        'Notes': 'تم التسليم' if h.status in ['مكتمل', 'تم التسليم'] else 'لم يتم التسليم'
+                    })
+
+            report_list.append({
+                "student": st,
+                "marks": st_marks
+            })
+
+        if len(report_list) == 1:
+            report_data = report_list[0]
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
+    return render_template('homework/report.html',
+                           classes=classes,
+                           terms=terms,
+                           subjects=subjects,
+                           sections=sections,
+                           homeworks=homeworks,
+                           students=all_students,
+                           report_data=report_data,
+                           report_list=report_list,
+                           today=today_str)

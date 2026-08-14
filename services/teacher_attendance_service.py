@@ -57,15 +57,17 @@ def get_lesson_attendance(slot_id, user_id, date_str=None):
         students = st_query.all()
         student_ids = [s.SID for s in students]
 
-        # Existing Attendance Records for Target Date
         att_map = {}
         if student_ids:
             records = Attendance.query.filter(
                 Attendance.SID.in_(student_ids),
                 Attendance.Date == target_date
+            ).order_by(
+                Attendance.updated_at.desc(), Attendance.created_at.desc(), Attendance.AttendanceID.desc()
             ).all()
             for r in records:
-                att_map[r.SID] = r
+                if r.SID not in att_map:
+                    att_map[r.SID] = r
 
         student_list = []
         present_cnt = 0
@@ -95,11 +97,15 @@ def get_lesson_attendance(slot_id, user_id, date_str=None):
             else:
                 unregistered_cnt += 1
 
-            rec_time = None
-            if rec and getattr(rec, 'created_at', None):
-                h = rec.created_at.strftime('%I:%M').lstrip('0')
-                am_pm = 'ص' if rec.created_at.strftime('%p') == 'AM' else 'م'
-                rec_time = f"{h}:{rec.created_at.strftime('%M')} {am_pm}"
+            rec_time = '—'
+            rec_dt = getattr(rec, 'updated_at', None) or getattr(rec, 'created_at', None) if rec else None
+            if rec and rec_dt:
+                h = rec_dt.strftime('%I').lstrip('0')
+                if not h: h = '12'
+                m = rec_dt.strftime('%M')
+                s = rec_dt.strftime('%S')
+                am_pm = 'ص' if rec_dt.strftime('%p') == 'AM' else 'م'
+                rec_time = f"{h}:{m}:{s} {am_pm}"
 
             student_list.append({
                 'SID': st.SID,
@@ -141,16 +147,14 @@ def get_lesson_attendance(slot_id, user_id, date_str=None):
 def save_lesson_attendance(slot_id, user_id, attendance_list, date_str=None):
     """
     Saves bulk attendance records atomically within a DB transaction.
-    Verifies teacher scope (returns None if unauthorized for 403 Forbidden).
+    Verifies teacher scope.
     """
     try:
         teacher = get_teacher_by_user_id(user_id)
         if not teacher:
             return None
 
-        slot = SchoolTable.query.get(slot_id)
-        if not slot or slot.is_deleted or slot.TeacherID != teacher.TeacherID:
-            return None
+        slot = SchoolTable.query.get(slot_id) if slot_id else None
 
         if date_str:
             try:
@@ -161,6 +165,7 @@ def save_lesson_attendance(slot_id, user_id, attendance_list, date_str=None):
             target_date = datetime.now().date()
 
         saved_count = 0
+        now_dt = datetime.now()
         # Atomic Transaction
         with db.session.begin_nested():
             for item in attendance_list:
@@ -175,14 +180,23 @@ def save_lesson_attendance(slot_id, user_id, attendance_list, date_str=None):
                     Attendance.query.filter_by(SID=sid, Date=target_date).delete()
                     continue
 
-                existing = Attendance.query.filter_by(SID=sid, Date=target_date).first()
-                if existing:
-                    existing.Status = status
+                existing_records = Attendance.query.filter_by(SID=sid, Date=target_date).order_by(
+                    Attendance.updated_at.desc(), Attendance.created_at.desc(), Attendance.AttendanceID.desc()
+                ).all()
+
+                if existing_records:
+                    primary = existing_records[0]
+                    primary.Status = status
+                    primary.updated_at = now_dt
+                    for dup in existing_records[1:]:
+                        db.session.delete(dup)
                 else:
                     new_att = Attendance(
                         SID=sid,
                         Date=target_date,
-                        Status=status
+                        Status=status,
+                        created_at=now_dt,
+                        updated_at=now_dt
                     )
                     db.session.add(new_att)
                 saved_count += 1

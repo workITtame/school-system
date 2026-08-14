@@ -964,13 +964,15 @@ function loadSubjectProfile(data) {
     // Dynamic Students Link in Hero Header
     const heroStudentsBtn = document.getElementById('sp-btn-students');
     if (heroStudentsBtn) {
-        const classIdParam = (data.linkedClasses && data.linkedClasses.length > 0) ? `?class_id=${data.linkedClasses[0].id}` : '';
-        heroStudentsBtn.href = `/students${classIdParam}`;
+        heroStudentsBtn.href = `/students?subject_id=${data.id}`;
     }
 
-    // Lead Teacher
-    const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers[0].name : 'غير معين';
+    // Lead Teacher(s)
+    const mainTeacherName = (data.teachers && data.teachers.length > 0) ? data.teachers.map(t => t.name).join('، ') : 'غير معين';
     if (heroTeacher) heroTeacher.textContent = mainTeacherName;
+
+    const heroAcademicYear = document.getElementById('sp-hero-academic-year');
+    if (heroAcademicYear) heroAcademicYear.textContent = data.academicYear || '2025-2026';
 
     // Basic Info Card
     const infoName = document.getElementById('sp-info-name');

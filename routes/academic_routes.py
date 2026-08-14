@@ -130,10 +130,33 @@ def subjects():
         
     avg_subjects_per_class = round(total_valid_links / total_classes, 1) if total_classes > 0 else 0.0
     
+    from models import SchoolTable, Terms, ExamSchedule, Homework
+    from models.grade import Marks, HomeworkMarks
+    from models.academic import ClassSubject, TeacherSubject
+    from sqlalchemy.orm import joinedload
+
+    current_term = Terms.query.filter_by(is_deleted=False).first()
+    academic_year = current_term.AcademicYear if (current_term and current_term.AcademicYear) else '2025-2026'
+
     for s in subjects_list:
-        s.linked_classes = [c for c in s.classes if not getattr(c, 'is_deleted', False)]
-        s.linked_classes_count = len(s.linked_classes)
-        
+        # Linked Classes
+        c_ids_cs = [c[0] for c in db.session.query(ClassSubject.c.CID).filter(ClassSubject.c.SubID == s.SubID).all() if c[0]]
+        c_ids_st = [st[0] for st in db.session.query(SchoolTable.CID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).all() if st[0]]
+        c_ids_hw = [hw[0] for hw in db.session.query(Homework.class_id).filter(Homework.sub_id == s.SubID).all() if hw[0]]
+        c_ids_ex = [ex[0] for ex in db.session.query(ExamSchedule.CID).filter(ExamSchedule.SubID == s.SubID).all() if ex[0]]
+        all_class_ids = list(set(c_ids_cs + c_ids_st + c_ids_hw + c_ids_ex))
+
+        linked_cls_objs = Classes.query.filter(Classes.CID.in_(all_class_ids), Classes.is_deleted == False).all() if all_class_ids else []
+        for cls in linked_cls_objs:
+            cls.sections_count = len([sec for sec in cls.sections if not getattr(sec, 'is_deleted', False)])
+            cls.students_count = Student.query.filter_by(CID=cls.CID, is_deleted=False).count()
+            cls.max_students = cls.MaxStudents or 40
+            cls.occupancy_percentage = round((cls.students_count / cls.max_students) * 100.0, 1) if cls.max_students > 0 else 0.0
+
+        s.linked_classes = linked_cls_objs
+        s.linked_classes_count = len(linked_cls_objs)
+
+        # Assigned Teachers
         t_ids_ts = [t[0] for t in db.session.query(TeacherSubject.c.TeacherID)\
             .join(Teacher, TeacherSubject.c.TeacherID == Teacher.TeacherID)\
             .filter(TeacherSubject.c.SubID == s.SubID, Teacher.is_deleted == False).distinct().all() if t[0]]
@@ -142,15 +165,97 @@ def subjects():
             .join(Teacher, SchoolTable.TeacherID == Teacher.TeacherID)\
             .filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False, Teacher.is_deleted == False).distinct().all() if t[0]]
             
-        s.assigned_teachers_count = len(set(t_ids_ts + t_ids_st))
-        
-        class_ids = [c.CID for c in s.linked_classes]
-        if class_ids:
-            s.students_count = Student.query.filter(Student.CID.in_(class_ids), Student.is_deleted == False).count()
+        all_teacher_ids = list(set(t_ids_ts + t_ids_st))
+        assigned_teachers = Teacher.query.filter(Teacher.TeacherID.in_(all_teacher_ids), Teacher.is_deleted == False).all() if all_teacher_ids else []
+        s.assigned_teachers = assigned_teachers
+        s.assigned_teachers_count = len(assigned_teachers)
+
+        # Students count
+        if all_class_ids:
+            s.students_count = Student.query.filter(Student.CID.in_(all_class_ids), Student.is_deleted == False).count()
         else:
             s.students_count = 0
-            
-        s.weekly_slots_count = SchoolTable.query.filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).count()
+
+        # Weekly Timetable Slots
+        st_slots = SchoolTable.query.options(
+            joinedload(SchoolTable.day),
+            joinedload(SchoolTable.lesson),
+            joinedload(SchoolTable.school_class),
+            joinedload(SchoolTable.section),
+            joinedload(SchoolTable.teacher)
+        ).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).all()
+
+        s.weekly_slots_count = len(st_slots)
+        
+        timetable_slots_payload = []
+        for slot in st_slots:
+            timetable_slots_payload.append({
+                'day': slot.day.DName if slot.day else 'الأحد',
+                'lesson': slot.lesson.LessonName if slot.lesson else 'الحصة 1',
+                'className': slot.school_class.CName if slot.school_class else 'الصف',
+                'sectionName': slot.section.SectionName if slot.section else '',
+                'teacherName': slot.teacher.TeacherName if slot.teacher else 'معلم'
+            })
+        s.timetable_slots_payload = timetable_slots_payload
+
+        # Average score & Pass rate
+        ex_marks = Marks.query.filter(Marks.SubID == s.SubID, Marks.is_deleted == False, Marks.Score.isnot(None)).all()
+        hw_marks = HomeworkMarks.query.filter(HomeworkMarks.SubID == s.SubID, HomeworkMarks.is_deleted == False, HomeworkMarks.Score.isnot(None)).all()
+        
+        all_pcts = []
+        for m in ex_marks:
+            max_s = float(m.MaxScore) if m.MaxScore else 100.0
+            all_pcts.append((float(m.Score) / max_s * 100.0) if max_s > 0 else float(m.Score))
+        for h in hw_marks:
+            if h.Percentage is not None:
+                all_pcts.append(float(h.Percentage))
+            else:
+                sc = float(h.Score)
+                max_s = float(h.MaxScore) if h.MaxScore else (10.0 if sc <= 10.0 else 100.0)
+                all_pcts.append((sc / max_s * 100.0) if max_s > 0 else (sc * 10.0 if sc <= 10.0 else sc))
+                
+        if all_pcts:
+            s.avg_score = round(sum(all_pcts) / len(all_pcts), 1)
+            passed = sum(1 for p in all_pcts if p >= 60.0)
+            s.pass_rate = round((passed / len(all_pcts)) * 100.0, 1)
+        else:
+            s.avg_score = None
+            s.pass_rate = None
+
+        # Activity Timeline
+        timeline = []
+        recent_hw = Homework.query.filter_by(sub_id=s.SubID).order_by(Homework.id.desc()).first()
+        if recent_hw:
+            timeline.append({
+                'title': f'تم إضافة واجب دراسي: {recent_hw.title}',
+                'time': recent_hw.created_at.strftime('%Y-%m-%d') if hasattr(recent_hw, 'created_at') and recent_hw.created_at else 'مؤخراً',
+                'icon': 'fa-book-open',
+                'color': 'bg-primary text-white'
+            })
+        recent_ex = ExamSchedule.query.filter_by(SubID=s.SubID).order_by(ExamSchedule.ScheduleID.desc()).first()
+        if recent_ex:
+            timeline.append({
+                'title': f'تم جدولة اختبار: {recent_ex.ExamName}',
+                'time': recent_ex.ExamDate.strftime('%Y-%m-%d') if recent_ex.ExamDate else 'مؤخراً',
+                'icon': 'fa-file-signature',
+                'color': 'bg-danger text-white'
+            })
+        if st_slots:
+            timeline.append({
+                'title': f'تأكيد {len(st_slots)} حصة دراسية مجدولة بالجدول الأسبوعي',
+                'time': 'الجدول المعتمد',
+                'icon': 'fa-calendar-check',
+                'color': 'bg-success text-white'
+            })
+        if not timeline:
+            timeline.append({
+                'title': 'تم اعتماد المادة الدراسية بالخطة الأكاديمية',
+                'time': 'السجل الرئيسي',
+                'icon': 'fa-check-circle',
+                'color': 'bg-info text-white'
+            })
+        s.activity_timeline = timeline
+        s.academic_year = academic_year
         
     selected_class = Classes.query.filter_by(CID=class_id).first() if class_id else None
     

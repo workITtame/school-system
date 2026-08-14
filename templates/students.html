@@ -301,7 +301,7 @@
                                 <td><span class="badge bg-{{ st.status_class }}-subtle text-{{ st.status_class }} border rounded-pill px-3 py-1">{{ st.status_tag }}</span></td>
                                 <td><span class="fw-bold text-success">{{ st.attendance_rate }}%</span></td>
                                 <td><span class="fw-bold text-warning">{{ st.avg_score }} / 100</span></td>
-                                <td><small class="text-muted">اليوم</small></td>
+                                <td><small class="text-muted">{{ st.created_at if st.created_at else '—' }}</small></td>
                                 <td class="px-3">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
                                         <button type="button" class="btn btn-sm btn-primary rounded-circle" style="width: 32px; height: 32px;" onclick="openStudentDrawer({{ st.SID }})" title="عرض الملف">
@@ -617,13 +617,17 @@ function fetchStudentsList(page = 1) {
     // Show Skeleton rows while loading
     renderSkeletonTable();
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subject_id') || '';
+
     const params = new URLSearchParams({
         page: page,
         per_page: 10,
         search: search,
         class_id: classId,
         section_id: sectionId,
-        status: status
+        status: status,
+        subject_id: subjectId
     });
 
     fetch(`/students/api/list?${params.toString()}`)
@@ -741,7 +745,7 @@ function renderStudentsTable(students, totalStudents, page, perPage) {
                     </div>
                 </td>
                 <td><span class="fw-bold text-warning">${st.avg_score} / 100</span></td>
-                <td><small class="text-muted">${st.created_at}</small></td>
+                <td><small class="text-muted">${st.created_at || '—'}</small></td>
                 <td class="px-3">
                     <div class="d-flex align-items-center justify-content-center gap-1">
                         <button type="button" class="btn btn-sm btn-primary rounded-circle" style="width: 32px; height: 32px;" onclick="openStudentDrawer(${st.SID})" title="عرض الملف">
@@ -960,6 +964,7 @@ function renderDrawerOverview(data) {
                 <p class="mb-2"><strong>الشعبة:</strong> ${st.section_name}</p>
                 <p class="mb-2"><strong>ولي الأمر:</strong> ${st.parent_name || '—'}</p>
                 <p class="mb-2"><strong>هاتف ولي الأمر:</strong> ${st.parent_phone || '—'}</p>
+                <p class="mb-2"><strong>تاريخ التسجيل:</strong> ${st.created_at || '—'}</p>
                 <p class="mb-0"><strong>الحالة:</strong> <span class="badge bg-success-subtle text-success border">${st.status || 'نشط'}</span></p>
             </div>
         </div>
@@ -980,44 +985,136 @@ function renderDrawerOverview(data) {
 function renderDrawerAcademic(data) {
     document.getElementById('drawerAcademicContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
-            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book-open text-primary me-2"></i> المواد الأكاديمية المسجلة</h6>
-            <p class="text-muted mb-0">المواد الدراسية مفعلة حسب خطة الصف ${data.student.class_name}.</p>
+            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book-open text-primary me-2"></i> البيانات الأكاديمية والمرحلة</h6>
+            <div class="row g-2">
+                <div class="col-6"><strong>الصف:</strong> ${data.student.class_name || '—'}</div>
+                <div class="col-6"><strong>الشعبة:</strong> ${data.student.section_name || '—'}</div>
+                <div class="col-12 mt-2"><strong>الملاحظات:</strong> ${data.notes || '—'}</div>
+            </div>
         </div>
     `;
 }
 
 function renderDrawerAttendance(data) {
+    const atts = data.recent_attendance || [];
+    let rowsHtml = '';
+    if (atts.length > 0) {
+        rowsHtml = atts.map(a => {
+            let stBadge = '<span class="badge bg-success-subtle text-success border">حاضر</span>';
+            if (a.status === 'غائب') stBadge = '<span class="badge bg-danger-subtle text-danger border">غائب</span>';
+            else if (a.status === 'متأخر') stBadge = '<span class="badge bg-warning-subtle text-warning border">متأخر</span>';
+            return `<tr><td>${a.date}</td><td>${stBadge}</td></tr>`;
+        }).join('');
+    } else {
+        rowsHtml = '<tr><td colspan="2" class="text-center text-muted">لا توجد سجلات حضور مسجلة</td></tr>';
+    }
+
     document.getElementById('drawerAttendanceContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
-            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clipboard-user text-success me-2"></i> سجل الحضور والغياب</h6>
-            <p class="text-muted mb-0">نسبة الحضور العامة: <strong>${data.academic_summary.attendance_rate}%</strong></p>
+            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clipboard-user text-success me-2"></i> سجل الحضور والغياب</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span>نسبة الحضور العامة: <strong>${data.academic_summary.attendance_rate}%</strong></span>
+                <span>إجمالي أيام التسجيل: <strong>${data.academic_summary.attendance_days} يوم</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>التاريخ</th><th>الحالة</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
         </div>
     `;
 }
 
 function renderDrawerGrades(data) {
+    const marks = data.recent_marks || [];
+    let rowsHtml = '';
+    if (marks.length > 0) {
+        rowsHtml = marks.map(m => `
+            <tr>
+                <td>${m.subject_name}</td>
+                <td>${m.title}</td>
+                <td><strong class="text-primary">${m.score} / ${m.max_score}</strong></td>
+                <td><span class="badge bg-primary-subtle text-primary border">${m.percentage}%</span></td>
+                <td>${m.date}</td>
+            </tr>
+        `).join('');
+    } else {
+        rowsHtml = '<tr><td colspan="5" class="text-center text-muted">لا توجد درجات مرصودة حالياً</td></tr>';
+    }
+
     document.getElementById('drawerGradesContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
-            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-star text-warning me-2"></i> درجات الطالب والأداء الأكاديمي</h6>
-            <p class="text-muted mb-0">المعدل العام: <strong>${data.academic_summary.gpa}%</strong></p>
+            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-star text-warning me-2"></i> درجات الطالب والأداء الأكاديمي</h6>
+            <p class="text-muted mb-3">المعدل العام للطالب: <strong class="text-warning fs-6">${data.academic_summary.gpa}%</strong></p>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>المادة</th><th>التقييم</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
         </div>
     `;
 }
 
 function renderDrawerHomeworks(data) {
+    const hws = data.recent_homeworks || [];
+    let rowsHtml = '';
+    if (hws.length > 0) {
+        rowsHtml = hws.map(h => `
+            <tr>
+                <td>${h.subject_name}</td>
+                <td>${h.title}</td>
+                <td><strong class="text-info">${h.score} / ${h.max_score}</strong></td>
+                <td><span class="badge bg-info-subtle text-info border">${h.percentage}%</span></td>
+                <td>${h.date}</td>
+            </tr>
+        `).join('');
+    } else {
+        rowsHtml = '<tr><td colspan="5" class="text-center text-muted">لا توجد واجبات مصححة مسجلة</td></tr>';
+    }
+
     document.getElementById('drawerHomeworksContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
-            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book-bookmark text-primary me-2"></i> سجل الواجبات الدراسية</h6>
-            <p class="text-muted mb-0">إجمالي الواجبات: <strong>${data.academic_summary.homework_count}</strong></p>
+            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-book-bookmark text-primary me-2"></i> سجل الواجبات الدراسية</h6>
+            <p class="text-muted mb-3">إجمالي الواجبات بالمدرسة: <strong>${data.academic_summary.homework_count}</strong></p>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>المادة</th><th>عنوان الواجب</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
         </div>
     `;
 }
 
 function renderDrawerExams(data) {
+    const marks = (data.recent_marks || []).filter(m => m.type === 'exam');
+    let rowsHtml = '';
+    if (marks.length > 0) {
+        rowsHtml = marks.map(m => `
+            <tr>
+                <td>${m.subject_name}</td>
+                <td>${m.title}</td>
+                <td><strong class="text-danger">${m.score} / ${m.max_score}</strong></td>
+                <td><span class="badge bg-danger-subtle text-danger border">${m.percentage}%</span></td>
+                <td>${m.date}</td>
+            </tr>
+        `).join('');
+    } else {
+        rowsHtml = '<tr><td colspan="5" class="text-center text-muted">لا توجد نتائج اختبارات مصححة</td></tr>';
+    }
+
     document.getElementById('drawerExamsContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
-            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-file-signature text-danger me-2"></i> نتائج الاختبارات والامتحانات</h6>
-            <p class="text-muted mb-0">إجمالي الاختبارات: <strong>${data.academic_summary.exam_count}</strong></p>
+            <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-file-signature text-danger me-2"></i> نتائج الاختبارات والامتحانات</h6>
+            <p class="text-muted mb-3">إجمالي الاختبارات: <strong>${data.academic_summary.exam_count}</strong></p>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>المادة</th><th>اسم الاختبار</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
         </div>
     `;
 }
@@ -1026,7 +1123,8 @@ function renderDrawerMessages(data) {
     document.getElementById('drawerMessagesContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
             <h6 class="fw-bold text-dark mb-3"><i class="fa-regular fa-envelope text-info me-2"></i> المراسلات والتواصل مع ولي الأمر</h6>
-            <p class="text-muted mb-0">لا توجد رسائل معلقة حالياً.</p>
+            <p class="mb-2"><strong>ولي الأمر:</strong> ${data.student.parent_name || '—'}</p>
+            <p class="mb-0"><strong>الهاتف:</strong> ${data.student.parent_phone || '—'}</p>
         </div>
     `;
 }
@@ -1035,7 +1133,8 @@ function renderDrawerActivity(data) {
     document.getElementById('drawerActivityContainer').innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 bg-white font-monospace extra-small">
             <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> خط الزمن والتحديثات</h6>
-            <p class="text-muted mb-0">تسجيل الطالب ومتابعة تحديث البيانات بالنظام.</p>
+            <p class="mb-1"><strong>تاريخ التسجيل:</strong> ${data.student.created_at || '—'}</p>
+            <p class="mb-0 text-muted">جميع سجلات الحضور والدرجات محدثة تلقائياً من قاعدة البيانات.</p>
         </div>
     `;
 }

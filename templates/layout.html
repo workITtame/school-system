@@ -191,6 +191,11 @@
                     <i class="fa-regular fa-bell"></i>
                     <span id="headerNotificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: none; align-items: center; justify-content: center; color: white;">0</span>
                 </a>
+
+                <!-- Dark / Light Mode Toggle Button -->
+                <button type="button" class="icon-btn border-0 bg-transparent position-relative ms-1 me-1" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي / النهاري" style="cursor: pointer; width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-moon text-primary fs-5" id="themeToggleIcon"></i>
+                </button>
                 
                 <div class="dropdown border-start ps-3 ms-2">
                     <div class="navbar-user-profile" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
@@ -274,4 +279,6 @@ document.addEventListener('DOMContentLoaded', updateNotificationBadges);
 document.addEventListener('turbo:load', updateNotificationBadges);
 window.addEventListener('notification_updated', updateNotificationBadges);
 </script>
+{% block scripts %}{% endblock %}
+{% block extra_js %}{% endblock %}
 {% endblock %}

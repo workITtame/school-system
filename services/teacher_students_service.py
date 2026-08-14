@@ -83,14 +83,38 @@ def get_teacher_student_stats(user_id):
             absent_map = {sid: count for sid, count in absent_counts}
 
             subject_ids = [s.SubID for s in teacher.subjects] if (teacher and teacher.subjects) else []
+            from models.grade import HomeworkMarks, Marks
             low_grade_sids = set()
             if subject_ids:
-                low_grades = db.session.query(Marks.SID).filter(
+                exam_marks = db.session.query(Marks.SID, Marks.Score, Marks.MaxScore).filter(
                     Marks.SID.in_(student_ids),
                     Marks.SubID.in_(subject_ids),
-                    Marks.Score < 60
-                ).distinct().all()
-                low_grade_sids = {g[0] for g in low_grades}
+                    Marks.assessment_type == 'exam',
+                    Marks.Score.isnot(None),
+                    Marks.is_deleted == False
+                ).all()
+                for sid, score, max_s in exam_marks:
+                    max_val = float(max_s) if max_s else 100.0
+                    sc_val = float(score) if score is not None else 100.0
+                    pct = (sc_val / max_val * 100.0) if max_val > 0 else sc_val
+                    if pct < 60.0:
+                        low_grade_sids.add(sid)
+
+                hw_marks = db.session.query(HomeworkMarks.SID, HomeworkMarks.Score, HomeworkMarks.MaxScore, HomeworkMarks.Percentage).filter(
+                    HomeworkMarks.SID.in_(student_ids),
+                    HomeworkMarks.SubID.in_(subject_ids),
+                    HomeworkMarks.Score.isnot(None),
+                    HomeworkMarks.is_deleted == False
+                ).all()
+                for sid, score, max_s, pct_val in hw_marks:
+                    if pct_val is not None:
+                        pct = float(pct_val)
+                    else:
+                        sc_val = float(score) if score is not None else 10.0
+                        max_val = float(max_s) if max_s else (10.0 if sc_val <= 10.0 else 100.0)
+                        pct = (sc_val / max_val * 100.0) if max_val > 0 else (sc_val * 10.0 if sc_val <= 10.0 else sc_val)
+                    if pct < 60.0:
+                        low_grade_sids.add(sid)
 
             for st in students:
                 abs_cnt = absent_map.get(st.SID, 0)
@@ -250,8 +274,10 @@ def get_teacher_students_paginated(user_id, search_query=None, class_id=None, se
 def get_student_drawer_data(student_id, user_id):
     """
     Fetch comprehensive profile & performance snapshot data for Side Drawer Offcanvas.
+    Calculates 100% real database metrics for attendance, homeworks, exams, and averages.
     """
     try:
+        from models.grade import HomeworkMarks, Marks
         teacher = get_teacher_by_user_id(user_id)
         student = Student.query.options(
             joinedload(Student.school_class),
@@ -267,44 +293,93 @@ def get_student_drawer_data(student_id, user_id):
             if not student.CID or student.CID not in class_ids:
                 return None
 
-        subject_ids = [s.SubID for s in teacher.subjects] if (teacher and teacher.subjects) else []
-
-        # Recent attendances
-        attendances = Attendance.query.filter_by(SID=student_id).order_by(Attendance.Date.desc()).limit(10).all()
-        att_list = [{'date': a.Date.strftime('%Y-%m-%d') if a.Date else '', 'status': a.Status} for a in attendances]
-
-        # Recent marks
-        marks = []
-        if subject_ids:
-            marks_q = Marks.query.options(joinedload(Marks.subject)).filter(
-                Marks.SID == student_id,
-                Marks.SubID.in_(subject_ids)
-            ).order_by(Marks.Score.desc()).limit(5).all()
-            for m in marks_q:
-                sub_name = m.subject.SubName if m.subject else 'مادة'
-                marks.append({'subject_name': sub_name, 'score': float(m.Score) if m.Score is not None else 0})
-        else:
-            marks_q = Marks.query.options(joinedload(Marks.subject)).filter(
-                Marks.SID == student_id
-            ).order_by(Marks.Score.desc()).limit(5).all()
-            for m in marks_q:
-                sub_name = m.subject.SubName if m.subject else 'مادة'
-                marks.append({'subject_name': sub_name, 'score': float(m.Score) if m.Score is not None else 0})
-
-        # Calculation stats
-        if att_list:
-            pres_c = sum(1 for a in att_list if a['status'] in ['حاضر', 'متأخر'])
-            att_rate = round((pres_c / len(att_list)) * 100, 1)
+        # Attendance calculation from all records
+        all_att = Attendance.query.filter_by(SID=student_id).all()
+        attendance_days = len(all_att)
+        if attendance_days > 0:
+            pres_c = sum(1 for a in all_att if a.Status in ['حاضر', 'متأخر', 'حضور', 'Present'])
+            att_rate = round((pres_c / attendance_days) * 100.0, 1)
         else:
             att_rate = 0.0
 
-        scores = [m['score'] for m in marks if m['score'] is not None]
-        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+        recent_att = Attendance.query.filter_by(SID=student_id).order_by(Attendance.Date.desc()).limit(10).all()
+        att_list = [{'date': a.Date.strftime('%Y-%m-%d') if a.Date else '', 'status': a.Status} for a in recent_att]
+
+        # Exam marks & Assigned exams
+        exam_marks = Marks.query.options(joinedload(Marks.subject), joinedload(Marks.exam)).filter(
+            Marks.SID == student_id,
+            Marks.assessment_type == 'exam',
+            Marks.is_deleted == False
+        ).order_by(Marks.M_ID.desc()).all()
+        
+        assigned_exams_count = ExamSchedule.query.filter(
+            ExamSchedule.CID == student.CID,
+            or_(ExamSchedule.SectionID == student.SectionID, ExamSchedule.SectionID.is_(None))
+        ).count() if student.CID else 0
+        exam_count = max(len(exam_marks), assigned_exams_count)
+
+        # Homework marks & Assigned homeworks
+        hw_marks = HomeworkMarks.query.options(joinedload(HomeworkMarks.subject), joinedload(HomeworkMarks.homework)).filter(
+            HomeworkMarks.SID == student_id,
+            HomeworkMarks.is_deleted == False
+        ).order_by(HomeworkMarks.HM_ID.desc()).all()
+
+        assigned_hw_count = Homework.query.filter(
+            Homework.class_id == student.CID,
+            or_(Homework.section_id == student.SectionID, Homework.section_id.is_(None))
+        ).count() if student.CID else 0
+        homework_count = max(len(hw_marks), assigned_hw_count)
+
+        # Overall average score calculation across all graded assessments
+        all_percentages = []
+        recent_marks_list = []
+        for m in exam_marks:
+            if m.Score is not None:
+                max_s = float(m.MaxScore) if m.MaxScore else 100.0
+                pct = round((float(m.Score) / max_s) * 100.0, 1) if max_s > 0 else float(m.Score)
+                all_percentages.append(pct)
+                sub_name = m.subject.SubName if m.subject else 'مادة'
+                ex_title = m.exam.ExamName if m.exam else (m.Notes or 'اختبار')
+                recent_marks_list.append({
+                    'type': 'exam',
+                    'title': ex_title,
+                    'subject_name': sub_name,
+                    'score': float(m.Score),
+                    'max_score': max_s,
+                    'percentage': pct,
+                    'date': m.created_at.strftime('%Y-%m-%d') if hasattr(m, 'created_at') and m.created_at else '—'
+                })
+
+        recent_hw_list = []
+        for hm in hw_marks:
+            if hm.Score is not None:
+                if hm.Percentage is not None:
+                    pct = float(hm.Percentage)
+                else:
+                    sc_val = float(hm.Score)
+                    max_s = float(hm.MaxScore) if hm.MaxScore else (10.0 if sc_val <= 10.0 else 100.0)
+                    pct = round((sc_val / max_s) * 100.0, 1) if max_s > 0 else (sc_val * 10.0 if sc_val <= 10.0 else sc_val)
+                all_percentages.append(pct)
+                sub_name = hm.subject.SubName if hm.subject else 'مادة'
+                hw_title = hm.homework.title if hm.homework else (hm.Notes or 'واجب')
+                recent_hw_list.append({
+                    'type': 'homework',
+                    'title': hw_title,
+                    'subject_name': sub_name,
+                    'score': float(hm.Score),
+                    'max_score': float(hm.MaxScore) if hm.MaxScore else 10.0,
+                    'percentage': pct,
+                    'date': hm.created_at.strftime('%Y-%m-%d') if hasattr(hm, 'created_at') and hm.created_at else '—'
+                })
+
+        avg_score = round(sum(all_percentages) / len(all_percentages), 1) if all_percentages else 0.0
 
         cls_name = student.school_class.CName if student.school_class else '—'
         sec_name = student.section.SectionName if student.section else '—'
         full_cls = f"{cls_name} - {sec_name}".strip(" -")
         academic_id = f"#{student.SID}"
+
+        created_str = student.created_at.strftime('%Y-%m-%d') if hasattr(student, 'created_at') and student.created_at else '—'
 
         return {
             'student_id': student.SID,
@@ -313,14 +388,19 @@ def get_student_drawer_data(student_id, user_id):
             'class_name': cls_name,
             'section_name': sec_name,
             'full_class': full_cls,
-            'parent_name': student.Parent_Name or 'ولي الأمر',
-            'parent_number': student.Parent_Number or '-',
+            'parent_name': student.Parent_Name or '—',
+            'parent_number': student.Parent_Number or '—',
             'image': student.Image or None,
+            'created_at': created_str,
             'attendance_rate': att_rate,
+            'attendance_days': attendance_days,
+            'homework_count': homework_count,
+            'exam_count': exam_count,
             'avg_score': avg_score,
-            'recent_attendance': att_list[:5],
-            'recent_marks': marks,
-            'notes': 'طالب منتظم وإيجابي في الصف.'
+            'recent_attendance': att_list[:10],
+            'recent_marks': recent_marks_list[:10],
+            'recent_homeworks': recent_hw_list[:10],
+            'notes': f'بيانات الطالب ومعدله الأكاديمي ({avg_score}%) وحضوره ({att_rate}%) محدثة مباشرة من قاعدة البيانات.'
         }
     except Exception as e:
         logger.exception("Error in get_student_drawer_data: %s", str(e))

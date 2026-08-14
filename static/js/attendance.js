@@ -395,16 +395,57 @@ function updateBulkBar() {
     }
 }
 
-function exportAttendanceReport() {
-    const filterClass = document.getElementById('filterClass');
-    const filterSection = document.getElementById('filterSection');
-    const filterDate = document.getElementById('filterDate');
+function exportAttendanceReport(exportType = 'excel', mode = 'all') {
+    const filterClass = document.getElementById('filterClass') || document.getElementById('attendanceClassSelect');
+    const filterSection = document.getElementById('filterSection') || document.getElementById('attendanceSectionSelect');
+    const filterSubject = document.getElementById('filterSubject') || document.getElementById('attendanceSubjectSelect');
+    const filterDate = document.getElementById('filterDate') || document.getElementById('attendanceDateSelect');
 
-    const classId = filterClass ? filterClass.value : '';
-    const sectionId = filterSection ? filterSection.value : '';
-    const dateVal = filterDate ? filterDate.value : '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const classId = (filterClass && filterClass.value) ? filterClass.value : (urlParams.get('class_id') || '');
+    const sectionId = (filterSection && filterSection.value) ? filterSection.value : (urlParams.get('section_id') || '');
+    const subjectId = (filterSubject && filterSubject.value) ? filterSubject.value : (urlParams.get('subject_id') || '');
+    const dateVal = (filterDate && filterDate.value) ? filterDate.value : (urlParams.get('date') || '');
 
-    window.location.href = `/attendance/export?class_id=${classId}&section_id=${sectionId}&date=${dateVal}`;
+    let statusParam = '';
+    let onlyRecorded = 0;
+
+    if (mode === 'recorded' || mode === 'محضرين') {
+        onlyRecorded = 1;
+    } else if (mode === 'present' || mode === 'حاضر') {
+        statusParam = 'حاضر';
+    } else if (mode === 'absent' || mode === 'غائب') {
+        statusParam = 'غائب';
+    } else if (mode === 'late' || mode === 'متأخر') {
+        statusParam = 'متأخر';
+    } else if (mode === 'excused' || mode === 'مستأذن') {
+        statusParam = 'مستأذن';
+    } else {
+        const statusFilterEl = document.getElementById('attendanceStatusFilter') || document.getElementById('filterStatus');
+        if (statusFilterEl && statusFilterEl.value) {
+            statusParam = statusFilterEl.value;
+        }
+    }
+
+    const selectedSids = [];
+    if (mode === 'selected') {
+        const checkedBoxes = document.querySelectorAll('.student-select-cb:checked, .attendance-cb:checked');
+        checkedBoxes.forEach(cb => {
+            if (cb.value) selectedSids.push(cb.value);
+        });
+    }
+
+    const params = new URLSearchParams();
+    if (exportType === 'pdf') params.append('type', 'pdf');
+    if (classId) params.append('class_id', classId);
+    if (sectionId) params.append('section_id', sectionId);
+    if (subjectId) params.append('subject_id', subjectId);
+    if (dateVal) params.append('date', dateVal);
+    if (statusParam) params.append('status', statusParam);
+    if (onlyRecorded) params.append('only_recorded', '1');
+    if (selectedSids.length > 0) params.append('sids', selectedSids.join(','));
+
+    window.location.href = `/attendance/export?${params.toString()}`;
 }
 
 function submitQuickMark() {

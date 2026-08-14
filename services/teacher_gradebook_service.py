@@ -102,7 +102,7 @@ def get_gradebook_statistics(user_id, subject_id=None, class_id=None, section_id
         'smart_insights': smart_insights
     }
 
-def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=None, search=None, page=1, per_page=10):
+def get_students(user_id, subject_id=None, class_id=None, section_id=None, homework_id=None, exam_id=None, term=None, search=None, page=1, per_page=10):
     teacher, raw_students = _get_students_for_teacher(user_id, subject_id, class_id, section_id, search)
     
     if not raw_students:
@@ -123,8 +123,11 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
     exam_marks_query = Marks.query.filter(
         Marks.SID.in_(student_ids),
         Marks.assessment_type == 'exam',
-        Marks.Score.isnot(None)
+        Marks.Score.isnot(None),
+        Marks.is_deleted == False
     )
+    if exam_id:
+        exam_marks_query = exam_marks_query.filter(Marks.ExamID == exam_id)
     if subject_id:
         exam_marks_query = exam_marks_query.filter(Marks.SubID == subject_id)
     raw_exam_marks = exam_marks_query.all()
@@ -132,8 +135,11 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
     # Query real homework marks for scoped students
     hw_marks_query = HomeworkMarks.query.filter(
         HomeworkMarks.SID.in_(student_ids),
-        HomeworkMarks.Score.isnot(None)
+        HomeworkMarks.Score.isnot(None),
+        HomeworkMarks.is_deleted == False
     )
+    if homework_id:
+        hw_marks_query = hw_marks_query.filter(HomeworkMarks.HomeworkID == homework_id)
     if subject_id:
         hw_marks_query = hw_marks_query.filter(HomeworkMarks.SubID == subject_id)
     raw_hw_marks = hw_marks_query.all()
@@ -153,6 +159,28 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
     student_att_map = {}
     for a in raw_attendance:
         student_att_map.setdefault(a.SID, []).append(a.Status)
+
+    # Specific active records map
+    specific_hw_map = {}
+    if homework_id:
+        single_hw_marks = HomeworkMarks.query.filter(
+            HomeworkMarks.HomeworkID == homework_id,
+            HomeworkMarks.SID.in_(student_ids),
+            HomeworkMarks.is_deleted == False
+        ).all()
+        for hm in single_hw_marks:
+            specific_hw_map[hm.SID] = hm
+
+    specific_exam_map = {}
+    if exam_id:
+        single_exam_marks = Marks.query.filter(
+            Marks.ExamID == exam_id,
+            Marks.SID.in_(student_ids),
+            Marks.assessment_type == 'exam',
+            Marks.is_deleted == False
+        ).all()
+        for m in single_exam_marks:
+            specific_exam_map[m.SID] = m
 
     from services.grade_calculation_service import (
         calculate_exam_average,
@@ -177,10 +205,38 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
         final_grade = calculate_final_grade(exam_avg, hw_avg, participation, attendance_pct)
         letter_grade, growth_badge, status_text = get_letter_grade_badge(final_grade)
 
+        # Active evaluation values
+        score_val = None
+        max_score_val = 100.0
+        notes_val = ''
+        sub_status = 'تم التسليم'
+        grading_status = 'بانتظار التصحيح'
+
+        if homework_id:
+            rec = specific_hw_map.get(st.SID)
+            max_score_val = 10.0
+            if rec:
+                raw_s = float(rec.Score) if rec.Score is not None else None
+                score_val = round(min(10.0, max(0.0, raw_s / 10.0 if raw_s > 10.0 else raw_s)), 1) if raw_s is not None else None
+                notes_val = rec.Notes or ''
+                grading_status = 'تم التصحيح' if score_val is not None else 'بانتظار التصحيح'
+        elif exam_id:
+            rec = specific_exam_map.get(st.SID)
+            if rec:
+                score_val = float(rec.Score) if rec.Score is not None else None
+                max_score_val = float(rec.MaxScore) if rec.MaxScore else 100.0
+                notes_val = rec.Notes or ''
+                grading_status = 'تم التصحيح' if score_val is not None else 'بانتظار التصحيح'
+                sub_status = 'حاضر'
+
+        pct_val = round((score_val / max_score_val) * 100, 1) if (score_val is not None and max_score_val > 0) else None
+
         decorated_students.append({
             'student_id': st.SID,
             'student_name': st.SName,
-            'academic_id': f"20240{st.SID}",
+            'academic_id': str(st.SID),
+            'class_id': st.CID,
+            'section_id': st.SectionID,
             'class_name': st.school_class.CName if st.school_class else '',
             'section_name': st.section.SectionName if st.section else '',
             'homework_avg': hw_avg if hw_avg is not None else "—",
@@ -192,7 +248,13 @@ def get_students(user_id, subject_id=None, class_id=None, section_id=None, term=
             'growth_badge': growth_badge,
             'status_text': status_text,
             'class_rank': idx,
-            'section_rank': (idx % 5) + 1
+            'section_rank': (idx % 5) + 1,
+            'score': score_val,
+            'max_score': max_score_val,
+            'percentage': pct_val,
+            'notes': notes_val,
+            'submission_status': sub_status,
+            'grading_status': grading_status
         })
 
     # Sort by final_grade descending for ranks
@@ -225,55 +287,71 @@ def get_student_gradebook(student_id, user_id):
     if not st or st.is_deleted:
         raise PermissionError("Student out of teacher scope")
 
-    # Scope check
     if class_ids and st.CID not in class_ids:
         raise PermissionError("Student outside teacher scope")
 
     assessments = get_student_assessments(student_id, user_id)
     performance = get_student_performance(student_id, user_id)
 
-    homework_stats = {
-        'total': 12,
-        'delivered': 10,
-        'late': 1,
-        'missing': 1,
+    from models.grade import HomeworkMarks, Marks
+    from models import Attendance
+
+    hw_marks = HomeworkMarks.query.filter_by(SID=student_id, is_deleted=False).all()
+    hw_scores = [float(hm.Score) for hm in hw_marks if hm.Score is not None]
+    
+    exam_marks = Marks.query.filter(Marks.SID == student_id, Marks.assessment_type == 'exam', Marks.is_deleted == False).all()
+    exam_scores = [float(em.Score) for em in exam_marks if em.Score is not None]
+
+    att_records = Attendance.query.filter_by(SID=student_id).all()
+    att_statuses = [a.Status for a in att_records]
+
+    from services.grade_calculation_service import (
+        calculate_exam_average,
+        calculate_homework_average,
+        calculate_attendance_percentage,
+        calculate_participation,
+        calculate_final_grade,
+        get_letter_grade_badge
+    )
+
+    exam_avg = calculate_exam_average(exam_scores)
+    hw_avg = calculate_homework_average(hw_scores)
+    att_pct = calculate_attendance_percentage(att_statuses)
+    part_pct = calculate_participation(att_pct)
+    final_grade = calculate_final_grade(exam_avg, hw_avg, part_pct, att_pct)
+    letter_grade, growth_badge, status_text = get_letter_grade_badge(final_grade)
+
+    hw_delivered_cnt = len(hw_scores)
+    hw_stats = {
+        'total': max(1, len(hw_marks)),
+        'delivered': hw_delivered_cnt,
+        'late': 0,
+        'missing': max(0, len(hw_marks) - hw_delivered_cnt),
         'reopened': 0,
-        'completion_pct': 91.6
+        'completion_pct': round((hw_delivered_cnt / max(1, len(hw_marks))) * 100.0, 1) if hw_marks else 100.0
     }
 
-    exam_stats = {
-        'total': 4,
-        'passed': 4,
-        'failed': 0,
-        'avg_score': 95.0
+    ex_stats = {
+        'total': max(1, len(exam_marks)),
+        'passed': sum(1 for s in exam_scores if s >= 60.0),
+        'failed': sum(1 for s in exam_scores if s < 60.0),
+        'avg_score': exam_avg or 0.0
     }
 
-    attendance_stats = {
-        'present': 24,
-        'absent': 1,
-        'late': 1,
+    att_present_cnt = sum(1 for s in att_statuses if s in ['حاضر', 'present'])
+    att_absent_cnt = sum(1 for s in att_statuses if s in ['غائب', 'absent'])
+    att_late_cnt = sum(1 for s in att_statuses if s in ['متأخر', 'late'])
+    att_stats = {
+        'present': att_present_cnt,
+        'absent': att_absent_cnt,
+        'late': att_late_cnt,
         'excused': 0,
-        'pct': 96.0
+        'pct': att_pct or 100.0
     }
 
-    timeline = [
-        {'time': 'اليوم 10:30 ص', 'text': 'تم رصد درجة اختبار المنتصف (95 / 100)', 'icon': 'fa-award text-success'},
-        {'time': 'أمس 04:15 م', 'text': 'تم تسليم واجب الرياضيات الأسبوعي #2', 'icon': 'fa-file-signature text-primary'},
-        {'time': 'قبل يومين', 'text': 'تم إرسال إشعار تفوق أكاديمي لولي الأمر', 'icon': 'fa-paper-plane text-info'},
-        {'time': 'قبل أسبوع', 'text': 'تم تسجيل حضور كامل بالحصص الأسبوعية', 'icon': 'fa-check-double text-warning'}
-    ]
-
-    smart_insights = [
-        'تحسن مستوى الطالب الأكاديمي بنسبة +8% مقارنة بالشهر الماضي',
-        'التزام ممتاز بالمواعيد المحددة لتسليم الواجبات والتكليفات',
-        'معدل الحضور يتجاوز 96% ويعكس انضباطاً كبيراً داخل الفصل',
-        'يوصى بإلحاق الطالب بالأنشطة الإثرائية لتعزيز مهارات التفوق'
-    ]
-
-    notes_history = [
-        {'id': 1, 'date': '2026-08-01', 'author': 'معلم المادة', 'content': 'طالب متميز وأكاديمي متفوق في متابعة الدروس والأعمال الواجبة.'},
-        {'id': 2, 'date': '2026-08-04', 'author': 'معلم المادة', 'content': 'تم تكريم الطالب لحصوله على المركز الأول في التقييم الشهري.'}
-    ]
+    hw_display = round(hw_avg, 1) if hw_avg is not None else 0.0
+    if hw_display > 10.0:
+        hw_display = round(hw_display / 10.0, 1)
 
     return {
         'student_id': st.SID,
@@ -281,49 +359,171 @@ def get_student_gradebook(student_id, user_id):
         'academic_id': f"20240{st.SID}",
         'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
         'section_name': st.section.SectionName if st.section else 'شعبة أ',
-        'subject_name': 'الرياضيات والعلوم',
-        'final_grade': 94.5,
-        'letter_grade': '🟢 ممتاز (94.5%)',
-        'growth_badge': '+8% مقارنة بالشهر الماضي',
-        'attendance_pct': 96.0,
-        'homework_avg': 9.8,
-        'exam_avg': 95.0,
-        'participation': 95.0,
+        'subject_name': 'الدرجات الموحدة',
+        'final_grade': final_grade,
+        'letter_grade': letter_grade,
+        'growth_badge': growth_badge,
+        'attendance_pct': att_pct or 100.0,
+        'homework_avg': hw_display,
+        'exam_avg': exam_avg or 0.0,
+        'participation': part_pct,
         'class_rank': 1,
         'section_rank': 1,
-        'last_activity': 'اليوم 10:30 ص',
-        'homework_stats': homework_stats,
-        'exam_stats': exam_stats,
-        'attendance_stats': attendance_stats,
-        'timeline': timeline,
-        'smart_insights': smart_insights,
+        'last_activity': 'اليوم',
+        'homework_stats': hw_stats,
+        'exam_stats': ex_stats,
+        'attendance_stats': att_stats,
+        'timeline': [],
+        'smart_insights': [
+            f"معدل الطالب العام في النظام: {final_grade}%",
+            f"أداؤه في الواجبات: {hw_display}/10",
+            f"أداؤه في الاختبارات: {exam_avg or 0.0}/100"
+        ],
         'assessments': assessments,
         'performance': performance,
-        'notes_history': notes_history,
-        'notes': 'طالب متميز وأكاديمي متفوق في متابعة الدروس والأعمال الواجبة.'
+        'notes_history': [],
+        'notes': 'سجل درجات الطالب المحدث من قاعدة البيانات.'
     }
 
 def get_student_subjects(student_id, user_id):
-    return [
-        {'id': 1, 'name': 'الرياضيات الأكاديمية', 'score': 95.0},
-        {'id': 2, 'name': 'العلوم العامة', 'score': 92.0},
-        {'id': 3, 'name': 'اللغة العربية', 'score': 96.5}
-    ]
+    st = Student.query.get(student_id)
+    if not st:
+        return []
+    from models import Subject
+    from models.grade import Marks, HomeworkMarks
+
+    subjects = Subject.query.filter_by(is_deleted=False).all()
+    result = []
+    for sub in subjects:
+        sub_marks = Marks.query.filter(Marks.SID == student_id, Marks.SubID == sub.SubID, Marks.is_deleted == False).all()
+        sub_hws = HomeworkMarks.query.filter(HomeworkMarks.SID == student_id, HomeworkMarks.SubID == sub.SubID, HomeworkMarks.is_deleted == False).all()
+        pcts = []
+        for m in sub_marks:
+            if m.Score is not None:
+                max_s = float(m.MaxScore) if m.MaxScore else 100.0
+                pcts.append((float(m.Score) / max_s * 100.0) if max_s > 0 else float(m.Score))
+        for h in sub_hws:
+            if h.Score is not None:
+                if h.Percentage is not None:
+                    pcts.append(float(h.Percentage))
+                else:
+                    sc = float(h.Score)
+                    max_s = float(h.MaxScore) if h.MaxScore else (10.0 if sc <= 10.0 else 100.0)
+                    pcts.append((sc / max_s * 100.0) if max_s > 0 else (sc * 10.0 if sc <= 10.0 else sc))
+        if pcts:
+            avg_s = round(sum(pcts) / len(pcts), 1)
+            result.append({'id': sub.SubID, 'name': sub.SubName, 'score': avg_s})
+    return result
 
 def get_student_assessments(student_id, user_id):
-    return [
-        {'title': 'واجب الرياضيات الأسبوعي #1', 'type': 'واجب', 'date': '2026-08-01', 'score': '10 / 10', 'status': 'تم التصحيح'},
-        {'title': 'اختبار منتصف الفصل', 'type': 'اختبار', 'date': '2026-08-04', 'score': '95 / 100', 'status': 'تم التصحيح'},
-        {'title': 'واجب العلوم رقم 2', 'type': 'واجب', 'date': '2026-08-05', 'score': '9.5 / 10', 'status': 'تم التصحيح'}
-    ]
+    from models.grade import HomeworkMarks, Marks
+    from models import Homework, ExamSchedule
+    from datetime import date
+
+    assessments = []
+
+    hw_marks = HomeworkMarks.query.filter_by(SID=student_id, is_deleted=False).all()
+    for hm in hw_marks:
+        hw = db.session.get(Homework, hm.HomeworkID) if hm.HomeworkID else None
+        hm_pk = getattr(hm, 'HM_ID', getattr(hm, 'id', 1))
+        title = hw.title if hw else (hm.Notes or f"واجب #{hm.HomeworkID or hm_pk}")
+        raw_score = float(hm.Score) if hm.Score is not None else None
+        if raw_score is not None:
+            norm_score = round(min(10.0, max(0.0, raw_score / 10.0 if raw_score > 10.0 else raw_score)), 1)
+            score_str = f"{norm_score} / 10"
+            status_str = "تم التصحيح"
+        else:
+            norm_score = None
+            score_str = "— / 10"
+            status_str = "بانتظار التصحيح"
+
+        date_str = hm.created_at.strftime('%Y-%m-%d') if hasattr(hm, 'created_at') and hm.created_at else (hw.due_date.strftime('%Y-%m-%d') if (hw and hw.due_date) else date.today().strftime('%Y-%m-%d'))
+
+        assessments.append({
+            'id': hm_pk,
+            'assessment_id': hm.HomeworkID,
+            'title': title,
+            'type': 'واجب',
+            'date': date_str,
+            'score': score_str,
+            'numeric_score': norm_score,
+            'max_score': 10,
+            'status': status_str,
+            'notes': hm.Notes or ''
+        })
+
+    exam_marks = Marks.query.filter(
+        Marks.SID == student_id,
+        Marks.assessment_type == 'exam',
+        Marks.is_deleted == False
+    ).all()
+    for ex_m in exam_marks:
+        ex = db.session.get(ExamSchedule, ex_m.ExamID or ex_m.assessment_id) if (ex_m.ExamID or ex_m.assessment_id) else None
+        ex_pk = getattr(ex_m, 'MarkID', getattr(ex_m, 'id', 1))
+        title = ex.ExamName if ex else (ex_m.Notes or f"اختبار #{ex_m.ExamID or ex_m.assessment_id or ex_pk}")
+        raw_score = float(ex_m.Score) if ex_m.Score is not None else None
+        max_s = float(ex_m.MaxScore) if ex_m.MaxScore else 100.0
+        if raw_score is not None:
+            score_str = f"{round(raw_score, 1)} / {int(max_s)}"
+            status_str = "تم التصحيح"
+        else:
+            score_str = f"— / {int(max_s)}"
+            status_str = "بانتظار التصحيح"
+
+        date_str = ex_m.created_at.strftime('%Y-%m-%d') if hasattr(ex_m, 'created_at') and ex_m.created_at else (ex.ExamDate.strftime('%Y-%m-%d') if (ex and ex.ExamDate) else date.today().strftime('%Y-%m-%d'))
+
+        assessments.append({
+            'id': ex_pk,
+            'assessment_id': ex_m.ExamID or ex_m.assessment_id,
+            'title': title,
+            'type': 'اختبار',
+            'date': date_str,
+            'score': score_str,
+            'numeric_score': raw_score,
+            'max_score': max_s,
+            'status': status_str,
+            'notes': ex_m.Notes or ''
+        })
+
+    assessments.sort(key=lambda x: x['date'], reverse=True)
+    return assessments
 
 def get_student_performance(student_id, user_id):
+    from models import Subject, Attendance
+    from models.grade import Marks, HomeworkMarks
+    
+    sub_data = get_student_subjects(student_id, user_id)
+    strong = [s['name'] for s in sub_data if s['score'] >= 80.0]
+    weak = [s['name'] for s in sub_data if s['score'] < 60.0]
+    
+    marks = Marks.query.filter(Marks.SID == student_id, Marks.is_deleted == False, Marks.Score.isnot(None)).order_by(Marks.M_ID.asc()).all()
+    grade_trend = []
+    for m in marks:
+        max_s = float(m.MaxScore) if m.MaxScore else 100.0
+        pct = round((float(m.Score) / max_s * 100.0), 1) if max_s > 0 else float(m.Score)
+        grade_trend.append(pct)
+    if not grade_trend:
+        grade_trend = [0.0]
+
+    atts = Attendance.query.filter_by(SID=student_id).order_by(Attendance.Date.asc()).all()
+    att_trend = []
+    if atts:
+        chunk_size = max(1, len(atts) // 5)
+        for i in range(0, len(atts), chunk_size):
+            chunk = atts[i:i+chunk_size]
+            pres = sum(1 for a in chunk if a.Status in ['حاضر', 'متأخر', 'حضور', 'Present'])
+            att_trend.append(round((pres / len(chunk)) * 100.0, 1))
+    if not att_trend:
+        att_trend = [0.0]
+
+    rec = "الاستمرار في التفوق والالتزام بالحلول الدورية." if not weak else f"يحتاج الطالب لتركيز إضافي ومتابعة في مواد: {', '.join(weak)}"
+
     return {
-        'grade_trend': [85, 88, 92, 95, 94.5],
-        'attendance_trend': [100, 95, 100, 96, 96],
-        'strong_subjects': ['الرياضيات', 'اللغة العربية'],
-        'weak_subjects': [],
-        'recommendations': 'الاستمرار في تفوق التمارين العملية الأسبوعية.'
+        'grade_trend': grade_trend,
+        'attendance_trend': att_trend,
+        'strong_subjects': strong,
+        'weak_subjects': weak,
+        'recommendations': rec
     }
 
 def get_class_statistics(class_id, user_id):

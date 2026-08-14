@@ -25,9 +25,9 @@
                             </h4>
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
-                            المعلم: <span class="text-white fw-bold">{{ profile.name if profile else current_user.name }}</span> | 
-                            التخصص: <span class="text-white fw-bold">{{ profile.specialization }}</span> | 
-                            مكتمل الحساب: <span class="text-white fw-bold text-warning">{{ profile.completion_pct }}%</span> | 
+                            المعلم: <span id="heroTeacherName" class="text-white fw-bold">{{ profile.name if profile else current_user.name }}</span> | 
+                            التخصص: <span id="heroTeacherSpec" class="text-white fw-bold">{{ profile.specialization }}</span> | 
+                            مكتمل الحساب: <span id="heroCompletionPct" class="text-white fw-bold text-warning">{{ profile.completion_pct }}%</span> | 
                             آخر دخول: <span class="text-white fw-bold">{{ profile.last_login }}</span>
                         </h6>
                     </div>
@@ -129,7 +129,7 @@
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <label class="form-label fw-bold text-dark">التخصص الأكاديمي الرئيسي:</label>
-                                    <input type="text" id="profSpecInput" class="form-control form-control-sm bg-light" value="{{ profile.specialization }}" readonly>
+                                    <input type="text" id="profSpecInput" class="form-control form-control-sm" value="{{ profile.specialization }}">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold text-dark">المؤهل العلمي والشهادات:</label>
@@ -159,15 +159,30 @@
                             <div class="row g-3 extra-small max-w-50">
                                 <div class="col-12">
                                     <label class="form-label fw-bold text-dark">كلمة المرور الحالية:</label>
-                                    <input type="password" id="currPassInput" class="form-control form-control-sm" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" id="currPassInput" class="form-control form-control-sm" required placeholder="أدخل كلمة المرور الحالية">
+                                        <button class="btn btn-outline-secondary px-3" type="button" onclick="togglePasswordVisibility('currPassInput', this)" title="إظهار / إخفاء كلمة المرور">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold text-dark">كلمة المرور الجديدة:</label>
-                                    <input type="password" id="newPassInput" class="form-control form-control-sm" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" id="newPassInput" class="form-control form-control-sm" required placeholder="أدخل كلمة المرور الجديدة">
+                                        <button class="btn btn-outline-secondary px-3" type="button" onclick="togglePasswordVisibility('newPassInput', this)" title="إظهار / إخفاء كلمة المرور">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold text-dark">تأكيد كلمة المرور الجديدة:</label>
-                                    <input type="password" id="confirmPassInput" class="form-control form-control-sm" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" id="confirmPassInput" class="form-control form-control-sm" required placeholder="أعد كتابة كلمة المرور الجديدة">
+                                        <button class="btn btn-outline-secondary px-3" type="button" onclick="togglePasswordVisibility('confirmPassInput', this)" title="إظهار / إخفاء كلمة المرور">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-4 border-top pt-3">
@@ -245,24 +260,27 @@
                         <h6 class="fw-bold text-dark mb-3 border-bottom pb-2 extra-small"><i class="fa-solid fa-palette text-primary me-2"></i> تخصيص الثيم والمظهر العام للوحة المعلم:</h6>
                         <div class="row g-3 extra-small">
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light border-primary hover-scale" onclick="applyThemeMode('light')">
+                                <div id="themeCard-light" class="p-3 border rounded-4 text-center cursor-pointer bg-light hover-scale position-relative" onclick="applyThemeMode('light')">
                                     <i class="fa-solid fa-sun fs-2 text-warning mb-2"></i>
                                     <strong class="d-block text-dark mb-1">النمط الفاتح (Light Mode)</strong>
-                                    <small class="text-muted">الوضع الافتراضي النهاري المريح</small>
+                                    <small class="text-muted d-block">الوضع الافتراضي النهاري المريح</small>
+                                    <span class="active-badge badge bg-success rounded-pill position-absolute top-0 end-0 m-2 d-none"><i class="fa-solid fa-check me-1"></i> مفعل</span>
                                 </div>
                             </div>
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-dark text-white hover-scale" onclick="applyThemeMode('dark')">
+                                <div id="themeCard-dark" class="p-3 border rounded-4 text-center cursor-pointer bg-dark text-white hover-scale position-relative" onclick="applyThemeMode('dark')">
                                     <i class="fa-solid fa-moon fs-2 text-info mb-2"></i>
                                     <strong class="d-block text-white mb-1">النمط الداكن (Dark Mode)</strong>
-                                    <small class="text-white-50">مناسب للعمل في الإضاءة المنخفضة</small>
+                                    <small class="text-white-50 d-block">مناسب للعمل في الإضاءة المنخفضة</small>
+                                    <span class="active-badge badge bg-success rounded-pill position-absolute top-0 end-0 m-2 d-none"><i class="fa-solid fa-check me-1"></i> مفعل</span>
                                 </div>
                             </div>
                             <div class="col-12 col-md-4">
-                                <div class="p-3 border rounded-4 text-center cursor-pointer bg-light hover-scale" onclick="applyThemeMode('system')">
+                                <div id="themeCard-system" class="p-3 border rounded-4 text-center cursor-pointer bg-light hover-scale position-relative" onclick="applyThemeMode('system')">
                                     <i class="fa-solid fa-desktop fs-2 text-secondary mb-2"></i>
                                     <strong class="d-block text-dark mb-1">حسب مظهر النظام (System)</strong>
-                                    <small class="text-muted">المزامنة مع إعدادات جهازك</small>
+                                    <small class="text-muted d-block">المزامنة مع إعدادات جهازك</small>
+                                    <span class="active-badge badge bg-success rounded-pill position-absolute top-0 end-0 m-2 d-none"><i class="fa-solid fa-check me-1"></i> مفعل</span>
                                 </div>
                             </div>
                         </div>
@@ -401,23 +419,82 @@
         }
     };
 
+    window.highlightActiveThemeCard = function(mode) {
+        var modes = ['light', 'dark', 'system'];
+        modes.forEach(function(m) {
+            var card = document.getElementById('themeCard-' + m);
+            if (card) {
+                var badge = card.querySelector('.active-badge');
+                if (m === mode) {
+                    card.style.border = '2px solid #4f46e5';
+                    card.style.boxShadow = '0 0 15px rgba(79, 70, 229, 0.4)';
+                    if (badge) badge.classList.remove('d-none');
+                } else {
+                    card.style.border = '';
+                    card.style.boxShadow = '';
+                    if (badge) badge.classList.add('d-none');
+                }
+            }
+        });
+    };
+
     window.applyThemeMode = function(mode) {
-        if (mode === 'dark') {
-            document.documentElement.setAttribute('data-bs-theme', 'dark');
-            showProfileToast('تم تفعيل النمط الداكن 🌙 بنجاح', 'info');
-        } else if (mode === 'light') {
-            document.documentElement.removeAttribute('data-bs-theme');
-            showProfileToast('تم التبديل للنمط الفاتح النهاري ☀️', 'success');
-        } else {
-            document.documentElement.removeAttribute('data-bs-theme');
-            showProfileToast('تمت المزامنة التلقائية مع مظهر الجهاز 💻', 'info');
+        var effective = mode;
+        if (mode === 'system') {
+            effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
         }
+        
+        if (effective === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            showProfileToast('تم تفعيل النمط الداكن 🌙 بنجاح', 'info');
+        } else {
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            document.documentElement.setAttribute('data-theme', 'light');
+            showProfileToast('تم التبديل للنمط الفاتح النهاري ☀️', 'success');
+        }
+        
         localStorage.setItem('teacher_theme_mode', mode);
+        highlightActiveThemeCard(mode);
+        
+        var icon = document.getElementById('globalThemeIcon');
+        if (icon) {
+            icon.className = (effective === 'dark') ? 'fa-solid fa-sun text-warning fs-6' : 'fa-solid fa-moon text-warning fs-6';
+        }
+        
+        fetch('/profile/api/dashboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: mode })
+        }).catch(function(){});
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var savedMode = localStorage.getItem('teacher_theme_mode') || 'light';
+        highlightActiveThemeCard(savedMode);
+    });
+
+    window.togglePasswordVisibility = function(inputId, btn) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.className = 'fa-solid fa-eye-slash';
+            }
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.className = 'fa-regular fa-eye';
+            }
+        }
     };
 
     window.saveProfile = function() {
         var name = document.getElementById('profNameInput').value;
         var phone = document.getElementById('profPhoneInput').value;
+        var spec = document.getElementById('profSpecInput') ? document.getElementById('profSpecInput').value : '';
         var qual = document.getElementById('profQualInput').value;
         var hours = document.getElementById('profHoursInput').value;
         var bio = document.getElementById('profBioInput').value;
@@ -425,13 +502,33 @@
         fetch('/profile/api/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, phone: phone, qualification: qual, office_hours: hours, bio: bio })
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                specialization: spec,
+                qualification: qual,
+                office_hours: hours,
+                bio: bio
+            })
         })
         .then(function(res) { return res.json(); })
         .then(function(res) {
             if (res.success) {
                 showProfileToast(res.message, 'success');
+                if (res.profile) {
+                    var heroName = document.getElementById('heroTeacherName');
+                    if (heroName) heroName.textContent = res.profile.name;
+                    var heroSpec = document.getElementById('heroTeacherSpec');
+                    if (heroSpec) heroSpec.textContent = res.profile.specialization;
+                    var heroPct = document.getElementById('heroCompletionPct');
+                    if (heroPct) heroPct.textContent = res.profile.completion_pct + '%';
+                }
+            } else {
+                showProfileToast(res.error || 'حدث خطأ أثناء حفظ البيانات', 'error');
             }
+        })
+        .catch(function(err) {
+            showProfileToast('فشل الاتصال بالسيرفر', 'error');
         });
     };
 
@@ -531,12 +628,14 @@
         fetch('/profile/api/export?format=' + fmt)
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                var str = JSON.stringify(data, null, 2);
-                var blob = new Blob([str], { type: 'application/json' });
+                var str = (fmt === 'csv' && data.csv) ? data.csv : JSON.stringify(data, null, 2);
+                var mime = (fmt === 'csv') ? 'text/csv;charset=utf-8;' : 'application/json';
+                var ext = (fmt === 'csv') ? 'csv' : 'json';
+                var blob = new Blob(['\uFEFF' + str], { type: mime });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url;
-                a.download = 'teacher_profile_archive_' + Date.now() + '.json';
+                a.download = 'teacher_profile_archive_' + Date.now() + '.' + ext;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();

@@ -11,28 +11,25 @@ _MOCK_GRADING_STORE = {}
 def _get_teacher_and_scope(user_id):
     from models import User
     user = User.query.get(user_id)
-    if user and getattr(user, 'role', '') == 'admin':
-        teacher = Teacher.query.filter_by(user_id=user_id).first()
-        return teacher or user, set(), set()
-
     teacher = Teacher.query.filter_by(user_id=user_id).first()
-    if not teacher:
-        return None, set(), set()
-    
-    slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
-    teacher_class_ids = set()
-    teacher_section_ids = set()
-    for s in slots:
-        if s.CID: teacher_class_ids.add(s.CID)
-        if s.SectionID: teacher_section_ids.add(s.SectionID)
+    if teacher:
+        slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
+        teacher_class_ids = set()
+        teacher_section_ids = set()
+        for s in slots:
+            if s.CID: teacher_class_ids.add(s.CID)
+            if s.SectionID: teacher_section_ids.add(s.SectionID)
 
-    if not teacher_class_ids:
-        assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-        for st in assigned_students:
-            if st.CID: teacher_class_ids.add(st.CID)
-            if st.SectionID: teacher_section_ids.add(st.SectionID)
+        if not teacher_class_ids:
+            class_sec_pairs = db.session.query(Student.CID, Student.SectionID).filter(Student.is_deleted == False, Student.CID.isnot(None)).distinct().all()
+            for cid, sec_id in class_sec_pairs:
+                if cid: teacher_class_ids.add(cid)
+                if sec_id: teacher_section_ids.add(sec_id)
 
-    return teacher, teacher_class_ids, teacher_section_ids
+        return teacher, teacher_class_ids, teacher_section_ids
+    elif user:
+        return user, set(), set()
+    return None, set(), set()
 
 def get_homework_grading_workspace(homework_id, user_id):
     teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
@@ -76,15 +73,18 @@ def get_homework_grading_workspace(homework_id, user_id):
             submission_status = 'لم يسلم'
 
         if hm_record and hm_record.Score is not None:
-            grade = float(hm_record.Score)
+            raw_s = float(hm_record.Score)
+            max_s = float(hm_record.MaxScore) if hm_record.MaxScore else 10.0
+            grade = round((raw_s / max_s) * 10.0, 1) if max_s > 10.0 else round(min(10.0, max(0.0, raw_s)), 1)
             grading_status = 'تم التصحيح'
             feedback = saved_data.get('feedback', '') or (hm_record.Notes or '')
         elif 'grade' in saved_data:
-            grade = saved_data['grade']
+            raw_s = float(saved_data['grade'])
+            grade = round(raw_s / 10.0, 1) if raw_s > 10.0 else round(min(10.0, max(0.0, raw_s)), 1)
             grading_status = 'تم التصحيح'
             feedback = saved_data.get('feedback', '')
         elif submission_status == 'تم التسليم':
-            if st_val == 'مكتمل':
+            if st_val in ['مكتمل', 'مصحح']:
                 grade = 9.0
                 grading_status = 'تم التصحيح'
                 feedback = 'ممتاز، إجابة متكاملة'
@@ -210,8 +210,8 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
     if grade is not None:
         try:
             grade_val = float(grade)
-            if grade_val < 0 or grade_val > 100:
-                raise ValueError("Grade must be between 0 and 100")
+            if grade_val < 0.0:
+                grade_val = 0.0
         except ValueError as ve:
             raise ValueError(f"Invalid grade value: {str(ve)}")
 
@@ -220,7 +220,7 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
         _MOCK_GRADING_STORE[store_key] = {}
 
     if grade is not None:
-        _MOCK_GRADING_STORE[store_key]['grade'] = float(grade)
+        _MOCK_GRADING_STORE[store_key]['grade'] = grade_val
         # Database integration with HomeworkMarks model exclusively
         from models.grade import HomeworkMarks
         t_id_val = getattr(teacher, 'TeacherID', None)
@@ -228,9 +228,12 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
             SID=student_id,
             HomeworkID=hw.id
         ).first()
+        max_s_val = 100.0 if grade_val > 10.0 else 10.0
+        pct_val = round((grade_val / max_s_val) * 100.0, 1)
         if hm:
-            hm.Score = float(grade)
-            hm.MaxScore = 100
+            hm.Score = grade_val
+            hm.MaxScore = max_s_val
+            hm.Percentage = pct_val
             hm.SubID = hw.sub_id
             hm.TeacherID = t_id_val
             hm.is_deleted = False
@@ -240,12 +243,21 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
                 SubID=hw.sub_id,
                 HomeworkID=hw.id,
                 TeacherID=t_id_val,
-                Score=float(grade),
-                MaxScore=100,
+                Score=grade_val,
+                MaxScore=max_s_val,
+                Percentage=pct_val,
                 Notes=f"واجب: {hw.title}",
                 is_deleted=False
             )
             db.session.add(hm)
+
+        # Auto-update Homework.status based on grading progress
+        total_students_cnt = Student.query.filter_by(CID=hw.class_id, is_deleted=False).count()
+        graded_cnt = HomeworkMarks.query.filter_by(HomeworkID=hw.id, is_deleted=False).filter(HomeworkMarks.Score.isnot(None)).count()
+        if total_students_cnt > 0 and graded_cnt >= total_students_cnt:
+            hw.status = 'مكتمل'
+        elif graded_cnt > 0:
+            hw.status = 'بانتظار التصحيح'
         db.session.commit()
 
     if feedback is not None:

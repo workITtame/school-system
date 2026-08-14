@@ -130,7 +130,18 @@ def view_teacher(id):
     homework_count = Homework.query.filter(Homework.sub_id.in_(subject_ids)).count() if subject_ids else 0
     
     # Attendance Rate
-    attendance_rate = 96.5
+    from models import Attendance, Student
+    teacher_students = Student.query.filter(Student.CID.in_([slot.CID for slot in assigned_slots if slot.CID])).all() if assigned_slots else []
+    st_ids = [s.SID for s in teacher_students]
+    if st_ids:
+        att_recs = Attendance.query.filter(Attendance.SID.in_(st_ids)).all()
+        if att_recs:
+            pres_c = sum(1 for a in att_recs if a.Status in ['حاضر', 'متأخر', 'حضور', 'Present'])
+            attendance_rate = round((pres_c / len(att_recs)) * 100.0, 1)
+        else:
+            attendance_rate = 0.0
+    else:
+        attendance_rate = 0.0
 
     return render_template('teacher/view.html', 
                            teacher=teacher,

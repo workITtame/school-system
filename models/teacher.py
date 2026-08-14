@@ -25,6 +25,11 @@ class Teacher(db.Model, AuditMixin):
     QID = db.Column(db.Integer, db.ForeignKey('Qualifications.QID'))
     Status = db.Column(db.String(20), default='نشط')
     Notes = db.Column(db.Text, nullable=True)  # ملاحظات
+    Bio = db.Column(db.Text, nullable=True)
+    Qualification = db.Column(db.String(255), nullable=True)
+    OfficeHours = db.Column(db.String(255), nullable=True)
+    Specialization = db.Column(db.String(255), nullable=True)
+    Preferences = db.Column(db.Text, nullable=True)
     
     __table_args__ = (
         db.CheckConstraint('Salary >= 0', name='check_salary_positive'),

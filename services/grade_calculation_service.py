@@ -58,16 +58,20 @@ def calculate_participation(attendance_pct):
 
 def calculate_final_grade(exam_avg, hw_avg, participation, attendance_pct):
     """
-    Synthesize Final Grade according to current business formula:
-    Final Grade = round((hw_val * 2.0) + (exam_val * 0.6) + (part_val * 0.1) + (att_val * 0.1), 1)
+    Synthesize Final Grade normalized strictly between 0.0% and 100.0%.
+    Weights: Homework=20%, Exam=60%, Participation=10%, Attendance=10%
     """
     hw_val = hw_avg if hw_avg is not None else 0.0
+    # Normalize 0-10 HW scale to 0-100% scale if <= 10
+    hw_pct = hw_val * 10.0 if hw_val <= 10.0 else hw_val
+
     exam_val = exam_avg if exam_avg is not None else 0.0
     part_val = participation if participation is not None else 0.0
     att_val = attendance_pct if attendance_pct is not None else 0.0
 
     if hw_avg is not None or exam_avg is not None:
-        return round((hw_val * HOMEWORK_WEIGHT) + (exam_val * EXAM_WEIGHT) + (part_val * PARTICIPATION_WEIGHT) + (att_val * ATTENDANCE_WEIGHT), 1)
+        raw_total = (hw_pct * 0.20) + (exam_val * EXAM_WEIGHT) + (part_val * PARTICIPATION_WEIGHT) + (att_val * ATTENDANCE_WEIGHT)
+        return round(min(100.0, max(0.0, raw_total)), 1)
     return 0.0
 
 def is_passing(score, threshold=PASSING_SCORE_THRESHOLD):

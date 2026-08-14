@@ -43,6 +43,7 @@ def index():
         return render_template(
             'notifications.html',
             stats=stats,
+            metrics=stats,
             notifications=notification_items,
             subjects=subjects,
             classes=classes,

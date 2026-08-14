@@ -30,6 +30,9 @@ class Student(db.Model, AuditMixin):
 
 class Attendance(db.Model, AuditMixin):
     __tablename__ = 'Attendance'
+    __table_args__ = (
+        db.UniqueConstraint('SID', 'Date', name='uq_student_date_attendance'),
+    )
     AttendanceID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     SID = db.Column(db.Integer, db.ForeignKey('Student.SID', ondelete='CASCADE'))
     Date = db.Column(db.Date)

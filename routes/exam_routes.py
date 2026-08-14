@@ -79,6 +79,22 @@ def index():
 
         teacher = Teacher.query.filter_by(user_id=user_id).first()
 
+        today_date = date.today()
+        arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+        today_day_name = arabic_days[today_date.weekday()]
+        today_full_str = f"{today_day_name}، {today_date.strftime('%Y-%m-%d')}"
+
+        subj_names = [s.SubName for s in subjects] if subjects else []
+        cls_names = [c.CName for c in classes] if classes else []
+        sec_names = [sec.SectionName for sec in sections] if sections else []
+
+        teacher_meta = {
+            'name': teacher.TeacherName if (teacher and teacher.TeacherName) else (current_user.name if hasattr(current_user, 'name') else 'المعلم الأكاديمي'),
+            'subjects_str': ' | '.join(subj_names) if subj_names else 'جميع المواد الدراسية',
+            'classes_str': ' | '.join(cls_names) if cls_names else 'جميع الصفوف المخصصة',
+            'sections_str': ' | '.join(sec_names) if sec_names else 'جميع الشعب المتاحة'
+        }
+
         return render_template(
             'teacher/exams.html',
             kpi=kpi_stats,
@@ -88,7 +104,9 @@ def index():
             classes=classes,
             sections=sections,
             teacher_info=teacher,
-            today=date.today().strftime('%Y-%m-%d')
+            teacher_meta=teacher_meta,
+            today=today_date.strftime('%Y-%m-%d'),
+            today_full=today_full_str
         )
 
     # ══════════════════════════════════════════════════════

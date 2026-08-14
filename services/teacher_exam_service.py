@@ -66,23 +66,44 @@ def get_teacher_exam_statistics(user_id):
     ended_count = 0
     pending_grading = 0
 
+    from models.grade import Marks
+
     for ex in all_exams:
+        exam_marks = Marks.query.filter(
+            Marks.assessment_type == 'exam',
+            (Marks.ExamID == ex.ScheduleID) | (Marks.assessment_id == ex.ScheduleID),
+            Marks.is_deleted == False,
+            Marks.Score.isnot(None)
+        ).all()
+        
+        graded_count = len(exam_marks)
         st = ex.Status or 'مجدول'
-        if st in ['منشور', 'جارٍ', 'مجدول']:
+
+        if st in ['تم التصحيح', 'منتهي', 'منتهية', 'مكتمل', 'مصحح'] or graded_count > 0:
+            ended_count += 1
+        elif st in ['بانتظار التصحيح']:
+            pending_grading += 1
+        elif st in ['منشور', 'جارٍ', 'مجدول', 'نشط']:
             if ex.ExamDate and ex.ExamDate > today_date:
                 upcoming_count += 1
             else:
                 active_count += 1
-        elif st in ['منتهي', 'منتهية', 'مكتمل']:
-            ended_count += 1
-            pending_grading += 1
         else:
             active_count += 1
 
-    from models.grade import Marks
     from sqlalchemy import func
-    avg_score_raw = db.session.query(func.avg(Marks.Score)).scalar()
-    avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
+    exam_ids = [ex.ScheduleID for ex in all_exams]
+    if exam_ids:
+        avg_score_raw = db.session.query(func.avg(Marks.Score)).filter(
+            Marks.assessment_type == 'exam',
+            (Marks.ExamID.in_(exam_ids)) | (Marks.assessment_id.in_(exam_ids)),
+            Marks.is_deleted == False,
+            Marks.Score.isnot(None)
+        ).scalar()
+    else:
+        avg_score_raw = None
+
+    avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 90.0
 
     return {
         'total_count': total_count,
@@ -120,7 +141,16 @@ def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, 
         except (ValueError, TypeError): pass
 
     if status:
-        query = query.filter(ExamSchedule.Status == status)
+        from sqlalchemy import or_
+        st_clean = str(status).strip()
+        if st_clean in ['بانتظار التصحيح']:
+            query = query.filter(or_(ExamSchedule.Status == 'بانتظار التصحيح', ExamSchedule.Status == 'منشور', ExamSchedule.Status == 'تم التسليم'))
+        elif st_clean in ['منشور', 'النشطة', 'نشط']:
+            query = query.filter(or_(ExamSchedule.Status == 'منشور', ExamSchedule.Status == 'نشط', ExamSchedule.Status == 'مجدول', ExamSchedule.Status == 'جارٍ'))
+        elif st_clean in ['منتهي', 'المنتهية', 'مكتمل', 'تم التصحيح']:
+            query = query.filter(or_(ExamSchedule.Status == 'منتهي', ExamSchedule.Status == 'مكتمل', ExamSchedule.Status == 'تم التصحيح'))
+        else:
+            query = query.filter(ExamSchedule.Status == st_clean)
 
     if search:
         search_term = f"%{search.strip()}%"
@@ -136,15 +166,38 @@ def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, 
     today_date = date.today()
 
     items = []
+    from models.grade import Marks
+
     for ex in exams_page:
         sub_name = ex.subject.SubName if ex.subject else "غير محدد"
         cls_name = ex.school_class.CName if ex.school_class else "جميع الصفوف"
         sec_name = ex.section.SectionName if ex.section else "الكل"
 
-        total_students = Student.query.filter_by(CID=ex.CID, is_deleted=False).count() if ex.CID else 20
-        if total_students == 0: total_students = 20
+        total_students = Student.query.filter_by(CID=ex.CID, is_deleted=False).count() if ex.CID else 1
+        if total_students == 0: total_students = 1
+
+        exam_marks = Marks.query.filter(
+            Marks.assessment_type == 'exam',
+            (Marks.ExamID == ex.ScheduleID) | (Marks.assessment_id == ex.ScheduleID),
+            Marks.is_deleted == False,
+            Marks.Score.isnot(None)
+        ).all()
+
+        graded_count = len(exam_marks)
+        attended_count = len(exam_marks) if len(exam_marks) > 0 else 0
 
         st = ex.Status or 'منشور'
+        if graded_count > 0:
+            st = 'تم التصحيح'
+            if ex.Status != 'تم التصحيح':
+                ex.Status = 'تم التصحيح'
+                db.session.commit()
+
+        last_graded_at = None
+        if exam_marks:
+            timestamps = [m.created_at for m in exam_marks if hasattr(m, 'created_at') and m.created_at]
+            if timestamps:
+                last_graded_at = max(timestamps).strftime('%Y-%m-%d %H:%M')
 
         items.append({
             'id': ex.ScheduleID,
@@ -163,9 +216,10 @@ def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, 
             'location': ex.Location or 'قاعة الاختبارات الرئيسية',
             'status': st,
             'total_students': total_students,
-            'attended_count': int(total_students * 0.9),
-            'graded_count': int(total_students * 0.7) if st in ['منتهي', 'مكتمل'] else 0,
-            'pending_count': int(total_students * 0.3) if st in ['منتهي', 'مكتمل'] else total_students,
+            'attended_count': attended_count,
+            'graded_count': graded_count,
+            'pending_count': max(0, total_students - graded_count),
+            'graded_at': last_graded_at or 'لم يُصحح بعد',
             'created_at': ex.ExamDate.strftime('%Y-%m-%d') if ex.ExamDate else today_date.strftime('%Y-%m-%d')
         })
 

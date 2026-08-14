@@ -20,18 +20,31 @@ def _get_teacher_scope(user_id):
 
 def get_teacher_message_statistics(user_id):
     from models.message import Message
+    from models.notification import Notification
+    today_date = datetime.utcnow().date()
+    
     total_messages = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).count()
     unread_count = Message.query.filter_by(recipient_id=user_id, is_read=False).count()
-    sent_msgs = Message.query.filter_by(sender_id=user_id).count()
-    rec_msgs = Message.query.filter_by(recipient_id=user_id).count()
+    
+    sent_msgs = Message.query.filter(Message.sender_id == user_id, db.func.date(Message.timestamp) == today_date).count()
+    rec_msgs = Message.query.filter(Message.recipient_id == user_id, db.func.date(Message.timestamp) == today_date).count()
+    
+    bulk_sent = Message.query.filter(Message.sender_id == user_id).count()
+
+    latest_msg = Message.query.filter((Message.sender_id == user_id) | (Message.recipient_id == user_id)).order_by(Message.timestamp.desc()).first()
+    last_act = latest_msg.timestamp.strftime('%H:%M') if latest_msg and latest_msg.timestamp else '—'
 
     return {
         'total_conversations': total_messages,
+        'total_messages': total_messages,
         'unread_count': unread_count,
+        'unread_messages': unread_count,
+        'sent_messages': sent_msgs,
+        'received_messages': rec_msgs,
         'sent_today': sent_msgs,
         'received_today': rec_msgs,
-        'bulk_sent': 0,
-        'last_activity': datetime.now().strftime('%Y-%m-%d %H:%M') if total_messages > 0 else '—'
+        'bulk_sent': bulk_sent,
+        'last_activity': last_act
     }
 
 def get_conversations(user_id, search=None, filter_type=None, sort_by='newest'):
@@ -42,12 +55,31 @@ def get_conversations(user_id, search=None, filter_type=None, sort_by='newest'):
         students = [st for st in students if s_lower in st.SName.lower() or s_lower in str(st.SID)]
 
     conversations = []
-    for idx, st in enumerate(students, start=1):
-        unread = 1 if idx in [1, 3] else 0
-        is_pinned = True if idx == 1 else False
-        is_archived = True if filter_type == 'archived' and idx == 5 else False
+    for st in students:
+        st_user_id = st.user_id if hasattr(st, 'user_id') and st.user_id else st.SID
 
-        if filter_type == 'unread' and unread == 0:
+        # Query real messages between user_id and student
+        msgs = Message.query.filter(
+            ((Message.sender_id == user_id) & (Message.recipient_id == st_user_id)) |
+            ((Message.sender_id == st_user_id) & (Message.recipient_id == user_id)) |
+            ((Message.sender_id == user_id) & (Message.recipient_id == st.SID)) |
+            ((Message.sender_id == st.SID) & (Message.recipient_id == user_id))
+        ).order_by(Message.timestamp.desc()).all()
+
+        unread_cnt = sum(1 for m in msgs if m.recipient_id == user_id and not m.is_read)
+        latest_msg = msgs[0] if msgs else None
+
+        if latest_msg:
+            last_text = latest_msg.content
+            last_time = latest_msg.timestamp.strftime('%H:%M') if latest_msg.timestamp else 'اليوم'
+        else:
+            last_text = 'لا توجد رسائل سابقة. انقر لبدء المحادثة.'
+            last_time = '—'
+
+        is_pinned = False
+        is_archived = False
+
+        if filter_type == 'unread' and unread_cnt == 0:
             continue
         if filter_type == 'pinned' and not is_pinned:
             continue
@@ -61,15 +93,20 @@ def get_conversations(user_id, search=None, filter_type=None, sort_by='newest'):
             'academic_id': f"20240{st.SID}",
             'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
             'section_name': st.section.SectionName if st.section else 'شعبة أ',
-            'last_message': 'يرجى متابعة تسليم الواجب الأسبوعي الخاص بمادة الرياضيات.',
-            'last_message_time': '10:45 ص',
-            'unread_count': unread,
-            'is_read': (unread == 0),
+            'last_message': last_text,
+            'last_message_time': last_time,
+            'unread_count': unread_cnt,
+            'is_read': (unread_cnt == 0),
             'is_pinned': is_pinned,
             'is_archived': is_archived,
-            'online_status': 'متصل الآن' if idx % 2 == 1 else 'نشط منذ ساعة'
+            'online_status': 'نشط' if unread_cnt > 0 else 'غير متصل'
         })
 
+    if sort_by == 'unread_first':
+        conversations.sort(key=lambda x: x['unread_count'], reverse=True)
+    elif sort_by == 'name':
+        conversations.sort(key=lambda x: x['student_name'])
+    
     return conversations
 
 _STORED_MESSAGES = {}
@@ -84,37 +121,61 @@ def get_conversation(conversation_id, user_id):
     if class_ids and st.CID not in class_ids:
         raise PermissionError("Student outside teacher scope")
 
-    messages_list = [
-        {
-            'id': 1,
-            'sender': 'teacher',
-            'sender_name': teacher.TeacherName,
-            'text': f'السلام عليكم ورحمة الله، مرحباً ولي أمر الطالب {st.SName}. يرجى الاطلاع على التقرير الأكاديمي.',
-            'time': '09:30 ص',
-            'status': 'seen'
-        },
-        {
-            'id': 2,
-            'sender': 'student',
-            'sender_name': st.SName,
-            'text': 'أهلاً بك أستاذنا الفاضل، تم الاطلاع وسيتم تسليم الواجب اليوم بإذن الله.',
-            'time': '09:45 ص',
-            'status': 'seen'
-        }
-    ]
+    st_user_id = st.user_id if hasattr(st, 'user_id') and st.user_id else st.SID
 
+    # Query real messages from DB
+    db_msgs = Message.query.filter(
+        ((Message.sender_id == user_id) & (Message.recipient_id == st_user_id)) |
+        ((Message.sender_id == st_user_id) & (Message.recipient_id == user_id)) |
+        ((Message.sender_id == user_id) & (Message.recipient_id == st.SID)) |
+        ((Message.sender_id == st.SID) & (Message.recipient_id == user_id))
+    ).order_by(Message.timestamp.asc()).all()
+
+    # Auto-mark unread incoming messages as read
+    unread_msgs = [m for m in db_msgs if m.recipient_id == user_id and not m.is_read]
+    if unread_msgs:
+        for m in unread_msgs:
+            m.is_read = True
+        db.session.commit()
+
+    messages_list = []
+    teacher_name = teacher.TeacherName if teacher else 'المعلم'
+
+    for m in db_msgs:
+        is_from_teacher = (m.sender_id == user_id)
+        messages_list.append({
+            'id': m.id,
+            'sender': 'teacher' if is_from_teacher else 'student',
+            'sender_name': teacher_name if is_from_teacher else st.SName,
+            'text': m.content,
+            'time': m.timestamp.strftime('%H:%M') if m.timestamp else 'اليوم',
+            'status': 'seen' if m.is_read else 'delivered'
+        })
+
+    # Add memory messages if any
     stored = _STORED_MESSAGES.get(int(conversation_id), [])
-    messages_list.extend(stored)
+    if stored:
+        messages_list.extend(stored)
 
-    # Calculate real grades for student
-    st_marks = Marks.query.filter_by(SID=st.SID).all()
-    scores = [float(m.Score) for m in st_marks if m.Score is not None]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
-    
-    st_att = Attendance.query.filter_by(SID=st.SID).all()
-    att_pct = round((sum(1 for a in st_att if a.Status in ['حاضر', 'متأخر']) / len(st_att) * 100), 1) if st_att else 0.0
+    # Calculate real grades for student drawer
+    from models.grade import HomeworkMarks, Marks
+    from models import Attendance
 
-    status_txt = 'ممتاز 🟢' if avg_score >= 90 else ('جيد جداً 🟢' if avg_score >= 80 else ('جيد 🟡' if avg_score >= 70 else ('يحتاج متابعة 🟠' if avg_score > 0 else 'منتظم 🟢')))
+    hw_marks = HomeworkMarks.query.filter_by(SID=st.SID, is_deleted=False).all()
+    hw_scores = [float(hm.Score) for hm in hw_marks if hm.Score is not None]
+    hw_avg = round(sum(hw_scores) / len(hw_scores), 1) if hw_scores else 0.0
+    if hw_avg > 10.0:
+        hw_avg = round(hw_avg / 10.0, 1)
+
+    ex_marks = Marks.query.filter(Marks.SID == st.SID, Marks.assessment_type == 'exam', Marks.is_deleted == False).all()
+    ex_scores = [float(em.Score) for em in ex_marks if em.Score is not None]
+    exam_avg = round(sum(ex_scores) / len(ex_scores), 1) if ex_scores else 0.0
+
+    att_records = Attendance.query.filter_by(SID=st.SID).all()
+    att_pct = round((sum(1 for a in att_records if a.Status in ['حاضر', 'متأخر']) / len(att_records) * 100.0), 1) if att_records else 100.0
+
+    overall_grade = round((exam_avg * 0.7) + ((hw_avg * 10.0) * 0.3), 1) if (exam_avg or hw_avg) else 90.0
+    status_txt = 'ممتاز 🟢' if overall_grade >= 90 else ('جيد جداً 🟢' if overall_grade >= 80 else ('جيد 🟡' if overall_grade >= 70 else 'يحتاج متابعة 🟠'))
 
     student_summary = {
         'student_id': st.SID,
@@ -122,10 +183,10 @@ def get_conversation(conversation_id, user_id):
         'academic_id': f"20240{st.SID}",
         'class_name': st.school_class.CName if st.school_class else '—',
         'section_name': st.section.SectionName if st.section else '—',
-        'homework_avg': 0.0,
-        'exam_avg': avg_score,
+        'homework_avg': hw_avg,
+        'exam_avg': exam_avg,
         'attendance_pct': att_pct,
-        'final_grade': avg_score,
+        'final_grade': overall_grade,
         'status_text': status_txt
     }
 
@@ -153,34 +214,50 @@ def send_message(user_id, conversation_id, message_text):
     if not st or (class_ids and st.CID not in class_ids):
         raise PermissionError("Student outside teacher scope")
 
-    msg_id = int(datetime.now().timestamp())
-    try:
-        new_msg = Message(
-            sender_id=user_id,
-            recipient_id=st.SID,
-            content=message_text,
-            timestamp=datetime.now()
-        )
-        db.session.add(new_msg)
-        db.session.commit()
-        msg_id = new_msg.id
-    except Exception as e:
-        logger.warning(f"Fallback message save: {e}")
-        db.session.rollback()
+    st_user_id = st.user_id if hasattr(st, 'user_id') and st.user_id else st.SID
+    teacher_name = teacher.TeacherName if teacher else 'المعلم'
+
+    new_msg = Message(
+        sender_id=user_id,
+        recipient_id=st_user_id,
+        content=message_text,
+        timestamp=datetime.utcnow(),
+        is_read=False
+    )
+    db.session.add(new_msg)
+
+    # Create real Notification for recipient student
+    from models.notification import Notification
+    notif = Notification(
+        user_id=st_user_id,
+        title=f"رسالة جديدة من المعلم ({teacher_name})",
+        message=message_text[:150],
+        notification_type='message',
+        action_url='/messages/',
+        priority='normal',
+        is_read=False,
+        created_at=datetime.utcnow()
+    )
+    db.session.add(notif)
+    db.session.commit()
 
     msg_obj = {
-        'id': msg_id,
+        'id': new_msg.id,
         'sender': 'teacher',
-        'sender_name': teacher.TeacherName,
+        'sender_name': teacher_name,
         'text': message_text,
-        'time': datetime.now().strftime('%H:%M ص'),
+        'time': datetime.now().strftime('%H:%M'),
         'status': 'delivered'
     }
 
-    _STORED_MESSAGES.setdefault(int(conversation_id), []).append(msg_obj)
     return msg_obj
 
 def mark_as_read(user_id, conversation_id):
+    st = Student.query.get(conversation_id)
+    if st:
+        st_user_id = st.user_id if hasattr(st, 'user_id') and st.user_id else st.SID
+        Message.query.filter_by(sender_id=st_user_id, recipient_id=user_id, is_read=False).update({'is_read': True})
+        db.session.commit()
     return True
 
 def pin_conversation(user_id, conversation_id):
@@ -209,42 +286,70 @@ def get_student_profile(student_id, user_id):
     if not st or (class_ids and st.CID not in class_ids):
         raise PermissionError("Student outside teacher scope")
 
+    from models.grade import HomeworkMarks, Marks
+    from models import Attendance
+
+    hw_marks = HomeworkMarks.query.filter_by(SID=st.SID, is_deleted=False).all()
+    hw_scores = [float(hm.Score) for hm in hw_marks if hm.Score is not None]
+    hw_avg = round(sum(hw_scores) / len(hw_scores), 1) if hw_scores else 0.0
+    if hw_avg > 10.0:
+        hw_avg = round(hw_avg / 10.0, 1)
+
+    ex_marks = Marks.query.filter(Marks.SID == st.SID, Marks.assessment_type == 'exam', Marks.is_deleted == False).all()
+    ex_scores = [float(em.Score) for em in ex_marks if em.Score is not None]
+    exam_avg = round(sum(ex_scores) / len(ex_scores), 1) if ex_scores else 0.0
+
+    att_records = Attendance.query.filter_by(SID=st.SID).all()
+    att_pct = round((sum(1 for a in att_records if a.Status in ['حاضر', 'متأخر']) / len(att_records) * 100.0), 1) if att_records else 100.0
+
+    overall_grade = round((exam_avg * 0.7) + ((hw_avg * 10.0) * 0.3), 1) if (exam_avg or hw_avg) else 0.0
+    letter_grade = '🟢 ممتاز' if overall_grade >= 90 else ('🟢 جيد جداً' if overall_grade >= 80 else ('🟡 جيد' if overall_grade >= 70 else ('🟠 يحتاج متابعة' if overall_grade >= 60 else '🔴 متعثر')))
+
+    total_assessments = len(hw_scores) + len(ex_scores)
+    passed_assessments = sum(1 for s in hw_scores if s >= 6.0) + sum(1 for s in ex_scores if s >= 60.0)
+    pass_rate = round((passed_assessments / total_assessments) * 100.0, 1) if total_assessments > 0 else 0.0
+
     return {
         'student_id': st.SID,
         'student_name': st.SName,
-        'academic_id': f"20240{st.SID}",
-        'class_name': st.school_class.CName if st.school_class else 'الصف الأول',
-        'section_name': st.section.SectionName if st.section else 'شعبة أ',
-        'subject_name': 'الرياضيات والعلوم الأكاديمية',
-        'gpa': 94.5,
+        'academic_id': f"#{st.SID}",
+        'class_name': st.school_class.CName if st.school_class else '—',
+        'section_name': st.section.SectionName if st.section else '—',
+        'subject_name': teacher.subjects[0].SubName if (teacher and teacher.subjects) else 'المادة الدراسية',
+        'gpa': overall_grade,
         'rank': 1,
-        'letter_grade': '🟢 ممتاز (94.5%)',
-        'pass_rate': 100.0,
-        'homework_completion': '91.6%',
-        'exam_average': '95.0%',
-        'attendance_pct': '96.0%',
-        'final_grade': '94.5%',
-        'last_activity': 'اليوم 10:45 ص'
+        'letter_grade': f"{letter_grade} ({overall_grade}%)" if overall_grade > 0 else "لم تُحدد درجات بعد",
+        'pass_rate': pass_rate,
+        'homework_completion': f"{hw_avg}/10",
+        'exam_average': f"{exam_avg}%",
+        'attendance_pct': f"{att_pct}%",
+        'final_grade': f"{overall_grade}%",
+        'last_activity': 'اليوم'
     }
 
 def get_student_recent_activity(student_id, user_id):
     return [
-        {'time': 'اليوم 10:45 ص', 'type': 'homework', 'title': 'تم تسليم واجب الرياضيات #2', 'badge': 'تسليم متميز 🟢'},
-        {'time': 'أمس 02:30 م', 'type': 'exam', 'title': 'تم رصد درجة اختبار المنتصف (95%)', 'badge': 'ناجح 🟢'},
-        {'time': 'قبل يومين', 'type': 'attendance', 'title': 'تم تسجيل حضور بالحصص الأسبوعية', 'badge': 'حاضر 🟢'},
-        {'time': 'قبل 3 أيام', 'type': 'note', 'title': 'تم إضافة ملاحظة معلم المادة الأكاديمية', 'badge': 'ملاحظة إيجابية 📝'}
+        {'time': 'اليوم', 'type': 'homework', 'title': 'سجل الواجبات التراكمي للطالب', 'badge': 'نشط 🟢'},
+        {'time': 'اليوم', 'type': 'exam', 'title': 'سجل الاختبارات والدوريات', 'badge': 'مرصود 🟢'}
     ]
 
 def get_student_notifications(student_id, user_id):
-    return [
-        {'id': 1, 'date': '2026-08-04', 'type': 'تنبيه الواجبات', 'text': 'تم إرسال تذكير تسليم الواجب الأسبوعي'},
-        {'id': 2, 'date': '2026-08-01', 'type': 'تنبيه الدرجات', 'text': 'تم تحديث درجة اختبار المنتصف'}
-    ]
+    from models.notification import Notification
+    st = Student.query.get(student_id)
+    st_user_id = st.user_id if (st and hasattr(st, 'user_id') and st.user_id) else (st.SID if st else 0)
+    notifs = Notification.query.filter_by(user_id=st_user_id).order_by(Notification.created_at.desc()).limit(5).all()
+    
+    return [{
+        'id': n.id,
+        'date': n.created_at.strftime('%Y-%m-%d') if n.created_at else 'اليوم',
+        'type': n.notification_type or 'عام',
+        'text': n.message
+    } for n in notifs]
 
 def get_message_templates(user_id):
     return [
         {'id': 1, 'category': 'واجبات', 'text': 'يرجى تسليم الواجب المطلوب في أقرب وقت.'},
-        {'id': 2, 'category': 'اختبارات', 'text': 'يوجد اختبار قصير قريب يرجى الاستعداد والراجعة.'},
+        {'id': 2, 'category': 'اختبارات', 'text': 'يوجد اختبار قصير قريب يرجى الاستعداد والمراجعة.'},
         {'id': 3, 'category': 'درجات', 'text': 'تم تصحيح واجبك وتحديث الدرجة المرصودة بالسجل.'},
         {'id': 4, 'category': 'حضور', 'text': 'يرجى مراجعة سبب الغياب وتأكيده مع إدارة المدرسة.'},
         {'id': 5, 'category': 'تشجيع', 'text': 'أحسنت، ممتاز جداً استمر بهذا المستوى الأكاديمي 👏'},
@@ -264,8 +369,43 @@ def send_attendance_warning(user_id, student_id):
     return send_message(user_id, student_id, msg)
 
 def bulk_send(user_id, student_ids, message_text):
+    teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    if not student_ids:
+        student_ids = [st.SID for st in students]
+
+    sent_cnt = 0
+    from models.notification import Notification
+    teacher_name = teacher.TeacherName if teacher else 'المعلم'
+
+    for s_id in student_ids:
+        st = Student.query.get(s_id)
+        if st:
+            st_user_id = st.user_id if hasattr(st, 'user_id') and st.user_id else st.SID
+            new_msg = Message(
+                sender_id=user_id,
+                recipient_id=st_user_id,
+                content=message_text,
+                timestamp=datetime.utcnow(),
+                is_read=False
+            )
+            db.session.add(new_msg)
+            
+            notif = Notification(
+                user_id=st_user_id,
+                title=f"رسالة جديدة من المعلم ({teacher_name})",
+                message=message_text[:150],
+                notification_type='message',
+                action_url='/messages/',
+                priority='normal',
+                is_read=False,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(notif)
+            sent_cnt += 1
+
+    db.session.commit()
     return {
-        'sent_count': len(student_ids) if student_ids else 5,
+        'sent_count': sent_cnt,
         'message': message_text
     }
 

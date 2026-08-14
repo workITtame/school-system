@@ -335,6 +335,8 @@
                 document.getElementById('ugwGradeInput').max = ugwMaxGrade;
                 document.getElementById('ugwGradeSlider').max = ugwMaxGrade;
 
+                renderQuickGradeButtons(ugwMaxGrade);
+
                 ugwStudentsList = data.students || [];
                 updateWorkspaceMetrics();
                 applyFiltersAndRender();
@@ -353,6 +355,18 @@
                 if (skeletonEl) skeletonEl.innerHTML = '<div class="alert alert-danger p-3 extra-small">حدث خطأ أثناء الاتصال: ' + err.message + '</div>';
             });
     };
+
+    function renderQuickGradeButtons(maxG) {
+        var container = document.getElementById('ugwQuickGradeContainer');
+        if (!container) return;
+        var values = (maxG <= 10) ? [10, 9.5, 9, 8.5, 8, 7, 6, 0] : [100, 95, 90, 80, 70, 60, 0];
+        var html = '';
+        values.forEach(function(v) {
+            var btnClass = (v === maxG) ? 'btn-outline-success' : ((v >= maxG * 0.8) ? 'btn-outline-primary' : ((v >= maxG * 0.6) ? 'btn-outline-warning' : 'btn-outline-danger'));
+            html += '<button type="button" class="btn btn-sm ' + btnClass + ' rounded-pill px-3 font-monospace fw-bold me-1 mb-1" onclick="setQuickGrade(' + v + ')">' + v + '</button>';
+        });
+        container.innerHTML = html;
+    }
 
     function updateWorkspaceMetrics() {
         var total = ugwStudentsList.length;
@@ -428,7 +442,12 @@
             var textMutedClass = isSelected ? 'text-white-50' : 'text-muted';
             
             var hasGrade = (s.score !== undefined && s.score !== null) || (s.grade !== undefined && s.grade !== null);
-            var scoreVal = hasGrade ? (s.score !== undefined && s.score !== null ? s.score : s.grade) : null;
+            var rawScoreVal = hasGrade ? (s.score !== undefined && s.score !== null ? s.score : s.grade) : null;
+            var scoreVal = rawScoreVal;
+            if (scoreVal !== null && parseFloat(scoreVal) > ugwMaxGrade && ugwMaxGrade <= 10) {
+                scoreVal = Math.round((parseFloat(scoreVal) / 10) * 10) / 10;
+            }
+
             var gradeText = hasGrade ? (scoreVal + ' / ' + ugwMaxGrade) : 'لم ترصد';
             var isSubmitted = hasGrade || s.submission_status === 'تم التسليم' || s.attendance === 'حاضر';
             var subStatusText = isSubmitted ? 'تم التسليم' : 'لم يسلم';
@@ -482,7 +501,11 @@
                 gradeInput.classList.remove('is-invalid');
 
                 var draftFeedback = sessionStorage.getItem('ugw_draft_feedback_' + studentId);
-                var val = sub.grade !== null ? sub.grade : '';
+                var rawVal = sub.grade !== null ? sub.grade : '';
+                var val = rawVal;
+                if (val !== '' && parseFloat(val) > ugwMaxGrade && ugwMaxGrade <= 10) {
+                    val = Math.round((parseFloat(val) / 10) * 10) / 10;
+                }
                 gradeInput.value = val;
                 gradeSlider.value = val !== '' ? val : 0;
                 feedbackInput.value = draftFeedback || sub.feedback || '';

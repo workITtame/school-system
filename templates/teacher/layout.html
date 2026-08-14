@@ -1,6 +1,22 @@
 {% extends 'base.html' %}
 
 {% block body %}
+<script>
+(function() {
+    var mode = localStorage.getItem('teacher_theme_mode') || '{{ dash_prefs.theme if dash_prefs and dash_prefs.theme else "light" }}';
+    var effectiveTheme = mode;
+    if (mode === 'system') {
+        effectiveTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    if (effectiveTheme === 'dark') {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+        document.documentElement.setAttribute('data-theme', 'light');
+    }
+})();
+</script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/teacher-dashboard.css') }}">
 
 <div class="app-wrapper d-flex" data-turbo="false">
@@ -80,6 +96,11 @@
                 </span>
 
                 <div class="d-flex align-items-center gap-3 ms-auto">
+                    <!-- Quick Theme Mode Toggle Button -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle me-1 d-flex align-items-center justify-content-center shadow-sm" id="globalThemeToggleBtn" onclick="toggleGlobalTheme()" style="width: 38px; height: 38px;" title="التبديل بين الوضع الليلي والنهاري">
+                        <i class="fa-solid fa-moon text-warning fs-6" id="globalThemeIcon"></i>
+                    </button>
+
                     <div class="dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 p-1 text-dark" href="#" id="teacherUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="avatar-circle bg-primary text-white rounded-circle fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
@@ -136,4 +157,33 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/teacher-dashboard.js') }}?v=178589"></script>
+<script>
+window.toggleGlobalTheme = function() {
+    var current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+    var target = (current === 'dark') ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-bs-theme', target);
+    document.documentElement.setAttribute('data-theme', target);
+    localStorage.setItem('teacher_theme_mode', target);
+    
+    var icon = document.getElementById('globalThemeIcon');
+    if (icon) {
+        icon.className = (target === 'dark') ? 'fa-solid fa-sun text-warning fs-6' : 'fa-solid fa-moon text-warning fs-6';
+    }
+    
+    fetch('/profile/api/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: target })
+    }).catch(function(){});
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    var cur = document.documentElement.getAttribute('data-bs-theme') || 'light';
+    var icon = document.getElementById('globalThemeIcon');
+    if (icon) {
+        icon.className = (cur === 'dark') ? 'fa-solid fa-sun text-warning fs-6' : 'fa-solid fa-moon text-warning fs-6';
+    }
+});
+</script>
 {% endblock %}

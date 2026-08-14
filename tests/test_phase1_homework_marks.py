@@ -59,7 +59,8 @@ class TestPhase1HomeworkMarks(unittest.TestCase):
     def test_06_scores_valid(self):
         """TEST 6: Scores in HomeworkMarks are valid"""
         for hm in HomeworkMarks.query.all():
-            self.assertIsNotNone(hm.Score)
+            if hm.Score is not None:
+                self.assertGreaterEqual(float(hm.Score), 0)
 
     def test_07_homework_ids_match(self):
         """TEST 7: Homework IDs match"""

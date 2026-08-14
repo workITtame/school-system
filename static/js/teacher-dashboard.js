@@ -618,6 +618,7 @@ window.pageAttendanceUnsavedCount = 0;
 
 function setPageStudentAttendance(sid, newStatus) {
     window.pageAttendanceEdits[sid] = newStatus;
+    const exactTime = typeof window.getExactFormattedTime === 'function' ? window.getExactFormattedTime() : new Date().toLocaleTimeString('ar-SA');
     
     const rowEl = document.getElementById(`page-att-row-${sid}`);
     if (rowEl) {
@@ -628,12 +629,18 @@ function setPageStudentAttendance(sid, newStatus) {
         buttons.forEach(btn => {
             btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-secondary';
             if (btn.textContent.includes(newStatus)) {
-                if (newStatus === 'حاضر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold';
-                else if (newStatus === 'غائب') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold';
-                else if (newStatus === 'متأخر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold';
-                else if (newStatus === 'بعذر' || newStatus === 'مستأذن') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold';
+                if (newStatus === 'حاضر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold active';
+                else if (newStatus === 'غائب') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold active';
+                else if (newStatus === 'متأخر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold active';
+                else if (newStatus === 'بعذر' || newStatus === 'مستأذن') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold active';
             }
         });
+
+        const timeSpan = rowEl.querySelector('.att-time-text');
+        if (timeSpan) {
+            timeSpan.textContent = exactTime;
+            timeSpan.className = 'att-time-text fw-bold text-primary';
+        }
     }
 
     window.pageAttendanceUnsavedCount = Object.keys(window.pageAttendanceEdits).length;

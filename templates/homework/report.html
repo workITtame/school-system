@@ -1,30 +1,36 @@
 {% extends 'layout.html' %}
 
-{% block title %}تقرير الطالب{% endblock %}
+{% block title %}كشف درجات الواجبات المدرسية{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 fade-in d-print-none">
-    <h3 class="text-primary fw-bold"><i class="fa-solid fa-file-pdf me-2"></i> طباعة كشوفات الدرجات</h3>
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in d-print-none font-cairo">
     <div>
-        {% if report_data %}
-        <a href="{{ url_for('reports.student_report_pdf_fast', student_id=report_data.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="btn btn-danger rounded-pill px-3 shadow-sm fw-bold me-2">
-            <i class="fa-solid fa-bolt me-1"></i> تحميل سريع PDF
-        </a>
-        <a href="{{ url_for('reports.student_report_excel', student_id=report_data.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="btn btn-success rounded-pill px-3 shadow-sm fw-bold me-2">
-            <i class="fa-solid fa-file-excel me-2"></i> تصدير Excel
-        </a>
-        {% endif %}
-        <button onclick="window.print()" class="btn btn-primary rounded-pill px-3 shadow-sm fw-bold">
-            <i class="fa-solid fa-print me-2"></i> طباعة مباشرة
+        <h3 class="text-primary fw-bold mb-1"><i class="fa-solid fa-list-check me-2"></i> طباعة وعرض كشوفات درجات الواجبات</h3>
+        <p class="text-muted small mb-0 font-monospace">عرض وتصدير نتائج وسجلات تصحيح الواجبات والتكليفات المدرسية للطلاب.</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if report_data or report_list %}
+        <button onclick="window.print()" class="btn btn-danger rounded-pill px-3 shadow-sm fw-bold me-2">
+            <i class="fa-solid fa-file-pdf me-1"></i> تحميل سريع PDF / طباعة
         </button>
+        <button onclick="exportReportExcel()" class="btn btn-success rounded-pill px-3 shadow-sm fw-bold me-2">
+            <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+        </button>
+        {% endif %}
+        <a href="{{ url_for('homework.index') }}" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm fw-bold">
+            <i class="fa-solid fa-arrow-right me-1"></i> العودة للواجبات
+        </a>
     </div>
 </div>
 
-<div class="row fade-in d-print-none mb-4">
+<!-- ========================================== -->
+<!-- SECTION 1: FILTER FORM BAR (6 FIELDS)     -->
+<!-- ========================================== -->
+<div class="row fade-in d-print-none mb-4 font-cairo">
     <div class="col-lg-12">
-        <div class="card shadow-sm border-0 rounded-4">
+        <div class="card shadow-sm border-0 rounded-4 bg-white">
             <div class="card-body p-4">
-                <form method="GET" action="{{ url_for('grades.student_report_page') }}" class="row g-3 align-items-end">
+                <form method="GET" action="{{ url_for('homework.report') }}" class="row g-3 align-items-end" id="hwReportFilterForm">
                     
                     <!-- 1. الفصل الدراسي -->
                     <div class="col-6 col-md-2">
@@ -37,10 +43,10 @@
                         </select>
                     </div>
 
-                    <!-- 2. الصف -->
+                    <!-- 2. الصف الدراسي -->
                     <div class="col-6 col-md-2">
                         <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-layer-group text-primary me-1"></i> الصف الدراسي</label>
-                        <select name="class_id" id="reportClassSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light">
+                        <select name="class_id" id="reportClassSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light" onchange="this.form.submit()">
                             <option value="">جميع الصفوف</option>
                             {% for c in classes %}
                             <option value="{{ c.CID }}" {% if request.args.get('class_id')|string == c.CID|string %}selected{% endif %}>{{ c.CName }}</option>
@@ -51,7 +57,7 @@
                     <!-- 3. الشعبة -->
                     <div class="col-6 col-md-2">
                         <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-users-rectangle text-primary me-1"></i> الشعبة</label>
-                        <select name="section_id" id="reportSectionSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light">
+                        <select name="section_id" id="reportSectionSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light" onchange="this.form.submit()">
                             <option value="">جميع الشعب</option>
                             {% for sec in sections %}
                             <option value="{{ sec.SectionID }}" {% if request.args.get('section_id')|string == sec.SectionID|string %}selected{% endif %}>{{ sec.SectionName }}</option>
@@ -59,10 +65,10 @@
                         </select>
                     </div>
 
-                    <!-- 4. المادة -->
+                    <!-- 4. المادة الدراسية -->
                     <div class="col-6 col-md-2">
                         <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-book text-primary me-1"></i> المادة الدراسية</label>
-                        <select name="subject_id" id="reportSubjectSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light">
+                        <select name="subject_id" id="reportSubjectSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light" onchange="this.form.submit()">
                             <option value="">جميع المواد</option>
                             {% for sub in subjects %}
                             <option value="{{ sub.SubID }}" {% if request.args.get('subject_id')|string == sub.SubID|string %}selected{% endif %}>{{ sub.SubName }}</option>
@@ -70,18 +76,18 @@
                         </select>
                     </div>
 
-                    <!-- 5. نوع الاختبار -->
+                    <!-- 5. الواجب الخاص بالمادة -->
                     <div class="col-6 col-md-2">
-                        <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-vial text-primary me-1"></i> نوع الاختبار</label>
-                        <select name="exam_id" class="form-select form-select-sm rounded-pill font-monospace bg-light">
-                            <option value="">جميع الاختبارات</option>
-                            {% for ex in exams %}
-                            <option value="{{ ex.ExamID }}" {% if request.args.get('exam_id')|string == ex.ExamID|string %}selected{% endif %}>{{ ex.ExamName }}</option>
+                        <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-book-bookmark text-primary me-1"></i> الواجب الخاص بالمادة</label>
+                        <select name="homework_id" id="reportHomeworkSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light">
+                            <option value="">جميع الواجبات</option>
+                            {% for hw in homeworks %}
+                            <option value="{{ hw.id }}" {% if request.args.get('homework_id')|string == hw.id|string %}selected{% endif %}>{{ hw.title }} ({{ hw.subject.SubName if hw.subject else '' }})</option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <!-- 6. اختر الطالب (اختياري) -->
+                    <!-- 6. اختر الطالب (اختياري / كشف كامل) -->
                     <div class="col-12 col-md-2">
                         <label class="form-label text-muted fw-bold extra-small"><i class="fa-solid fa-user-graduate text-primary me-1"></i> اختر الطالب (SID)</label>
                         <select name="student_id" id="reportStudentSelect" class="form-select form-select-sm rounded-pill font-monospace bg-light">
@@ -94,11 +100,11 @@
 
                     <!-- Action Buttons -->
                     <div class="col-12 text-end mt-3">
-                        <a href="{{ url_for('grades.student_report_page') }}" class="btn btn-outline-secondary rounded-pill btn-sm me-2 px-3 fw-bold">
+                        <a href="{{ url_for('homework.report') }}" class="btn btn-outline-secondary rounded-pill btn-sm me-2 px-3 fw-bold">
                             <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
                         </a>
                         <button type="submit" class="btn btn-success rounded-pill btn-sm px-4 fw-bold shadow-sm">
-                            <i class="fa-solid fa-magnifying-glass me-1"></i> عرض الكشف
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> عرض كشف الدرجات
                         </button>
                     </div>
                 </form>
@@ -107,24 +113,27 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- SECTION 2: REPORT DISPLAY & PRINT AREA     -->
+<!-- ========================================== -->
 {% if report_data %}
-<!-- Single Student Report Card Print Area -->
-<div class="print-area">
+<!-- Single Student Homework Report Card Print Area -->
+<div class="print-area font-cairo" dir="rtl">
     <div class="report-header text-center mb-4 pb-3 border-bottom border-2 border-dark">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
+            <div class="text-start">
                 <h4 class="fw-bold mb-1">مدرسة المستقبل</h4>
-                <p class="text-muted mb-0">إدارة التقييم والاختبارات</p>
+                <p class="text-muted mb-0">إدارة التقييم والواجبات المدرسية</p>
             </div>
             <div>
                 <img src="{{ url_for('static', filename='img/default_avatar.png') }}" style="width: 80px; opacity: 0.2;">
             </div>
-            <div class="text-start">
+            <div class="text-end">
                 <h4 class="fw-bold mb-1">Future Academy School</h4>
-                <p class="text-muted mb-0">Evaluation Department</p>
+                <p class="text-muted mb-0">Homework Evaluation Dept</p>
             </div>
         </div>
-        <h3 class="fw-bold text-uppercase mt-4" style="letter-spacing: 2px;">شهادة إشعار درجات</h3>
+        <h3 class="fw-bold text-uppercase mt-4" style="letter-spacing: 2px;">إشعار كشف درجات الواجبات والمهمات</h3>
     </div>
 
     <div class="row mb-4">
@@ -145,35 +154,45 @@
     <table class="table table-bordered text-center align-middle print-table">
         <thead class="table-dark print-dark-header">
             <tr>
-                <th class="py-3">رقم المادة</th>
+                <th class="py-3">#</th>
+                <th class="py-3">عنوان الواجب (Homework)</th>
                 <th class="py-3">المادة الدراسية (Subject)</th>
-                <th class="py-3">الدرجة (Score)</th>
-                <th class="py-3">التقدير (Grade)</th>
+                <th class="py-3">حالة التسليم</th>
+                <th class="py-3">الدرجة المرصودة (Score)</th>
+                <th class="py-3">الملاحظات والتقدير</th>
             </tr>
         </thead>
         <tbody>
             {% set ns = namespace(total=0, count=0) %}
-            {% for mark in report_data.marks %}
+            {% for item in report_data.marks %}
             <tr>
-                <td class="fw-bold text-muted">{{ mark.SubID }}</td>
-                <td class="fw-bold text-start ps-4">{{ mark.subject.SubName if mark.subject else 'غير محدد' }}</td>
-                <td class="fw-bold fs-5">{{ mark.Score }}</td>
-                <td class="fw-bold fs-5">{{ mark.Grade }}</td>
+                <td class="fw-bold text-muted">{{ loop.index }}</td>
+                <td class="fw-bold text-start ps-3">{{ item.homework.title if item.homework is defined and item.homework else (item.Notes or 'واجب مدرسة') }}</td>
+                <td class="fw-bold">{{ item.subject.SubName if item.subject is defined and item.subject else (item.homework.subject.SubName if item.homework is defined and item.homework and item.homework.subject else 'المادة') }}</td>
+                <td>
+                    {% if item.is_submitted or (item.Score is not none and item.Score > 0) %}
+                    <span class="badge bg-success-subtle text-success border px-3 py-1">تم التسليم</span>
+                    {% else %}
+                    <span class="badge bg-warning-subtle text-warning border px-3 py-1">لم يسلم</span>
+                    {% endif %}
+                </td>
+                <td class="fw-bold fs-5 text-primary">{{ item.Score if item.Score is not none else '—' }} / {{ item.MaxScore if item.MaxScore is defined else '10' }}</td>
+                <td class="text-muted">{{ item.Notes or 'ممتاز، استمر بالاجتهاد' }}</td>
             </tr>
-            {% set ns.total = ns.total + (mark.Score or 0) %}
+            {% set ns.total = ns.total + (item.Score or 0) %}
             {% set ns.count = ns.count + 1 %}
             {% else %}
             <tr>
-                <td colspan="4" class="py-4 text-muted">لا توجد درجات مرصودة لهذا الطالب بالمعايير المحددة.</td>
+                <td colspan="6" class="py-4 text-muted">لا توجد درجات واجبات مرصودة لهذا الطالب بالمعايير المحددة.</td>
             </tr>
             {% endfor %}
         </tbody>
         {% if ns.count > 0 %}
         <tfoot class="table-light print-light-footer">
             <tr>
-                <td colspan="2" class="text-end fw-bold pe-4 py-3">المجموع الكلي والمتوسط:</td>
+                <td colspan="4" class="text-end fw-bold pe-4 py-3">المجموع الكلي للواجبات والمرصود:</td>
                 <td class="fw-bold text-success fs-5 py-3">{{ ns.total }}</td>
-                <td class="fw-bold text-primary fs-5 py-3">Avg: {{ (ns.total / ns.count)|round(2) }}%</td>
+                <td class="fw-bold text-primary fs-5 py-3">Avg: {{ (ns.total / ns.count)|round(2) }} / 10</td>
             </tr>
         </tfoot>
         {% endif %}
@@ -195,12 +214,12 @@
     </div>
 </div>
 {% elif report_list %}
-<!-- Class / Multiple Students Report Area -->
-<div class="print-area">
+<!-- Class / Multiple Students Homework Group Report Area -->
+<div class="print-area font-cairo" dir="rtl">
     <div class="report-header text-center mb-4 pb-3 border-bottom border-2 border-dark">
-        <h3 class="fw-bold">كشف نتائج درجات الطلاب الجماعي</h3>
+        <h3 class="fw-bold mb-1">كشف درجات نتائج الواجبات المدرسية الجماعي</h3>
         <p class="text-muted">
-            إجمالي النتائج: {{ report_list|length }} طالب وطالبة
+            إجمالي الطلاب المعروضين: {{ report_list|length }} طالب وطالبة | تاريخ التقرير: {{ today }}
         </p>
     </div>
 
@@ -212,34 +231,42 @@
                 <th>اسم الطالب</th>
                 <th>الصف</th>
                 <th>الشعبة</th>
+                <th>عنوان الواجب</th>
                 <th>المادة</th>
-                <th>نوع الاختبار</th>
-                <th>الدرجة</th>
+                <th>حالة التسليم</th>
+                <th>الدرجة المرصودة</th>
             </tr>
         </thead>
         <tbody>
             {% for item in report_list %}
                 {% if item.marks %}
-                    {% for mark in item.marks %}
+                    {% for m in item.marks %}
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td class="font-monospace">{{ item.student.SID }}</td>
-                        <td class="fw-bold text-start ps-3"><a href="{{ url_for('grades.student_report_page', student_id=item.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="text-decoration-none text-dark">{{ item.student.SName }}</a></td>
+                        <td class="fw-bold text-start ps-3"><a href="{{ url_for('homework.report', student_id=item.student.SID, term_id=request.args.get('term_id'), homework_id=request.args.get('homework_id')) }}" class="text-decoration-none text-dark">{{ item.student.SName }}</a></td>
                         <td>{{ item.student.school_class.CName if item.student.school_class else '—' }}</td>
                         <td>{{ item.student.section.SectionName if item.student.section else '—' }}</td>
-                        <td>{{ mark.subject.SubName if mark.subject else 'جميع المواد' }}</td>
-                        <td>{{ mark.exam.ExamName if mark.exam else 'جميع الاختبارات' }}</td>
-                        <td class="fw-bold text-primary fs-6">{{ mark.Score if mark.Score is not none else '—' }}</td>
+                        <td>{{ m.homework.title if m.homework is defined and m.homework else 'واجب مادة' }}</td>
+                        <td>{{ m.subject.SubName if m.subject is defined and m.subject else (m.homework.subject.SubName if m.homework is defined and m.homework and m.homework.subject else 'المادة') }}</td>
+                        <td>
+                            {% if m.is_submitted or (m.Score is not none and m.Score > 0) %}
+                            <span class="badge bg-success-subtle text-success border px-2 py-1">تم التسليم</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning border px-2 py-1">لم يسلم</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-primary fs-6">{{ m.Score if m.Score is not none else '—' }} / {{ m.MaxScore if m.MaxScore is defined else '10' }}</td>
                     </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td class="font-monospace">{{ item.student.SID }}</td>
-                        <td class="fw-bold text-start ps-3"><a href="{{ url_for('grades.student_report_page', student_id=item.student.SID, term_id=request.args.get('term_id'), exam_id=request.args.get('exam_id')) }}" class="text-decoration-none text-dark">{{ item.student.SName }}</a></td>
+                        <td class="fw-bold text-start ps-3"><a href="{{ url_for('homework.report', student_id=item.student.SID, term_id=request.args.get('term_id')) }}" class="text-decoration-none text-dark">{{ item.student.SName }}</a></td>
                         <td>{{ item.student.school_class.CName if item.student.school_class else '—' }}</td>
                         <td>{{ item.student.section.SectionName if item.student.section else '—' }}</td>
-                        <td colspan="3" class="text-muted">لم ترصد درجات بعد</td>
+                        <td colspan="4" class="text-muted">لم ترصد درجات واجب بعد لهذا الطالب</td>
                     </tr>
                 {% endif %}
             {% endfor %}
@@ -247,11 +274,11 @@
     </table>
 </div>
 {% else %}
-<div class="text-center py-5 text-muted d-print-none card border-0 shadow-sm rounded-4">
+<div class="text-center py-5 text-muted d-print-none card border-0 shadow-sm rounded-4 font-cairo">
     <div class="card-body py-5">
-        <i class="fa-solid fa-filter-circle-dollar fs-1 text-primary opacity-50 mb-3"></i>
-        <h5 class="fw-bold font-monospace text-dark mb-2">منصة عرض وطباعة كشوفات نتائج درجات الطلاب</h5>
-        <p class="text-muted small">اختر المعايير أعلاه (الفصل الدراسي، الصف، الشعبة، المادة، نوع الاختبار) وحدد الطالب اختيارياً لعرض أو طباعة كشف النتائج فورياً.</p>
+        <i class="fa-solid fa-list-check fs-1 text-primary opacity-50 mb-3"></i>
+        <h5 class="fw-bold font-monospace text-dark mb-2">منصة عرض وطباعة كشوفات درجات الواجبات</h5>
+        <p class="text-muted small">حدد معايير الفلترة أعلاه (الفصل الدراسي، الصف، الشعبة، المادة، الواجب الخاص بالمادة، والطلاب) لعرض كشف الدرجات للطباعة فورياً.</p>
     </div>
 </div>
 {% endif %}
@@ -286,8 +313,15 @@
         background-color: #f8f9fa !important;
         -webkit-print-color-adjust: exact;
     }
-    @page { margin: 1cm; }
+    @page { margin: 1cm; size: A4 landscape; }
 }
 </style>
 
+<script>
+function exportReportExcel() {
+    const form = document.getElementById('hwReportFilterForm');
+    const params = new URLSearchParams(new FormData(form));
+    window.location.href = `/homework/export/excel?${params.toString()}`;
+}
+</script>
 {% endblock %}

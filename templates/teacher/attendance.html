@@ -33,11 +33,11 @@
             <!-- Hero Meta Quick Pills -->
             <div class="col-12 col-md-5 col-xl-4 text-md-end">
                 <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
-                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
-                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1 fw-bold fs-7 shadow-sm">
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: <span id="currentDateDayDisplay">{{ today_display or (today_day_name ~ ' ' ~ today) if (today_display or today_day_name) else today }}</span>
                     </span>
-                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
-                        <i class="fa-solid fa-clock-rotate-left text-info me-1"></i> الوقت الحالي: {{ current_lesson.time }}
+                    <span class="badge hero-pill-badge rounded-pill px-3 py-1 fw-bold fs-7 shadow-sm">
+                        <i class="fa-solid fa-clock text-info me-1"></i> الوقت الحالي: <span id="currentTimeLiveDisplay">--:--:--</span>
                     </span>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                         <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small fw-bold">
                             <i class="fa-solid fa-circle-dot fa-beat text-danger me-1"></i> {{ current_lesson.status or 'الحصة الحالية' }}
                         </span>
-                        <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1"></i> التوقيت: {{ current_lesson.time }}</small>
+                        <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1"></i> التوقيت: <span id="currentLessonTimeLiveDisplay">{{ current_lesson.time if current_lesson.time != 'غير محدد' else '--:--' }}</span></small>
                     </div>
                     <h5 class="fw-bold text-white mb-0">{{ current_lesson.subject }} — {{ current_lesson.class_sec_label }}</h5>
                 </div>
@@ -87,11 +87,11 @@
     </div>
 
     <!-- 4. UNIFIED TOOLBAR & PRIMARY ACTIONS DROPDOWN -->
-    <div class="card rounded-4 shadow-sm border-0 mb-4">
-        <div class="card-body p-3">
+    <div class="card rounded-4 shadow-sm border-0 mb-4" style="overflow: visible !important; position: relative; z-index: 1050;">
+        <div class="card-body p-3" style="overflow: visible !important;">
             <form method="GET" action="{{ url_for('attendance.index') }}" id="attendanceFilterForm" class="row g-2 align-items-center extra-small">
                 <!-- Live Search Input -->
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-3 col-xl-2">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                         <input type="text" id="attendanceLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو رقم الطالب (#SID)..." onkeyup="filterPageAttendanceList(this.value)">
@@ -99,7 +99,7 @@
                 </div>
 
                 <!-- Class Filter -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 col-xl-2">
                     <select name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">جميع الصفوف</option>
                         {% for c in classes %}
@@ -109,7 +109,7 @@
                 </div>
 
                 <!-- Section Filter -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 col-xl-2">
                     <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">جميع الشعب</option>
                         {% for s in sections %}
@@ -118,8 +118,18 @@
                     </select>
                 </div>
 
+                <!-- Subject Filter (Teacher Assigned Scope) -->
+                <div class="col-6 col-md-2 col-xl-2">
+                    <select name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">جميع المواد</option>
+                        {% for sub in teacher_subjects %}
+                            <option value="{{ sub.SubID }}" {% if request.args.get('subject_id')|int == sub.SubID or selected_subject_id|int == sub.SubID %}selected{% endif %}>{{ sub.SubName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
                 <!-- Status Filter -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 col-xl-2">
                     <select id="attendanceStatusFilter" class="form-select form-select-sm" onchange="filterPageAttendanceByStatus(this.value)">
                         <option value="">جميع الحالات</option>
                         <option value="حاضر">🟢 حاضر</option>
@@ -131,43 +141,53 @@
                 </div>
 
                 <!-- Date Picker -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 col-xl-1">
                     <input type="date" name="date" class="form-control form-control-sm extra-small" value="{{ today }}" onchange="this.form.submit()">
                 </div>
 
                 <!-- Reset Button & Actions Dropdown -->
-                <div class="col-12 col-md-1 text-end d-flex align-items-center gap-1 justify-content-end">
+                <div class="col-12 col-xl-1 text-end d-flex align-items-center gap-2 justify-content-end ms-auto">
                     <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-secondary rounded-circle p-2 extra-small" data-bs-toggle="tooltip" title="إعادة ضبط البحث والفلاتر">
                         <i class="fa-solid fa-rotate-right"></i>
                     </a>
 
                     <!-- Primary Actions Dropdown -->
-                    <div class="dropdown">
-                        <button id="btnActionsDropdown" class="btn btn-sm btn-primary rounded-pill px-3 extra-small dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="dropdown position-relative" style="overflow: visible !important;">
+                        <button id="btnActionsDropdown" class="btn btn-sm btn-primary rounded-pill px-3 extra-small dropdown-toggle fw-bold" type="button" onclick="toggleActionsMenu(event)" aria-expanded="false">
                             الإجراءات <i class="fa-solid fa-chevron-down ms-1 extra-small"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 extra-small font-cairo">
+                        <ul class="dropdown-menu shadow-lg border-0 rounded-4 extra-small font-cairo p-2" id="actionsDropdownMenu" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; right: auto; z-index: 999999; min-width: 230px; background: #ffffff !important; box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.25), 0 5px 15px -3px rgba(0, 0, 0, 0.1) !important; border: 1px solid rgba(203, 213, 225, 0.9) !important;">
                             <li>
-                                <a class="dropdown-item py-2" href="{{ url_for('attendance.export_attendance') }}?type=pdf">
-                                    <i class="fa-solid fa-file-pdf text-danger me-2"></i> تصدير كشف PDF
+                                <a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center cursor-pointer" href="javascript:void(0)" onclick="exportAttendanceReport('pdf', 'all')">
+                                    <i class="fa-solid fa-file-pdf text-danger me-2 fs-6"></i> تصدير كشف PDF
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item py-2" href="{{ url_for('attendance.export_attendance') }}">
-                                    <i class="fa-solid fa-file-excel text-success me-2"></i> تصدير كشف Excel
+                                <a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center cursor-pointer" href="javascript:void(0)" onclick="exportAttendanceReport('excel', 'all')">
+                                    <i class="fa-solid fa-file-excel text-success me-2 fs-6"></i> تصدير كشف Excel
                                 </a>
                             </li>
                             <li>
-                                <hr class="dropdown-divider">
+                                <hr class="dropdown-divider my-1">
                             </li>
                             <li>
-                                <button class="dropdown-item py-2" type="button" onclick="markAllAttendancePage('حاضر')">
-                                    <i class="fa-solid fa-check-double text-success me-2"></i> تحديد الجميع حاضر
+                                <button class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center w-100 text-start" type="button" onclick="markAllAttendancePage('حاضر')">
+                                    <i class="fa-solid fa-check-double text-success me-2 fs-6"></i> تحديد الجميع حاضر
                                 </button>
                             </li>
                             <li>
-                                <button class="dropdown-item py-2" type="button" onclick="markAllAttendancePage('غائب')">
-                                    <i class="fa-solid fa-user-xmark text-danger me-2"></i> تحديد الجميع غائب
+                                <button class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center w-100 text-start" type="button" onclick="markAllAttendancePage('غائب')">
+                                    <i class="fa-solid fa-user-xmark text-danger me-2 fs-6"></i> تحديد الجميع غائب
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center w-100 text-start" type="button" onclick="markAllAttendancePage('متأخر')">
+                                    <i class="fa-solid fa-clock text-warning me-2 fs-6"></i> تحديد الجميع متأخر
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center w-100 text-start" type="button" onclick="markAllAttendancePage('بعذر')">
+                                    <i class="fa-solid fa-user-shield text-info me-2 fs-6"></i> تحديد الجميع بعذر
                                 </button>
                             </li>
                         </ul>
@@ -196,7 +216,8 @@
                         <th>الطالب</th>
                         <th>رقم الطالب</th>
                         <th>الصف والشعبة</th>
-                        <th class="text-center" style="min-width: 320px;">حالة الحضور والغياب</th>
+                        <th class="text-center">المادة الدراسية</th>
+                        <th class="text-center" style="min-width: 300px;">حالة الحضور والغياب</th>
                         <th class="text-center">وقت التسجيل</th>
                     </tr>
                 </thead>
@@ -218,23 +239,28 @@
                                 </td>
                                 <td class="font-monospace text-muted">{{ st.student_code }}</td>
                                 <td><span class="badge bg-light text-dark border">{{ st.class_name }} - {{ st.section_name }}</span></td>
+                                <td class="text-center font-cairo">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1 extra-small">
+                                        <i class="fa-solid fa-book me-1"></i> {{ st.subject_name }}
+                                    </span>
+                                </td>
                                 <td class="text-center">
                                     <!-- Interactive Enlarged Status Chips -->
                                     <div class="btn-group btn-group-sm extra-small font-cairo shadow-sm rounded-pill p-1 bg-light border" role="group" aria-label="تحديد حالة حضور الطالب">
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'حاضر' %}btn-success text-white fw-bold{% else %}btn-outline-success{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="حاضر" onclick="setPageStudentAttendance({{ st.SID }}, 'حاضر')">🟢 حاضر</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'غائب' %}btn-danger text-white fw-bold{% else %}btn-outline-danger{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="غائب" onclick="setPageStudentAttendance({{ st.SID }}, 'غائب')">🔴 غائب</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'متأخر' %}btn-warning text-dark fw-bold{% else %}btn-outline-warning{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="متأخر" onclick="setPageStudentAttendance({{ st.SID }}, 'متأخر')">🟡 متأخر</button>
-                                        <button type="button" class="btn btn-att-chip {% if st.status == 'مستأذن' or st.status == 'بعذر' %}btn-info text-white fw-bold{% else %}btn-outline-info{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="بعذر" onclick="setPageStudentAttendance({{ st.SID }}, 'بعذر')">🔵 بعذر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'حاضر' %}btn-success text-white fw-bold active{% else %}btn-outline-success{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="حاضر" onclick="setPageStudentAttendance({{ st.SID }}, 'حاضر')">🟢 حاضر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'غائب' %}btn-danger text-white fw-bold active{% else %}btn-outline-danger{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="غائب" onclick="setPageStudentAttendance({{ st.SID }}, 'غائب')">🔴 غائب</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'متأخر' %}btn-warning text-dark fw-bold active{% else %}btn-outline-warning{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="متأخر" onclick="setPageStudentAttendance({{ st.SID }}, 'متأخر')">🟡 متأخر</button>
+                                        <button type="button" class="btn btn-att-chip {% if st.status == 'مستأذن' or st.status == 'بعذر' %}btn-info text-white fw-bold active{% else %}btn-outline-info{% endif %} extra-small py-1 px-3 rounded-pill" data-action="set-status" data-sid="{{ st.SID }}" data-status="بعذر" onclick="setPageStudentAttendance({{ st.SID }}, 'بعذر')">🔵 بعذر</button>
                                     </div>
                                 </td>
-                                <td class="text-center font-monospace text-muted extra-small">
-                                    <i class="fa-regular fa-clock me-1 text-primary"></i> {{ st.time_recorded or '—' }}
+                                <td class="text-center font-monospace extra-small att-time-cell" id="att-time-cell-{{ st.SID }}">
+                                    <i class="fa-regular fa-clock me-1 text-primary"></i> <span class="att-time-text fw-semibold text-dark">{{ st.time_recorded or '—' }}</span>
                                 </td>
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="6">
+                            <td colspan="7">
                                 {{ macros.render_empty_state("fa-solid fa-clipboard-user", "لا يوجد طلاب مسجلون بهذه الحصة", "يرجى اختيار صف وشعبة أخرى أو تحديث الفلاتر.") }}
                             </td>
                         </tr>
@@ -316,9 +342,47 @@
 (function() {
     window.pageAttendanceEdits = window.pageAttendanceEdits || {};
 
-    // 2. Set Student Attendance Status Function
+    // Helper: Exact Formatted Time with Seconds & Arabic AM/PM (e.g. 02:54:19 م)
+    window.getExactFormattedTime = function() {
+        var now = new Date();
+        var h = now.getHours();
+        var m = now.getMinutes().toString().padStart(2, '0');
+        var s = now.getSeconds().toString().padStart(2, '0');
+        var ampm = h >= 12 ? 'م' : 'ص';
+        h = h % 12;
+        h = h ? h : 12;
+        var hStr = h.toString().padStart(2, '0');
+        return hStr + ':' + m + ':' + s + ' ' + ampm;
+    };
+
+    // Live Clock for Header Badges
+    window.updateAttendanceLiveClock = function() {
+        var now = new Date();
+        var liveTimeStr = window.getExactFormattedTime();
+
+        var timeEl = document.getElementById('currentTimeLiveDisplay');
+        if (timeEl) timeEl.textContent = liveTimeStr;
+
+        var dateEl = document.getElementById('currentDateDayDisplay');
+        if (dateEl) {
+            var text = dateEl.textContent.trim();
+            if (!text || text === '--:--:--' || text === 'None') {
+                var days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                var dayName = days[now.getDay()];
+                var yyyy = now.getFullYear();
+                var mm = (now.getMonth() + 1).toString().padStart(2, '0');
+                var dd = now.getDate().toString().padStart(2, '0');
+                dateEl.textContent = dayName + ' ' + yyyy + '-' + mm + '-' + dd;
+            }
+        }
+    };
+    setInterval(window.updateAttendanceLiveClock, 1000);
+    window.updateAttendanceLiveClock();
+
+    // Set Student Attendance Status Function
     window.setPageStudentAttendance = function(sid, newStatus) {
         window.pageAttendanceEdits[sid] = newStatus;
+        var currentTime = window.getExactFormattedTime();
 
         var row = document.getElementById('page-att-row-' + sid);
         if (row) {
@@ -328,15 +392,26 @@
 
             var chips = row.querySelectorAll('.btn-att-chip');
             chips.forEach(function(btn) {
-                btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-secondary';
                 var btnStatus = btn.getAttribute('data-status') || btn.textContent;
-                if (btnStatus.indexOf(newStatus) !== -1 || (newStatus === 'بعذر' && (btnStatus.indexOf('بعذر') !== -1 || btnStatus.indexOf('مستأذن') !== -1))) {
-                    if (newStatus === 'حاضر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold active';
-                    else if (newStatus === 'غائب') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold active';
-                    else if (newStatus === 'متأخر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold active';
-                    else if (newStatus === 'بعذر') btn.className = 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold active';
+                var isMatch = btnStatus.indexOf(newStatus) !== -1 || (newStatus === 'بعذر' && (btnStatus.indexOf('بعذر') !== -1 || btnStatus.indexOf('مستأذن') !== -1));
+                
+                if (btnStatus.indexOf('حاضر') !== -1) {
+                    btn.className = isMatch ? 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-success text-white fw-bold active' : 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-success';
+                } else if (btnStatus.indexOf('غائب') !== -1) {
+                    btn.className = isMatch ? 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-danger text-white fw-bold active' : 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-danger';
+                } else if (btnStatus.indexOf('متأخر') !== -1) {
+                    btn.className = isMatch ? 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-warning text-dark fw-bold active' : 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-warning';
+                } else if (btnStatus.indexOf('بعذر') !== -1 || btnStatus.indexOf('مستأذن') !== -1) {
+                    btn.className = isMatch ? 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-info text-white fw-bold active' : 'btn btn-att-chip extra-small py-1 px-3 rounded-pill btn-outline-info';
                 }
             });
+
+            // Immediately update وقت التسجيل cell in real-time
+            var timeSpan = row.querySelector('.att-time-text');
+            if (timeSpan) {
+                timeSpan.textContent = currentTime;
+                timeSpan.className = 'att-time-text fw-bold text-primary';
+            }
         }
 
         var unsavedCount = Object.keys(window.pageAttendanceEdits).length;
@@ -385,7 +460,25 @@
         }
     };
 
-    // 3. Save Page Attendance Bulk Function
+    // Bulk action helper for dropdown items (الإجراءات)
+    window.markAllAttendancePage = function(status) {
+        var rows = document.querySelectorAll('.page-att-row');
+        rows.forEach(function(row) {
+            var sid = row.getAttribute('data-sid');
+            if (sid) {
+                window.setPageStudentAttendance(parseInt(sid), status);
+            }
+        });
+
+        // Close actions dropdown menu after bulk action
+        var menu = document.getElementById('actionsDropdownMenu');
+        if (menu) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+        }
+    };
+
+    // Save Page Attendance Bulk Function
     window.savePageAttendanceBulk = function(slotId) {
         var saveBtn = document.getElementById('stickyPageSaveBtn');
         if (saveBtn) {
@@ -415,10 +508,13 @@
             });
         }
 
+        var dateInput = document.querySelector('input[name="date"]');
+        var dateStr = dateInput ? dateInput.value : null;
+
         fetch('/attendance/api/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slot_id: slotId || 1, attendance: payload })
+            body: JSON.stringify({ slot_id: slotId || 1, attendance: payload, date_str: dateStr })
         })
         .then(function(res) {
             if (!res.ok) throw new Error('فشل حفظ السجلات.');
@@ -435,8 +531,7 @@
             var label = document.getElementById('stickySaveBtnLabel');
             if (label) label.textContent = 'حفظ سجل الحضور';
 
-            var now = new Date();
-            var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            var timeStr = window.getExactFormattedTime();
             var ind = document.getElementById('lastSaveTimeIndicator');
             if (ind) ind.textContent = timeStr;
 
@@ -452,50 +547,88 @@
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> <span id="stickySaveBtnLabel">حفظ سجل الحضور</span>';
             }
-        });
+        window.exportAttendanceReport = function(exportType = 'excel', mode = 'all') {
+            const filterClass = document.getElementById('filterClass') || document.getElementById('attendanceClassSelect');
+            const filterSection = document.getElementById('filterSection') || document.getElementById('attendanceSectionSelect');
+            const filterSubject = document.getElementById('filterSubject') || document.getElementById('attendanceSubjectSelect');
+            const filterDate = document.getElementById('filterDate') || document.getElementById('attendanceDateSelect');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const classId = (filterClass && filterClass.value) ? filterClass.value : (urlParams.get('class_id') || '');
+            const sectionId = (filterSection && filterSection.value) ? filterSection.value : (urlParams.get('section_id') || '');
+            const subjectId = (filterSubject && filterSubject.value) ? filterSubject.value : (urlParams.get('subject_id') || '');
+            const dateVal = (filterDate && filterDate.value) ? filterDate.value : (urlParams.get('date') || '');
+
+            let statusParam = '';
+            let onlyRecorded = 0;
+
+            if (mode === 'recorded' || mode === 'محضرين') {
+                onlyRecorded = 1;
+            } else if (mode === 'present' || mode === 'حاضر') {
+                statusParam = 'حاضر';
+            } else if (mode === 'absent' || mode === 'غائب') {
+                statusParam = 'غائب';
+            } else if (mode === 'late' || mode === 'متأخر') {
+                statusParam = 'متأخر';
+            } else if (mode === 'excused' || mode === 'مستأذن') {
+                statusParam = 'مستأذن';
+            }
+
+            const selectedSids = [];
+            if (mode === 'selected') {
+                const checkedBoxes = document.querySelectorAll('.student-select-cb:checked, .attendance-cb:checked');
+                checkedBoxes.forEach(cb => {
+                    if (cb.value) selectedSids.push(cb.value);
+                });
+            }
+
+            const params = new URLSearchParams();
+            if (exportType === 'pdf') params.append('type', 'pdf');
+            if (classId) params.append('class_id', classId);
+            if (sectionId) params.append('section_id', sectionId);
+            if (subjectId) params.append('subject_id', subjectId);
+            if (dateVal) params.append('date', dateVal);
+            if (statusParam) params.append('status', statusParam);
+            if (onlyRecorded) params.append('only_recorded', '1');
+            if (selectedSids.length > 0) params.append('sids', selectedSids.join(','));
+
+            window.location.href = `/attendance/export?${params.toString()}`;
+        };
+
+        // Dedicated Toggle Helper for Actions Dropdown Menu
+    window.toggleActionsMenu = function(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        var menu = document.getElementById('actionsDropdownMenu');
+        if (!menu) return;
+
+        var isShown = menu.style.display === 'block';
+        if (isShown) {
+            menu.style.display = 'none';
+            menu.classList.remove('show');
+        } else {
+            document.querySelectorAll('.dropdown-menu').forEach(function(m) {
+                m.style.display = 'none';
+                m.classList.remove('show');
+            });
+            menu.style.display = 'block';
+            menu.classList.add('show');
+        }
     };
 
-    // Initialize Event Listeners
+    // Initialize Global Document Click Listener for Outside Dismissal
     function initAttendancePageInteractivity() {
-        var dropdownBtn = document.getElementById('btnActionsDropdown');
-        if (dropdownBtn) {
-            dropdownBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var parent = this.closest('.dropdown');
-                if (parent) {
-                    var menu = parent.querySelector('.dropdown-menu');
-                    if (menu) menu.classList.toggle('show');
-                }
-            });
-        }
-
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.show').forEach(function(m) { m.classList.remove('show'); });
+                var menu = document.getElementById('actionsDropdownMenu');
+                if (menu) {
+                    menu.style.display = 'none';
+                    menu.classList.remove('show');
+                }
             }
         });
-
-        var chipButtons = document.querySelectorAll('.btn-att-chip');
-        chipButtons.forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var sid = this.getAttribute('data-sid');
-                var status = this.getAttribute('data-status');
-                if (sid && status) {
-                    window.setPageStudentAttendance(parseInt(sid), status);
-                }
-            });
-        });
-
-        var saveBtn = document.getElementById('stickyPageSaveBtn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var slotId = this.getAttribute('data-slot-id') || {{ active_slot_id or 1 }};
-                window.savePageAttendanceBulk(parseInt(slotId));
-            });
-        }
     }
 
     if (document.readyState === 'loading') {

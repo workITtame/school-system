@@ -119,18 +119,43 @@ def get_teacher_students_data(user_id):
             
         all_student_att_rates.append(st_att_rate)
         
-        if st_avg_score >= 90:
-            status_tag = 'متفوق'
-            status_badge_class = 'warning text-dark'
-            regular_c += 1
-        elif st_att_rate < 75 or st_absent_count >= 5:
+        from models.grade import HomeworkMarks, Marks
+        has_low_grade = False
+        st_exam_marks = Marks.query.filter(Marks.SID == st.SID, Marks.assessment_type == 'exam', Marks.is_deleted == False, Marks.Score.isnot(None)).all()
+        for em in st_exam_marks:
+            sc = float(em.Score) if em.Score is not None else 100.0
+            mx = float(em.MaxScore) if em.MaxScore else 100.0
+            pct = (sc / mx * 100.0) if mx > 0 else sc
+            if pct < 60.0:
+                has_low_grade = True
+                break
+
+        if not has_low_grade:
+            st_hw_marks = HomeworkMarks.query.filter_by(SID=st.SID, is_deleted=False).filter(HomeworkMarks.Score.isnot(None)).all()
+            for hm in st_hw_marks:
+                pct_val = hm.Percentage
+                if pct_val is not None:
+                    pct = float(pct_val)
+                else:
+                    sc = float(hm.Score) if hm.Score is not None else 10.0
+                    mx = float(hm.MaxScore) if hm.MaxScore else 10.0
+                    pct = (sc / mx * 100.0) if mx > 0 else (sc * 10.0 if sc <= 10.0 else sc)
+                if pct < 60.0:
+                    has_low_grade = True
+                    break
+
+        if st_att_rate < 75 or st_absent_count >= 5:
             status_tag = 'كثير الغياب'
             status_badge_class = 'danger'
             high_absence_c += 1
-        elif st_att_rate < 85 or st_avg_score < 65:
+        elif has_low_grade or st_att_rate < 85 or st_absent_count >= 2 or st_avg_score < 65:
             status_tag = 'يحتاج متابعة'
             status_badge_class = 'warning'
             needs_followup_c += 1
+        elif st_avg_score >= 90:
+            status_tag = 'متفوق'
+            status_badge_class = 'warning text-dark'
+            regular_c += 1
         else:
             status_tag = 'منتظم'
             status_badge_class = 'success'
@@ -139,19 +164,23 @@ def get_teacher_students_data(user_id):
         cls_name = st.school_class.CName if st.school_class else 'الصف الثالث الثانوي'
         sec_name = st.section.SectionName if st.section else f'شعبة {((idx - 1) % 2) + 1}'
         
+        from models.grade import HomeworkMarks, Marks
+        st_hw_done = HomeworkMarks.query.filter_by(SID=st.SID, is_deleted=False).count()
+        st_ex_done = Marks.query.filter(Marks.SID == st.SID, Marks.assessment_type == 'exam', Marks.is_deleted == False).count()
+        
         student_cards.append({
             'SID': st.SID,
             'SName': st.SName,
-            'student_code': f"2024{st.SID:03d}",
+            'student_code': f"#{st.SID}",
             'class_name': cls_name,
             'section_name': sec_name,
-            'parent_name': st.Parent_Name or 'ولي الأمر',
+            'parent_name': st.Parent_Name or '—',
             'status_tag': status_tag,
             'status_class': status_badge_class,
             'attendance_rate': st_att_rate,
             'avg_score': st_avg_score,
-            'homework_completed': f"{min(8, (st.SID % 5) + 5)}/9",
-            'exams_completed': f"{min(5, (st.SID % 3) + 4)}/6"
+            'homework_completed': f"{st_hw_done} واجبات",
+            'exams_completed': f"{st_ex_done} اختبارات"
         })
 
     top_students = sorted(student_cards, key=lambda x: x['avg_score'], reverse=True)[:5]
@@ -249,7 +278,18 @@ def home():
     
     # Calculate real DB statistics for Admin Workspace
     class_id = request.args.get('class_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
     all_students_query = Student.query.filter(Student.is_deleted == False)
+    if subject_id:
+        from models import SchoolTable
+        from models.academic import ClassSubject
+        c_ids_cs = [c[0] for c in db.session.query(ClassSubject.c.CID).filter(ClassSubject.c.SubID == subject_id).all() if c[0]]
+        c_ids_st = [st[0] for st in db.session.query(SchoolTable.CID).filter(SchoolTable.SubID == subject_id, SchoolTable.is_deleted == False).all() if st[0]]
+        sub_c_ids = list(set(c_ids_cs + c_ids_st))
+        if sub_c_ids:
+            all_students_query = all_students_query.filter(Student.CID.in_(sub_c_ids))
+        else:
+            all_students_query = all_students_query.filter(Student.CID == -1)
     if class_id:
         all_students_query = all_students_query.filter(Student.CID == class_id)
 
@@ -288,7 +328,7 @@ def home():
     if class_id:
         student_items_query = student_items_query.filter(Student.CID == class_id)
 
-    student_items = student_items_query.order_by(Student.SID.desc()).all()
+    student_items = student_items_query.order_by(Student.SID.desc()).limit(10).all()
 
     student_ids = [st.SID for st in student_items]
     marks_by_sid = {}
@@ -328,6 +368,8 @@ def home():
         else:
             st_att_rate = 0.0
 
+        created_str = st.created_at.strftime('%Y-%m-%d') if hasattr(st, 'created_at') and st.created_at else '—'
+
         student_cards.append({
             'SID': st.SID,
             'SName': st.SName,
@@ -340,7 +382,8 @@ def home():
             'status_tag': status_val,
             'status_class': st_class,
             'attendance_rate': st_att_rate,
-            'avg_score': st_avg_score
+            'avg_score': st_avg_score,
+            'created_at': created_str
         })
 
     last_updated_time = datetime.now().strftime('%H:%M:%S')
@@ -378,12 +421,24 @@ def api_list_students():
     search_query = request.args.get('search', '').strip()
     class_id = request.args.get('class_id', type=int)
     section_id = request.args.get('section_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
     status_filter = request.args.get('status', '').strip()
 
     query = Student.query.options(
         joinedload(Student.school_class),
         joinedload(Student.section)
     ).filter(Student.is_deleted == False)
+
+    if subject_id:
+        from models import SchoolTable
+        from models.academic import ClassSubject
+        c_ids_cs = [c[0] for c in db.session.query(ClassSubject.c.CID).filter(ClassSubject.c.SubID == subject_id).all() if c[0]]
+        c_ids_st = [st[0] for st in db.session.query(SchoolTable.CID).filter(SchoolTable.SubID == subject_id, SchoolTable.is_deleted == False).all() if st[0]]
+        sub_c_ids = list(set(c_ids_cs + c_ids_st))
+        if sub_c_ids:
+            query = query.filter(Student.CID.in_(sub_c_ids))
+        else:
+            query = query.filter(Student.CID == -1)
 
     if search_query:
         if search_query.isdigit():
@@ -417,10 +472,24 @@ def api_list_students():
     att_by_sid = {}
     if student_ids:
         from models import Attendance, Marks
-        all_marks = Marks.query.filter(Marks.SID.in_(student_ids)).all()
+        from models.grade import HomeworkMarks
+        all_marks = Marks.query.filter(Marks.SID.in_(student_ids), Marks.is_deleted == False).all()
         for m in all_marks:
             if m.Score is not None:
-                marks_by_sid.setdefault(m.SID, []).append(float(m.Score))
+                max_s = float(m.MaxScore) if m.MaxScore else 100.0
+                pct = (float(m.Score) / max_s * 100.0) if max_s > 0 else float(m.Score)
+                marks_by_sid.setdefault(m.SID, []).append(pct)
+                
+        all_hw_marks = HomeworkMarks.query.filter(HomeworkMarks.SID.in_(student_ids), HomeworkMarks.is_deleted == False).all()
+        for hm in all_hw_marks:
+            if hm.Score is not None:
+                if hm.Percentage is not None:
+                    pct = float(hm.Percentage)
+                else:
+                    sc = float(hm.Score)
+                    max_s = float(hm.MaxScore) if hm.MaxScore else (10.0 if sc <= 10.0 else 100.0)
+                    pct = (sc / max_s * 100.0) if max_s > 0 else (sc * 10.0 if sc <= 10.0 else sc)
+                marks_by_sid.setdefault(hm.SID, []).append(pct)
                 
         all_attendance = Attendance.query.filter(Attendance.SID.in_(student_ids)).all()
         for a in all_attendance:
@@ -499,14 +568,15 @@ def student_drawer_api(student_id):
         'parent_name': data.get('parent_name'),
         'parent_phone': data.get('parent_number'),
         'image': data.get('image'),
+        'created_at': data.get('created_at', '—'),
         'status': 'نشط'
     }
     data['academic_summary'] = {
         'gpa': data.get('avg_score', 0.0),
         'attendance_rate': data.get('attendance_rate', 0.0),
-        'attendance_days': len(data.get('recent_attendance', [])),
-        'homework_count': 0,
-        'exam_count': len(data.get('recent_marks', []))
+        'attendance_days': data.get('attendance_days', 0),
+        'homework_count': data.get('homework_count', 0),
+        'exam_count': data.get('exam_count', 0)
     }
 
     return jsonify(data)

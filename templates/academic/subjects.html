@@ -285,10 +285,11 @@
                       "studentsCount": {{ s.students_count or 0 }},
                       "teachersCount": {{ s.assigned_teachers_count or 0 }},
                       "classesCount": {{ s.linked_classes_count or 0 }},
-                      "sectionsCount": {{ s.linked_classes|map(attribute='sections')|map('length')|sum if s.linked_classes else 0 }},
-                      "weeklySlotsCount": {{ s.weekly_slots_count or 4 }},
-                      "avgSuccess": {{ s.avg_score if s.avg_score is defined and s.avg_score is not none else 'null' }},
-                      "passRate": {{ s.pass_rate if s.pass_rate is defined and s.pass_rate is not none else 'null' }},
+                      "sectionsCount": {{ s.linked_classes|map(attribute='sections_count')|sum if s.linked_classes else 0 }},
+                      "weeklySlotsCount": {{ s.weekly_slots_count or 0 }},
+                      "avgSuccess": {{ s.avg_score if s.avg_score is not none else 'null' }},
+                      "passRate": {{ s.pass_rate if s.pass_rate is not none else 'null' }},
+                      "academicYear": {{ (s.academic_year or '2025-2026')|tojson }},
                       "description": "مادة دراسية مقرة ضمن الخطة الأكاديمية الرسمية والمناهج المعتمدة للمرحلة.",
                       "linkedClasses": [
                         {% for cls in s.linked_classes %}
@@ -296,17 +297,15 @@
                           "id": {{ cls.CID }},
                           "name": {{ cls.CName|tojson }},
                           "stage": {{ (cls.Stage or 'المرحلة العامة')|tojson }},
-                          "sectionsCount": {{ cls.sections|length if cls.sections else 0 }},
+                          "sectionsCount": {{ cls.sections_count or 0 }},
                           "studentsCount": {{ cls.students_count or 0 }},
-                          "maxStudents": {{ cls.MaxStudents or 0 }},
-                          "occupancy": {{ cls.occupancy_percentage if cls.occupancy_percentage is not none else 'null' }}
+                          "maxStudents": {{ cls.max_students or 40 }},
+                          "occupancy": {{ cls.occupancy_percentage if cls.occupancy_percentage is not none else 0 }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
                       ],
                       "teachers": [
-                        {% set t_list = (s.teachers.all() if s.teachers.all is defined else s.teachers) %}
-                        {% if t_list %}
-                        {% for t in t_list %}
+                        {% for t in s.assigned_teachers %}
                         {
                           "id": {{ t.TeacherID }},
                           "name": {{ t.TeacherName|tojson }},
@@ -317,8 +316,9 @@
                           "image": {{ (t.Image or '')|tojson }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
-                        {% endif %}
-                      ]
+                      ],
+                      "timetableSlots": {{ s.timetable_slots_payload|tojson }},
+                      "activityTimeline": {{ s.activity_timeline|tojson }}
                     }
                     </script>
                     <tr class="subject-row align-middle"

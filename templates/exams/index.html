@@ -28,9 +28,101 @@
 .donut-ring { width:120px; height:120px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; border: 10px solid #7c3aed; }
 .current-exam-banner { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 1.5px solid #c4b5fd; border-radius: 14px; }
 .alert-item { border-radius: 10px; font-size: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+
+/* Printable Header (Hidden on screen) */
+.print-only-header { display: none; }
+
+/* Print Media Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #examsRoot, #examsRoot * {
+    visibility: visible;
+  }
+
+  .print-only-header {
+    display: block !important;
+    visibility: visible !important;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #000000;
+  }
+
+  nav, header, footer, .sidebar, .sidebar-widget, .no-print,
+  .col-xl-4, .pagination, .filter-bar, .kpi-card, .breadcrumb,
+  .card-footer, #btnActionsDropdown, #actionsDropdownMenu {
+    display: none !important;
+  }
+
+  .col-xl-8, .col-12 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Exclude columns requested by user: 
+     (9: الطلاب, 10: أدى, 11: غائب, 12: متوسط, 13: نجاح%, 15: الإجراءات) */
+  #examsTable th:nth-child(9), #examsTable td:nth-child(9),
+  #examsTable th:nth-child(10), #examsTable td:nth-child(10),
+  #examsTable th:nth-child(11), #examsTable td:nth-child(11),
+  #examsTable th:nth-child(12), #examsTable td:nth-child(12),
+  #examsTable th:nth-child(13), #examsTable td:nth-child(13),
+  #examsTable th:nth-child(15), #examsTable td:nth-child(15) {
+    display: none !important;
+  }
+
+  #examsTable {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+  }
+
+  #examsTable th {
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    padding: 8px !important;
+    font-weight: bold !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #examsTable td {
+    border: 1px solid #666666 !important;
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+}
 </style>
 
 <div class="font-cairo pb-5 mb-3" id="examsRoot" dir="rtl">
+
+<!-- Printable Header (Visible only when printing) -->
+<div class="print-only-header font-cairo" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="text-start">
+      <h3 class="fw-bold mb-1">مدرسة المستقبل</h3>
+      <p class="text-muted mb-0" style="font-size:11px;">إدارة التقييم والاختبارات الأكاديمية</p>
+    </div>
+    <div class="text-center">
+      <h3 class="fw-bold mb-1 text-dark">كشف قائمة الاختبارات والامتحانات</h3>
+    </div>
+    <div class="text-end">
+      <span class="d-block text-muted" style="font-size:11px;">تاريخ الطباعة: {{ today }}</span>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- §1  HERO HEADER                                        -->

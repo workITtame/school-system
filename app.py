@@ -65,15 +65,24 @@ def create_app(config_class=Config):
 
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
+        from flask_login import current_user
+        if (hasattr(current_user, 'is_authenticated') and current_user.is_authenticated) or 'user_id' in session:
+            # Refresh token for valid web session
+            user_id = str(current_user.id) if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else str(session.get('user_id', '1'))
+            session['jwt_token'] = create_access_token(identity=user_id)
         return jsonify({"success": False, "message": "Token has expired"}), 401
 
     from flask_jwt_extended import create_access_token
     from flask_login import current_user
     
+    from flask import request
     @app.before_request
     def ensure_jwt_token():
-        if current_user.is_authenticated:
-            session['jwt_token'] = create_access_token(identity=str(current_user.id))
+        if request.endpoint == 'static':
+            return
+        if (hasattr(current_user, 'is_authenticated') and current_user.is_authenticated) or 'user_id' in session:
+            user_id = str(current_user.id) if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else str(session.get('user_id', '1'))
+            session['jwt_token'] = create_access_token(identity=user_id)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(students_bp)
@@ -138,8 +147,32 @@ def init_db_if_not_exists(app):
         with app.app_context():
             db.create_all()
             print("Verified/Created database tables.")
+            cleanup_attendance_duplicates()
     except Exception as e:
         print(f"Error checking/creating database: {e}")
+
+def cleanup_attendance_duplicates():
+    """Remove duplicate attendance records for the same student on the same date."""
+    try:
+        from models.student import Attendance
+        from sqlalchemy import func
+        dups = db.session.query(
+            Attendance.SID, Attendance.Date, func.count(Attendance.AttendanceID)
+        ).group_by(Attendance.SID, Attendance.Date).having(func.count(Attendance.AttendanceID) > 1).all()
+
+        if dups:
+            for sid, date_val, count in dups:
+                records = Attendance.query.filter_by(SID=sid, Date=date_val).order_by(
+                    Attendance.updated_at.desc(), Attendance.created_at.desc(), Attendance.AttendanceID.desc()
+                ).all()
+                if len(records) > 1:
+                    for dup in records[1:]:
+                        db.session.delete(dup)
+            db.session.commit()
+            print("Verified and cleaned up duplicate attendance records.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error during attendance cleanup: {e}")
 
 if __name__ == "__main__":
     app = create_app()

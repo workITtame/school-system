@@ -25,7 +25,8 @@
                             </h4>
                         </div>
                         <h6 class="text-white-50 mb-0 extra-small">
-                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
+                            المعلم: <span class="text-white fw-bold">{{ teacher_meta.name if teacher_meta else (teacher_info.TeacherName if teacher_info else current_user.name) }}</span> | 
+                            المواد: <span class="text-white fw-bold">{{ teacher_meta.subjects_str if teacher_meta else 'جميع المواد' }}</span> | 
                             النشطة: <span class="text-white fw-bold" id="heroActiveCount">{{ kpi.active_count }}</span> | 
                             بانتظار التصحيح: <span class="text-white fw-bold" id="heroPendingCount">{{ kpi.pending_grading }}</span> | 
                             متوسط النتائج: <span class="text-white fw-bold">{{ kpi.average_score }}%</span>
@@ -38,7 +39,7 @@
             <div class="col-12 col-md-5 col-xl-4 text-md-end">
                 <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
                     <span class="badge hero-pill-badge rounded-pill px-3 py-1">
-                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
+                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today_full or today }}
                     </span>
                     <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-4 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="openCreateExamModal()">
                         <i class="fa-solid fa-plus me-1"></i> إنشاء اختبار جديد
@@ -157,7 +158,7 @@
     </div>
 
     <!-- 5. EXAM ROSTER TABLE CONTAINER -->
-    <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="examRosterSection">
+    <div class="card rounded-4 shadow-sm border-0 mb-4" id="examRosterSection" style="overflow: visible !important;">
         <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h6 class="fw-bold text-dark mb-0 font-cairo">
                 <i class="fa-solid fa-file-signature text-primary me-2"></i> قائمة الاختبارات الأكاديمية (<span id="examRosterCountHeader">{{ exam_list|length }}</span> اختبار)
@@ -167,7 +168,7 @@
             </small>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive" style="min-height: 280px; overflow: visible !important;">
             <table class="table table-hover align-middle mb-0 extra-small" id="examPageTable">
                 <thead class="bg-light text-muted sticky-top">
                     <tr>
@@ -188,7 +189,7 @@
                 <tbody id="examTableBody">
                     {% if exam_list and exam_list|length > 0 %}
                         {% for ex in exam_list %}
-                            <tr class="exam-row" id="exam-row-{{ ex.id }}" data-id="{{ ex.id }}" data-status="{{ ex.status }}" data-subject="{{ ex.subject_name }}" data-class="{{ ex.class_name }}" data-section="{{ ex.section_name }}">
+                            <tr class="exam-row" id="exam-row-{{ ex.id }}" data-id="{{ ex.id }}" data-status="{{ ex.status }}" data-subject="{{ ex.subject_name }}" data-subject-id="{{ ex.subject_id }}" data-class="{{ ex.class_name }}" data-class-id="{{ ex.class_id }}" data-section="{{ ex.section_name }}" data-section-id="{{ ex.section_id }}">
                                 <td class="text-center ps-3">
                                     <input type="checkbox" class="form-check-input exam-select-checkbox" value="{{ ex.id }}" onclick="updateBulkActionsBar()">
                                 </td>
@@ -216,7 +217,12 @@
                                     <span class="badge bg-info-subtle text-primary border border-info-subtle">صحح: {{ ex.graded_count }}</span>
                                 </td>
                                 <td class="text-center status-cell">
-                                    {% if ex.status == 'مسودة' %}
+                                    {% if ex.status in ['تم التصحيح', 'مصحح', 'مكتمل'] or ex.graded_count > 0 %}
+                                        <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small">🟢 مصحح</span>
+                                        {% if ex.graded_at and ex.graded_at != 'لم يُصحح بعد' %}
+                                            <small class="text-muted d-block font-monospace extra-small mt-1"><i class="fa-regular fa-clock text-primary me-1"></i>{{ ex.graded_at }}</small>
+                                        {% endif %}
+                                    {% elif ex.status == 'مسودة' %}
                                         <span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small">📝 مسودة</span>
                                     {% elif ex.status == 'منشور' %}
                                         <span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small">🟢 منشور</span>
@@ -227,7 +233,7 @@
                                     {% elif ex.status == 'منتهي' %}
                                         <span class="badge bg-dark text-white rounded-pill px-3 py-1 extra-small">⚫ منتهي</span>
                                     {% else %}
-                                        <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small">🔴 {{ ex.status }}</span>
+                                        <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small">🟢 {{ ex.status }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
@@ -249,7 +255,7 @@
                                             </li>
                                             <li>
                                                 <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openGradingWorkspace('exam', {{ ex.id }})">
-                                                    <i class="fa-solid fa-star text-warning me-2"></i> ⭐ بدء التصحيح (Unified Workspace)
+                                                    <i class="fa-solid fa-star text-warning me-2"></i> 📝 تصحيح ورصد الدرجات
                                                 </button>
                                             </li>
                                             <li>
@@ -464,22 +470,44 @@
         var isOpen = menu.classList.contains('show');
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
+            m.style.position = '';
+            m.style.top = '';
+            m.style.left = '';
+            m.style.zIndex = '';
         });
 
         if (!isOpen) {
+            var rect = btn.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 4) + 'px';
+            menu.style.left = Math.max(10, rect.left - 130) + 'px';
+            menu.style.zIndex = '999999';
+            menu.style.margin = '0';
             menu.classList.add('show');
-            menu.style.position = 'absolute';
-            menu.style.zIndex = '1090';
         }
     };
 
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.dropdown')) {
+        if (!e.target.closest('.dropdown') && !e.target.closest('.dropdown-menu')) {
             document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
                 m.classList.remove('show');
+                m.style.position = '';
+                m.style.top = '';
+                m.style.left = '';
+                m.style.zIndex = '';
             });
         }
     });
+
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+            m.classList.remove('show');
+            m.style.position = '';
+            m.style.top = '';
+            m.style.left = '';
+            m.style.zIndex = '';
+        });
+    }, true);
 
     window.filterExamListByStatus = function(status) {
         var rows = document.querySelectorAll('#examTableBody tr.exam-row');
@@ -521,22 +549,41 @@
     };
 
     window.applyExamFilters = function() {
-        var term = (document.getElementById('examLiveSearch').value || '').toLowerCase().trim();
-        var status = document.getElementById('examStatusFilter').value;
-        var subId = document.getElementById('examSubjectFilter').value;
-        var classId = document.getElementById('examClassFilter').value;
+        var term = (document.getElementById('examLiveSearch')?.value || '').toLowerCase().trim();
+        var status = (document.getElementById('examStatusFilter')?.value || '').trim();
+        var subId = (document.getElementById('examSubjectFilter')?.value || '').trim();
+        var classId = (document.getElementById('examClassFilter')?.value || '').trim();
+        var secId = (document.getElementById('examSectionFilter')?.value || '').trim();
 
         var rows = document.querySelectorAll('#examTableBody tr.exam-row');
         var visible = 0;
 
         rows.forEach(function(r) {
             var text = r.textContent.toLowerCase();
-            var rowStatus = r.getAttribute('data-status') || '';
+            var rowStatus = (r.getAttribute('data-status') || '').trim();
+            var rowSubId = (r.getAttribute('data-subject-id') || '').trim();
+            var rowClassId = (r.getAttribute('data-class-id') || '').trim();
+            var rowSecId = (r.getAttribute('data-section-id') || '').trim();
 
             var matchSearch = !term || text.indexOf(term) !== -1;
-            var matchStatus = !status || rowStatus.indexOf(status) !== -1;
+            var matchSub = !subId || rowSubId === subId;
+            var matchClass = !classId || rowClassId === classId;
+            var matchSec = !secId || rowSecId === secId;
 
-            if (matchSearch && matchStatus) {
+            var matchStatus = true;
+            if (status) {
+                if (status === 'بانتظار التصحيح') {
+                    matchStatus = (rowStatus === 'بانتظار التصحيح' || rowStatus === 'منشور' || rowStatus === 'تم التسليم' || rowStatus === 'نشط');
+                } else if (status === 'منشور' || status === 'النشطة' || status === 'نشط') {
+                    matchStatus = (rowStatus === 'منشور' || rowStatus === 'نشط' || rowStatus === 'مجدول' || rowStatus === 'جارٍ');
+                } else if (status === 'منتهي' || status === 'المنتهية' || status === 'مكتمل') {
+                    matchStatus = (rowStatus === 'منتهي' || rowStatus === 'مكتمل' || rowStatus === 'تم التصحيح');
+                } else {
+                    matchStatus = rowStatus.indexOf(status) !== -1;
+                }
+            }
+
+            if (matchSearch && matchSub && matchClass && matchSec && matchStatus) {
                 r.style.display = '';
                 visible++;
             } else {
@@ -768,16 +815,16 @@
             .then(function(data) {
                 var html = '<div class="font-cairo extra-small pb-5 position-relative">';
                 
-                // Enterprise Header Card
-                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-4 shadow-sm border-0 position-relative overflow-hidden">';
+                // Enterprise Header Card (High Contrast Styling)
+                html += '<div class="card bg-primary-subtle text-dark p-3 rounded-4 mb-4 shadow-sm border border-primary-subtle position-relative overflow-hidden" style="background-color: #eef2ff !important;">';
                 html += '<div class="d-flex justify-content-between align-items-center mb-2">';
-                html += '<h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-file-signature me-2"></i>' + data.title + '</h5>';
-                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 extra-small fw-bold shadow-sm">' + data.status + '</span>';
+                html += '<h5 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-file-signature me-2"></i>' + data.title + '</h5>';
+                html += '<span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small fw-bold shadow-sm">' + data.status + '</span>';
                 html += '</div>';
-                html += '<p class="text-white-50 extra-small mb-2">المادة: <strong class="text-white">' + data.subject_name + '</strong> | الصف: <strong class="text-white">' + data.class_name + ' (' + data.section_name + ')</strong> | تاريخ الاختبار: <strong class="text-white">' + data.exam_date + '</strong></p>';
-                html += '<div class="d-flex align-items-center gap-3 text-white-50 extra-small flex-wrap">';
-                html += '<span><i class="fa-regular fa-clock text-warning me-1"></i> الزمان: <strong class="text-white">' + data.exam_time + ' (' + data.duration + ' دقيقة)</strong></span>';
-                html += '<span><i class="fa-solid fa-users text-info me-1"></i> الطلاب: <strong class="text-white">' + data.total_students + ' طالب</strong></span>';
+                html += '<p class="text-dark extra-small mb-2">المادة: <strong class="text-primary">' + data.subject_name + '</strong> | الصف والشعبة: <strong class="text-dark">' + data.class_name + ' (' + data.section_name + ')</strong> | تاريخ الاختبار: <strong class="text-dark">' + data.exam_date + '</strong></p>';
+                html += '<div class="d-flex align-items-center gap-3 text-secondary extra-small flex-wrap">';
+                html += '<span><i class="fa-regular fa-clock text-warning me-1"></i> الزمان: <strong class="text-dark">' + data.exam_time + ' (' + data.duration + ' دقيقة)</strong></span>';
+                html += '<span><i class="fa-solid fa-users text-info me-1"></i> الطلاب: <strong class="text-dark">' + data.total_students + ' طالب</strong></span>';
                 html += '</div>';
                 html += '</div>';
 
@@ -834,8 +881,7 @@
                 html += '</div>';
 
                 // Sticky Footer Actions
-                html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
-                html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openGradingWorkspace(\'exam\', ' + data.id + ')"><i class="fa-solid fa-star text-warning me-2"></i> ⭐ بدء التصحيح (Unified Grading Workspace)</button>';
+                html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-end flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
                 html += '<div class="d-flex align-items-center gap-2">';
                 html += '<button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="publishExam(' + data.id + ')"><i class="fa-solid fa-paper-plane me-1"></i> نشر</button>';
                 html += '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="closeExam(' + data.id + ')"><i class="fa-solid fa-lock me-1"></i> إغلاق</button>';

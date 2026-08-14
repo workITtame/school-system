@@ -682,9 +682,11 @@ def delete_timetable_entry(id):
 # ==========================================
 
 @api_bp.route("/grades/reference", methods=['GET'])
-@jwt_required()
+@jwt_required(optional=True)
 def get_grades_reference():
-    from models.academic import Classes, Terms, Subject
+    if not get_jwt_identity() and not current_user.is_authenticated and 'user_id' not in session:
+        return api_response(False, "Unauthorized", status_code=401)
+    from models.academic import Classes, Terms, Subject, Sections
     from models.timetable import TypeExams
     
     try:
@@ -692,20 +694,29 @@ def get_grades_reference():
         classes = Classes.query.all()
         subjects = Subject.query.all()
         exams = TypeExams.query.all()
+        sections = Sections.query.all()
         
         data = {
             "terms": [{"T_ID": t.T_ID, "T_Name": t.T_Name} for t in terms],
             "exams": [{"ExamID": e.ExamID, "ExamName": e.ExamName} for e in exams],
             "subjects": [{"SubID": s.SubID, "SubName": s.SubName} for s in subjects],
+            "sections": [{"SectionID": s.SectionID, "SectionName": s.SectionName} for s in sections],
             "classes": []
         }
         
         for c in classes:
+            c_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
+            c_subjects = [s for s in c.subjects if not getattr(s, 'is_deleted', False)]
+            if not c_subjects:
+                c_subjects = subjects
+            if not c_sections:
+                c_sections = sections
+
             data["classes"].append({
                 "CID": c.CID,
                 "CName": c.CName,
-                "sections": [{"SectionID": s.SectionID, "SectionName": s.SectionName} for s in c.sections],
-                "subjects": [{"SubID": s.SubID, "SubName": s.SubName} for s in c.subjects]
+                "sections": [{"SectionID": s.SectionID, "SectionName": s.SectionName} for s in c_sections],
+                "subjects": [{"SubID": s.SubID, "SubName": s.SubName} for s in c_subjects]
             })
             
         return api_response(True, "Reference data retrieved successfully", data)
@@ -714,8 +725,10 @@ def get_grades_reference():
 
 
 @api_bp.route("/grades/class", methods=['GET'])
-@jwt_required()
+@jwt_required(optional=True)
 def get_class_grades():
+    if not get_jwt_identity() and not current_user.is_authenticated and 'user_id' not in session:
+        return api_response(False, "Unauthorized", status_code=401)
     term_id = request.args.get('term_id', type=int)
     class_id = request.args.get('class_id', type=int)
     section_id = request.args.get('section_id', type=int)

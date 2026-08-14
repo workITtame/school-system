@@ -5,7 +5,142 @@
 {% block page_subtitle %}متابعة وإدارة الواجبات المدرسية ومهام التعلم والتقييم{% endblock %}
 
 {% block content %}
+<style>
+.homework-table-scroll-container {
+    max-height: 580px;
+    overflow-y: auto;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+.homework-table-scroll-container table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.homework-table-scroll-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.homework-table-scroll-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.homework-table-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.homework-table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Printable Header (Hidden on screen) */
+.print-only-header { display: none; }
+
+/* Print Media Styles for Homework Page */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #homeworkWorkspaceRoot, #homeworkWorkspaceRoot * {
+    visibility: visible;
+  }
+
+  .print-only-header {
+    display: block !important;
+    visibility: visible !important;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #000000;
+  }
+
+  nav, header, footer, .sidebar, .sidebar-widget, .no-print,
+  .col-xl-4, .pagination, .filter-bar, .kpi-card, .breadcrumb,
+  .card-footer, #btnActionsDropdown, #actionsDropdownMenu,
+  #homeworkTableSection .glass-panel-card > div.border-top {
+    display: none !important;
+  }
+
+  .col-xl-8, .col-12 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .homework-table-scroll-container {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Exclude requested columns:
+     1: Checkbox
+     7: حالة الرصد (Grading status)
+     8: الإجراءات (Actions column) */
+  #homeworkMainTable th:nth-child(1), #homeworkMainTable td:nth-child(1),
+  #homeworkMainTable th:nth-child(7), #homeworkMainTable td:nth-child(7),
+  #homeworkMainTable th:nth-child(8), #homeworkMainTable td:nth-child(8) {
+    display: none !important;
+  }
+
+  #homeworkMainTable {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+  }
+
+  #homeworkMainTable th {
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    padding: 8px !important;
+    font-weight: bold !important;
+    font-size: 11pt !important;
+    position: static !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #homeworkMainTable td {
+    border: 1px solid #666666 !important;
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+}
+</style>
+
 <div class="fade-in font-cairo position-relative pb-5 mb-5" id="homeworkWorkspaceRoot">
+
+    <!-- Printable Header (Visible only when printing) -->
+    <div class="print-only-header font-cairo" dir="rtl">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="text-start">
+          <h3 class="fw-bold mb-1">مدرسة المستقبل</h3>
+          <p class="text-muted mb-0" style="font-size:11px;">إدارة المتابعة والواجبات المدرسية</p>
+        </div>
+        <div class="text-center">
+          <h3 class="fw-bold mb-1 text-dark">كشف الواجبات والمهام الأكاديمية</h3>
+        </div>
+        <div class="text-end">
+          <span class="d-block text-muted" style="font-size:11px;">تاريخ الطباعة: {{ today }}</span>
+        </div>
+      </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- SECTION 1: HERO HEADER                     -->
@@ -40,10 +175,13 @@
                 <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
                     <i class="fa-solid fa-circle-plus fs-6"></i> <span>إضافة واجب جديد</span>
                 </button>
+                <a href="{{ url_for('homework.report') }}" class="btn btn-info text-white rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift">
+                    <i class="fa-solid fa-list-check fs-6"></i> <span>كشف درجات الواجبات</span>
+                </a>
                 <a href="{{ url_for('homework.analytics') }}" class="btn btn-outline-info rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
                     <i class="fa-solid fa-chart-pie fs-6"></i> <span>مركز التحليلات</span>
                 </a>
-                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="Swal.fire('تصدير البيانات', 'جاري تجهيز تقرير الواجبات Excel...', 'info')">
+                <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="exportHomeworkExcel()">
                     <i class="fa-solid fa-file-excel fs-6"></i> <span>تصدير Excel</span>
                 </button>
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
@@ -246,7 +384,7 @@
         <!-- Right Column (in RTL): Homework Table (70% width) -->
         <div class="col-12 col-xl-8" id="homeworkTableSection">
             <div class="glass-panel-card p-0 rounded-4 shadow-sm bg-white border-0 overflow-hidden">
-                <div class="table-responsive">
+                <div class="table-responsive homework-table-scroll-container">
                     <table class="table table-hover align-middle mb-0 font-monospace extra-small text-center" id="homeworkMainTable">
                         <thead class="bg-light text-muted">
                             <tr>
@@ -493,8 +631,8 @@
                         </button>
                     </div>
                     <div class="col-6">
-                        <a href="{{ url_for('homework.analytics') }}" class="btn btn-outline-info w-100 py-2 rounded-3 text-start fw-bold">
-                            <i class="fa-solid fa-list-check me-1 text-info"></i> كشف الواجبات
+                        <a href="{{ url_for('homework.report') }}" class="btn btn-outline-info w-100 py-2 rounded-3 text-start fw-bold">
+                            <i class="fa-solid fa-list-check me-1 text-info"></i> كشف درجات الواجبات
                         </a>
                     </div>
                 </div>
@@ -923,6 +1061,23 @@ function deleteHomework(id, title) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+function exportHomeworkExcel() {
+    const classVal = document.getElementById('homeworkClassFilter') ? document.getElementById('homeworkClassFilter').value : '';
+    const sectionVal = document.getElementById('homeworkSectionFilter') ? document.getElementById('homeworkSectionFilter').value : '';
+    const subjectVal = document.getElementById('homeworkSubjectFilter') ? document.getElementById('homeworkSubjectFilter').value : '';
+    const statusVal = document.getElementById('homeworkStatusFilter') ? document.getElementById('homeworkStatusFilter').value : '';
+    const searchVal = document.getElementById('homeworkSearchInput') ? document.getElementById('homeworkSearchInput').value : '';
+
+    const params = new URLSearchParams();
+    if (classVal) params.append('class_id', classVal);
+    if (sectionVal) params.append('section_id', sectionVal);
+    if (subjectVal) params.append('subject_id', subjectVal);
+    if (statusVal) params.append('status', statusVal);
+    if (searchVal) params.append('search', searchVal);
+
+    window.location.href = `/homework/export/excel?${params.toString()}`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {

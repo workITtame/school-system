@@ -68,32 +68,7 @@ function setupGradesEventListeners() {
 
     if (filterClass) {
         filterClass.addEventListener('change', function() {
-            const cid = parseInt(this.value);
-            if (filterSection) filterSection.innerHTML = '<option value="">اختر الشعبة</option>';
-            if (filterSubject) filterSubject.innerHTML = '<option value="">اختر المادة</option>';
-
-            if (!cid || !gradesState.referenceData) {
-                if (filterSection) filterSection.disabled = true;
-                if (filterSubject) filterSubject.disabled = true;
-                loadStudentsGradeGrid();
-                return;
-            }
-
-            const selectedClass = gradesState.referenceData.classes.find(c => c.CID === cid);
-            if (selectedClass) {
-                if (filterSection) {
-                    selectedClass.sections.forEach(s => {
-                        filterSection.innerHTML += `<option value="${s.SectionID}">${s.SectionName}</option>`;
-                    });
-                    filterSection.disabled = false;
-                }
-                if (filterSubject) {
-                    selectedClass.subjects.forEach(sub => {
-                        filterSubject.innerHTML += `<option value="${sub.SubID}">${sub.SubName}</option>`;
-                    });
-                    filterSubject.disabled = false;
-                }
-            }
+            populateSectionAndSubjectFilters();
             loadStudentsGradeGrid();
         });
     }
@@ -112,9 +87,10 @@ function setupGradesEventListeners() {
             if (filterSearch) filterSearch.value = '';
             if (filterStatus) filterStatus.value = 'all';
             if (filterClass) filterClass.value = '';
-            if (filterSection) { filterSection.value = ''; filterSection.disabled = true; }
-            if (filterSubject) { filterSubject.value = ''; filterSubject.disabled = true; }
+            if (filterSection) filterSection.value = '';
+            if (filterSubject) filterSubject.value = '';
             if (filterExam) filterExam.value = '';
+            populateSectionAndSubjectFilters();
             loadStudentsGradeGrid();
         });
     }
@@ -135,51 +111,115 @@ function getJwtHeaders() {
     };
 }
 
+function populateSectionAndSubjectFilters() {
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const filterSubject = document.getElementById('filterSubject');
+
+    if (!filterSection || !filterSubject) return;
+
+    const cid = filterClass ? parseInt(filterClass.value) : null;
+    const refData = gradesState.referenceData;
+
+    let availableSections = [];
+    let availableSubjects = [];
+
+    if (cid && refData && refData.classes) {
+        const selectedClass = refData.classes.find(c => c.CID === cid);
+        if (selectedClass) {
+            availableSections = selectedClass.sections && selectedClass.sections.length > 0 ? selectedClass.sections : (refData.sections || []);
+            availableSubjects = selectedClass.subjects && selectedClass.subjects.length > 0 ? selectedClass.subjects : (refData.subjects || []);
+        }
+    }
+
+    if (availableSections.length === 0 && refData) {
+        availableSections = refData.sections || [];
+    }
+    if (availableSubjects.length === 0 && refData) {
+        availableSubjects = refData.subjects || [];
+    }
+
+    if (availableSections.length > 0) {
+        const currentSecVal = filterSection.value;
+        filterSection.innerHTML = '<option value="">جميع الشعب</option>';
+        availableSections.forEach(s => {
+            filterSection.innerHTML += `<option value="${s.SectionID}">${s.SectionName}</option>`;
+        });
+        filterSection.disabled = false;
+        if (currentSecVal && filterSection.querySelector(`option[value="${currentSecVal}"]`)) {
+            filterSection.value = currentSecVal;
+        }
+    } else {
+        filterSection.disabled = false;
+    }
+
+    if (availableSubjects.length > 0) {
+        const currentSubVal = filterSubject.value;
+        filterSubject.innerHTML = '<option value="">جميع المواد الدراسية</option>';
+        availableSubjects.forEach(sub => {
+            filterSubject.innerHTML += `<option value="${sub.SubID}">${sub.SubName}</option>`;
+        });
+        filterSubject.disabled = false;
+        if (currentSubVal && filterSubject.querySelector(`option[value="${currentSubVal}"]`)) {
+            filterSubject.value = currentSubVal;
+        }
+    } else {
+        filterSubject.disabled = false;
+    }
+}
+
 function loadReferenceData() {
     const filterTerm = document.getElementById('filterTerm');
     const filterExam = document.getElementById('filterExam');
     const filterClass = document.getElementById('filterClass');
     const btnLoadStudents = document.getElementById('btnLoadStudents');
 
-    fetch('/api/v1/grades/reference', { headers: getJwtHeaders() })
-        .then(res => res.json())
+    const headers = getJwtHeaders();
+    fetch('/api/v1/grades/reference', { headers })
+        .then(res => {
+            if (res.status === 401) {
+                return fetch('/api/v1/grades/reference', { headers: { 'Content-Type': 'application/json' } }).then(r => r.json());
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 gradesState.referenceData = data.data;
 
-                if (filterTerm) {
-                    filterTerm.innerHTML = '';
+                if (filterTerm && data.data.terms) {
+                    filterTerm.innerHTML = '<option value="">جميع الفصول الدراسية</option>';
                     data.data.terms.forEach(t => filterTerm.innerHTML += `<option value="${t.T_ID}">${t.T_Name}</option>`);
                 }
-                if (filterExam) {
-                    filterExam.innerHTML = '<option value="">اختر الامتحان</option>';
+                if (filterExam && data.data.exams) {
+                    const currentVal = filterExam.value;
+                    filterExam.innerHTML = '<option value="">جميع الاختبارات</option>';
                     data.data.exams.forEach(e => filterExam.innerHTML += `<option value="${e.ExamID}">${e.ExamName}</option>`);
-                    if (data.data.exams.length > 0) filterExam.selectedIndex = 1;
-                }
-                if (filterClass) {
-                    filterClass.innerHTML = '<option value="">اختر الصف</option>';
-                    data.data.classes.forEach(c => filterClass.innerHTML += `<option value="${c.CID}">${c.CName}</option>`);
-                    if (data.data.classes.length > 0) {
-                        filterClass.selectedIndex = 1;
-                        filterClass.dispatchEvent(new Event('change'));
-                        
-                        const filterSection = document.getElementById('filterSection');
-                        const filterSubject = document.getElementById('filterSubject');
-                        if (filterSection && filterSection.options.length > 1) filterSection.selectedIndex = 1;
-                        if (filterSubject && filterSubject.options.length > 1) filterSubject.selectedIndex = 1;
+                    if (currentVal && filterExam.querySelector(`option[value="${currentVal}"]`)) {
+                        filterExam.value = currentVal;
                     }
                 }
+                if (filterClass && data.data.classes) {
+                    const currentVal = filterClass.value;
+                    filterClass.innerHTML = '<option value="">جميع الصفوف</option>';
+                    data.data.classes.forEach(c => filterClass.innerHTML += `<option value="${c.CID}">${c.CName}</option>`);
+                    if (currentVal && filterClass.querySelector(`option[value="${currentVal}"]`)) {
+                        filterClass.value = currentVal;
+                    }
+                }
+
+                populateSectionAndSubjectFilters();
                 if (btnLoadStudents) btnLoadStudents.disabled = false;
 
                 // Load initial grid from real DB
                 loadStudentsGradeGrid();
             } else {
-                showToast('خطأ في تحميل المراجع والصفوف', 'error');
+                populateSectionAndSubjectFilters();
+                loadStudentsGradeGrid();
             }
         })
         .catch(err => {
             console.error(err);
-            // Load grid anyway
+            populateSectionAndSubjectFilters();
             loadStudentsGradeGrid();
         });
 }
@@ -212,8 +252,14 @@ function loadStudentsGradeGrid() {
 
     const url = `/api/v1/grades/class?${params.toString()}`;
 
-    fetch(url, { headers: getJwtHeaders() })
-        .then(res => res.json())
+    const headers = getJwtHeaders();
+    fetch(url, { headers })
+        .then(res => {
+            if (res.status === 401) {
+                return fetch(url, { headers: { 'Content-Type': 'application/json' } }).then(r => r.json());
+            }
+            return res.json();
+        })
         .then(data => {
             if (loadingState) loadingState.classList.add('d-none');
             if (data.success) {
@@ -761,7 +807,7 @@ function applyGradesFilters() {
         if (statusVal === 'approved') {
             matchStatus = hasScore;
         } else if (statusVal === 'pending') {
-            matchStatus = false;
+            matchStatus = hasScore && (row.dataset.status === 'pending' || row.textContent.includes('بانتظار الاعتماد') || (input && parseFloat(input.value) < 60));
         } else if (statusVal === 'missing') {
             matchStatus = !hasScore;
         }
@@ -1224,7 +1270,22 @@ function clearGradesBulkSelections() {
 }
 
 function exportGradesExcel() {
-    window.location.href = '/reports/excel?type=grades';
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const filterSubject = document.getElementById('filterSubject');
+    const filterExam = document.getElementById('filterExam');
+    const filterTerm = document.getElementById('filterTerm');
+    const filterStatus = document.getElementById('filterStatus');
+
+    const params = new URLSearchParams();
+    if (filterClass && filterClass.value) params.append('class_id', filterClass.value);
+    if (filterSection && filterSection.value) params.append('section_id', filterSection.value);
+    if (filterSubject && filterSubject.value) params.append('subject_id', filterSubject.value);
+    if (filterExam && filterExam.value) params.append('exam_id', filterExam.value);
+    if (filterTerm && filterTerm.value) params.append('term_id', filterTerm.value);
+    if (filterStatus && filterStatus.value) params.append('status', filterStatus.value);
+
+    window.location.href = `/grades/export/excel?${params.toString()}`;
 }
 
 function showToast(message, icon) {

@@ -258,9 +258,14 @@ def student_report_excel(student_id):
     
     return send_file(output, as_attachment=True, download_name=f'report_{student.SID}.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
+@reports_bp.route("/reports/excel")
 @reports_bp.route("/reports/export/excel")
 @login_required
 def export_reports_master_excel():
+    report_type = request.args.get('type') or request.args.get('report_type', 'class_grades')
+    if report_type == 'grades':
+        from routes.grade_routes import export_grades_excel
+        return export_grades_excel()
     class_id = request.args.get('class_id', type=int)
     section_id = request.args.get('section_id', type=int)
     subject_id = request.args.get('subject_id', type=int)

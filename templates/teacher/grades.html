@@ -1,7 +1,7 @@
 {% extends 'teacher/layout.html' %}
 {% import 'teacher/macros.html' as macros %}
 
-{% block title %}مركز الدرجات والأداء الأكاديمي | مساحة العمل للمعلم (Gradebook & Performance Analytics Workspace){% endblock %}
+{% block title %}السجل المدرسي للدرجات | مساحة العمل للمعلم{% endblock %}
 
 {% block content %}
 <div class="fade-in font-cairo position-relative pb-5" id="teacherGradebookPageContainer">
@@ -9,158 +9,156 @@
     <!-- 0. UNIFIED TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="gradebookToastContainer"></div>
 
-    <!-- 1. COMPACT HERO HEADER WITH OPERATIONAL METADATA -->
-    <div class="hero-header-card shadow-sm mb-4 border-0 position-relative overflow-hidden py-3">
-        <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
-            <div class="col-12 col-md-7 col-xl-8">
+    <!-- 1. MODERN MINIMAL HEADER CARD -->
+    <div class="card rounded-4 border-0 shadow-sm mb-4 bg-white p-3 p-md-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary-subtle text-primary p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
+                    <i class="fa-solid fa-star fs-4 text-warning"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold text-dark mb-1 font-cairo fs-5">
+                        ⭐ السجل المدرسي للدرجات
+                    </h4>
+                    <p class="text-muted mb-0 extra-small">
+                        المعلم: <strong class="text-primary">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</strong> | 
+                        الفصل الدراسي: <strong class="text-dark">الفصل الدراسي الأول</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-light border text-secondary rounded-pill px-3 py-2 fw-bold extra-small hover-scale" onclick="location.reload()">
+                    <i class="fa-solid fa-rotate me-1 text-primary"></i> تحديث البيانات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. WORK MODE SELECTION BAR (شريط اختيار نوع العمل) -->
+    <div class="card rounded-4 border-0 shadow-sm mb-4 bg-white p-2">
+        <div class="d-flex align-items-center justify-content-start gap-2 overflow-x-auto extra-small">
+            <a href="{{ url_for('gradebook.index') }}" class="btn btn-sm {% if gradebook_mode == 'general' and not view_type %}btn-primary text-white fw-bold shadow-sm{% else %}btn-light text-secondary border-0{% endif %} rounded-pill px-4 py-2">
+                <i class="fa-solid fa-chart-line me-1"></i> كل الدرجات
+            </a>
+            <a href="{{ url_for('gradebook.index', view_type='homework') }}" class="btn btn-sm {% if gradebook_mode == 'homework' or view_type == 'homework' %}btn-primary text-white fw-bold shadow-sm{% else %}btn-light text-secondary border-0{% endif %} rounded-pill px-4 py-2">
+                <i class="fa-solid fa-book-bookmark me-1"></i> سجل الواجبات
+            </a>
+            <a href="{{ url_for('gradebook.index', view_type='exam') }}" class="btn btn-sm {% if gradebook_mode == 'exam' or view_type == 'exam' %}btn-primary text-white fw-bold shadow-sm{% else %}btn-light text-secondary border-0{% endif %} rounded-pill px-4 py-2">
+                <i class="fa-solid fa-file-signature me-1"></i> سجل الاختبارات
+            </a>
+            <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-light text-secondary border-0 rounded-pill px-4 py-2">
+                <i class="fa-solid fa-calendar-user me-1"></i> الحضور والغياب
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. ACTIVE EVALUATION CONTEXT BANNER -->
+    {% if active_homework %}
+        <div class="card rounded-4 border-primary-subtle bg-primary-subtle shadow-sm mb-4 p-3 p-md-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
-                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
-                        <i class="fa-solid fa-chart-line fs-4"></i>
+                    <div class="rounded-circle bg-primary text-white p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-book-bookmark fs-4"></i>
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                            <h4 class="fw-extrabold text-white mb-0 font-cairo fs-5">
-                                📊 مركز الدرجات والأداء الأكاديمي (Gradebook & Performance Center)
-                            </h4>
+                            <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small fw-bold">📝 تصحيح الواجب</span>
+                            <h5 class="fw-bold text-dark mb-0 font-cairo fs-6">{{ active_homework.title }}</h5>
                         </div>
-                        <h6 class="text-white-50 mb-0 extra-small">
-                            المعلم: <span class="text-white fw-bold">{{ teacher_info.TeacherName if teacher_info else current_user.name }}</span> | 
-                            الفصل الدراسي: <span class="text-white fw-bold">الفصل الأكاديمي الأول</span> | 
-                            الطلاب: <span class="text-white fw-bold">{{ kpi.total_students }}</span> | 
-                            متوسط النتائج: <span class="text-white fw-bold">{{ kpi.class_average }}%</span> | 
-                            نسبة النجاح: <span class="text-white fw-bold">{{ kpi.pass_rate }}%</span>
-                        </h6>
+                        <div class="d-flex align-items-center gap-3 flex-wrap extra-small text-muted">
+                            <span>المادة: <strong class="text-primary">{{ active_homework.subject.SubName if active_homework.subject else 'عامة' }}</strong></span> |
+                            <span>الصف: <strong>{{ active_homework.school_class.CName if active_homework.school_class else '' }}</strong></span> |
+                            <span>الشعبة: <strong>{{ active_homework.section.SectionName if active_homework.section else 'جميع الشعب' }}</strong></span> |
+                            <span>تاريخ الإنشاء: <strong class="font-monospace text-dark">{{ active_homework.created_at }}</strong></span> |
+                            <span>موعد التسليم: <strong class="font-monospace text-dark">{{ active_homework.due_date }}</strong></span> |
+                            <span>الدرجة العظمى: <strong class="font-monospace text-dark">100</strong></span> |
+                            <span>الحالة: <span class="badge bg-white text-primary border rounded-pill px-2 py-1">{{ active_homework.status or 'منشور' }}</span></span>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Hero Meta & Primary Actions -->
-            <div class="col-12 col-md-5 col-xl-4 text-md-end">
-                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap extra-small">
-                    <span class="badge hero-pill-badge rounded-pill px-3 py-1">
-                        <i class="fa-regular fa-calendar-check text-warning me-1"></i> التاريخ: {{ today }}
-                    </span>
-                    <button type="button" class="btn btn-sm btn-light text-primary rounded-pill px-3 py-2 fw-bold shadow-sm extra-small hover-scale" onclick="recalculateGrades()">
-                        <i class="fa-solid fa-rotate me-1"></i> إعادة احتساب المعدلات
-                    </button>
+                <div>
+                    <a href="{{ url_for('gradebook.index') }}" class="btn btn-sm btn-white border text-primary rounded-pill px-3 fw-bold extra-small shadow-sm">
+                        <i class="fa-solid fa-xmark me-1"></i> إلغاء التصفية للعودة للسجل الموحد
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- 2. SMART INSIGHTS DEDICATED PANEL ABOVE TABLE -->
-    <div class="card bg-primary-subtle border-primary-subtle rounded-4 shadow-sm mb-4">
-        <div class="card-body p-3">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                <h6 class="fw-bold text-primary mb-0 extra-small">
-                    <i class="fa-solid fa-lightbulb text-warning me-2 fs-6"></i> مؤشرات ورؤى التحليل الأكاديمي الذكي (Smart Insights):
-                </h6>
-                <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small font-monospace">تحديث آلي اليوم</span>
-            </div>
-            <div class="d-flex align-items-center gap-2 overflow-x-auto extra-small flex-wrap" id="smartInsightsContainer">
-                {% if kpi.smart_insights %}
-                    {% for ins in kpi.smart_insights %}
-                        <div class="p-2 rounded-3 bg-white border border-primary-subtle text-dark shadow-sm d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-circle-check text-success"></i>
-                            <span class="fw-bold">{{ ins }}</span>
+    {% elif active_exam %}
+        <div class="card rounded-4 border-danger-subtle bg-danger-subtle shadow-sm mb-4 p-3 p-md-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-danger text-white p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-file-signature fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small fw-bold">📝 تصحيح الاختبار</span>
+                            <h5 class="fw-bold text-dark mb-0 font-cairo fs-6">{{ active_exam.ExamName or active_exam.title or 'اختبار رئيسي' }}</h5>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="p-2 rounded-3 bg-white border text-muted">لا توجد رؤى محددة حالياً.</div>
-                {% endif %}
+                        <div class="d-flex align-items-center gap-3 flex-wrap extra-small text-muted">
+                            <span>المادة: <strong class="text-danger">{{ active_exam.subject.SubName if active_exam.subject else 'عامة' }}</strong></span> |
+                            <span>الصف: <strong>{{ active_exam.school_class.CName if active_exam.school_class else '' }}</strong></span> |
+                            <span>الشعبة: <strong>{{ active_exam.section.SectionName if active_exam.section else 'جميع الشعب' }}</strong></span> |
+                            <span>تاريخ الاختبار: <strong class="font-monospace text-dark">{{ active_exam.ExamDate or 'محدد' }}</strong></span> |
+                            <span>الدرجة العظمى: <strong class="font-monospace text-dark">{{ active_exam.TotalScore or 100 }}</strong></span> |
+                            <span>الحالة: <span class="badge bg-white text-danger border rounded-pill px-2 py-1">{{ active_exam.status or 'نشط' }}</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('gradebook.index') }}" class="btn btn-sm btn-white border text-danger rounded-pill px-3 fw-bold extra-small shadow-sm">
+                        <i class="fa-solid fa-xmark me-1"></i> إلغاء التصفية للعودة للسجل الموحد
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 
-    <!-- 3. 6 KPI SUMMARY CARDS (Clickable for Instant Filtering) -->
-    <div class="row g-3 mb-4" role="region" aria-label="إحصائيات درجات الطلاب">
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('')">
-            {{ macros.render_kpi_card("إجمالي الطلاب", kpi.total_students, "جميع الطلاب المسجلين", "fa-solid fa-users", "primary", "javascript:filterGradebookByBadge('')", "إجمالي الطلاب - اضغط للتصفية") }}
-        </div>
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('')">
-            {{ macros.render_kpi_card("متوسط الفصل", kpi.class_average, "المتوسط الأكاديمي العام", "fa-solid fa-chart-simple", "info", "javascript:filterGradebookByBadge('')", "المتوسط العام") }}
-        </div>
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('ممتاز')">
-            {{ macros.render_kpi_card("أعلى درجة", kpi.highest_grade, "أعلى أداء طلابي", "fa-solid fa-award", "success", "javascript:filterGradebookByBadge('ممتاز')", "أعلى درجة في الفصل") }}
-        </div>
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('متعثر')">
-            {{ macros.render_kpi_card("أقل درجة", kpi.lowest_grade, "أقل درجة مرصودة", "fa-solid fa-arrow-down-short-wide", "danger", "javascript:filterGradebookByBadge('متعثر')", "أقل درجة في الفصل") }}
-        </div>
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('')">
-            {{ macros.render_kpi_card("نسبة النجاح", kpi.pass_rate, "نسبة اجتياز الطلاب", "fa-solid fa-user-check", "warning", "javascript:filterGradebookByBadge('')", "نسبة التجاح العامة") }}
-        </div>
-        <div class="col-12 col-sm-6 col-xl-2" style="cursor: pointer;" onclick="filterGradebookByBadge('يحتاج متابعة')">
-            {{ macros.render_kpi_card("يحتاجون متابعة", kpi.needs_followup_count, "طلاب يتطلبون دعماً", "fa-solid fa-user-gear", "secondary", "javascript:filterGradebookByBadge('يحتاج متابعة')", "عدد الطلاب المحتاجين للمتابعة") }}
-        </div>
-    </div>
-
-    <!-- 4. ACTIVE FILTER CHIPS & TOOLBAR FORM -->
-    <div class="card rounded-4 shadow-sm border-0 mb-4">
+    <!-- 4. TOOLBAR & FILTERS -->
+    <div class="card rounded-4 shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
-            <!-- Active Filter Chips Container -->
-            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom overflow-x-auto extra-small" id="activeFilterChips">
-                <span class="text-muted fw-bold me-1"><i class="fa-solid fa-filter text-primary me-1"></i> تصفية سريعة:</span>
-                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 extra-small fw-bold active" onclick="filterGradebookByBadge('', this)">جميع التقديرات</button>
-                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradebookByBadge('ممتاز', this)">🟢 ممتاز</button>
-                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradebookByBadge('جيد جداً', this)">🟢 جيد جداً</button>
-                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradebookByBadge('جيد', this)">🟡 جيد</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradebookByBadge('يحتاج متابعة', this)">🟠 يحتاج متابعة</button>
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 extra-small fw-bold" onclick="filterGradebookByBadge('متعثر', this)">🔴 متعثر</button>
-            </div>
-
-            <!-- Full Toolbar Filters Form -->
             <form id="gradebookFilterForm" class="row g-2 align-items-center extra-small" onsubmit="event.preventDefault(); applyGradebookFilters();">
-                <!-- Live Search Input -->
-                <div class="col-12 col-md-3">
+                <!-- Live search input -->
+                <div class="col-12 col-md-4">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="gradebookSearchInput" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو رقم الطالب (#SID)..." onkeyup="searchGradebook(this.value)">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="gradebookSearchInput" class="form-control bg-light border-start-0 ps-0" placeholder="بحث باسم الطالب أو SID..." onkeyup="searchGradebook(this.value)">
                     </div>
                 </div>
 
-                <!-- Subject Filter -->
+                <!-- Subject filter -->
                 <div class="col-6 col-md-2">
-                    <select id="gradebookSubjectFilter" class="form-select form-select-sm" onchange="applyGradebookFilters()">
+                    <select id="gradebookSubjectFilter" class="form-select form-select-sm bg-light" onchange="applyGradebookFilters()">
                         <option value="">جميع المواد</option>
                         {% for sub in subjects %}
-                            <option value="{{ sub.SubID }}">{{ sub.SubName }}</option>
+                            <option value="{{ sub.SubID }}" {% if selected_subject_id and selected_subject_id == sub.SubID %}selected{% endif %}>{{ sub.SubName }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Class Filter -->
+                <!-- Class filter -->
                 <div class="col-6 col-md-2">
-                    <select id="gradebookClassFilter" class="form-select form-select-sm" onchange="applyGradebookFilters()">
+                    <select id="gradebookClassFilter" class="form-select form-select-sm bg-light" onchange="applyGradebookFilters()">
                         <option value="">جميع الصفوف</option>
                         {% for c in classes %}
-                            <option value="{{ c.CID }}">{{ c.CName }}</option>
+                            <option value="{{ c.CID }}" {% if selected_class_id and selected_class_id == c.CID %}selected{% endif %}>{{ c.CName }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Section Filter -->
+                <!-- Section filter -->
                 <div class="col-6 col-md-2">
-                    <select id="gradebookSectionFilter" class="form-select form-select-sm" onchange="applyGradebookFilters()">
+                    <select id="gradebookSectionFilter" class="form-select form-select-sm bg-light" onchange="applyGradebookFilters()">
                         <option value="">جميع الشعب</option>
                         {% for sec in sections %}
-                            <option value="{{ sec.SectionID }}">{{ sec.SectionName }}</option>
+                            <option value="{{ sec.SectionID }}" {% if selected_section_id and selected_section_id == sec.SectionID %}selected{% endif %}>{{ sec.SectionName }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Term Filter -->
-                <div class="col-6 col-md-2">
-                    <select id="gradebookTermFilter" class="form-select form-select-sm" onchange="applyGradebookFilters()">
-                        <option value="">جميع الفصول</option>
-                        <option value="الأول">الفصل الأول</option>
-                        <option value="الثاني">الفصل الثاني</option>
-                    </select>
-                </div>
-
-                <!-- Reset Button -->
-                <div class="col-12 col-md-1 text-end d-flex align-items-center gap-1 justify-content-end">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-2 extra-small" onclick="resetGradebookFilters()" data-bs-toggle="tooltip" title="إعادة ضبط الفلاتر">
+                <!-- Reset button -->
+                <div class="col-6 col-md-2 text-end d-flex align-items-center justify-content-end gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-2 extra-small" onclick="resetGradebookFilters()" data-bs-toggle="tooltip" title="إعادة ضبط">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                 </div>
@@ -168,226 +166,172 @@
         </div>
     </div>
 
-    <!-- 5. FLOATING BULK ACTIONS TOOLBAR -->
-    <div id="gradebookBulkActionsBar" class="card bg-dark text-white rounded-4 shadow-lg border-0 mb-4 p-3 animate__animated animate__fadeInUp">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 font-monospace" id="gradebookTotalBadge">{{ students|length }}</span>
-                <span class="fw-bold">طلاب مسجلين بالسجل الأكاديمي</span>
-            </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="bulkPublishResults()"><i class="fa-solid fa-paper-plane me-1"></i> نشر سجل النتائج</button>
-                <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 text-dark" onclick="recalculateGrades()"><i class="fa-solid fa-rotate me-1"></i> إعادة احتساب الترتيب</button>
-                <button type="button" class="btn btn-sm btn-info rounded-pill px-3 text-white" onclick="notifyStudents()"><i class="fa-solid fa-bell me-1"></i> إشعار الطلاب</button>
-                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="exportGradebook('csv')"><i class="fa-solid fa-file-csv me-1"></i> تصدير CSV</button>
-                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="exportGradebook('excel')"><i class="fa-solid fa-file-excel me-1"></i> تصدير Excel</button>
-                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> طباعة</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 6. GRADEBOOK ROSTER TABLE CONTAINER -->
-    <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4" id="gradebookRosterSection">
+    <!-- 5. MAIN ROSTER TABLE CONTAINER -->
+    <div class="card rounded-4 shadow-sm border-0 overflow-hidden mb-4 bg-white" id="gradebookRosterSection">
         <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h6 class="fw-bold text-dark mb-0 font-cairo">
-                <i class="fa-solid fa-award text-primary me-2"></i> سجل الدرجات والتحصيل الأكاديمي (<span id="gradebookCountHeader">{{ students|length }}</span> طالب)
+                <i class="fa-solid fa-users text-primary me-2"></i> السجل المدرسي للدرجات (<span id="gradebookCountHeader">{{ students|length }}</span> طالب)
             </h6>
             <small class="text-muted font-monospace extra-small" id="gradebookResultsCounter">
                 عرض {{ students|length }} من أصل {{ pagination.total or students|length }} طالباً
             </small>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 extra-small" id="gradebookTable">
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table class="table table-hover align-middle mb-0 extra-small" id="gradebookTable" style="min-width: 900px;">
                 <thead class="bg-light text-muted sticky-top">
                     <tr>
-                        <th class="ps-3">اسم الطالب</th>
-                        <th>رقم الطالب</th>
-                        <th>الصف والشعبة</th>
-                        <th class="text-center">متوسط الواجبات</th>
-                        <th class="text-center">متوسط الاختبارات</th>
-                        <th class="text-center">المشاركة</th>
-                        <th class="text-center">نسبة الحضور</th>
-                        <th class="text-center">الدرجة النهائية</th>
-                        <th class="text-center">التقدير والمؤشر الأكاديمي</th>
-                        <th class="text-center">الترتيب</th>
-                        <th class="text-center" style="width: 100px;">الإجراءات</th>
+                        <th style="width: 40px;" class="text-center ps-3">#</th>
+                        <th>اسم الطالب</th>
+                        <th class="text-center">SID</th>
+                        {% if active_homework %}
+                            <th class="text-center">حالة التسليم</th>
+                            <th class="text-center" style="width: 140px;">الدرجة المستحقة</th>
+                            <th class="text-center">الدرجة العظمى</th>
+                            <th class="text-center">النسبة</th>
+                            <th style="width: 250px;">ملاحظات المعلم</th>
+                            <th class="text-center" style="width: 100px;">الإجراء</th>
+                        {% elif active_exam %}
+                            <th class="text-center" style="width: 140px;">الدرجة المستحقة</th>
+                            <th class="text-center">الدرجة العظمى</th>
+                            <th class="text-center">النسبة</th>
+                            <th style="width: 250px;">ملاحظات المعلم</th>
+                            <th class="text-center" style="width: 100px;">الإجراء</th>
+                        {% else %}
+                            <th>الصف والشعبة</th>
+                            <th class="text-center">الواجبات</th>
+                            <th class="text-center">الاختبارات</th>
+                            <th class="text-center">متوسط الواجبات</th>
+                            <th class="text-center">متوسط الاختبارات</th>
+                            <th class="text-center">الحضور والغياب</th>
+                            <th class="text-center">الدرجة النهائية</th>
+                            <th class="text-center">التقييم</th>
+                            <th class="text-center" style="width: 120px;">الإجراءات</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody id="gradebookTableBody">
                     {% if students and students|length > 0 %}
                         {% for st in students %}
-                            <tr class="gradebook-row" id="gradebook-row-{{ st.student_id }}" data-student-id="{{ st.student_id }}" data-badge="{{ st.status_text }}">
-                                <td class="ps-3">
-                                    <div class="d-flex align-items-center gap-2 py-1" style="cursor: pointer;" onclick="openStudentPerformanceDrawer({{ st.student_id }})">
-                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px;">
-                                            <i class="fa-solid fa-user-graduate"></i>
-                                        </div>
-                                        <div>
-                                            <strong class="text-dark d-block mb-0 fs-6 text-primary-hover">{{ st.student_name }}</strong>
-                                            <small class="text-muted extra-small font-monospace">عرض سجل الأداء 👈</small>
-                                        </div>
-                                    </div>
+                            <tr class="gradebook-row" id="gradebook-row-{{ st.student_id }}" data-student-id="{{ st.student_id }}" data-class-id="{{ st.class_id }}" data-section-id="{{ st.section_id }}" data-badge="{{ st.status_text }}">
+                                <td class="text-center ps-3 font-monospace text-muted">{{ loop.index }}</td>
+                                <td>
+                                    <strong class="text-dark d-block mb-0 fs-6">{{ st.student_name }}</strong>
                                 </td>
-                                <td class="font-monospace text-muted">{{ st.academic_id }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ st.class_name }} - {{ st.section_name }}</span></td>
-                                <td class="text-center font-monospace fw-bold text-dark">{{ st.homework_avg }} / 10</td>
-                                <td class="text-center font-monospace fw-bold text-dark">{{ st.exam_avg }} / 100</td>
-                                <td class="text-center font-monospace text-success fw-bold">{{ st.participation }}%</td>
-                                <td class="text-center font-monospace text-info fw-bold">{{ st.attendance_pct }}%</td>
-                                <td class="text-center font-monospace fw-extrabold text-primary fs-6">{{ st.final_grade }}%</td>
-                                <td class="text-center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        {% if 'ممتاز' in st.letter_grade %}
-                                            <span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
-                                        {% elif 'جيد جداً' in st.letter_grade %}
-                                            <span class="badge bg-info text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
-                                        {% elif 'جيد' in st.letter_grade %}
-                                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
-                                        {% elif 'يحتاج' in st.letter_grade %}
-                                            <span class="badge bg-secondary text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                <td class="text-center font-monospace fw-bold text-primary">#{{ st.student_id }}</td>
+
+                                {% if active_homework %}
+                                    <td class="text-center">
+                                        {% if st.score is not none %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">🔵 تم التصحيح</span>
+                                        {% elif st.submission_status == 'تسليم متأخر' %}
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">🟠 تسليم متأخر</span>
+                                        {% elif st.submission_status == 'لم يسلم' %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">🔴 لم يسلم</span>
                                         {% else %}
-                                            <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small mb-1">{{ st.letter_grade }}</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">🟢 تم التسليم</span>
                                         {% endif %}
-                                        <small class="text-muted font-monospace extra-small" style="font-size: 10px;">{{ st.growth_badge or '+5% مستقر' }}</small>
-                                    </div>
-                                </td>
-                                <td class="text-center font-monospace fw-bold text-dark">
-                                    <span class="badge bg-light border text-dark">المركز #{{ st.class_rank }}</span>
-                                </td>
-                                <td class="text-center">
-                                    <!-- Full Enterprise Actions Dropdown (⋮) -->
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border rounded-circle extra-small p-2 shadow-sm" type="button" onclick="toggleGradebookDropdown(event, this)" title="إجراءات الطالب المتقدمة">
-                                            <i class="fa-solid fa-ellipsis-vertical text-muted fs-6"></i>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number" class="form-control form-control-sm font-monospace fw-bold text-primary hw-score-input text-center" value="{{ st.score if st.score is not none else '' }}" min="0" max="10" step="0.5" placeholder="أدخل الدرجة (من 10)">
+                                    </td>
+                                    <td class="text-center font-monospace fw-bold text-muted">10</td>
+                                    <td class="text-center font-monospace fw-bold text-dark">{{ st.percentage if st.percentage is not none else '—' }}%</td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm hw-notes-input" value="{{ st.notes or '' }}" placeholder="ملاحظات المعلم...">
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 extra-small fw-bold shadow-sm" onclick="saveHomeworkGradeSingle({{ active_homework.id }}, {{ st.student_id }}, this)">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i> حفظ
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 extra-small font-cairo py-2">
-                                            <li>
-                                                <button class="dropdown-item py-2 text-primary fw-bold" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }})">
-                                                    <i class="fa-solid fa-user-gear me-2"></i> 👤 عرض السجل التفصيلي
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-warning" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'analytics')">
-                                                    <i class="fa-solid fa-chart-line me-2"></i> 📊 تحليل الأداء والتطور
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-info" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'grades')">
-                                                    <i class="fa-solid fa-star me-2"></i> ⭐ سجل الدرجات التفصيلي
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-secondary" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')">
-                                                    <i class="fa-solid fa-book-open me-2"></i> 📚 تسليمات الواجبات
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-danger" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')">
-                                                    <i class="fa-solid fa-file-pen me-2"></i> 📝 نتائج الاختبارات
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-success" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')">
-                                                    <i class="fa-solid fa-user-check me-2"></i> 🟢 مواظبة الحضور
-                                                </button>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-dark" type="button" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'messages')">
-                                                    <i class="fa-solid fa-paper-plane me-2"></i> 💬 إرسال رسالة لولي الأمر
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item py-2 text-dark" type="button" onclick="window.print()">
-                                                    <i class="fa-solid fa-print me-2"></i> 📄 طباعة التقرير الأكاديمي
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
+                                    </td>
+                                {% elif active_exam %}
+                                    <td class="text-center">
+                                        <input type="number" class="form-control form-control-sm font-monospace fw-bold text-danger exam-score-input text-center" value="{{ st.score if st.score is not none else '' }}" min="0" max="{{ active_exam.TotalScore or 100 }}" step="0.5" placeholder="أدخل الدرجة">
+                                    </td>
+                                    <td class="text-center font-monospace fw-bold text-muted">{{ active_exam.TotalScore or 100 }}</td>
+                                    <td class="text-center font-monospace fw-bold text-dark">{{ st.percentage if st.percentage is not none else '—' }}%</td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm exam-notes-input" value="{{ st.notes or '' }}" placeholder="ملاحظات المعلم...">
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 extra-small fw-bold shadow-sm" onclick="saveExamGradeSingle({{ active_exam.ScheduleID or active_exam.id }}, {{ st.student_id }}, this)">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i> حفظ
+                                        </button>
+                                    </td>
+                                {% else %}
+                                    <td><span class="badge bg-light text-dark border">{{ st.class_name }} - {{ st.section_name }}</span></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 extra-small fw-bold" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')">
+                                            <i class="fa-solid fa-book-bookmark me-1"></i> الواجبات
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 extra-small fw-bold" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')">
+                                            <i class="fa-solid fa-file-signature me-1"></i> الاختبارات
+                                        </button>
+                                    </td>
+                                    <td class="text-center font-monospace fw-bold text-dark">
+                                        {% if st.homework_avg != '—' and st.homework_avg is not none %}
+                                            {{ (st.homework_avg / 10.0)|round(1) if st.homework_avg > 10 else st.homework_avg }} / 10
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center font-monospace fw-bold text-dark">100 / {{ st.exam_avg }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 extra-small fw-bold font-monospace" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')">
+                                            <i class="fa-solid fa-clipboard-user me-1"></i> {{ st.attendance_pct }}%
+                                        </button>
+                                    </td>
+                                    <td class="text-center font-monospace fw-extrabold text-primary fs-6">{{ st.final_grade }}%</td>
+                                    <td class="text-center">
+                                        {% if 'ممتاز' in st.letter_grade %}
+                                            <span class="badge bg-success text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
+                                        {% elif 'جيد جداً' in st.letter_grade %}
+                                            <span class="badge bg-info text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
+                                        {% elif 'جيد' in st.letter_grade %}
+                                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="dropdown position-static">
+                                            <button class="btn btn-sm btn-light border rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="toggleGradebookDropdown(event, this)">
+                                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 extra-small p-2" style="z-index: 1090;">
+                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-primary rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'overview')"><i class="fa-solid fa-eye me-2"></i> عرض تفاصيل الطالب</a></li>
+                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')"><i class="fa-solid fa-book-bookmark me-2 text-primary"></i> عرض الواجبات</a></li>
+                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')"><i class="fa-solid fa-file-signature me-2 text-danger"></i> عرض الاختبارات</a></li>
+                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')"><i class="fa-solid fa-clipboard-user me-2 text-success"></i> عرض الحضور والغياب</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="11" class="text-center py-5">
-                                <div class="rounded-circle bg-primary-subtle text-primary p-4 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
-                                    <i class="fa-solid fa-user-slash fs-1"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark mb-1">لا توجد سجلات درجات معروضة</h5>
-                                <p class="text-muted extra-small">تأكد من ضبط الفلاتر أو إضافة تقييمات جديدة عبر بوابة المعلم.</p>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-folder-open fs-2 d-block mb-2"></i>
+                                لا توجد بيانات طلاب مطابقة للتصفية المحددة.
                             </td>
                         </tr>
                     {% endif %}
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination Footer -->
-        <div class="card-footer bg-white border-top p-3 d-flex align-items-center justify-content-between flex-wrap gap-2 extra-small">
-            <span class="text-muted font-monospace">
-                الصفحة {{ pagination.page or 1 }} من أصل {{ pagination.total_pages or 1 }} | إجمالي {{ pagination.total or students|length }} نتائج
-            </span>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
-                    <a class="page-link rounded-pill px-3" href="{{ url_for('gradebook.index', page=(pagination.page or 1) - 1) }}">السابق</a>
-                </li>
-                <li class="page-item active">
-                    <span class="page-link rounded-pill px-3">{{ pagination.page or 1 }}</span>
-                </li>
-                <li class="page-item {% if pagination.page >= (pagination.total_pages or 1) %}disabled{% endif %}">
-                    <a class="page-link rounded-pill px-3" href="{{ url_for('gradebook.index', page=(pagination.page or 1) + 1) }}">التالي</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- 7. PERFORMANCE CHARTS & VISUALIZATIONS PLACEHOLDERS -->
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-md-6">
-            <div class="card p-3 border-0 bg-white shadow-sm rounded-4 h-100">
-                <h6 class="fw-bold text-dark mb-3 extra-small"><i class="fa-solid fa-chart-pie text-primary me-2"></i> منحنى توزيع الدرجات الأكاديمية:</h6>
-                <div class="d-flex flex-column gap-2 extra-small font-monospace">
-                    <div>
-                        <div class="d-flex justify-content-between mb-1"><span>🟢 ممتاز (90-100%)</span><strong>45%</strong></div>
-                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width: 45%;"></div></div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1"><span>🟢 جيد جداً (80-89%)</span><strong>30%</strong></div>
-                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-info" style="width: 30%;"></div></div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1"><span>🟡 جيد (70-79%)</span><strong>15%</strong></div>
-                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-warning" style="width: 15%;"></div></div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1"><span>🟠 يحتاج متابعة (60-69%)</span><strong>7%</strong></div>
-                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-secondary" style="width: 7%;"></div></div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1"><span>🔴 متعثر (<60%)</span><strong>3%</strong></div>
-                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-danger" style="width: 3%;"></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-            <div class="card p-3 border-0 bg-white shadow-sm rounded-4 h-100 text-center d-flex flex-column align-items-center justify-content-center">
-                <i class="fa-solid fa-chart-line text-primary fs-1 mb-2"></i>
-                <h6 class="fw-bold text-dark mb-1 extra-small">علاقة نسبة الحضور بالتحصيل العلمي</h6>
-                <p class="text-muted extra-small max-w-sm mb-0">تظهر البيانات وجود ارتباط طردي بنسبة 94% بين مواظبة الطلاب وحصولهم على تقدير ممتاز.</p>
-            </div>
-        </div>
     </div>
 
 </div>
 
-<!-- 8. 900px ENTERPRISE STUDENT PERFORMANCE DRAWER (#studentPerformanceDrawer) -->
+<!-- 6. STUDENT PERFORMANCE DRAWER (#studentPerformanceDrawer) -->
 <div class="offcanvas offcanvas-end rounded-start-4 shadow-lg border-0 font-cairo" tabindex="-1" id="studentPerformanceDrawer" style="width: 900px; max-width: 95vw;">
     <div class="offcanvas-header bg-primary text-white p-3 sticky-top" style="z-index: 1060;">
         <h6 class="offcanvas-title fw-bold mb-0">
-            <i class="fa-solid fa-user-graduate me-2"></i> مساحة تحليل أداء الطالب الأكاديمية (#studentPerformanceDrawer)
+            <i class="fa-solid fa-user-graduate me-2"></i> تفاصيل أداء الطالب الأكاديمية
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -459,40 +403,25 @@
         }
     });
 
-    window.filterGradebookByBadge = function(badge, btn) {
-        if (btn && btn.parentElement) {
-            btn.parentElement.querySelectorAll('button').forEach(function(b) {
-                b.classList.remove('btn-primary', 'btn-success', 'btn-info', 'btn-warning', 'btn-danger', 'btn-secondary', 'active', 'text-white');
-                b.classList.add('btn-outline-secondary');
-            });
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-primary', 'active', 'text-white');
-        }
-
-        var rows = document.querySelectorAll('#gradebookTableBody tr.gradebook-row');
-        var visible = 0;
-        rows.forEach(function(r) {
-            var b = r.getAttribute('data-badge') || '';
-            if (!badge || b.indexOf(badge) !== -1) {
-                r.style.display = '';
-                visible++;
-            } else {
-                r.style.display = 'none';
-            }
-        });
-
-        document.getElementById('gradebookResultsCounter').textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' طالباً';
-        document.getElementById('gradebookCountHeader').textContent = visible;
-    };
-
     window.applyGradebookFilters = function() {
-        var term = (document.getElementById('gradebookSearchInput').value || '').toLowerCase().trim();
+        var term = (document.getElementById('gradebookSearchInput')?.value || '').toLowerCase().trim();
+        var subId = (document.getElementById('gradebookSubjectFilter')?.value || '').trim();
+        var classId = (document.getElementById('gradebookClassFilter')?.value || '').trim();
+        var secId = (document.getElementById('gradebookSectionFilter')?.value || '').trim();
+
         var rows = document.querySelectorAll('#gradebookTableBody tr.gradebook-row');
         var visible = 0;
 
         rows.forEach(function(r) {
             var text = r.textContent.toLowerCase();
-            if (!term || text.indexOf(term) !== -1) {
+            var rowClassId = (r.getAttribute('data-class-id') || '').trim();
+            var rowSecId = (r.getAttribute('data-section-id') || '').trim();
+
+            var matchSearch = !term || text.indexOf(term) !== -1;
+            var matchClass = !classId || rowClassId === classId;
+            var matchSec = !secId || rowSecId === secId;
+
+            if (matchSearch && matchClass && matchSec) {
                 r.style.display = '';
                 visible++;
             } else {
@@ -500,8 +429,10 @@
             }
         });
 
-        document.getElementById('gradebookResultsCounter').textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' طالباً';
-        document.getElementById('gradebookCountHeader').textContent = visible;
+        var countHeader = document.getElementById('gradebookCountHeader');
+        var resultsCounter = document.getElementById('gradebookResultsCounter');
+        if (countHeader) countHeader.textContent = visible;
+        if (resultsCounter) resultsCounter.textContent = 'عرض ' + visible + ' من أصل ' + rows.length + ' طالباً';
     };
 
     window.searchGradebook = function(term) {
@@ -512,12 +443,12 @@
     };
 
     window.resetGradebookFilters = function() {
-        document.getElementById('gradebookFilterForm').reset();
-        window.filterGradebookByBadge('');
+        var form = document.getElementById('gradebookFilterForm');
+        if (form) form.reset();
+        window.applyGradebookFilters();
         showGradebookToast('تم إعادة ضبط جميع الفلاتر بنجاح', 'info');
     };
 
-    // Open Enterprise 900px Student Performance Drawer (#studentPerformanceDrawer)
     window.openStudentPerformanceDrawer = function(studentId, targetTab) {
         var drawerEl = document.getElementById('studentPerformanceDrawer');
         var drawerBody = document.getElementById('studentPerformanceDrawerContent');
@@ -528,231 +459,173 @@
             bsDrawer.show();
         }
 
-        // Skeleton loading UI
-        drawerBody.innerHTML = '<div class="p-3 font-cairo extra-small">' +
-            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-4" style="height: 120px;"></div></div>' +
-            '<div class="placeholder-glow mb-3"><div class="placeholder col-12 rounded-pill" style="height: 45px;"></div></div>' +
-            '<div class="row g-2 mb-3"><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div><div class="col-4"><div class="placeholder-glow"><div class="placeholder col-12 rounded-3" style="height: 70px;"></div></div></div></div>' +
-            '<div class="placeholder-glow"><div class="placeholder col-12 rounded-4" style="height: 220px;"></div></div>' +
+        drawerBody.innerHTML = '<div class="p-4 text-center text-muted font-cairo extra-small">' +
+            '<div class="spinner-border text-primary mb-2" role="status"></div>' +
+            '<div>جاري جلب تفاصيل الدرجات والواجبات والاختبارات الحقيقية من قاعدة البيانات...</div>' +
             '</div>';
 
-        fetch('/grades/api/student/' + studentId)
+        fetch('/gradebook/api/student/' + studentId)
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                var activeTabName = targetTab || 'overview';
-                var html = '<div class="font-cairo extra-small pb-5 position-relative">';
+                if (data.error) {
+                    drawerBody.innerHTML = '<div class="alert alert-danger font-cairo extra-small p-3 m-3">⚠️ ' + data.error + '</div>';
+                    return;
+                }
+
+                var homeworkItems = (data.assessments || []).filter(function(a) { return a.type === 'واجب'; });
+                var examItems = (data.assessments || []).filter(function(a) { return a.type === 'اختبار'; });
+
+                var html = '<div class="font-cairo extra-small p-3 pb-5">';
                 
-                // Hero Student Header Card
-                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-4 shadow-sm border-0 position-relative overflow-hidden">';
-                html += '<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">';
-                html += '<div class="d-flex align-items-center gap-3">';
-                html += '<div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-4 d-flex align-items-center justify-content-center shadow" style="width: 52px; height: 52px;">';
-                html += '<i class="fa-solid fa-user-graduate"></i>';
-                html += '</div>';
+                // Header Info Card
+                html += '<div class="card bg-primary text-white p-3 rounded-4 mb-3 shadow-sm border-0">';
+                html += '<div class="d-flex align-items-center justify-content-between">';
                 html += '<div>';
-                html += '<h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-award me-1 text-warning"></i> ' + data.student_name + '</h5>';
-                html += '<small class="text-white-50 font-monospace">الرقم الأكاديمي: ' + data.academic_id + ' | المادة: ' + (data.subject_name || 'الرياضيات') + '</small>';
-                html += '</div>';
+                html += '<h5 class="fw-bold mb-1 text-white"><i class="fa-solid fa-graduation-cap me-2 text-warning"></i>' + data.student_name + '</h5>';
+                html += '<div class="extra-small text-white-50">SID: <span class="font-monospace fw-bold text-white">#' + data.student_id + '</span> | ' + data.class_name + ' - ' + data.section_name + '</div>';
                 html += '</div>';
                 html += '<div class="text-end">';
-                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 extra-small fw-bold shadow-sm d-block mb-1">' + data.letter_grade + '</span>';
-                html += '<small class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 extra-small">' + (data.growth_badge || '+8% مقارنة بالشهر الماضي') + '</small>';
+                html += '<span class="badge bg-white text-primary rounded-pill px-3 py-1 font-monospace fw-bold fs-6">' + data.final_grade + '%</span>';
                 html += '</div>';
-                html += '</div>';
-
-                // Quick KPI Mini-Grid inside Header
-                html += '<div class="row g-2 text-center mt-2 font-monospace extra-small text-dark">';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">الصف والشعبة</small><strong class="text-dark extra-small">' + data.class_name + ' (' + data.section_name + ')</strong></div></div>';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">متوسط الواجبات</small><strong class="text-primary">' + data.homework_avg + ' / 10</strong></div></div>';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">متوسط الاختبارات</small><strong class="text-primary">' + data.exam_avg + ' / 100</strong></div></div>';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">معدل الحضور</small><strong class="text-success">' + data.attendance_pct + '%</strong></div></div>';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">الترتيب بالفصل</small><strong class="text-warning">المركز #' + data.class_rank + '</strong></div></div>';
-                html += '<div class="col-2"><div class="p-2 rounded-3 bg-white border shadow-sm"><small class="text-muted d-block">المعدل النهائي</small><strong class="text-success fw-bold fs-6">' + data.final_grade + '%</strong></div></div>';
                 html += '</div>';
                 html += '</div>';
 
-                // 8 Enterprise Tabs Header
-                html += '<ul class="nav nav-pills nav-fill mb-3 font-cairo extra-small fw-bold bg-white p-2 rounded-3 shadow-sm border sticky-top" style="top: 55px; z-index: 1040;" role="tablist">';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'overview' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabOverview" type="button">📊 نظرة عامة</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'grades' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabGrades" type="button">⭐ الدرجات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'homeworks' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabHomeworks" type="button">📚 الواجبات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'exams' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabExams" type="button">📝 الاختبارات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'attendance' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAttendance" type="button">🟢 الحضور (' + data.attendance_pct + '%)</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'analytics' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabAnalytics" type="button">📈 التحليلات</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'messages' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabMessages" type="button">💬 الرسائل</button></li>';
-                html += '<li class="nav-item"><button class="nav-link ' + (activeTabName === 'notes' ? 'active' : '') + ' rounded-pill py-2" data-bs-toggle="tab" data-bs-target="#stTabNotes" type="button">📝 الملاحظات</button></li>';
+                // Summary Pills
+                html += '<div class="row g-2 mb-3 text-center">';
+                html += '<div class="col-6"><div class="card p-2 bg-primary-subtle border-primary-subtle rounded-3"><small class="text-muted d-block">متوسط الواجبات</small><strong class="text-primary fs-6 font-monospace">' + data.homework_avg + ' / 10</strong></div></div>';
+                html += '<div class="col-6"><div class="card p-2 bg-danger-subtle border-danger-subtle rounded-3"><small class="text-muted d-block">متوسط الاختبارات</small><strong class="text-danger fs-6 font-monospace">' + data.exam_avg + ' / 100</strong></div></div>';
+                html += '</div>';
+
+                // Tabs Header
+                html += '<ul class="nav nav-pills nav-justified mb-3 bg-light p-1 rounded-pill extra-small" role="tablist">';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2 ' + (targetTab === 'homeworks' || !targetTab || targetTab === 'overview' ? 'active' : '') + '" data-bs-toggle="pill" data-bs-target="#tabHw' + studentId + '"><i class="fa-solid fa-book-bookmark me-1"></i> الواجبات المصححة (' + homeworkItems.length + ')</button></li>';
+                html += '<li class="nav-item"><button class="nav-link rounded-pill py-2 ' + (targetTab === 'exams' ? 'active' : '') + '" data-bs-toggle="pill" data-bs-target="#tabEx' + studentId + '"><i class="fa-solid fa-file-signature me-1"></i> الاختبارات المصححة (' + examItems.length + ')</button></li>';
                 html += '</ul>';
 
-                // Tab Content Wrapper
-                html += '<div class="tab-content extra-small">';
+                // Tab Content Panes
+                html += '<div class="tab-content">';
                 
-                // Tab 1: Overview
-                html += '<div class="tab-pane fade ' + (activeTabName === 'overview' ? 'show active' : '') + '" id="stTabOverview">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-circle-info text-primary me-2"></i> ملخص الأداء والتحصيل العلمي:</h6>';
-                html += '<p class="text-secondary mb-3 line-height-lg">' + data.notes + '</p>';
-                
-                // Timeline Activity list
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> السجل الزمني للأنشطة الأخيرة (Timeline):</h6>';
-                html += '<div class="list-group list-group-flush border-top border-bottom mb-3">';
-                (data.timeline || []).forEach(function(t) {
-                    html += '<div class="list-group-item bg-transparent px-0 py-2 d-flex align-items-center justify-content-between">';
-                    html += '<div><i class="fa-solid ' + t.icon + ' me-2"></i><strong class="text-dark">' + t.text + '</strong></div>';
-                    html += '<small class="text-muted font-monospace">' + t.time + '</small>';
-                    html += '</div>';
-                });
-                html += '</div>';
-
-                html += '</div></div>';
-
-                // Tab 2: Grades
-                html += '<div class="tab-pane fade ' + (activeTabName === 'grades' ? 'show active' : '') + '" id="stTabGrades">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<table class="table table-hover table-sm extra-small mb-0">';
-                html += '<thead><tr class="bg-light"><th>عنوان التقييم</th><th>النوع</th><th>التاريخ</th><th>الدرجة</th><th>الحالة</th></tr></thead><tbody>';
-                (data.assessments || []).forEach(function(a) {
-                    html += '<tr><td>' + a.title + '</td><td><span class="badge bg-light text-dark border">' + a.type + '</span></td><td>' + a.date + '</td><td class="fw-bold text-primary">' + a.score + '</td><td><span class="badge bg-success-subtle text-success border border-success-subtle">' + a.status + '</span></td></tr>';
-                });
-                html += '</tbody></table>';
-                html += '</div></div>';
-
-                // Tab 3: Homeworks
-                html += '<div class="tab-pane fade ' + (activeTabName === 'homeworks' ? 'show active' : '') + '" id="stTabHomeworks">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book text-primary me-2"></i> إحصائيات تسليم الواجبات بالتفصيل:</h6>';
-                html += '<div class="row g-2 text-center font-monospace mb-3">';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">إجمالي الواجبات</small><strong class="text-dark">' + (data.homework_stats ? data.homework_stats.total : 0) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تم التسليم بالموعد</small><strong class="text-success">' + (data.homework_stats ? data.homework_stats.delivered : 0) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">تسليم متأخر</small><strong class="text-warning">' + (data.homework_stats ? data.homework_stats.late : 0) + '</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">مفقود / غير مسلّم</small><strong class="text-danger">' + (data.homework_stats ? data.homework_stats.missing : 0) + '</strong></div></div>';
-                html += '</div>';
-                html += '<div class="mb-2"><div class="d-flex justify-content-between mb-1"><span>نسبة الإنجاز الكلية للواجبات</span><strong class="font-monospace text-primary">' + (data.homework_stats ? data.homework_stats.completion_pct : 0.0) + '%</strong></div>';
-                html += '<div class="progress" style="height: 10px;"><div class="progress-bar bg-primary" style="width: ' + (data.homework_stats ? data.homework_stats.completion_pct : 0) + '%;"></div></div></div>';
-                html += '</div></div>';
-
-                // Tab 4: Exams
-                html += '<div class="tab-pane fade ' + (activeTabName === 'exams' ? 'show active' : '') + '" id="stTabExams">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-file-signature text-danger me-2"></i> سجّل نتائـج الاختبارات الأكاديمية:</h6>';
-                if (data.exams && data.exams.length > 0) {
-                    html += '<table class="table table-sm extra-small mb-0">';
-                    html += '<thead><tr><th>الاختبار</th><th>التاريخ</th><th>الدرجة</th><th>المتوسط العام</th><th>النتيجة</th></tr></thead><tbody>';
-                    data.exams.forEach(function(ex) {
-                        html += '<tr><td>' + ex.title + '</td><td>' + ex.date + '</td><td class="fw-bold text-success font-monospace">' + ex.score + '</td><td class="font-monospace">' + (ex.avg || '—') + '</td><td><span class="badge bg-success">' + ex.result + '</span></td></tr>';
-                    });
-                    html += '</tbody></table>';
+                // Homework Tab Pane
+                html += '<div class="tab-pane fade ' + (targetTab === 'homeworks' || !targetTab || targetTab === 'overview' ? 'show active' : '') + '" id="tabHw' + studentId + '">';
+                if (homeworkItems.length === 0) {
+                    html += '<div class="text-center p-4 text-muted bg-light rounded-4 border"><i class="fa-solid fa-folder-open fs-3 d-block mb-2 text-secondary"></i>لا توجد واجبات مصححة مسجلة لهذا الطالب في قاعدة البيانات بعد.</div>';
                 } else {
-                    html += '<div class="text-center py-4 text-muted"><i class="fa-solid fa-file-excel fs-4 d-block mb-1"></i>لا توجد نتائج اختبارات مرصودة لهذا الطالب.</div>';
+                    html += '<div class="list-group rounded-4 shadow-sm border-0">';
+                    homeworkItems.forEach(function(item) {
+                        html += '<div class="list-group-item p-3 border-bottom">';
+                        html += '<div class="d-flex align-items-center justify-content-between mb-1">';
+                        html += '<strong class="text-dark font-cairo fs-6"><i class="fa-solid fa-book-bookmark text-primary me-2"></i>' + item.title + '</strong>';
+                        html += '<span class="badge bg-primary text-white rounded-pill px-3 py-1 font-monospace fw-bold fs-6">' + item.score + '</span>';
+                        html += '</div>';
+                        html += '<div class="d-flex align-items-center justify-content-between extra-small text-muted">';
+                        html += '<span>تاريخ التقييم: <strong class="font-monospace text-dark">' + item.date + '</strong></span>';
+                        html += '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">' + item.status + '</span>';
+                        html += '</div>';
+                        if (item.notes) {
+                            html += '<div class="mt-2 p-2 bg-light rounded-3 text-secondary extra-small"><i class="fa-regular fa-comment-dots me-1 text-primary"></i>' + item.notes + '</div>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
                 }
-                html += '</div></div>';
-
-                // Tab 5: Attendance
-                html += '<div class="tab-pane fade ' + (activeTabName === 'attendance' ? 'show active' : '') + '" id="stTabAttendance">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center">';
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clipboard-user text-success me-2"></i> ملخص انضباط مواظبة الحضور والغياب:</h6>';
-                var att = data.attendance_stats || { present: 0, late: 0, absent: 0, excused: 0 };
-                html += '<div class="row g-2 font-monospace my-3">';
-                html += '<div class="col-3"><div class="p-2 bg-success-subtle text-success rounded border border-success-subtle"><small class="d-block">حاضر</small><strong>' + att.present + ' يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-warning-subtle text-warning rounded border border-warning-subtle"><small class="d-block">متأخر</small><strong>' + att.late + ' يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle"><small class="d-block">غائب</small><strong>' + att.absent + ' يوم</strong></div></div>';
-                html += '<div class="col-3"><div class="p-2 bg-info-subtle text-info rounded border border-info-subtle"><small class="d-block">بعذر رسمي</small><strong>' + att.excused + ' يوم</strong></div></div>';
-                html += '</div>';
-                html += '</div></div>';
-
-                // Tab 6: Analytics
-                html += '<div class="tab-pane fade ' + (activeTabName === 'analytics' ? 'show active' : '') + '" id="stTabAnalytics">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4 mb-3">';
-                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i> التحليلات والتوصيات الأكاديمية الذكية (Smart Analytics):</h6>';
-                (data.smart_insights || []).forEach(function(ins) {
-                    html += '<div class="p-2 mb-2 bg-light rounded border border-start border-4 border-primary extra-small"><i class="fa-solid fa-lightbulb text-warning me-2"></i>' + ins + '</div>';
-                });
-                html += '</div></div>';
-
-                // Tab 7: Messages
-                html += '<div class="tab-pane fade ' + (activeTabName === 'messages' ? 'show active' : '') + '" id="stTabMessages">';
-                html += '<div class="card p-4 border-0 bg-white shadow-sm rounded-4 text-center">';
-                html += '<h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-paper-plane text-primary me-2"></i> مركز المراسلات والإشعارات المباشرة:</h6>';
-                html += '<div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">';
-                html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال الرسالة المباشرة بنجاح\', \'success\')"><i class="fa-solid fa-envelope me-1"></i> إرسال رسالة مباشرة</button>';
-                html += '<button type="button" class="btn btn-sm btn-info text-white rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال التقرير الأكاديمي لولي الأمر بنجاح\', \'info\')"><i class="fa-solid fa-file-arrow-up me-1"></i> إرسال تقرير لولي الأمر</button>';
-                html += '<button type="button" class="btn btn-sm btn-warning text-dark rounded-pill px-3" onclick="showGradebookToast(\'تم إرسال تذكير الواجبات بنجاح\', \'warning\')"><i class="fa-solid fa-bell me-1"></i> تذكير بالواجبات المتأخرة</button>';
-                html += '</div>';
-                html += '</div></div>';
-
-                // Tab 8: Notes
-                html += '<div class="tab-pane fade ' + (activeTabName === 'notes' ? 'show active' : '') + '" id="stTabNotes">';
-                html += '<div class="card p-3 border-0 bg-white shadow-sm rounded-4">';
-                html += '<h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-pen-to-square text-secondary me-2"></i> ملاحظات المعلم الخاصة والتوجيهات الأكاديمية:</h6>';
-                html += '<textarea class="form-control extra-small mb-2" rows="3" placeholder="أدخل الملاحظة الأكاديمية الخاصة بالمعلم..."></textarea>';
-                html += '<button type="button" class="btn btn-sm btn-primary rounded-pill px-4 ms-auto d-block" onclick="showGradebookToast(\'تم حفظ الملاحظة الخاصة بنجاح\', \'success\')">حفظ الملاحظة</button>';
-                html += '</div></div>';
-
                 html += '</div>';
 
-                // Sticky Footer Actions
-                html += '<div class="position-sticky bottom-0 bg-white p-3 border-top shadow-lg rounded-top-4 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="z-index: 1050; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">';
-                html += '<button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="openGradingWorkspace(\'homework\', 1)"><i class="fa-solid fa-star text-warning me-2"></i> ⭐ فتح محرك التصحيح الموحد</button>';
-                html += '<button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="offcanvas">إغلاق مساحة الأداء</button>';
+                // Exams Tab Pane
+                html += '<div class="tab-pane fade ' + (targetTab === 'exams' ? 'show active' : '') + '" id="tabEx' + studentId + '">';
+                if (examItems.length === 0) {
+                    html += '<div class="text-center p-4 text-muted bg-light rounded-4 border"><i class="fa-solid fa-folder-open fs-3 d-block mb-2 text-secondary"></i>لا توجد اختبارات مصححة مسجلة لهذا الطالب في قاعدة البيانات بعد.</div>';
+                } else {
+                    html += '<div class="list-group rounded-4 shadow-sm border-0">';
+                    examItems.forEach(function(item) {
+                        html += '<div class="list-group-item p-3 border-bottom">';
+                        html += '<div class="d-flex align-items-center justify-content-between mb-1">';
+                        html += '<strong class="text-dark font-cairo fs-6"><i class="fa-solid fa-file-signature text-danger me-2"></i>' + item.title + '</strong>';
+                        html += '<span class="badge bg-danger text-white rounded-pill px-3 py-1 font-monospace fw-bold fs-6">' + item.score + '</span>';
+                        html += '</div>';
+                        html += '<div class="d-flex align-items-center justify-content-between extra-small text-muted">';
+                        html += '<span>تاريخ الاختبار: <strong class="font-monospace text-dark">' + item.date + '</strong></span>';
+                        html += '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">' + item.status + '</span>';
+                        html += '</div>';
+                        if (item.notes) {
+                            html += '<div class="mt-2 p-2 bg-light rounded-3 text-secondary extra-small"><i class="fa-regular fa-comment-dots me-1 text-danger"></i>' + item.notes + '</div>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
                 html += '</div>';
 
-                html += '</div>';
+                html += '</div>'; // end tab-content
+                html += '</div>'; // end main container
+
                 drawerBody.innerHTML = html;
+            })
+            .catch(function(err) {
+                drawerBody.innerHTML = '<div class="alert alert-danger font-cairo extra-small p-3 m-3">⚠️ خطأ في تحميل بيانات الطالب: ' + err.message + '</div>';
             });
     };
 
-    window.openStudentGradebook = function(studentId) {
-        window.openStudentPerformanceDrawer(studentId, 'overview');
-    };
+    window.saveHomeworkGradeSingle = function(hwId, studentId, btn) {
+        var row = btn.closest('tr');
+        var scoreInput = row.querySelector('.hw-score-input');
+        var notesInput = row.querySelector('.hw-notes-input');
+        
+        var score = scoreInput ? scoreInput.value.trim() : null;
+        var notes = notesInput ? notesInput.value.trim() : '';
 
-    window.openPerformance = function(studentId) {
-        window.openStudentPerformanceDrawer(studentId, 'analytics');
-    };
-
-    window.exportGradebook = function(format) {
-        fetch('/grades/api/export', {
+        fetch('/gradebook/api/homework/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ format: format || 'csv' })
+            body: JSON.stringify({
+                homework_id: hwId,
+                student_id: studentId,
+                score: score !== '' ? parseFloat(score) : null,
+                notes: notes
+            })
         })
         .then(function(res) { return res.json(); })
-        .then(function(res) {
-            if (res.success) {
-                showGradebookToast('تم تصدير سجل الدرجات والأداء الأكاديمي بنجاح 📄', 'success');
+        .then(function(data) {
+            if (data.success) {
+                showGradebookToast('✅ تم حفظ درجة وملاحظات الطالب بنجاح في قاعدة البيانات (HomeworkMarks)', 'success');
+            } else {
+                showGradebookToast('❌ خطأ: ' + (data.error || 'فشل الحفظ'), 'danger');
             }
+        })
+        .catch(function(err) {
+            showGradebookToast('❌ خطأ في الاتصال: ' + err.message, 'danger');
         });
     };
 
-    window.recalculateGrades = function() {
-        fetch('/grades/api/recalculate', { method: 'POST' })
-            .then(function(res) { return res.json(); })
-            .then(function(res) {
-                if (res.success) {
-                    showGradebookToast('تم إعادة احتساب جميع المعدلات والترتيب الأكاديمي بنجاح 🔄', 'success');
-                    setTimeout(function() { location.reload(); }, 600);
-                }
-            });
-    };
+    window.saveExamGradeSingle = function(examId, studentId, btn) {
+        var row = btn.closest('tr');
+        var scoreInput = row.querySelector('.exam-score-input');
+        var notesInput = row.querySelector('.exam-notes-input');
+        
+        var score = scoreInput ? scoreInput.value.trim() : null;
+        var notes = notesInput ? notesInput.value.trim() : '';
 
-    window.bulkPublishResults = function() {
-        fetch('/grades/api/publish', { method: 'POST' })
-            .then(function(res) { return res.json(); })
-            .then(function(res) {
-                if (res.success) {
-                    showGradebookToast('تم نشر سجل الدرجات للطلاب بنجاح 🟢', 'success');
-                }
-            });
-    };
-
-    window.notifyStudents = function() {
-        fetch('/grades/api/notify', { method: 'POST' })
-            .then(function(res) { return res.json(); })
-            .then(function(res) {
-                if (res.success) {
-                    showGradebookToast('تم إرسال الإشعارات الأكاديمية بنجاح 🔔', 'info');
-                }
-            });
+        fetch('/gradebook/api/exam/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                exam_id: examId,
+                student_id: studentId,
+                score: score !== '' ? parseFloat(score) : null,
+                notes: notes
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showGradebookToast('✅ تم حفظ درجة الاختبار والملاحظات بنجاح في قاعدة البيانات (Marks)', 'success');
+            } else {
+                showGradebookToast('❌ خطأ: ' + (data.error || 'فشل الحفظ'), 'danger');
+            }
+        })
+        .catch(function(err) {
+            showGradebookToast('❌ خطأ في الاتصال: ' + err.message, 'danger');
+        });
     };
 })();
 </script>
-{% include 'teacher/grading_workspace.html' %}
 {% endblock %}

@@ -48,10 +48,12 @@ def manage_grades():
         avg_score, max_score, min_score, pass_count, fail_count, pass_rate, fail_rate = 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0
         rating_label = '—'
     
+    from models.academic import Sections
     terms = Terms.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     exams = TypeExams.query.filter_by(is_deleted=False).all()
     subjects = Subject.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all() if hasattr(Sections, 'is_deleted') else Sections.query.all()
     
     active_sched = ExamSchedule.query.filter_by(is_deleted=False).order_by(ExamSchedule.ScheduleID.desc()).first()
 
@@ -83,37 +85,74 @@ def manage_grades():
                            classes=classes, 
                            exams=exams, 
                            subjects=subjects,
+                           sections=sections,
                            all_students=all_students)
 
 @grades_bp.route('/report', methods=['GET'])
 @grades_legacy_bp.route('/report', methods=['GET'])
 def student_report_page():
-    if 'user_id' not in session:
+    if 'user_id' not in session and not (current_user and current_user.is_authenticated):
         return redirect(url_for('auth.login'))
         
-    classes = Classes.query.all()
-    terms = Terms.query.all()
-    exams = TypeExams.query.all()
+    from models.academic import Sections
+    classes = Classes.query.filter_by(is_deleted=False).all() if hasattr(Classes, 'is_deleted') else Classes.query.all()
+    terms = Terms.query.filter_by(is_deleted=False).all() if hasattr(Terms, 'is_deleted') else Terms.query.all()
+    exams = TypeExams.query.filter_by(is_deleted=False).all() if hasattr(TypeExams, 'is_deleted') else TypeExams.query.all()
+    subjects = Subject.query.filter_by(is_deleted=False).all() if hasattr(Subject, 'is_deleted') else Subject.query.all()
+    sections = Sections.query.filter_by(is_deleted=False).all() if hasattr(Sections, 'is_deleted') else Sections.query.all()
     
-    student_id = request.args.get('student_id')
-    term_id = request.args.get('term_id')
-    exam_id = request.args.get('exam_id')
+    student_id = request.args.get('student_id', type=int)
+    term_id = request.args.get('term_id', type=int)
+    class_id = request.args.get('class_id', type=int)
+    section_id = request.args.get('section_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
+    exam_id = request.args.get('exam_id', type=int)
+    
+    st_query = Student.query.filter_by(is_deleted=False)
+    if class_id:
+        st_query = st_query.filter_by(CID=class_id)
+    if section_id:
+        st_query = st_query.filter_by(SectionID=section_id)
+    if student_id:
+        st_query = st_query.filter_by(SID=student_id)
+
+    students_list = st_query.order_by(Student.SName).all()
     
     report_data = None
-    if student_id and term_id and exam_id:
-        student = Student.query.get(student_id)
-        if student:
-            marks = Marks.query.filter_by(SID=student_id, T_ID=term_id, ExamID=exam_id).all()
-            report_data = {
-                "student": student,
-                "marks": marks
-            }
+    report_list = []
+    
+    has_filter = any([term_id, class_id, section_id, subject_id, exam_id, student_id])
+
+    if has_filter:
+        for st in students_list:
+            m_query = Marks.query.filter_by(SID=st.SID)
+            if term_id:
+                m_query = m_query.filter_by(T_ID=term_id)
+            if exam_id:
+                m_query = m_query.filter_by(ExamID=exam_id)
+            if subject_id:
+                m_query = m_query.filter_by(SubID=subject_id)
             
+            st_marks = m_query.all()
+            report_list.append({
+                "student": st,
+                "marks": st_marks
+            })
+
+        if len(report_list) == 1:
+            report_data = report_list[0]
+
+    all_students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()
+
     return render_template('grades/student_report.html', 
                            classes=classes, 
                            terms=terms, 
                            exams=exams, 
-                           report_data=report_data)
+                           subjects=subjects,
+                           sections=sections,
+                           students=all_students,
+                           report_data=report_data,
+                           report_list=report_list)
 
 @grades_bp.route('/add_exam', methods=['POST'])
 @grades_legacy_bp.route('/add_exam', methods=['POST'])
@@ -131,4 +170,148 @@ def add_exam():
             db.session.rollback()
             flash(f'خطأ عند الإضافة: {e}', 'danger')
     return redirect(url_for('grades.manage_grades'))
+
+
+@grades_bp.route('/export/excel', methods=['GET'])
+@grades_legacy_bp.route('/export/excel', methods=['GET'])
+def export_grades_excel():
+    from io import BytesIO
+    from datetime import datetime
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from flask import send_file
+    from models import Attendance
+
+    if 'user_id' not in session and not (current_user and current_user.is_authenticated):
+        return redirect(url_for('auth.login'))
+        
+    class_id = request.args.get('class_id', type=int)
+    section_id = request.args.get('section_id', type=int)
+    subject_id = request.args.get('subject_id', type=int)
+    exam_id = request.args.get('exam_id', type=int)
+    term_id = request.args.get('term_id', type=int)
+    status_filter = request.args.get('status', 'all')
+    
+    query = Student.query.filter_by(is_deleted=False)
+    if class_id:
+        query = query.filter_by(CID=class_id)
+    if section_id:
+        query = query.filter_by(SectionID=section_id)
+        
+    students = query.order_by(Student.SName).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "كشف درجات الاختبارات"
+    ws.sheet_view.rightToLeft = True
+    
+    header_fill = PatternFill(start_color="1E40AF", end_color="1E40AF", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    
+    headers = [
+        "#", 
+        "الرقم الأكاديمي", 
+        "اسم الطالب", 
+        "الصف الدراسي", 
+        "الشعبة", 
+        "المادة الدراسية", 
+        "نوع الاختبار", 
+        "الحضور والغياب", 
+        "الدرجة المرصودة", 
+        "النسبة المئوية", 
+        "التقدير الأكاديمي", 
+        "حالة الاعتماد"
+    ]
+    
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        
+    row_index = 1
+    for st in students:
+        cname = st.school_class.CName if st.school_class else "جميع الصفوف"
+        sname = st.section.SectionName if st.section else "جميع الشعب"
+        
+        mark_q = Marks.query.filter_by(SID=st.SID)
+        if subject_id: mark_q = mark_q.filter_by(SubID=subject_id)
+        if exam_id: mark_q = mark_q.filter_by(ExamID=exam_id)
+        if term_id: mark_q = mark_q.filter_by(T_ID=term_id)
+        
+        mark = mark_q.first()
+
+        score = float(mark.Score) if mark and mark.Score is not None else None
+        
+        if status_filter == 'approved' and score is None:
+            continue
+        if status_filter == 'missing' and score is not None:
+            continue
+
+        if score is not None:
+            score_str = f"{score}"
+            percent_str = f"{score:.1f}%"
+            if score >= 90:
+                rating = "ممتاز"
+            elif score >= 80:
+                rating = "جيد جداً"
+            elif score >= 70:
+                rating = "جيد"
+            elif score >= 60:
+                rating = "مقبول"
+            else:
+                rating = "راسب"
+            approval = "معتمد"
+        else:
+            score_str = "—"
+            percent_str = "—"
+            rating = "غير مدخل"
+            approval = "لم ترصد"
+
+        att = Attendance.query.filter_by(SID=st.SID).order_by(Attendance.Date.desc()).first()
+        att_str = att.Status if att else "حاضر"
+
+        sub_name = mark.subject.SubName if mark and mark.subject else "جميع المواد"
+        exam_name = mark.exam.ExamName if mark and hasattr(mark, 'exam') and mark.exam else "جميع الاختبارات"
+
+        row = [
+            row_index,
+            st.SID,
+            st.SName if hasattr(st, 'SName') else st.StudentName,
+            cname,
+            sname,
+            sub_name,
+            exam_name,
+            att_str,
+            score_str,
+            percent_str,
+            rating,
+            approval
+        ]
+        
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = align_center
+        row_index += 1
+
+    col_widths = {
+        'A': 6, 'B': 18, 'C': 26, 'D': 16, 'E': 14, 
+        'F': 18, 'G': 18, 'H': 14, 'I': 16, 'J': 16, 
+        'K': 16, 'L': 16
+    }
+    for col, width in col_widths.items():
+        ws.column_dimensions[col].width = width
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"كشف_درجات_الاختبارات_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 

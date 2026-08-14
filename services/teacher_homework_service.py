@@ -94,6 +94,8 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
         today_date = date.today()
         for hw in homeworks:
             students = Student.query.filter_by(CID=hw.class_id, is_deleted=False).all()
+            if hw.section_id:
+                students = [s for s in students if s.SectionID == hw.section_id]
             total_students = len(students)
             graded_count = HomeworkMarks.query.filter_by(HomeworkID=hw.id, is_deleted=False).count()
             
@@ -107,12 +109,14 @@ def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=No
             graded_str = f"{graded_count} / {total_students}"
             
             st_val = hw.status or 'منشور'
-            if st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
+            if graded_count > 0:
+                received_count = graded_count
+            elif st_val in ['مكتمل', 'منتهي', 'بانتظار التصحيح']:
                 received_count = total_students
             elif st_val in ['مسودة', 'معلق']:
                 received_count = 0
             else:
-                received_count = max(0, int(total_students * 0.5)) if total_students > 0 else 0
+                received_count = 0
 
             unreceived_count = max(0, total_students - received_count)
             submission_rate = round((received_count / total_students * 100), 1) if total_students > 0 else 0.0
@@ -187,13 +191,33 @@ def get_homework_details(homework_id, user_id):
         months = round(days_remaining / 30)
         days_remaining_str = f"خلال {months} أشهر"
 
+    from models.grade import HomeworkMarks
+    marks_records = HomeworkMarks.query.filter_by(HomeworkID=hw.id, is_deleted=False).all()
+    marks_map = {m.SID: m for m in marks_records}
+
     student_list = []
     st_val = hw.status or 'منشور'
+    graded_count = 0
+    total_grade_sum = 0.0
+
     for idx, s in enumerate(students):
-        if st_val in ['مكتمل', 'تم التسليم']:
+        hm_rec = marks_map.get(s.SID)
+        if hm_rec and hm_rec.Score is not None:
             submitted = True
+            grading_st = 'تم التصحيح'
+            raw_s = float(hm_rec.Score)
+            max_s = float(hm_rec.MaxScore) if hm_rec.MaxScore else 10.0
+            grade_val = round((raw_s / max_s) * 10.0, 1) if max_s > 10.0 else round(min(10.0, max(0.0, raw_s)), 1)
+            graded_count += 1
+            total_grade_sum += grade_val
+        elif st_val in ['مكتمل', 'مصحح', 'تم التسليم']:
+            submitted = True
+            grading_st = 'تم التسليم'
+            grade_val = None
         else:
             submitted = False
+            grading_st = 'لم يسلم'
+            grade_val = None
 
         student_code = getattr(s, 'student_code', None) or getattr(s, 'Code', None) or str(s.SID)
 
@@ -201,13 +225,17 @@ def get_homework_details(homework_id, user_id):
             'student_id': s.SID,
             'student_name': s.SName,
             'academic_id': student_code,
-            'submission_status': 'تم التسليم' if submitted else 'لم يسلم',
-            'submission_date': (date.today().strftime('%Y-%m-%d %H:%M')) if submitted else '---'
+            'submission_status': grading_st,
+            'submission_date': (date.today().strftime('%Y-%m-%d %H:%M')) if submitted else '---',
+            'grade': grade_val
         })
 
-    received_count = sum(1 for st in student_list if st['submission_status'] == 'تم التسليم')
+    received_count = sum(1 for st in student_list if st['submission_status'] in ['تم التسليم', 'تم التصحيح'])
     unreceived_count = len(student_list) - received_count
     submission_rate = round((received_count / len(student_list) * 100), 1) if student_list else 0
+    avg_grade = round(total_grade_sum / graded_count, 1) if graded_count > 0 else 0.0
+
+    real_status = 'مكتمل' if (len(students) > 0 and graded_count >= len(students)) else ('بانتظار التصحيح' if graded_count > 0 else (hw.status or 'منشور'))
 
     return {
         'id': hw.id,
@@ -221,12 +249,14 @@ def get_homework_details(homework_id, user_id):
         'section_name': hw.section.SectionName if hw.section else 'جميع الشعب',
         'created_at': hw.created_at.strftime('%Y-%m-%d') if hw.created_at else '',
         'due_date': hw.due_date.strftime('%Y-%m-%d') if hw.due_date else '',
-        'status': hw.status or 'منشور',
+        'status': real_status,
         'days_remaining': days_remaining,
         'days_remaining_str': days_remaining_str,
         'total_students': len(student_list),
         'received_count': received_count,
         'unreceived_count': unreceived_count,
+        'graded_count': graded_count,
+        'average_grade': avg_grade,
         'submission_rate': submission_rate,
         'students': student_list
     }
