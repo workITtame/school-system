@@ -152,11 +152,11 @@
                     </a>
 
                     <!-- Primary Actions Dropdown -->
-                    <div class="dropdown position-relative" style="overflow: visible !important;">
+                    <div class="dropdown position-relative" style="overflow: visible !important; z-index: 1060;">
                         <button id="btnActionsDropdown" class="btn btn-sm btn-primary rounded-pill px-3 extra-small dropdown-toggle fw-bold" type="button" onclick="toggleActionsMenu(event)" aria-expanded="false">
                             الإجراءات <i class="fa-solid fa-chevron-down ms-1 extra-small"></i>
                         </button>
-                        <ul class="dropdown-menu shadow-lg border-0 rounded-4 extra-small font-cairo p-2" id="actionsDropdownMenu" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; right: auto; z-index: 999999; min-width: 230px; background: #ffffff !important; box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.25), 0 5px 15px -3px rgba(0, 0, 0, 0.1) !important; border: 1px solid rgba(203, 213, 225, 0.9) !important;">
+                        <ul class="dropdown-menu shadow-lg border-0 rounded-4 extra-small font-cairo p-2" id="actionsDropdownMenu" style="display: none; position: absolute; top: calc(100% + 6px); right: 0; left: auto; z-index: 999999; min-width: 230px; background: #ffffff !important; box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.25), 0 5px 15px -3px rgba(0, 0, 0, 0.1) !important; border: 1px solid rgba(203, 213, 225, 0.9) !important;">
                             <li>
                                 <a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-3 d-flex align-items-center cursor-pointer" href="javascript:void(0)" onclick="exportAttendanceReport('pdf', 'all')">
                                     <i class="fa-solid fa-file-pdf text-danger me-2 fs-6"></i> تصدير كشف PDF
@@ -601,20 +601,26 @@
             e.preventDefault();
             e.stopPropagation();
         }
+        var btn = document.getElementById('btnActionsDropdown');
         var menu = document.getElementById('actionsDropdownMenu');
         if (!menu) return;
 
         var isShown = menu.style.display === 'block';
+        
+        // Hide all open dropdown menus
+        document.querySelectorAll('.dropdown-menu').forEach(function(m) {
+            m.style.display = 'none';
+            m.classList.remove('show');
+        });
+
         if (isShown) {
             menu.style.display = 'none';
             menu.classList.remove('show');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
         } else {
-            document.querySelectorAll('.dropdown-menu').forEach(function(m) {
-                m.style.display = 'none';
-                m.classList.remove('show');
-            });
             menu.style.display = 'block';
             menu.classList.add('show');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
         }
     };
 

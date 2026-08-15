@@ -296,19 +296,19 @@
                                             <span class="badge bg-danger text-white rounded-pill px-3 py-1 extra-small">{{ st.letter_grade }}</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        <div class="dropdown position-static">
-                                            <button class="btn btn-sm btn-light border rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="toggleGradebookDropdown(event, this)">
-                                                <i class="fa-solid fa-ellipsis-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 extra-small p-2" style="z-index: 1090;">
-                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-primary rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'overview')"><i class="fa-solid fa-eye me-2"></i> عرض تفاصيل الطالب</a></li>
-                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')"><i class="fa-solid fa-book-bookmark me-2 text-primary"></i> عرض الواجبات</a></li>
-                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')"><i class="fa-solid fa-file-signature me-2 text-danger"></i> عرض الاختبارات</a></li>
-                                                <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')"><i class="fa-solid fa-clipboard-user me-2 text-success"></i> عرض الحضور والغياب</a></li>
-                                            </ul>
-                                        </div>
-                                    </td>
+                                    <td class="text-center" style="position: relative;">
+                                         <div class="dropdown">
+                                             <button class="btn btn-sm btn-light border rounded-circle p-2" type="button" aria-expanded="false" onclick="toggleGradebookDropdown(event, this)">
+                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
+                                             </button>
+                                             <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 extra-small p-2" style="z-index: 1090; min-width: 190px;">
+                                                 <li><a class="dropdown-item py-2 px-3 fw-bold text-primary rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'overview')"><i class="fa-solid fa-eye me-2"></i> عرض تفاصيل الطالب</a></li>
+                                                 <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'homeworks')"><i class="fa-solid fa-book-bookmark me-2 text-primary"></i> عرض الواجبات</a></li>
+                                                 <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'exams')"><i class="fa-solid fa-file-signature me-2 text-danger"></i> عرض الاختبارات</a></li>
+                                                 <li><a class="dropdown-item py-2 px-3 fw-bold text-dark rounded-2" href="javascript:void(0)" onclick="openStudentPerformanceDrawer({{ st.student_id }}, 'attendance')"><i class="fa-solid fa-clipboard-user me-2 text-success"></i> عرض الحضور والغياب</a></li>
+                                             </ul>
+                                         </div>
+                                     </td>
                                 {% endif %}
                             </tr>
                         {% endfor %}
@@ -383,15 +383,21 @@
         var menu = parent.querySelector('.dropdown-menu');
         if (!menu) return;
 
-        var isOpen = menu.classList.contains('show');
-        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+        var isOpen = menu.style.display === 'block' || menu.classList.contains('show');
+        
+        document.querySelectorAll('.dropdown-menu').forEach(function(m) {
+            m.style.display = 'none';
             m.classList.remove('show');
         });
 
-        if (!isOpen) {
+        if (isOpen) {
+            menu.style.display = 'none';
+            menu.classList.remove('show');
+            btn.setAttribute('aria-expanded', 'false');
+        } else {
+            menu.style.display = 'block';
             menu.classList.add('show');
-            menu.style.position = 'absolute';
-            menu.style.zIndex = '1090';
+            btn.setAttribute('aria-expanded', 'true');
         }
     };
 
