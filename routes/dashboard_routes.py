@@ -697,7 +697,7 @@ def get_admin_dashboard_data():
             'count': admin_needing_attention_cnt,
             'priority': 'عالية',
             'color': 'warning',
-            'url': url_for('students.index')
+            'url': url_for('students.home')
         })
 
     last_updated_time = datetime.now().strftime('%H:%M:%S')
