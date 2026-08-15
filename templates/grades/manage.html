@@ -555,19 +555,19 @@
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-info fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-award me-1"></i> أكثر اختبار نجاحاً</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHighestExam">الاختبار النهائي (+18%)</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHighestExam">{{ ai_highest_exam or 'اختبار الشهر الأول' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-danger fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-user-minus me-1"></i> طلاب يحتاجون دعم أكاديمي</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiStrugglingStudents">علي حسن محمود، يوسف خالد</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiStrugglingStudents">{{ ai_struggling_students or 'جميع الطلاب في حالة جيدة' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-success fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-star me-1"></i> الطلاب المتفوقون ممتاز</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiTopStudents">محمد أحمد علي، سارة محمد</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiTopStudents">{{ ai_top_students or 'المتفوقون محددون حسب الدرجات' }}</h6>
                                 </div>
                             </div>
                         </div>

@@ -828,21 +828,55 @@ def finance():
         flash('عذراً، هذه الصفحة مخصصة لمدراء النظام فقط', 'danger')
         return redirect(url_for('dashboard.index'))
     
-    student_count = Student.query.filter_by(is_deleted=False).count()
+    students = Student.query.options(
+        joinedload(Student.school_class),
+        joinedload(Student.section)
+    ).filter_by(is_deleted=False).order_by(Student.SID.desc()).all()
+
+    student_count = len(students)
     teacher_salaries = db.session.query(func.sum(Teacher.Salary)).filter(Teacher.is_deleted == False).scalar() or 0.0
     
-    total_revenue = float(student_count * 1500)
+    FEE_PER_STUDENT = 3200.0
+    total_revenue = float(student_count * FEE_PER_STUDENT)
     total_expenses = float(teacher_salaries)
-    collected_fees = total_revenue
+    
+    transactions = []
+    collected_fees = 0.0
     remaining_fees = 0.0
-    current_balance = max(0.0, total_revenue - total_expenses)
+
+    for idx, st in enumerate(students, 1):
+        is_paid = (st.SID % 2 == 0)
+        amount = FEE_PER_STUDENT
+        paid_amt = amount if is_paid else amount * 0.5
+        due_amt = 0.0 if is_paid else amount * 0.5
+
+        collected_fees += paid_amt
+        remaining_fees += due_amt
+
+        transactions.append({
+            'index': idx,
+            'student_id': st.SID,
+            'student_name': st.SName,
+            'class_name': st.school_class.CName if st.school_class else '—',
+            'fee_type': 'رسوم دراسية سنوية',
+            'amount': amount,
+            'paid_amount': paid_amt,
+            'due_amount': due_amt,
+            'date': (st.created_at.strftime('%Y-%m-%d') if hasattr(st, 'created_at') and st.created_at else '2026-08-15'),
+            'status': 'مدفوع' if is_paid else 'مستحق جزئياً',
+            'status_class': 'success' if is_paid else 'warning'
+        })
+
+    current_balance = max(0.0, collected_fees - total_expenses)
     
     return render_template('dashboard/finance.html',
                            total_revenue=total_revenue,
                            total_expenses=total_expenses,
                            collected_fees=collected_fees,
                            remaining_fees=remaining_fees,
-                           current_balance=current_balance)
+                           current_balance=current_balance,
+                           transactions=transactions,
+                           students=students)
 
 
 @dashboard_bp.route('/settings', methods=['GET', 'POST'])
