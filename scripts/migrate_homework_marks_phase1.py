@@ -13,7 +13,7 @@ from models import db, Marks, HomeworkMarks, Homework, Student, Subject
 from sqlalchemy import text
 from scripts.backup_database import backup_database
 
-def run_phase1_migration():
+def run_phase1_migration(skip_backup=False):
     app = create_app()
     with app.app_context():
         print("==================================================")
@@ -40,11 +40,12 @@ def run_phase1_migration():
 
         print(f"[AUDIT PASS] Total Marks: {total_marks}, Exam Marks: {exam_marks_count}, Homework Marks: {hw_marks_count}")
 
-        # 2. BACKUP
-        backup_success, backup_path = backup_database()
-        if not backup_success:
-            print("[FAIL] Database backup failed. Migration STOPPED.")
-            return False
+        # 2. BACKUP (Skipped during unit testing if skip_backup=True)
+        if not skip_backup:
+            backup_success, backup_path = backup_database()
+            if not backup_success:
+                print("[FAIL] Database backup failed. Migration STOPPED.")
+                return False
 
         # 3. CREATE HOMEWORKMARKS TABLE
         print("[MIGRATION] Creating HomeworkMarks table in MySQL...")

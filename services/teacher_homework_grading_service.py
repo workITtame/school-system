@@ -16,25 +16,21 @@ def _get_teacher_and_scope(user_id):
         slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
         teacher_class_ids = set()
         teacher_section_ids = set()
+        teacher_subject_ids = set()
         for s in slots:
             if s.CID: teacher_class_ids.add(s.CID)
             if s.SectionID: teacher_section_ids.add(s.SectionID)
+            if s.SubID: teacher_subject_ids.add(s.SubID)
 
-        if not teacher_class_ids:
-            class_sec_pairs = db.session.query(Student.CID, Student.SectionID).filter(Student.is_deleted == False, Student.CID.isnot(None)).distinct().all()
-            for cid, sec_id in class_sec_pairs:
-                if cid: teacher_class_ids.add(cid)
-                if sec_id: teacher_section_ids.add(sec_id)
-
-        return teacher, teacher_class_ids, teacher_section_ids
+        return teacher, teacher_class_ids, teacher_section_ids, teacher_subject_ids
     elif user:
-        return user, set(), set()
-    return None, set(), set()
+        return user, set(), set(), set()
+    return None, set(), set(), set()
 
 def get_homework_grading_workspace(homework_id, user_id):
     from models import User
     user = db.session.get(User, user_id)
-    teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
+    teacher, teacher_class_ids, teacher_section_ids, teacher_subject_ids = _get_teacher_and_scope(user_id)
     
     if not teacher and not (user and user.role == 'admin'):
         raise PermissionError("Teacher access required")
@@ -44,10 +40,14 @@ def get_homework_grading_workspace(homework_id, user_id):
     if not hw:
         return None
 
-    # Server-side Teacher Scope Validation
+    # Server-side Comprehensive Teacher Scope Validation (Class, Section, Subject)
     if user and user.role != 'admin' and teacher:
         if teacher_class_ids and hw.class_id not in teacher_class_ids:
             raise PermissionError("Access forbidden: Out-of-scope class homework")
+        if teacher_section_ids and hw.section_id and hw.section_id not in teacher_section_ids:
+            raise PermissionError("Access forbidden: Out-of-scope section homework")
+        if teacher_subject_ids and hw.sub_id and hw.sub_id not in teacher_subject_ids:
+            raise PermissionError("Access forbidden: Out-of-scope subject homework")
 
     students = Student.query.filter_by(CID=hw.class_id, is_deleted=False).all()
     today_date = date.today()
@@ -197,7 +197,7 @@ def get_student_submission(homework_id, student_id, user_id):
     }
 
 def save_grade(homework_id, student_id, user_id, grade, feedback=None):
-    teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
+    teacher, teacher_class_ids, _, _ = _get_teacher_and_scope(user_id)
     if not teacher:
         raise PermissionError("Teacher access required")
 
@@ -271,7 +271,7 @@ def save_feedback(homework_id, student_id, user_id, feedback):
     return save_grade(homework_id, student_id, user_id, grade=None, feedback=feedback)
 
 def publish_grades(homework_id, user_id):
-    teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
+    teacher, teacher_class_ids, _, _ = _get_teacher_and_scope(user_id)
     if not teacher:
         raise PermissionError("Teacher access required")
 
@@ -287,7 +287,7 @@ def publish_grades(homework_id, user_id):
     return True
 
 def reopen_submission(homework_id, student_id, user_id):
-    teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
+    teacher, teacher_class_ids, _, _ = _get_teacher_and_scope(user_id)
     if not teacher:
         raise PermissionError("Teacher access required")
 

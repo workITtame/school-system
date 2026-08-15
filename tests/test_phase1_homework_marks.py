@@ -113,7 +113,7 @@ class TestPhase1HomeworkMarks(unittest.TestCase):
     def test_14_idempotency_double_run(self):
         """TEST 14: Running migration twice does not duplicate records"""
         initial_cnt = HomeworkMarks.query.count()
-        res = run_phase1_migration()
+        res = run_phase1_migration(skip_backup=True)
         self.assertTrue(res)
         final_cnt = HomeworkMarks.query.count()
         self.assertEqual(initial_cnt, final_cnt, "Double run should not produce duplicate records")
