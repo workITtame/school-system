@@ -150,8 +150,11 @@ def save_lesson_attendance(slot_id, user_id, attendance_list, date_str=None):
     Verifies teacher scope.
     """
     try:
+        from models.user import User
+        user_obj = User.query.get(user_id)
+        role = getattr(user_obj, 'role', '').strip("'") if user_obj else None
         teacher = get_teacher_by_user_id(user_id)
-        if not teacher:
+        if not teacher and role != 'admin':
             return None
 
         slot = SchoolTable.query.get(slot_id) if slot_id else None
@@ -200,6 +203,32 @@ def save_lesson_attendance(slot_id, user_id, attendance_list, date_str=None):
                     )
                     db.session.add(new_att)
                 saved_count += 1
+
+                # Trigger attendance notification if enabled in School settings
+                if status in ['غائب', 'متأخر']:
+                    try:
+                        from models.school import School
+                        from models.student import Student
+                        from models.notification import Notification
+
+                        school_cfg = School.query.first()
+                        if not school_cfg or school_cfg.NotifyAttendanceEmail != False:
+                            st_obj = Student.query.get(sid)
+                            st_name = st_obj.SName if st_obj else f'طالب #{sid}'
+                            notif_title = f"⚠️ تنبيه {status} للطالب ({st_name})"
+                            notif_msg = f"تم تسجيل حالة ({status}) للطالب {st_name} بتاريخ {target_date}."
+                            new_notif = Notification(
+                                user_id=st_obj.user_id if (st_obj and hasattr(st_obj, 'user_id') and st_obj.user_id) else user_id,
+                                title=notif_title,
+                                message=notif_msg,
+                                notification_type='attendance',
+                                action_url='/attendance/',
+                                priority='urgent' if status == 'غائب' else 'normal',
+                                is_read=False
+                            )
+                            db.session.add(new_notif)
+                    except Exception as notif_err:
+                        logger.warning("Attendance notification skipped: %s", str(notif_err))
 
         db.session.commit()
 

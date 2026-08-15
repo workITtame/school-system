@@ -241,11 +241,33 @@ def save_grade(source_type, source_id, student_id, user_id, grade, feedback):
                     else:
                         dm.Score = g_val
                         dm.MaxScore = max_score
-                        dm.TeacherID = teacher_id
-                        dm.assessment_type = 'exam'
-                        dm.assessment_id = source_id
                         dm.ExamID = exam_id
                         dm.HomeworkID = None
+
+                    # Trigger grade notification if enabled in School settings
+                    try:
+                        from models.school import School
+                        from models.student import Student
+                        from models.notification import Notification
+
+                        school_cfg = School.query.first()
+                        if not school_cfg or school_cfg.NotifyGradesEnabled != False:
+                            st_obj = Student.query.get(student_id)
+                            st_name = st_obj.SName if st_obj else f'طالب #{student_id}'
+                            notif_title = f"📊 رصد درجة دراسية للطالب ({st_name})"
+                            notif_msg = f"تم رصد/تحديث درجة التقييم للطالب {st_name} بمقدار ({g_val}/{max_score})."
+                            new_notif = Notification(
+                                user_id=st_obj.user_id if (st_obj and hasattr(st_obj, 'user_id') and st_obj.user_id) else user_id,
+                                title=notif_title,
+                                message=notif_msg,
+                                notification_type='grades',
+                                action_url='/grades/',
+                                priority='normal',
+                                is_read=False
+                            )
+                            db.session.add(new_notif)
+                    except Exception as notif_err:
+                        logger.warning("Grade notification skipped: %s", str(notif_err))
 
                     # 3. Update ExamSchedule status to 'تم التصحيح'
                     if ex:

@@ -14,3 +14,5 @@ class School(db.Model):
     Neighborhood = db.Column(db.String(50))
     EstablishedYear = db.Column(db.Integer)
     Logo = db.Column(db.String(255))
+    NotifyAttendanceEmail = db.Column(db.Boolean, default=True)
+    NotifyGradesEnabled = db.Column(db.Boolean, default=True)

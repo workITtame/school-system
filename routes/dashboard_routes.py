@@ -887,6 +887,14 @@ def settings():
         if established_year and established_year.isdigit():
             school.EstablishedYear = int(established_year)
 
+        # Save notification settings preferences
+        if 'form_type' in request.form and request.form.get('form_type') == 'notif':
+            school.NotifyAttendanceEmail = ('notify_attendance_email' in request.form)
+            school.NotifyGradesEnabled = ('notify_grades_enabled' in request.form)
+        elif 'notify_attendance_email' in request.form or 'notify_grades_enabled' in request.form:
+            school.NotifyAttendanceEmail = ('notify_attendance_email' in request.form)
+            school.NotifyGradesEnabled = ('notify_grades_enabled' in request.form)
+
         db.session.commit()
         flash('تم حفظ بيانات وإعدادات المدرسة بنجاح في قاعدة البيانات', 'success')
         return redirect(url_for('dashboard.settings'))
