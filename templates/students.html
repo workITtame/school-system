@@ -41,9 +41,9 @@
                 <button type="button" class="btn btn-light border rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="refreshStudentsData()">
                     <i class="fa-solid fa-rotate-right text-primary" id="refreshIcon"></i> <span>تحديث البيانات</span>
                 </button>
-                <a href="{{ url_for('students.export_students_excel') }}" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
+                <button type="button" onclick="exportFilteredStudentsExcel()" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
                     <i class="fa-solid fa-file-excel fs-6"></i> <span>تصدير Excel</span>
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -899,6 +899,27 @@ function bulkExportExcel() {
     const ids = getSelectedStudentIds();
     if (ids.length === 0) return;
     window.location.href = `/students/export/excel?ids=${ids.join(',')}`;
+}
+
+function exportFilteredStudentsExcel() {
+    const selectedIds = getSelectedStudentIds();
+    if (selectedIds.length > 0) {
+        window.location.href = `/students/export/excel?ids=${selectedIds.join(',')}`;
+        return;
+    }
+
+    const searchVal = document.getElementById('studentSearchInput')?.value.trim() || '';
+    const classVal = document.getElementById('filterClass')?.value.trim() || '';
+    const secVal = document.getElementById('filterSection')?.value.trim() || '';
+    const statusVal = document.getElementById('filterStatus')?.value.trim() || '';
+
+    const params = new URLSearchParams();
+    if (searchVal) params.set('search', searchVal);
+    if (classVal) params.set('class_id', classVal);
+    if (secVal) params.set('section_id', secVal);
+    if (statusVal) params.set('status', statusVal);
+
+    window.location.href = `/students/export/excel?${params.toString()}`;
 }
 
 // Open Student Drawer (~900px)

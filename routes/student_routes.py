@@ -875,17 +875,71 @@ def view_student(id):
                            messages_count=messages_count,
                            recent_activity=recent_activity)
 
+def _get_filtered_students_query(args):
+    ids_param = args.get('ids', '').strip()
+    search_query = args.get('search', '').strip()
+    class_id = args.get('class_id', type=int)
+    section_id = args.get('section_id', type=int)
+    subject_id = args.get('subject_id', type=int)
+    status_filter = args.get('status', '').strip()
+
+    query = Student.query.options(
+        joinedload(Student.school_class),
+        joinedload(Student.section)
+    ).filter(Student.is_deleted == False)
+
+    if ids_param:
+        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        if id_list:
+            query = query.filter(Student.SID.in_(id_list))
+    else:
+        if subject_id:
+            from models import SchoolTable
+            from models.academic import ClassSubject
+            c_ids_cs = [c[0] for c in db.session.query(ClassSubject.c.CID).filter(ClassSubject.c.SubID == subject_id).all() if c[0]]
+            c_ids_st = [st[0] for st in db.session.query(SchoolTable.CID).filter(SchoolTable.SubID == subject_id, SchoolTable.is_deleted == False).all() if st[0]]
+            sub_c_ids = list(set(c_ids_cs + c_ids_st))
+            if sub_c_ids:
+                query = query.filter(Student.CID.in_(sub_c_ids))
+            else:
+                query = query.filter(Student.CID == -1)
+
+        if class_id:
+            query = query.filter(Student.CID == class_id)
+
+        if section_id:
+            query = query.filter(Student.SectionID == section_id)
+
+        if status_filter and status_filter != 'all':
+            if status_filter in ['نشط', 'منتظم']:
+                query = query.filter(or_(Student.Status == 'نشط', Student.Status == 'منتظم', Student.Status.is_(None), Student.Status == ''))
+            else:
+                query = query.filter(Student.Status == status_filter)
+
+        if search_query:
+            if search_query.isdigit():
+                query = query.filter(or_(
+                    Student.SID == int(search_query),
+                    Student.SName.ilike(f"%{search_query}%"),
+                    Student.Parent_Name.ilike(f"%{search_query}%"),
+                    Student.Parent_Number.ilike(f"%{search_query}%")
+                ))
+            else:
+                query = query.filter(or_(
+                    Student.SName.ilike(f"%{search_query}%"),
+                    Student.Parent_Name.ilike(f"%{search_query}%"),
+                    Student.Parent_Number.ilike(f"%{search_query}%"),
+                    Student.Neighborhood.ilike(f"%{search_query}%")
+                ))
+
+    return query.order_by(Student.SID.desc())
+
 @students_bp.route('/export/excel')
 def export_students_excel():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    ids_param = request.args.get('ids', '').strip()
-    if ids_param:
-        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.SID.in_(id_list), Student.is_deleted == False).all()
-    else:
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(is_deleted=False).order_by(Student.SID.desc()).all()
+    students = _get_filtered_students_query(request.args).all()
         
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -929,12 +983,7 @@ def export_students_pdf():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    ids_param = request.args.get('ids', '').strip()
-    if ids_param:
-        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.SID.in_(id_list), Student.is_deleted == False).all()
-    else:
-        students = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter_by(is_deleted=False).order_by(Student.SID.desc()).all()
+    students = _get_filtered_students_query(request.args).all()
         
     return render_template('students_pdf_report.html', students=students, generated_at=datetime.now().strftime('%Y-%m-%d %H:%M'))
 
