@@ -19,7 +19,7 @@ def _get_students_for_teacher(user_id, subject_id=None, class_id=None, section_i
     teacher = get_teacher_by_user_id(user_id)
     if not teacher:
         from models import User
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user and getattr(user, 'role', '') in ['teacher', 'admin']:
             query = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None))
         else:

@@ -513,10 +513,10 @@
                 <div class="d-flex align-items-center justify-content-between p-3 bg-light border-top font-monospace extra-small">
                     <span class="text-muted" id="hwVisibleCountText">عرض 1 - {{ homework_list|length if homework_list is defined else 5 }} من {{ kpi.total_count if kpi is defined else total_count }} واجبات</span>
                     <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled"><a class="page-link" href="#"><i class="fa-solid fa-chevron-right"></i></a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-chevron-left"></i></a></li>
+                        <li class="page-item disabled"><a class="page-link" href="?page=1"><i class="fa-solid fa-chevron-right"></i></a></li>
+                        <li class="page-item active"><a class="page-link" href="?page=1">1</a></li>
+                        <li class="page-item"><a class="page-link" href="?page=2">2</a></li>
+                        <li class="page-item"><a class="page-link" href="?page=2"><i class="fa-solid fa-chevron-left"></i></a></li>
                     </ul>
                 </div>
             </div>

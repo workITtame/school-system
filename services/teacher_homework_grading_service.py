@@ -10,7 +10,7 @@ _MOCK_GRADING_STORE = {}
 
 def _get_teacher_and_scope(user_id):
     from models import User
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     teacher = Teacher.query.filter_by(user_id=user_id).first()
     if teacher:
         slots = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).all()
@@ -32,21 +32,22 @@ def _get_teacher_and_scope(user_id):
     return None, set(), set()
 
 def get_homework_grading_workspace(homework_id, user_id):
+    from models import User
+    user = db.session.get(User, user_id)
     teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
-    if not teacher:
+    
+    if not teacher and not (user and user.role == 'admin'):
         raise PermissionError("Teacher access required")
 
-    hw = Homework.query.options(
-        joinedload(Homework.subject),
-        joinedload(Homework.school_class),
-        joinedload(Homework.section)
-    ).get(homework_id)
+    hw = db.session.get(Homework, homework_id)
 
     if not hw:
         return None
 
-    if teacher_class_ids and hw.class_id not in teacher_class_ids:
-        raise PermissionError("Access forbidden to out-of-scope homework")
+    # Server-side Teacher Scope Validation
+    if user and user.role != 'admin' and teacher:
+        if teacher_class_ids and hw.class_id not in teacher_class_ids:
+            raise PermissionError("Access forbidden: Out-of-scope class homework")
 
     students = Student.query.filter_by(CID=hw.class_id, is_deleted=False).all()
     today_date = date.today()
