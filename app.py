@@ -84,6 +84,17 @@ def create_app(config_class=Config):
             user_id = str(current_user.id) if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else str(session.get('user_id', '1'))
             session['jwt_token'] = create_access_token(identity=user_id)
 
+    @app.context_processor
+    def inject_school_info():
+        try:
+            from models.school import School
+            school = db.session.query(School).first()
+            if school and school.SchoolName:
+                return {'school_info': school, 'current_school_name': school.SchoolName}
+        except Exception:
+            pass
+        return {'school_info': None, 'current_school_name': 'مدرسة المستقبل'}
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(students_bp)
     app.register_blueprint(academic_bp)

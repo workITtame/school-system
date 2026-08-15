@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}تسجيل الدخول - مدرسة المستقبل{% endblock %}
+{% block title %}تسجيل الدخول - {{ current_school_name }}{% endblock %}
 
 {% block content %}
 <style>
@@ -280,7 +280,7 @@
             <div class="brand-logo">
                 <i class="fa-solid fa-book-open"></i>
             </div>
-            <h1 class="brand-title">مدرسة المستقبل</h1>
+            <h1 class="brand-title">{{ current_school_name }}</h1>
             <p class="brand-subtitle">نظام إدارة المدارس</p>
             
             <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&auto=format&fit=crop" alt="School Building" class="brand-illustration">
