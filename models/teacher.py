@@ -1,7 +1,8 @@
 from .extensions import db, AuditMixin
 
 class Qualifications(db.Model, AuditMixin):
-    __tablename__ = 'Qualifications'
+    __tablename__ = 'qualifications'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     QID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     QName = db.Column(db.String(100))
     
@@ -9,7 +10,7 @@ class Qualifications(db.Model, AuditMixin):
     teachers = db.relationship('Teacher', back_populates='qualification', lazy=True)
 
 class Teacher(db.Model, AuditMixin):
-    __tablename__ = 'Teacher'
+    __tablename__ = 'teacher'
     TeacherID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     TeacherName = db.Column(db.String(100), index=True)
     Email = db.Column(db.String(100), unique=True, index=True)
@@ -22,7 +23,7 @@ class Teacher(db.Model, AuditMixin):
     TeacherTitle = db.Column(db.String(50))
     Salary = db.Column(db.Numeric(10, 2))
     Currency = db.Column(db.String(10))
-    QID = db.Column(db.Integer, db.ForeignKey('Qualifications.QID'))
+    QID = db.Column(db.Integer, db.ForeignKey('qualifications.QID', ondelete='SET NULL'))
     Status = db.Column(db.String(20), default='نشط')
     Notes = db.Column(db.Text, nullable=True)  # ملاحظات
     Bio = db.Column(db.Text, nullable=True)
@@ -33,10 +34,11 @@ class Teacher(db.Model, AuditMixin):
     
     __table_args__ = (
         db.CheckConstraint('Salary >= 0', name='check_salary_positive'),
+        {'mysql_engine': 'InnoDB'}
     )
     
     # Relationships
     qualification = db.relationship('Qualifications', back_populates='teachers')
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     user = db.relationship('User', back_populates='teacher_profile')
-    subjects = db.relationship('Subject', secondary='TeacherSubject', backref=db.backref('teachers', lazy='dynamic'))
+    subjects = db.relationship('Subject', secondary='teachersubject', backref=db.backref('teachers', lazy='dynamic'))

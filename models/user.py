@@ -5,6 +5,7 @@ from werkzeug.security import check_password_hash as check_werkzeug
 
 class User(db.Model, UserMixin, AuditMixin):
     __tablename__ = 'users'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)

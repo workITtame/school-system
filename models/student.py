@@ -2,20 +2,21 @@ from .extensions import db, AuditMixin
 from datetime import date
 
 class Student(db.Model, AuditMixin):
-    __tablename__ = 'Student'
+    __tablename__ = 'student'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     SID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     SName = db.Column(db.String(100), index=True)
     DOB = db.Column(db.Date)
     Gender = db.Column(db.String(10))
     Image = db.Column(db.String(255))
-    CountryID = db.Column(db.Integer, db.ForeignKey('Country.CountryID'))
-    G_ID = db.Column(db.Integer, db.ForeignKey('Governorates.G_ID'))
-    DiscID = db.Column(db.Integer, db.ForeignKey('Directorate.DiscID'))
+    CountryID = db.Column(db.Integer, db.ForeignKey('country.CountryID', ondelete='SET NULL'))
+    G_ID = db.Column(db.Integer, db.ForeignKey('governorates.G_ID', ondelete='SET NULL'))
+    DiscID = db.Column(db.Integer, db.ForeignKey('directorate.DiscID', ondelete='SET NULL'))
     Neighborhood = db.Column(db.String(100))
     Status = db.Column(db.String(20), default='نشط')
     
-    CID = db.Column(db.Integer, db.ForeignKey('Classes.CID'), index=True)
-    SectionID = db.Column(db.Integer, db.ForeignKey('Sections.SectionID'), index=True)
+    CID = db.Column(db.Integer, db.ForeignKey('classes.CID', ondelete='RESTRICT'), index=True)
+    SectionID = db.Column(db.Integer, db.ForeignKey('sections.SectionID', ondelete='RESTRICT'), index=True)
 
     Parent_Name = db.Column(db.String(100))
     Parent_Number = db.Column(db.String(20))
@@ -29,12 +30,13 @@ class Student(db.Model, AuditMixin):
     section = db.relationship('Sections')
 
 class Attendance(db.Model, AuditMixin):
-    __tablename__ = 'Attendance'
+    __tablename__ = 'attendance'
     __table_args__ = (
         db.UniqueConstraint('SID', 'Date', name='uq_student_date_attendance'),
+        {'mysql_engine': 'InnoDB'}
     )
     AttendanceID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    SID = db.Column(db.Integer, db.ForeignKey('Student.SID', ondelete='CASCADE'))
+    SID = db.Column(db.Integer, db.ForeignKey('student.SID', ondelete='RESTRICT'))
     Date = db.Column(db.Date)
     Status = db.Column(db.String(10))
     

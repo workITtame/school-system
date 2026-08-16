@@ -3,11 +3,12 @@ from datetime import datetime
 
 class Homework(db.Model):
     __tablename__ = 'homework'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
-    sub_id = db.Column(db.Integer, db.ForeignKey('Subject.SubID'), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey('Classes.CID'), nullable=False)
-    section_id = db.Column(db.Integer, db.ForeignKey('Sections.SectionID'), nullable=True)
+    sub_id = db.Column(db.Integer, db.ForeignKey('subject.SubID', ondelete='RESTRICT'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.CID', ondelete='RESTRICT'), nullable=False)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.SectionID', ondelete='RESTRICT'), nullable=True)
     due_date = db.Column(db.Date, nullable=False)
     status = db.Column(db.String(20), default='مكتمل') # مكتمل, معلق, متأخر
     description = db.Column(db.Text, nullable=True)

@@ -1,26 +1,28 @@
 from .extensions import db, AuditMixin
 
 class TypeExams(db.Model, AuditMixin):
-    __tablename__ = 'TypeExams'
+    __tablename__ = 'typeexams'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     ExamID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ExamName = db.Column(db.String(100))
 
 class SchoolTable(db.Model, AuditMixin):
-    __tablename__ = 'SchoolTable'
+    __tablename__ = 'schooltable'
     SchoolTableID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    CID = db.Column(db.Integer, db.ForeignKey('Classes.CID'), index=True)
-    SectionID = db.Column(db.Integer, db.ForeignKey('Sections.SectionID'), index=True)
-    DayID = db.Column(db.Integer, db.ForeignKey('Days.DayID'))
-    LessonID = db.Column(db.Integer, db.ForeignKey('Lessons.LessonID'))
-    TeacherID = db.Column(db.Integer, db.ForeignKey('Teacher.TeacherID'), index=True)
-    SubID = db.Column(db.Integer, db.ForeignKey('Subject.SubID'))
-    T_ID = db.Column(db.Integer, db.ForeignKey('Terms.T_ID'))
+    CID = db.Column(db.Integer, db.ForeignKey('classes.CID', ondelete='RESTRICT'), index=True)
+    SectionID = db.Column(db.Integer, db.ForeignKey('sections.SectionID', ondelete='RESTRICT'), index=True)
+    DayID = db.Column(db.Integer, db.ForeignKey('days.DayID', ondelete='RESTRICT'))
+    LessonID = db.Column(db.Integer, db.ForeignKey('lessons.LessonID', ondelete='RESTRICT'))
+    TeacherID = db.Column(db.Integer, db.ForeignKey('teacher.TeacherID', ondelete='RESTRICT'), index=True)
+    SubID = db.Column(db.Integer, db.ForeignKey('subject.SubID', ondelete='RESTRICT'))
+    T_ID = db.Column(db.Integer, db.ForeignKey('terms.T_ID', ondelete='RESTRICT'))
 
     # Unique constraint per class/section/day/lesson
     __table_args__ = (
         db.UniqueConstraint('CID', 'SectionID', 'DayID', 'LessonID', name='uix_timetable_slot'),
         db.UniqueConstraint('TeacherID', 'DayID', 'LessonID', name='uix_teacher_timetable_slot'),
+        {'mysql_engine': 'InnoDB'}
     )
 
     # Relationships
@@ -33,10 +35,11 @@ class SchoolTable(db.Model, AuditMixin):
     term = db.relationship('Terms')
 
 class SchoolTableTypeExam(db.Model, AuditMixin):
-    __tablename__ = 'SchoolTableTypeExam'
+    __tablename__ = 'schooltabletypeexam'
+    __table_args__ = {'mysql_engine': 'InnoDB'}
     ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    ExamID = db.Column(db.Integer, db.ForeignKey('TypeExams.ExamID'))
-    SchoolTableID = db.Column(db.Integer, db.ForeignKey('SchoolTable.SchoolTableID'))
+    ExamID = db.Column(db.Integer, db.ForeignKey('typeexams.ExamID', ondelete='CASCADE'))
+    SchoolTableID = db.Column(db.Integer, db.ForeignKey('schooltable.SchoolTableID', ondelete='CASCADE'))
     
     exam = db.relationship('TypeExams')
     timetable_entry = db.relationship('SchoolTable')
