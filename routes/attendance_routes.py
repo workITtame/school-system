@@ -9,7 +9,9 @@ from services.teacher_attendance_service import get_lesson_attendance, save_less
 
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 
-def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_date=None, subject_id=None):
+from sqlalchemy import or_
+
+def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_date=None, subject_id=None, status_filter=None, search_query=None):
     today = target_date if target_date else date.today()
     now_time_str = datetime.now().strftime('%H:%M')
     arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
@@ -52,8 +54,29 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     today_display = f"{today_day_name} {today.strftime('%Y-%m-%d')}"
 
     subjects_str = " | ".join(sub_names) if sub_names else 'المواد الدراسية'
-    teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
-    teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
+
+    selected_subid = None
+    selected_sub_name = None
+    if subject_id is not None and str(subject_id).strip() != '':
+        try:
+            selected_subid = int(subject_id)
+            sub_obj = Subject.query.get(selected_subid)
+            if sub_obj:
+                selected_sub_name = sub_obj.SubName
+        except (ValueError, TypeError):
+            selected_subid = None
+
+    if selected_subid:
+        subject_slots = [s for s in slots if s.SubID == selected_subid]
+        if subject_slots:
+            teacher_class_ids = list(set([s.CID for s in subject_slots if s.CID]))
+            teacher_section_ids = list(set([s.SectionID for s in subject_slots if s.SectionID]))
+        else:
+            teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
+            teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
+    else:
+        teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
+        teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
 
     class_sec_map = {}
     for s in slots:
@@ -86,17 +109,6 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     if not current_slot and today_slots_sorted:
         current_slot = today_slots_sorted[0]
 
-    selected_subid = None
-    selected_sub_name = None
-    if subject_id is not None and str(subject_id).strip() != '':
-        try:
-            selected_subid = int(subject_id)
-            sub_obj = Subject.query.get(selected_subid)
-            if sub_obj:
-                selected_sub_name = sub_obj.SubName
-        except (ValueError, TypeError):
-            selected_subid = None
-
     if selected_sub_name:
         cur_sub = selected_sub_name
     elif current_slot:
@@ -109,13 +121,9 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         cur_sec = current_slot.section.SectionName if current_slot.section else 'شعبة أ'
         cur_st_time = current_slot.lesson.StartTime if (current_slot.lesson and current_slot.lesson.StartTime) else 'غير محدد'
         cur_en_time = current_slot.lesson.EndTime if (current_slot.lesson and current_slot.lesson.EndTime) else 'غير محدد'
-        selected_cid = current_slot.CID
-        selected_secid = current_slot.SectionID
     else:
         cur_st_time = 'غير محدد'
         cur_en_time = 'غير محدد'
-        selected_cid = teacher_class_ids[0] if teacher_class_ids else None
-        selected_secid = teacher_section_ids[0] if teacher_section_ids else None
         cur_cls = 'الصف الأول'
         cur_sec = 'شعبة أ'
 
@@ -163,6 +171,14 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         query = query.filter_by(CID=selected_cid)
     if selected_secid:
         query = query.filter_by(SectionID=selected_secid)
+
+    if search_query and str(search_query).strip():
+        sq_str = str(search_query).strip()
+        sq_pattern = f"%{sq_str}%"
+        query = query.filter(or_(
+            Student.SName.ilike(sq_pattern),
+            db.cast(Student.SID, db.String).ilike(sq_pattern)
+        ))
 
     students = query.all()
     student_ids = [s.SID for s in students]
@@ -248,6 +264,11 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
             'status_color': st_status_color,
             'time_recorded': rec_time
         })
+
+    # Apply status filter if specified
+    if status_filter and str(status_filter).strip():
+        sf_clean = str(status_filter).strip()
+        attendance_cards = [c for c in attendance_cards if c['status'] == sf_clean or (sf_clean == 'بعذر' and c['status'] in ['بعذر', 'مستأذن'])]
 
     # Dynamic Most Absent
     most_absent = []
@@ -401,6 +422,8 @@ def index():
         class_id = request.args.get('class_id')
         section_id = request.args.get('section_id')
         subject_id = request.args.get('subject_id')
+        status_filter = request.args.get('status')
+        search_query = request.args.get('search')
 
         target_date = date.today()
         if date_str:
@@ -424,16 +447,34 @@ def index():
                 if st.SectionID: teacher_section_ids.add(st.SectionID)
 
         classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
-        sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
 
-        if class_id and teacher_class_ids:
+        if class_id and str(class_id).strip():
             try:
-                if int(class_id) not in teacher_class_ids:
+                cid_val = int(class_id)
+                if teacher_class_ids and cid_val not in teacher_class_ids:
                     return jsonify({'error': 'Access to out-of-scope class forbidden'}), 403
-            except ValueError:
-                pass
+                cls_obj = Classes.query.get(cid_val)
+                if cls_obj and cls_obj.sections:
+                    sec_list = [sec for sec in cls_obj.sections if not sec.is_deleted]
+                    if teacher_section_ids:
+                        sec_list = [sec for sec in sec_list if sec.SectionID in teacher_section_ids]
+                    sections = sec_list if sec_list else (Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else [])
+                else:
+                    sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
+            except (ValueError, TypeError):
+                sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
+        else:
+            sections = Sections.query.filter(Sections.SectionID.in_(teacher_section_ids), Sections.is_deleted == False).all() if teacher_section_ids else []
         
-        data = get_teacher_attendance_data(current_user.id, class_id=class_id, section_id=section_id, target_date=target_date, subject_id=subject_id)
+        data = get_teacher_attendance_data(
+            current_user.id,
+            class_id=class_id,
+            section_id=section_id,
+            target_date=target_date,
+            subject_id=subject_id,
+            status_filter=status_filter,
+            search_query=search_query
+        )
 
         active_slot_id = None
         if teacher:
@@ -445,7 +486,11 @@ def index():
                                classes=classes,
                                sections=sections,
                                teacher_subjects=data.get('teacher_subjects', []),
+                               selected_cid=data.get('selected_cid'),
+                               selected_secid=data.get('selected_secid'),
                                selected_subject_id=subject_id or '',
+                               selected_status=status_filter or '',
+                               search_query=search_query or '',
                                today=target_date.strftime('%Y-%m-%d'),
                                today_day_name=data.get('today_day_name', ''),
                                today_display=data.get('today_display', ''),

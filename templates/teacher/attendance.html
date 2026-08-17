@@ -94,33 +94,33 @@
                 <div class="col-12 col-md-3 col-xl-2">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="attendanceLiveSearch" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو رقم الطالب (#SID)..." onkeyup="filterPageAttendanceList(this.value)">
+                        <input type="text" id="attendanceLiveSearch" name="search" class="form-control border-start-0 ps-0" placeholder="بحث باسم الطالب أو رقم الطالب (#SID)..." value="{{ search_query or request.args.get('search', '') }}" onkeyup="filterPageAttendanceList(this.value)">
                     </div>
                 </div>
 
                 <!-- Class Filter -->
                 <div class="col-6 col-md-2 col-xl-2">
-                    <select name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select id="attendanceClassSelect" name="class_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">جميع الصفوف</option>
                         {% for c in classes %}
-                            <option value="{{ c.CID }}" {% if request.args.get('class_id')|int == c.CID %}selected{% endif %}>{{ c.CName }}</option>
+                            <option value="{{ c.CID }}" {% if selected_cid|int == c.CID or request.args.get('class_id')|int == c.CID %}selected{% endif %}>{{ c.CName }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <!-- Section Filter -->
                 <div class="col-6 col-md-2 col-xl-2">
-                    <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select id="attendanceSectionSelect" name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">جميع الشعب</option>
                         {% for s in sections %}
-                            <option value="{{ s.SectionID }}" {% if request.args.get('section_id')|int == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
+                            <option value="{{ s.SectionID }}" {% if selected_secid|int == s.SectionID or request.args.get('section_id')|int == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <!-- Subject Filter (Teacher Assigned Scope) -->
                 <div class="col-6 col-md-2 col-xl-2">
-                    <select name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select id="attendanceSubjectSelect" name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">جميع المواد</option>
                         {% for sub in teacher_subjects %}
                             <option value="{{ sub.SubID }}" {% if request.args.get('subject_id')|int == sub.SubID or selected_subject_id|int == sub.SubID %}selected{% endif %}>{{ sub.SubName }}</option>
@@ -130,19 +130,19 @@
 
                 <!-- Status Filter -->
                 <div class="col-6 col-md-2 col-xl-2">
-                    <select id="attendanceStatusFilter" class="form-select form-select-sm" onchange="filterPageAttendanceByStatus(this.value)">
+                    <select id="attendanceStatusFilter" name="status" class="form-select form-select-sm" onchange="filterPageAttendanceByStatus(this.value); this.form.submit();">
                         <option value="">جميع الحالات</option>
-                        <option value="حاضر">🟢 حاضر</option>
-                        <option value="غائب">🔴 غائب</option>
-                        <option value="متأخر">🟡 متأخر</option>
-                        <option value="بعذر">🔵 بعذر</option>
-                        <option value="غير مسجل">⚪ غير مسجل</option>
+                        <option value="حاضر" {% if selected_status == 'حاضر' or request.args.get('status') == 'حاضر' %}selected{% endif %}>🟢 حاضر</option>
+                        <option value="غائب" {% if selected_status == 'غائب' or request.args.get('status') == 'غائب' %}selected{% endif %}>🔴 غائب</option>
+                        <option value="متأخر" {% if selected_status == 'متأخر' or request.args.get('status') == 'متأخر' %}selected{% endif %}>🟡 متأخر</option>
+                        <option value="بعذر" {% if selected_status == 'بعذر' or request.args.get('status') == 'بعذر' %}selected{% endif %}>🔵 بعذر</option>
+                        <option value="غير مسجل" {% if selected_status == 'غير مسجل' or request.args.get('status') == 'غير مسجل' %}selected{% endif %}>⚪ غير مسجل</option>
                     </select>
                 </div>
 
                 <!-- Date Picker -->
                 <div class="col-6 col-md-2 col-xl-1">
-                    <input type="date" name="date" class="form-control form-control-sm extra-small" value="{{ today }}" onchange="this.form.submit()">
+                    <input type="date" id="attendanceDateSelect" name="date" class="form-control form-control-sm extra-small" value="{{ today }}" onchange="this.form.submit()">
                 </div>
 
                 <!-- Reset Button & Actions Dropdown -->
@@ -224,7 +224,7 @@
                 <tbody>
                     {% if attendance_cards and attendance_cards|length > 0 %}
                         {% for st in attendance_cards %}
-                            <tr class="page-att-row" id="page-att-row-{{ st.SID }}" data-sid="{{ st.SID }}">
+                            <tr class="page-att-row" id="page-att-row-{{ st.SID }}" data-sid="{{ st.SID }}" data-status="{{ st.status }}">
                                 <td class="text-center ps-3 font-monospace text-muted">{{ loop.index }}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-3 py-1">
@@ -386,6 +386,7 @@
 
         var row = document.getElementById('page-att-row-' + sid);
         if (row) {
+            row.setAttribute('data-status', newStatus);
             row.classList.add('modified-row');
             row.style.borderRight = '4px solid #f59e0b';
             row.style.backgroundColor = 'rgba(254, 243, 199, 0.4)';
@@ -547,7 +548,10 @@
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> <span id="stickySaveBtnLabel">حفظ سجل الحضور</span>';
             }
-        window.exportAttendanceReport = function(exportType = 'excel', mode = 'all') {
+        });
+    };
+
+    window.exportAttendanceReport = function(exportType = 'excel', mode = 'all') {
             const filterClass = document.getElementById('filterClass') || document.getElementById('attendanceClassSelect');
             const filterSection = document.getElementById('filterSection') || document.getElementById('attendanceSectionSelect');
             const filterSubject = document.getElementById('filterSubject') || document.getElementById('attendanceSubjectSelect');

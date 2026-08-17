@@ -740,12 +740,13 @@ function filterPageAttendanceList(query) {
 }
 
 function filterPageAttendanceByStatus(status) {
-    const filter = status.trim();
+    const filter = status ? status.trim() : '';
     const rows = document.querySelectorAll('.page-att-row');
     let visibleCount = 0;
 
     rows.forEach(row => {
-        if (!filter || row.textContent.includes(filter)) {
+        const rowStatus = row.getAttribute('data-status') || '';
+        if (!filter || rowStatus === filter || (filter === 'بعذر' && rowStatus === 'مستأذن')) {
             row.style.display = '';
             visibleCount++;
         } else {
