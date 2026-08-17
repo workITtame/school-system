@@ -1,6 +1,6 @@
 from .extensions import db, AuditMixin
 
-class School(db.Model, AuditMixin):
+class School(db.Model):
     __tablename__ = 'school'
     __table_args__ = {'mysql_engine': 'InnoDB'}
     SchoolID = db.Column(db.Integer, primary_key=True, autoincrement=True)

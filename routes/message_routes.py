@@ -225,6 +225,12 @@ def api_send():
 
     if raw_recipient:
         raw_str = str(raw_recipient).strip()
+        try:
+            if int(raw_str) == user_id:
+                return jsonify({'error': 'لا يمكنك إرسال رسالة لنفسك'}), 400
+        except (ValueError, TypeError):
+            pass
+
         # Handle prefix strings if any
         if raw_str.startswith('student_') or raw_str.startswith('st_'):
             st_id = raw_str.split('_')[-1]
@@ -256,8 +262,11 @@ def api_send():
             except (ValueError, TypeError):
                 target_user_id = None
 
-    # Fallback to first non-current user if no recipient resolved or if selected self
-    if not target_user_id or target_user_id == user_id:
+    if target_user_id == user_id:
+        return jsonify({'error': 'لا يمكنك إرسال رسالة لنفسك'}), 400
+
+    # Fallback to first non-current user if no recipient resolved
+    if not target_user_id:
         other_user = User.query.filter(User.id != user_id).first()
         if other_user:
             target_user_id = other_user.id
@@ -553,6 +562,114 @@ def api_search():
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@messages_bp.route('/api/conversations', methods=['GET'])
+@login_required
+def api_conversations():
+    user_id = current_user.id
+    user_role = getattr(current_user, 'role', '').strip("'") if current_user and hasattr(current_user, 'role') else ''
+
+    try:
+        convs_data = []
+        sent_partners = db.session.query(Message.recipient_id.label('partner_id')).filter(Message.sender_id == user_id)
+        rec_partners = db.session.query(Message.sender_id.label('partner_id')).filter(Message.recipient_id == user_id)
+        partner_ids = set([r.partner_id for r in sent_partners.union(rec_partners).all() if r.partner_id and r.partner_id != user_id])
+
+        if not partner_ids:
+            if user_role == 'admin':
+                others = User.query.filter(User.id != user_id).limit(10).all()
+            else:
+                others = User.query.filter(User.id != user_id, User.role.in_(['admin', 'teacher', 'student'])).limit(10).all()
+            partner_ids = set(u.id for u in others)
+
+        for pid in partner_ids:
+            partner = User.query.get(pid)
+            if not partner:
+                continue
+
+            p_name = getattr(partner, 'name', '') or partner.username or f"User {pid}"
+            p_role_raw = getattr(partner, 'role', '')
+            p_role = 'مدير النظام' if p_role_raw == 'admin' else ('معلم' if p_role_raw == 'teacher' else 'طالب')
+
+            msgs = Message.query.filter(
+                ((Message.sender_id == user_id) & (Message.recipient_id == pid)) |
+                ((Message.sender_id == pid) & (Message.recipient_id == user_id))
+            ).order_by(Message.timestamp.desc()).all()
+
+            unread_cnt = sum(1 for m in msgs if m.recipient_id == user_id and not m.is_read)
+            latest_msg = msgs[0] if msgs else None
+
+            last_text = latest_msg.content if latest_msg else 'لا توجد رسائل سابقة. انقر لبدء المحادثة.'
+            last_time = latest_msg.timestamp.strftime('%Y-%m-%d %H:%M') if (latest_msg and latest_msg.timestamp) else '—'
+
+            convs_data.append({
+                'user_id': pid,
+                'name': p_name,
+                'role': p_role,
+                'last_message': last_text,
+                'last_time': last_time,
+                'unread_count': unread_cnt
+            })
+
+        convs_data.sort(key=lambda x: (x['unread_count'] == 0, str(x['last_time'])), reverse=True)
+
+        return jsonify({
+            'success': True,
+            'conversations': convs_data
+        })
+    except Exception as e:
+        logger.error(f"Error in api_conversations: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@messages_bp.route('/api/thread/<int:target_user_id>', methods=['GET'])
+@login_required
+def api_thread(target_user_id):
+    user_id = current_user.id
+
+    try:
+        real_partner_id = target_user_id
+        target_user = User.query.get(target_user_id)
+        if not target_user:
+            t = Teacher.query.get(target_user_id)
+            if t and t.user_id:
+                real_partner_id = t.user_id
+                target_user = User.query.get(real_partner_id)
+            else:
+                st = Student.query.get(target_user_id)
+                if st and hasattr(st, 'user_id') and st.user_id:
+                    real_partner_id = st.user_id
+                    target_user = User.query.get(real_partner_id)
+
+        if not target_user:
+            return jsonify({'success': False, 'error': 'المستخدم المخاطب غير موجود'}), 404
+
+        msgs = Message.query.filter(
+            ((Message.sender_id == user_id) & (Message.recipient_id == real_partner_id)) |
+            ((Message.sender_id == real_partner_id) & (Message.recipient_id == user_id))
+        ).order_by(Message.timestamp.asc()).all()
+
+        unread_msgs = [m for m in msgs if m.recipient_id == user_id and not m.is_read]
+        if unread_msgs:
+            for m in unread_msgs:
+                m.is_read = True
+            db.session.commit()
+
+        messages_data = []
+        for m in msgs:
+            messages_data.append({
+                'is_mine': (m.sender_id == user_id),
+                'content': m.content,
+                'time': m.timestamp.strftime('%H:%M') if m.timestamp else ''
+            })
+
+        return jsonify({
+            'success': True,
+            'messages': messages_data
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error in api_thread: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @messages_bp.route('/export/excel', methods=['GET'])
 @login_required

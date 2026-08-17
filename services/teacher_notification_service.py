@@ -90,7 +90,7 @@ def auto_generate_teacher_notifications(user_id):
             db.session.add(notif)
 
         # 5. Exam Schedule activity notifications
-        schedules = ExamSchedule.query.order_by(ExamSchedule.id.desc()).limit(3).all()
+        schedules = ExamSchedule.query.order_by(ExamSchedule.ScheduleID.desc()).limit(3).all()
         for sch in schedules:
             sub_name = sch.subject.SubName if sch.subject else 'المادة'
             notif = Notification(
