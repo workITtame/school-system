@@ -435,6 +435,49 @@ def delete_homework(id):
     return redirect(url_for('homework.index'))
 
 
+@homework_bp.route('/bulk-delete', methods=['POST', 'DELETE'])
+@login_required
+def bulk_delete_homework():
+    try:
+        data = request.get_json(silent=True) or request.form
+        ids = data.get('ids', [])
+        if isinstance(ids, str):
+            import json
+            try:
+                ids = json.loads(ids)
+            except Exception:
+                ids = [int(i.strip()) for i in ids.split(',') if i.strip().isdigit()]
+
+        if not ids or not isinstance(ids, list):
+            return jsonify({'success': False, 'message': 'لم يتم تحديد أي واجبات للحذف'}), 400
+
+        int_ids = [int(i) for i in ids if str(i).isdigit() or isinstance(i, int)]
+        if not int_ids:
+            return jsonify({'success': False, 'message': 'معرفات غير صالحة'}), 400
+
+        from models.grade import HomeworkMarks
+        deleted_count = 0
+        for hw_id in int_ids:
+            hw = Homework.query.get(hw_id)
+            if hw:
+                try:
+                    HomeworkMarks.query.filter_by(HomeworkID=hw_id).delete(synchronize_session=False)
+                    db.session.delete(hw)
+                    deleted_count += 1
+                except Exception as ex_single:
+                    pass
+
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'تم حذف {deleted_count} واجب بنجاح',
+            'deleted_count': deleted_count
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ أثناء الحذف الجماعي: {str(e)}'}), 500
+
+
 @homework_bp.route('/analytics')
 @login_required
 def analytics():

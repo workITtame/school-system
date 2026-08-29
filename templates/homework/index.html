@@ -378,24 +378,40 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SECTION 5: MAIN HOMEWORK TABLE & SIDEBAR   -->
+    <!-- SECTION 5: MAIN HOMEWORK TABLE (FULL WIDTH)-->
     <!-- ========================================== -->
-    <div class="row g-3">
-        <!-- Right Column (in RTL): Homework Table (70% width) -->
-        <div class="col-12 col-xl-8" id="homeworkTableSection">
+    <div class="row g-3 mb-4">
+        <!-- Full Width Column: Homework Table (100% width) -->
+        <div class="col-12" id="homeworkTableSection">
+            <!-- Dynamic Bulk Actions Bar -->
+            <div class="d-none bg-danger bg-opacity-10 border border-danger-subtle p-3 rounded-4 mb-3 d-flex align-items-center justify-content-between font-monospace extra-small" id="hwBulkActionsBar">
+                <div class="d-flex align-items-center gap-2 text-danger fw-bold">
+                    <i class="fa-solid fa-square-check fs-5"></i>
+                    <span>تم تحديد <strong id="selectedHwCount" class="fs-6 text-dark">0</strong> واجبات دراسية</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 font-monospace fw-bold" onclick="deselectAllHomeworks()">
+                        <i class="fa-solid fa-xmark me-1"></i> إلغاء التحديد
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 py-1 font-monospace fw-bold" onclick="confirmBulkDeleteHomeworks()">
+                        <i class="fa-solid fa-trash-can me-1"></i> حذف التحديد الجماعي
+                    </button>
+                </div>
+            </div>
+
             <div class="glass-panel-card p-0 rounded-4 shadow-sm bg-white border-0 overflow-hidden">
                 <div class="table-responsive homework-table-scroll-container">
                     <table class="table table-hover align-middle mb-0 font-monospace extra-small text-center" id="homeworkMainTable">
                         <thead class="bg-light text-muted">
                             <tr>
-                                <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="checkAllHw"></th>
-                                <th class="text-start pe-3">عنوان الواجب والملاحظات</th>
-                                <th>المادة الدراسية</th>
-                                <th>الصف والشعبة</th>
-                                <th>تاريخ التسليم</th>
-                                <th>حالة الواجب</th>
-                                <th>حالة الرصد</th>
-                                <th>الإجراءات</th>
+                                <th style="width: 50px;"><input type="checkbox" class="form-check-input" id="checkAllHw" onchange="toggleSelectAllHomeworks(this)"></th>
+                                <th class="text-start pe-3" style="min-width: 240px;">عنوان الواجب والملاحظات</th>
+                                <th style="min-width: 130px;">المادة الدراسية</th>
+                                <th style="min-width: 120px;">الصف والشعبة</th>
+                                <th style="min-width: 120px;">تاريخ التسليم</th>
+                                <th style="min-width: 120px;">حالة الواجب</th>
+                                <th style="min-width: 120px;">حالة الرصد</th>
+                                <th style="min-width: 220px;">الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="homeworkTableBody">
@@ -403,12 +419,12 @@
                                 {% for hw in homework_list %}
                                     <tr class="hw-row-item" data-title="{{ hw.title }}" data-subject="{{ hw.subject.SubName if hw.subject else '' }}" data-class="{{ hw.school_class.CName if hw.school_class else '' }}" data-section="{{ hw.section.SectionName if hw.section else '' }}" data-status="{{ hw.status }}">
                                         <td>
-                                            <input type="checkbox" class="form-check-input">
+                                            <input type="checkbox" class="form-check-input hw-select-cb" value="{{ hw.id }}" onchange="updateHomeworkBulkSelectionUI()">
                                             <span class="text-muted extra-small ms-1">#{{ hw.id }}</span>
                                         </td>
                                         <td class="text-start pe-3">
                                             <strong class="text-dark d-block fs-6 mb-1">{{ hw.title }}</strong>
-                                            <span class="text-muted extra-small text-truncate d-block" style="max-width: 280px;">
+                                            <span class="text-muted extra-small text-truncate d-block" style="max-width: 320px;">
                                                 {{ hw.description if hw.description else 'حل جميع التمارين في الصفحة المطلوبة' }}
                                             </span>
                                         </td>
@@ -466,27 +482,27 @@
                                         <td>
                                             <div class="d-flex align-items-center justify-content-center gap-1">
                                                 <!-- 1. 👁️ عرض التفاصيل -->
-                                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle" title="عرض التفاصيل" onclick="openHomeworkDetailsModal({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle" title="عرض التفاصيل" onclick="openHomeworkDetailsModal({{ hw.id }})" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-eye"></i>
                                                 </button>
                                                 <!-- 2. ✏️ تعديل الواجب -->
-                                                <button type="button" class="btn btn-sm btn-light text-info rounded-circle" title="تعديل الواجب" onclick="openEditHomeworkModal({{ hw.id }}, '{{ hw.title|e }}', {{ hw.sub_id }}, {{ hw.class_id }}, {{ hw.section_id or 'null' }}, '{{ hw.due_date }}', '{{ hw.status or 'معلق' }}', '{{ (hw.description or '')|e }}')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-info rounded-circle" title="تعديل الواجب" onclick="openEditHomeworkModal({{ hw.id }}, '{{ hw.title|e }}', {{ hw.sub_id }}, {{ hw.class_id }}, {{ hw.section_id or 'null' }}, '{{ hw.due_date }}', '{{ hw.status or 'معلق' }}', '{{ (hw.description or '')|e }}')" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
                                                 <!-- 3. ⭐ مساحة التصحيح الموحدة (Unified Grading Workspace) -->
-                                                <button type="button" class="btn btn-sm btn-light text-warning rounded-circle" title="⭐ بدء التصحيح (Unified Grading Workspace)" onclick="openGradingWorkspace('homework', {{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-warning rounded-circle" title="⭐ بدء التصحيح (Unified Grading Workspace)" onclick="openGradingWorkspace('homework', {{ hw.id }})" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-star"></i>
                                                 </button>
                                                 <!-- 4. 📤 نشر الواجب -->
-                                                <button type="button" class="btn btn-sm btn-light text-success rounded-circle" title="نشر الواجب" onclick="publishHomework({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-success rounded-circle" title="نشر الواجب" onclick="publishHomework({{ hw.id }})" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-paper-plane"></i>
                                                 </button>
                                                 <!-- 5. 📑 تكرار الواجب -->
-                                                <button type="button" class="btn btn-sm btn-light text-secondary rounded-circle" title="تكرار الواجب" onclick="duplicateHomework({{ hw.id }})" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-secondary rounded-circle" title="تكرار الواجب" onclick="duplicateHomework({{ hw.id }})" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-copy"></i>
                                                 </button>
                                                 <!-- 6. 🗑️ حذف الواجب -->
-                                                <button type="button" class="btn btn-sm btn-light text-danger rounded-circle" title="حذف الواجب" onclick="deleteHomework({{ hw.id }}, '{{ hw.title|e }}')" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">
+                                                <button type="button" class="btn btn-sm btn-light text-danger rounded-circle" title="حذف الواجب" onclick="deleteHomework({{ hw.id }}, '{{ hw.title|e }}')" style="width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
@@ -495,7 +511,7 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="7" class="py-5 text-center bg-white">
+                                    <td colspan="8" class="py-5 text-center bg-white">
                                         <i class="fa-solid fa-book-open text-muted opacity-25 fs-1 d-block mb-3"></i>
                                         <h5 class="fw-bold text-dark font-monospace mb-1">لا يوجد واجبات أكاديمية حالياً</h5>
                                         <p class="text-muted extra-small font-monospace mb-3">قم بإضافة أول واجب لمتابعة تسليمات وإنجاز الطلاب.</p>
@@ -521,18 +537,22 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Left Column (in RTL): Sidebar Analytics Dashboard (30% width) -->
-        <div class="col-12 col-xl-4">
-            <!-- 1. Homework Status Distribution Widget (Doughnut Summary) -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="توزيع الواجبات حسب الحالة">
+    <!-- ========================================== -->
+    <!-- SECTION 6: BOTTOM ANALYTICS & INSIGHTS     -->
+    <!-- ========================================== -->
+    <div class="row g-4 mb-4 no-print">
+        <!-- 1. Homework Status Distribution Card -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 h-100" role="region" aria-label="توزيع الواجبات حسب الحالة">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> توزيع الواجبات حسب الحالة</h6>
                     <span class="badge bg-light text-muted border font-monospace extra-small">تحديث حي</span>
                 </div>
 
                 <div class="text-center py-3 position-relative">
-                    <div class="rounded-circle border border-4 border-primary mx-auto d-flex align-items-center justify-content-center flex-column shadow-sm" style="width: 140px; height: 140px; border-color: #2563eb !important;">
+                    <div class="rounded-circle border border-4 border-primary mx-auto d-flex align-items-center justify-content-center flex-column shadow-sm" style="width: 130px; height: 130px; border-color: #2563eb !important;">
                         <h2 class="fw-extrabold text-dark font-monospace mb-0" id="sideHwTotal">{{ kpi.total_count if kpi is defined else total_count }}</h2>
                         <small class="text-muted font-monospace extra-small">واجبات</small>
                     </div>
@@ -551,93 +571,91 @@
                         <span class="text-muted"><i class="fa-solid fa-circle text-danger me-1"></i> متأخر</span>
                         <strong class="text-dark" id="sideHwLate">{{ status_distribution.late if status_distribution is defined else 0 }} ({{ status_distribution.late_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted"><i class="fa-solid fa-circle text-secondary me-1"></i> ملغى</span>
-                        <strong class="text-dark">0 (0.0%)</strong>
-                    </div>
                     <div class="d-flex align-items-center justify-content-between">
                         <span class="text-muted"><i class="fa-solid fa-circle text-info me-1"></i> لم يبدأ</span>
                         <strong class="text-dark" id="sideHwNotStarted">{{ status_distribution.not_started if status_distribution is defined else 0 }} ({{ status_distribution.not_started_pct if status_distribution is defined else 0.0 }}%)</strong>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 2. Most Assigned Subjects Widget -->
-            {% if most_assigned_subjects and most_assigned_subjects|length > 0 %}
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="المواد الأكثر تكليفاً">
+        <!-- 2. Most Assigned Subjects Card -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 h-100" role="region" aria-label="المواد الأكثر تكليفاً">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-solid fa-layer-group text-primary me-2"></i> المواد الأكثر تكليفاً</h6>
-                    <span class="badge bg-light text-muted border font-monospace extra-small">أعلى 4</span>
+                    <span class="badge bg-light text-muted border font-monospace extra-small">أعلى المواد</span>
                 </div>
 
                 <div class="font-monospace extra-small" id="mostAssignedContainer">
-                    {% for sub in most_assigned_subjects %}
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="fw-bold text-dark">{{ sub.name }}</span>
-                                <span class="text-muted extra-small">{{ sub.count }} واجب</span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar {% if loop.index == 1 %}bg-primary{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ sub.pct }}%;"></div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- 3. Nearest Due Homeworks Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 mb-4" role="region" aria-label="أقرب الواجبات تسليماً">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-regular fa-clock text-warning me-2"></i> أقرب الواجبات تسليماً</h6>
-                </div>
-
-                <div class="font-monospace extra-small">
-                    {% if upcoming_homeworks and upcoming_homeworks|length > 0 %}
-                        {% for hw in upcoming_homeworks %}
-                            <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-3 bg-light border">
-                                <div>
-                                    <strong class="text-dark d-block mb-1">{{ hw.title }}</strong>
-                                    <small class="text-muted">{{ hw.due_date_str }}</small>
+                    {% if most_assigned_subjects and most_assigned_subjects|length > 0 %}
+                        {% for sub in most_assigned_subjects %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold text-dark">{{ sub.name }}</span>
+                                    <span class="text-muted extra-small">{{ sub.count }} واجب</span>
                                 </div>
-                                <span class="badge {% if loop.index == 1 %}bg-success-subtle text-success border border-success-subtle{% elif loop.index == 2 %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} rounded-pill px-3 py-1 font-monospace">
-                                    {{ hw.relative_date }}
-                                </span>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar {% if loop.index == 1 %}bg-primary{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ sub.pct }}%;"></div>
+                                </div>
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="py-2 text-center text-muted">لا يوجد مواعيد تسليم قادمة.</div>
+                        <div class="py-4 text-center text-muted">
+                            <i class="fa-solid fa-book-open fs-3 d-block mb-2 opacity-50"></i>
+                            جميع المواد الدراسية خاضعة للتكليف الأكاديمي
+                        </div>
                     {% endif %}
                 </div>
             </div>
+        </div>
 
-            <!-- 4. Quick Actions Widget -->
-            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0" role="region" aria-label="إجراءات سريعة">
-                <h6 class="fw-bold text-dark font-monospace mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i> إجراءات سريعة</h6>
-                <div class="row g-2 font-monospace extra-small">
-                    <div class="col-6">
-                        <button type="button" class="btn btn-outline-primary w-100 py-2 rounded-3 text-start fw-bold" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
-                            <i class="fa-solid fa-circle-plus me-1 text-primary"></i> إضافة واجب جديد
-                        </button>
+        <!-- 3. Nearest Due Homeworks & Quick Actions Card -->
+        <div class="col-12 col-md-12 col-lg-4">
+            <div class="glass-panel-card p-4 rounded-4 shadow-sm bg-white border-0 h-100 d-flex flex-column justify-content-between" role="region" aria-label="أقرب الواجبات تسليماً والإجراءات">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold text-dark font-monospace mb-0"><i class="fa-regular fa-clock text-warning me-2"></i> أقرب الواجبات تسليماً</h6>
                     </div>
-                    <div class="col-6">
-                        <a href="{{ url_for('messages.index') }}" class="btn btn-outline-success w-100 py-2 rounded-3 text-start fw-bold">
-                            <i class="fa-regular fa-paper-plane me-1 text-success"></i> إرسال إشعار للطلاب
-                        </a>
+
+                    <div class="font-monospace extra-small">
+                        {% if upcoming_homeworks and upcoming_homeworks|length > 0 %}
+                            {% for hw in upcoming_homeworks[:3] %}
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-3 bg-light border">
+                                    <div>
+                                        <strong class="text-dark d-block mb-1">{{ hw.title }}</strong>
+                                        <small class="text-muted">{{ hw.due_date_str }}</small>
+                                    </div>
+                                    <span class="badge {% if loop.index == 1 %}bg-success-subtle text-success border border-success-subtle{% elif loop.index == 2 %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} rounded-pill px-3 py-1 font-monospace">
+                                        {{ hw.relative_date }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="py-2 text-center text-muted">لا يوجد مواعيد تسليم قادمة.</div>
+                        {% endif %}
                     </div>
-                    <div class="col-6">
-                        <button type="button" class="btn btn-outline-warning w-100 py-2 rounded-3 text-start fw-bold" onclick="Swal.fire('جدولة تلقائية', 'توزيع جدولة الواجبات التلقائي نشط', 'info')">
-                            <i class="fa-regular fa-calendar-check me-1 text-warning"></i> جدولة تلقائية
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ url_for('homework.report') }}" class="btn btn-outline-info w-100 py-2 rounded-3 text-start fw-bold">
-                            <i class="fa-solid fa-list-check me-1 text-info"></i> كشف درجات الواجبات
-                        </a>
+                </div>
+
+                <!-- Quick Actions Footer in Card 3 -->
+                <div class="border-top pt-3 mt-3">
+                    <h6 class="fw-bold text-dark font-monospace mb-2 extra-small"><i class="fa-solid fa-bolt text-warning me-2"></i> إجراءات سريعة</h6>
+                    <div class="row g-2 font-monospace extra-small">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-primary w-100 py-2 rounded-3 text-start fw-bold" data-bs-toggle="modal" data-bs-target="#addHomeworkModal">
+                                <i class="fa-solid fa-circle-plus me-1 text-primary"></i> إضافة واجب جديد
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('messages.index') }}" class="btn btn-outline-success w-100 py-2 rounded-3 text-start fw-bold">
+                                <i class="fa-regular fa-paper-plane me-1 text-success"></i> إرسال إشعار
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
 </div>
@@ -1080,14 +1098,126 @@ function exportHomeworkExcel() {
     window.location.href = `/homework/export/excel?${params.toString()}`;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+function updateHomeworkBulkSelectionUI() {
+    const selectedCbs = document.querySelectorAll('.hw-select-cb:checked');
+    const count = selectedCbs.length;
+    const bar = document.getElementById('hwBulkActionsBar');
+    const countEl = document.getElementById('selectedHwCount');
     const checkAll = document.getElementById('checkAllHw');
-    if (checkAll) {
-        checkAll.addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('#homeworkTableBody input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = checkAll.checked);
-        });
+
+    if (countEl) countEl.textContent = count;
+
+    if (count > 0) {
+        if (bar) bar.classList.remove('d-none');
+    } else {
+        if (bar) bar.classList.add('d-none');
+        if (checkAll) checkAll.checked = false;
     }
+}
+
+function toggleSelectAllHomeworks(masterCb) {
+    const visibleRows = document.querySelectorAll('#homeworkTableBody tr.hw-row-item:not(.d-none)');
+    visibleRows.forEach(row => {
+        const cb = row.querySelector('.hw-select-cb');
+        if (cb) cb.checked = masterCb.checked;
+    });
+    updateHomeworkBulkSelectionUI();
+}
+
+function deselectAllHomeworks() {
+    const cbs = document.querySelectorAll('.hw-select-cb');
+    cbs.forEach(cb => cb.checked = false);
+    const masterCb = document.getElementById('checkAllHw');
+    if (masterCb) masterCb.checked = false;
+    updateHomeworkBulkSelectionUI();
+}
+
+function confirmBulkDeleteHomeworks() {
+    const selectedCbs = document.querySelectorAll('.hw-select-cb:checked');
+    const ids = Array.from(selectedCbs).map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+
+    if (ids.length === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'تنبيـه',
+                text: 'يرجى تحديد واجب واحد على الأقل للحذف الجماعي',
+                confirmButtonText: 'حسناً'
+            });
+        } else {
+            alert('يرجى تحديد واجب واحد على الأقل للحذف الجماعي');
+        }
+        return;
+    }
+
+    const doDelete = () => {
+        fetch('/homework/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم الحذف الجماعي بنجاح',
+                        text: data.message || `تم حذف ${data.deleted_count} واجبات مختارة`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || 'تم الحذف الجماعي بنجاح');
+                    window.location.reload();
+                }
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('خطأ في الحذف', data.message || 'فشل حذف الواجبات المحددة', 'error');
+                } else {
+                    alert(data.message || 'فشل حذف الواجبات المحددة');
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('خطأ في الاتصال', 'تعذر الاتصال بالخادم لإتمام الحذف الجماعي', 'error');
+            } else {
+                alert('تعذر الاتصال بالخادم لإتمام الحذف الجماعي');
+            }
+        });
+    };
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'تأكيد الحذف الجماعي',
+            html: `هل أنت متأكد من حذف <strong>${ids.length}</strong> واجبات دراسية مختارة؟<br><small class="text-danger">ملاحظة: هذا الإجراء سيمسح الواجبات نهائياً من قاعدة البيانات.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fa-solid fa-trash-can me-1"></i> نعم، احذف المحدد',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                doDelete();
+            }
+        });
+    } else {
+        if (confirm(`هل أنت متأكد من حذف ${ids.length} واجبات دراسية مختارة؟`)) {
+            doDelete();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateHomeworkBulkSelectionUI();
 });
 </script>
 {% endblock %}
