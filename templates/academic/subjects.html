@@ -895,7 +895,7 @@
                                 <div class="row g-2 mb-3">
                                     <div class="col-md-4">
                                         <label class="form-label text-muted fw-bold small">الحصص الأسبوعية</label>
-                                        <input type="number" name="weekly_hours" id="editSubjectHoursInput" class="form-control form-control-modern" min="1" max="20" onchange="updateWizardPreviews('edit')">
+                                        <input type="number" name="weekly_hours" id="editSubjectHoursInput" class="form-control form-control-modern" min="0" max="20" onchange="updateWizardPreviews('edit')">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label text-muted fw-bold small">حالة المادة</label>
@@ -1020,8 +1020,8 @@
                                 <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-days text-info me-2"></i>توزيع الحصص المحدث</h6>
                                 <small class="text-muted">تحديث الجدول الأسبوعي للمادة</small>
                             </div>
-                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 font-monospace fw-bold">
-                                <i class="fa-solid fa-circle-check me-1"></i> لا توجد تعارضات
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2 font-monospace fw-bold" id="edit-conflict-badge">
+                                <i class="fa-solid fa-info-circle me-1"></i> بانتظار تحديد الصفوف
                             </span>
                         </div>
 
@@ -1072,7 +1072,7 @@
                                         <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-check-double me-1"></i> جاهزية الاعتماد</h6>
                                         <div class="small font-monospace text-muted">
                                             <div class="d-flex justify-content-between mb-1"><span>الصفوف المختارة:</span><strong class="text-dark" id="edit-sum-classes">صفوف مرتبطة</strong></div>
-                                            <div class="d-flex justify-content-between"><span>حالة التعديل:</span><span class="badge bg-success-subtle text-success">مكتمل ومفحوص</span></div>
+                                            <div class="d-flex justify-content-between"><span>حالة التعديل:</span><span class="badge bg-success-subtle text-success" id="edit-sum-status">جاهز للحفظ</span></div>
                                         </div>
                                     </div>
                                 </div>

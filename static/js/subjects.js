@@ -343,12 +343,12 @@ function openEditSubjectModal(id, name, type, dept, hours, status, color, classI
     const statusSelect = document.getElementById('editSubjectStatusSelect');
     const colorInput = document.getElementById('editSubjectColorInput');
 
-    if (nameInput) nameInput.value = name;
+    if (nameInput) nameInput.value = name || '';
     if (typeSelect) typeSelect.value = type || 'أساسية';
     if (deptSelect) deptSelect.value = dept || 'جميع المراحل';
-    if (hoursInput) hoursInput.value = hours || 0;
+    if (hoursInput) hoursInput.value = (hours !== undefined && hours !== null && hours !== '' && parseInt(hours) > 0) ? hours : 4;
     if (statusSelect) statusSelect.value = status || 'نشط';
-    if (colorInput) colorInput.value = color || '#3b82f6';
+    if (colorInput) colorInput.value = color || '#2563eb';
 
     let classIds = [];
     if (classIdsJson) {
@@ -358,7 +358,7 @@ function openEditSubjectModal(id, name, type, dept, hours, status, color, classI
     }
     const editClassCheckboxes = document.querySelectorAll('.edit-class-checkbox');
     editClassCheckboxes.forEach(cb => {
-        cb.checked = classIds.includes(parseInt(cb.value));
+        cb.checked = Array.isArray(classIds) && classIds.map(Number).includes(parseInt(cb.value));
     });
 
     let teacherIds = [];
@@ -369,12 +369,12 @@ function openEditSubjectModal(id, name, type, dept, hours, status, color, classI
     }
     const editTeacherCheckboxes = document.querySelectorAll('.edit-teacher-checkbox');
     editTeacherCheckboxes.forEach(cb => {
-        cb.checked = teacherIds.includes(parseInt(cb.value));
+        cb.checked = Array.isArray(teacherIds) && teacherIds.map(Number).includes(parseInt(cb.value));
     });
 
     goToSubjectWizardStep(1, 'edit');
 
-    const bsModal = new bootstrap.Modal(modalEl);
+    const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     bsModal.show();
 }
 
@@ -505,6 +505,7 @@ function updateWizardPreviews(wizardType = 'add') {
 
 function updateWizardTimetablePreview(wizardType = 'add') {
     const tbody = document.getElementById(`${wizardType}-timetable-tbody`);
+    const conflictBadge = document.getElementById(`${wizardType}-conflict-badge`);
     if (!tbody) return;
 
     const checked = document.querySelectorAll(`.${wizardType}-class-checkbox:checked`);
@@ -513,7 +514,16 @@ function updateWizardTimetablePreview(wizardType = 'add') {
             <i class="fa-solid fa-calendar-xmark fs-3 d-block mb-2 text-secondary opacity-50"></i>
             يرجى تحديد الصفوف الدراسية في الخطوة (2) لمعاينة توزيع الحصص
         </td></tr>`;
+        if (conflictBadge) {
+            conflictBadge.className = 'badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2 font-monospace fw-bold';
+            conflictBadge.innerHTML = '<i class="fa-solid fa-info-circle me-1"></i> بانتظار تحديد الصفوف';
+        }
         return;
+    }
+
+    if (conflictBadge) {
+        conflictBadge.className = 'badge bg-success-subtle text-success rounded-pill px-3 py-2 font-monospace fw-bold';
+        conflictBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> تم توزيع الحصص بدون تعارضات';
     }
 
     const hoursInput = document.getElementById(`${wizardType}SubjectHoursInput`);
@@ -588,13 +598,27 @@ function updateWizardClassesPreview(wizardType = 'add') {
     const countBadge = document.getElementById(`${wizardType}-selected-classes-count`);
     const sectionsBadge = document.getElementById(`${wizardType}-selected-sections-count`);
     const sumClasses = document.getElementById(`${wizardType}-sum-classes`);
+    const sumStatus = document.getElementById(`${wizardType}-sum-status`);
 
     const selectedCount = checkboxes.length;
     const estimatedSections = selectedCount * 2;
 
     if (countBadge) countBadge.textContent = `${selectedCount} صفوف مختارة`;
     if (sectionsBadge) sectionsBadge.textContent = `${estimatedSections} شعب مشمولة`;
-    if (sumClasses) sumClasses.textContent = selectedCount > 0 ? `${selectedCount} صفوف دراسية` : 'جميع الصفوف المشمولة';
+    
+    if (sumClasses) {
+        sumClasses.textContent = selectedCount > 0 ? `${selectedCount} صفوف دراسية` : 'لم يتم اختيار أي صف (مادة عامة)';
+    }
+
+    if (sumStatus) {
+        if (selectedCount > 0) {
+            sumStatus.textContent = 'مكتمل ومفحوص';
+            sumStatus.className = 'badge bg-success-subtle text-success';
+        } else {
+            sumStatus.textContent = 'جاهز للحفظ (عامة)';
+            sumStatus.className = 'badge bg-info-subtle text-info';
+        }
+    }
 
     updateWizardTimetablePreview(wizardType);
 }
