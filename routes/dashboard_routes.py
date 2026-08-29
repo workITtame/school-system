@@ -301,7 +301,21 @@ def get_admin_dashboard_data():
     total_students = Student.query.filter_by(is_deleted=False).count()
     total_teachers = Teacher.query.filter_by(is_deleted=False).count()
     total_classes = Classes.query.filter_by(is_deleted=False).count()
-    total_sections = Sections.query.filter_by(is_deleted=False).count()
+    classes_list = Classes.query.filter_by(is_deleted=False).all()
+    active_class_ids = [c.CID for c in classes_list]
+
+    from models.academic import ClassesSections
+    if active_class_ids:
+        active_sections_list = db.session.query(Sections).join(
+            ClassesSections, Sections.SectionID == ClassesSections.c.SectionID
+        ).filter(
+            ClassesSections.c.CID.in_(active_class_ids),
+            Sections.is_deleted == False
+        ).distinct().all()
+    else:
+        active_sections_list = []
+
+    total_sections = len(active_sections_list)
     total_subjects = Subject.query.filter_by(is_deleted=False).count()
     total_users = User.query.filter_by(is_deleted=False).count()
     unread_messages_count = Message.query.filter_by(recipient_id=current_user.id, is_read=False).count()
@@ -374,7 +388,7 @@ def get_admin_dashboard_data():
         class_occ_labels.append(c.CName)
         class_occ_data.append(st_cnt)
 
-    sections_list = Sections.query.filter_by(is_deleted=False).all()
+    sections_list = active_sections_list
     section_occupancy = []
     for sec in sections_list:
         st_cnt = Student.query.filter_by(SectionID=sec.SectionID, is_deleted=False).count()

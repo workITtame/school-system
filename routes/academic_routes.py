@@ -6,6 +6,20 @@ from utils.decorators import admin_required
 
 academic_bp = Blueprint('academic', __name__, url_prefix='/academic')
 
+def _get_class_teachers_count(cid, section_id=None):
+    from models import Teacher
+    query = db.session.query(SchoolTable.TeacherID).filter(
+        SchoolTable.CID == cid,
+        SchoolTable.is_deleted == False,
+        SchoolTable.TeacherID.isnot(None)
+    )
+    if section_id:
+        query = query.filter(SchoolTable.SectionID == section_id)
+    t_ids = [t[0] for t in query.distinct().all() if t[0]]
+    if not t_ids:
+        return 0
+    return Teacher.query.filter(Teacher.TeacherID.in_(t_ids), Teacher.is_deleted == False).count()
+
 @academic_bp.route('/')
 def index():
     if 'user_id' not in session:
@@ -48,7 +62,7 @@ def classes():
     for c in classes_list:
         c.linked_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
         c.students_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
-        c.teachers_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        c.teachers_count = _get_class_teachers_count(c.CID)
         c.subjects_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
         
         # Calculate occupancy rate (MUST be None if MaxStudents is None or 0)
@@ -142,9 +156,7 @@ def subjects():
         # Linked Classes
         c_ids_cs = [c[0] for c in db.session.query(ClassSubject.c.CID).filter(ClassSubject.c.SubID == s.SubID).all() if c[0]]
         c_ids_st = [st[0] for st in db.session.query(SchoolTable.CID).filter(SchoolTable.SubID == s.SubID, SchoolTable.is_deleted == False).all() if st[0]]
-        c_ids_hw = [hw[0] for hw in db.session.query(Homework.class_id).filter(Homework.sub_id == s.SubID).all() if hw[0]]
-        c_ids_ex = [ex[0] for ex in db.session.query(ExamSchedule.CID).filter(ExamSchedule.SubID == s.SubID).all() if ex[0]]
-        all_class_ids = list(set(c_ids_cs + c_ids_st + c_ids_hw + c_ids_ex))
+        all_class_ids = list(set(c_ids_cs + c_ids_st))
 
         linked_cls_objs = Classes.query.filter(Classes.CID.in_(all_class_ids), Classes.is_deleted == False).all() if all_class_ids else []
         for cls in linked_cls_objs:
@@ -373,12 +385,7 @@ def get_class_sections_api(id):
         if not getattr(sec, 'is_deleted', False):
             st_count = Student.query.filter(Student.SectionID == sec.SectionID, Student.CID == c.CID, Student.is_deleted == False).count()
             tb_count = SchoolTable.query.filter(SchoolTable.SectionID == sec.SectionID, SchoolTable.CID == c.CID, SchoolTable.is_deleted == False).count()
-            t_count = db.session.query(SchoolTable.TeacherID).filter(
-                SchoolTable.SectionID == sec.SectionID,
-                SchoolTable.CID == c.CID,
-                SchoolTable.is_deleted == False,
-                SchoolTable.TeacherID.isnot(None)
-            ).distinct().count()
+            t_count = _get_class_teachers_count(c.CID, sec.SectionID)
 
             sections_list.append({
                 'id': sec.SectionID,
@@ -663,16 +670,21 @@ def delete_class(id):
         flash('لا يمكن حذف الصف لاحتوائه على طلاب مسجلين بالفعل. يرجى نقل الطلاب أو تفريغ الصف أولاً.', 'danger')
         return redirect(url_for('academic.classes'))
         
-    associated_sections = list(c.sections)
-    c.sections.clear()
-    for sec in associated_sections:
-        remaining_classes = [cl for cl in sec.classes if not getattr(cl, 'is_deleted', False)]
-        if not remaining_classes:
-            sec.is_deleted = True
-            
-    handle_delete(c)
-    db.session.commit()
-    flash(f'تم حذف الصف "{c.CName}" والشعب المرتبطة به بنجاح', 'success')
+    try:
+        c.is_deleted = True
+        associated_sections = list(c.sections)
+        c.sections.clear()
+        for sec in associated_sections:
+            remaining_classes = [cl for cl in sec.classes if not getattr(cl, 'is_deleted', False)]
+            if not remaining_classes:
+                sec.is_deleted = True
+                
+        db.session.commit()
+        flash(f'تم حذف الصف "{c.CName}" والشعب المرتبطة به بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الصف: {str(e)}', 'danger')
+        
     return redirect(url_for('academic.classes'))
 
 # Sections
@@ -697,10 +709,17 @@ def delete_section(id):
     s = Sections.query.get_or_404(id)
     student_count = Student.query.filter_by(SectionID=id, is_deleted=False).count()
     if student_count > 0:
-        flash('لا يمكن حذف الشعبة لاحتوائها على طلاب مسجلين بالفعلي. يرجى نقل الطلاب أو تفريغ الشعبة أولاً.', 'danger')
+        flash('لا يمكن حذف الشعبة لاحتوائها على طلاب مسجلين بالفعل. يرجى نقل الطلاب أو تفريغ الشعبة أولاً.', 'danger')
         return redirect(url_for('academic.classes'))
-    s.classes.clear()
-    handle_delete(s)
+    try:
+        s.is_deleted = True
+        s.classes.clear()
+        db.session.commit()
+        flash(f'تم حذف الشعبة "{s.SectionName}" بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الشعبة: {str(e)}', 'danger')
+        
     return redirect(url_for('academic.classes'))
 
 # Subjects (handled via enriched endpoints at end of module)
@@ -800,7 +819,7 @@ def export_classes_excel():
         
     for c in classes_list:
         st_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
-        t_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        t_count = _get_class_teachers_count(c.CID)
         sub_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
         sec_count = len([sec for sec in c.sections if not getattr(sec, 'is_deleted', False)])
         
@@ -846,7 +865,7 @@ def export_classes_pdf():
     for c in classes_list:
         c.linked_sections = [s for s in c.sections if not getattr(s, 'is_deleted', False)]
         c.students_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
-        c.teachers_count = db.session.query(SchoolTable.TeacherID).filter_by(CID=c.CID, is_deleted=False).distinct().count()
+        c.teachers_count = _get_class_teachers_count(c.CID)
         c.subjects_count = len([sub for sub in c.subjects if not getattr(sub, 'is_deleted', False)])
         c.occ_str = f"{round((c.students_count / c.MaxStudents) * 100, 1)}%" if c.MaxStudents and c.MaxStudents > 0 else "غير محددة"
         
@@ -854,36 +873,49 @@ def export_classes_pdf():
 
 @academic_bp.route('/classes/bulk-delete', methods=['POST'])
 def bulk_delete_classes():
+    from flask import jsonify
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'الرجاء تسجيل الدخول أولاً'}), 401
-    from flask import jsonify
-    data = request.get_json() or {}
-    ids = data.get('ids', [])
-    if not ids:
-        return jsonify({'success': False, 'message': 'لم يتم تحديد أي صف للحذف'}), 400
         
-    # Student enrollment protection check!
-    blocked_classes = []
-    classes_to_delete = []
-    
-    for cid in ids:
-        c = Classes.query.get(cid)
-        if c:
-            st_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
-            if st_count > 0:
-                blocked_classes.append(c.CName)
-            else:
-                classes_to_delete.append(c)
-                
-    if blocked_classes:
-        msg = f"تعذر حذف الصفوف التالية لاحتوائها على طلاب مسجلين: ({', '.join(blocked_classes)}). يرجى نقل الطلاب أولاً."
-        return jsonify({'success': False, 'message': msg, 'blocked': True})
+    try:
+        data = request.get_json() or {}
+        ids = data.get('ids', [])
+        if not ids:
+            return jsonify({'success': False, 'message': 'لم يتم تحديد أي صف للحذف'}), 400
+            
+        blocked_classes = []
+        classes_to_delete = []
         
-    for c in classes_to_delete:
-        db.session.delete(c)
-        
-    db.session.commit()
-    return jsonify({'success': True, 'message': f'تم حذف {len(classes_to_delete)} صفوف بنجاح', 'count': len(classes_to_delete)})
+        for cid in ids:
+            c = Classes.query.filter_by(CID=cid, is_deleted=False).first()
+            if c:
+                st_count = Student.query.filter_by(CID=c.CID, is_deleted=False).count()
+                if st_count > 0:
+                    blocked_classes.append(c.CName)
+                else:
+                    classes_to_delete.append(c)
+                    
+        if blocked_classes:
+            msg = f"تعذر حذف الصفوف التالية لاحتوائها على طلاب مسجلين: ({', '.join(blocked_classes)}). يرجى نقل الطلاب أولاً."
+            return jsonify({'success': False, 'message': msg, 'blocked': True})
+            
+        if not classes_to_delete:
+            return jsonify({'success': False, 'message': 'لم يتم العثور على صفوف قابلة للحذف'}), 400
+
+        for c in classes_to_delete:
+            c.is_deleted = True
+            associated_sections = list(c.sections)
+            c.sections.clear()
+            for sec in associated_sections:
+                remaining_classes = [cl for cl in sec.classes if not getattr(cl, 'is_deleted', False)]
+                if not remaining_classes:
+                    sec.is_deleted = True
+            
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'تم حذف {len(classes_to_delete)} صفوف بنجاح', 'count': len(classes_to_delete)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ غير متوقع أثناء الحذف: {str(e)}'}), 500
 
 @academic_bp.route('/classes/bulk-status', methods=['POST'])
 def bulk_status_classes():
@@ -960,24 +992,24 @@ def delete_subject(id):
         flash(f'تعذر حذف المادة "{subject.SubName}" لارتباطها بـ {slots_count} حصص في الجدول الأسبوعي.', 'danger')
         return redirect(url_for('academic.subjects'))
         
-    # Clear associations from join tables (TeacherSubject, ClassSubject)
-    from models.academic import TeacherSubject, ClassSubject
-    db.session.execute(TeacherSubject.delete().where(TeacherSubject.c.SubID == subject.SubID))
-    db.session.execute(ClassSubject.delete().where(ClassSubject.c.SubID == subject.SubID))
-    
-    from models.grade import Marks
-    if hasattr(Marks, 'is_deleted'):
-        marks_count = Marks.query.filter_by(SubID=subject.SubID, is_deleted=False).count()
-    else:
-        marks_count = Marks.query.filter_by(SubID=subject.SubID).count()
-    
-    if marks_count == 0:
-        db.session.delete(subject)
-    else:
-        subject.is_deleted = True
+    try:
+        # Clear associations from join tables (TeacherSubject, ClassSubject)
+        from models.academic import TeacherSubject, ClassSubject
+        db.session.execute(TeacherSubject.delete().where(TeacherSubject.c.SubID == subject.SubID))
+        db.session.execute(ClassSubject.delete().where(ClassSubject.c.SubID == subject.SubID))
         
-    db.session.commit()
-    flash(f'تم حذف المادة "{subject.SubName}" وإلغاء إسنادها بنجاح', 'success')
+        # Soft delete subject to preserve relational integrity across MySQL FK constraints (e.g. homework, exams)
+        if hasattr(subject, 'is_deleted'):
+            subject.is_deleted = True
+        else:
+            db.session.delete(subject)
+            
+        db.session.commit()
+        flash(f'تم حذف المادة "{subject.SubName}" وإلغاء إسنادها بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ غير متوقع أثناء حذف المادة: {str(e)}', 'danger')
+
     return redirect(url_for('academic.subjects'))
 
 @academic_bp.route('/subject/<int:id>/data')
