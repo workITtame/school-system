@@ -3,11 +3,22 @@
  */
 
 let selectedClassIds = new Set();
+let sectionsModified = false;
 
 document.addEventListener('DOMContentLoaded', function () {
     initFilters();
     initCheckboxes();
     initLivePreviews();
+
+    const manageSecModalEl = document.getElementById('manageSectionsModal');
+    if (manageSecModalEl) {
+        manageSecModalEl.addEventListener('hidden.bs.modal', function () {
+            if (sectionsModified) {
+                sectionsModified = false;
+                window.location.reload();
+            }
+        });
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlClassId = urlParams.get('class_id');
@@ -469,6 +480,7 @@ function addNewSectionToClass() {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
+            sectionsModified = true;
             showToast(data.message, 'success');
             if (input) input.value = '';
             openManageSectionsModal(currentManagingClassId);
@@ -507,6 +519,7 @@ function promptEditSection(secId, oldName) {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    sectionsModified = true;
                     showToast(data.message, 'success');
                     openManageSectionsModal(currentManagingClassId);
                 } else {
@@ -554,6 +567,7 @@ function confirmDeleteSection(classId, secId, secName, studentsCount, timetableC
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    sectionsModified = true;
                     showToast(data.message, 'success');
                     openManageSectionsModal(currentManagingClassId);
                 } else {
