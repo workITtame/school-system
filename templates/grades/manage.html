@@ -315,17 +315,17 @@
                 <div class="d-flex flex-wrap align-items-center gap-3 bg-light p-3 rounded-4 border w-100 w-lg-auto">
                     <div class="px-2">
                         <small class="text-muted d-block font-monospace extra-small">المادة والصف</small>
-                        <strong class="text-dark font-monospace" id="metaSubjectClass">{{ (stats.active_subject_name if stats else 'القرآن الكريم') }} - {{ (stats.active_class_name if stats else 'الأول') }} ({{ (stats.active_section_name if stats else 'شعبة أ') }})</strong>
+                        <strong class="text-dark font-monospace" id="metaSubjectClass">{{ (stats.active_subject_name if stats else 'جميع المواد') }} - {{ (stats.active_class_name if stats else 'جميع الصفوف') }} ({{ (stats.active_section_name if stats else 'كافة الشعب') }})</strong>
                     </div>
                     <div class="vr opacity-25 d-none d-sm-block"></div>
                     <div class="px-2">
                         <small class="text-muted d-block font-monospace extra-small">الفصل والعام</small>
-                        <strong class="text-dark font-monospace" id="metaTermYear">{{ (terms[0].T_Name if terms else 'الفصل الدراسي الأول') }} (2025 - 2026)</strong>
+                        <strong class="text-dark font-monospace" id="metaTermYear">{{ (terms[0].T_Name if terms else 'الفصل الدراسي الأول') }}</strong>
                     </div>
                     <div class="vr opacity-25 d-none d-sm-block"></div>
                     <div class="px-2">
                         <small class="text-muted d-block font-monospace extra-small">توقيت الاختبار</small>
-                        <strong class="text-primary font-monospace" id="metaTime">09:00 AM - 11:00 AM</strong>
+                        <strong class="text-primary font-monospace" id="metaTime">حسب الجدول الأكاديمي</strong>
                     </div>
                     <div class="vr opacity-25 d-none d-sm-block"></div>
                     <div class="px-2">
@@ -537,37 +537,37 @@
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-success fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-circle-check me-1"></i> أفضل مادة أداءً</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiBestSubject">الرياضيات (متوسط 84.5%)</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiBestSubject">{{ stats.best_subject if stats else 'لا توجد درجات مسجلة' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-danger fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> أصعب مادة للصف</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHardestSubject">الفيزياء (متوسط 62.1%)</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHardestSubject">{{ stats.hardest_subject if stats else 'لا توجد درجات مسجلة' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
-                                    <div class="text-warning fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-chart-line-down me-1"></i> أكثر اختبار انخفاضاً</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiLowestExam">منتصف الفصل الأول (-12%)</h6>
+                                    <div class="text-warning fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-chart-line-down me-1"></i> أقل اختبار في الأداء</div>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiLowestExam">{{ stats.lowest_exam if stats else 'لا توجد بيانات' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
-                                    <div class="text-info fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-award me-1"></i> أكثر اختبار نجاحاً</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHighestExam">{{ ai_highest_exam or 'اختبار الشهر الأول' }}</h6>
+                                    <div class="text-info fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-award me-1"></i> أعلى اختبار نجاحاً</div>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiHighestExam">{{ stats.highest_exam if stats else 'لا توجد بيانات' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-danger fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-user-minus me-1"></i> طلاب يحتاجون دعم أكاديمي</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiStrugglingStudents">{{ ai_struggling_students or 'جميع الطلاب في حالة جيدة' }}</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiStrugglingStudents">{{ stats.struggling_students if stats else 'لا يوجد طلاب متعثرون' }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 rounded-4 bg-light border">
                                     <div class="text-success fw-bold font-monospace extra-small mb-1"><i class="fa-solid fa-star me-1"></i> الطلاب المتفوقون ممتاز</div>
-                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiTopStudents">{{ ai_top_students or 'المتفوقون محددون حسب الدرجات' }}</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-monospace" id="aiTopStudents">{{ stats.top_students if stats else 'لا يوجد طلاب متفوقون ممتاز' }}</h6>
                                 </div>
                             </div>
                         </div>

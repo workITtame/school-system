@@ -293,10 +293,10 @@ function updateExamMetadataCard() {
     const filterTerm = document.getElementById('filterTerm');
 
     const examText = filterExam?.options[filterExam.selectedIndex]?.text || 'جميع الاختبارات المعتمدة';
-    const subText = filterSubject?.options[filterSubject.selectedIndex]?.text || 'جميع المواد';
+    const subText = filterSubject?.options[filterSubject.selectedIndex]?.text || 'جميع المواد الدراسية';
     const classText = filterClass?.options[filterClass.selectedIndex]?.text || 'جميع الصفوف';
-    const secText = filterSection?.options[filterSection.selectedIndex]?.text || 'كافة الشعب';
-    const termText = filterTerm?.options[filterTerm.selectedIndex]?.text || 'الفصل الأول';
+    const secText = filterSection?.options[filterSection.selectedIndex]?.text || 'جميع الشعب';
+    const termText = filterTerm?.options[filterTerm.selectedIndex]?.text || 'جميع الفصول الدراسية';
 
     const titleEl = document.getElementById('activeExamTitle');
     const typeEl = document.getElementById('activeExamType');
@@ -306,7 +306,7 @@ function updateExamMetadataCard() {
     if (titleEl) titleEl.textContent = examText.includes('اختر') ? 'كشف تحليلات ورصد الدرجات المباشر' : examText;
     if (typeEl) typeEl.textContent = examText.includes('اختر') ? 'شامل' : examText;
     if (subClassEl) subClassEl.textContent = `${subText.replace('اختر المادة', 'المادة: الكل')} - ${classText.replace('اختر الصف', 'الكل')} (${secText.replace('اختر الشعبة', 'الكل')})`;
-    if (termYearEl) termYearEl.textContent = `${termText} (2025 - 2026)`;
+    if (termYearEl) termYearEl.textContent = termText;
 }
 
 /* ==========================================================================
@@ -561,8 +561,8 @@ function updateGradesKPICards() {
 
     // Update UI elements from real DB
     document.getElementById('kpiTotalStudents').textContent = total;
-    document.getElementById('kpiTotalExams').textContent = gradesState.metaData?.total_system_exams || '5';
-    document.getElementById('kpiTotalSubjects').textContent = gradesState.metaData?.total_system_subjects || '12';
+    document.getElementById('kpiTotalExams').textContent = (gradesState.metaData?.total_system_exams !== undefined) ? gradesState.metaData.total_system_exams : 0;
+    document.getElementById('kpiTotalSubjects').textContent = (gradesState.metaData?.total_system_subjects !== undefined) ? gradesState.metaData.total_system_subjects : 0;
     document.getElementById('kpiAverageScore').textContent = avgScore;
     document.getElementById('kpiMaxScore').textContent = maxScore;
     document.getElementById('kpiMinScore').textContent = minScore;
@@ -636,14 +636,9 @@ function updateAnalyticsCharts() {
     const canvasBar = document.getElementById('barSubjectChart');
     if (canvasBar) {
         const ctxBar = canvasBar.getContext('2d');
-        const subjectStats = gradesState.metaData?.subject_stats || [
-            { name: 'الرياضيات', average: 84.5 },
-            { name: 'الفيزياء', average: 62.1 },
-            { name: 'الكيمياء', average: 78.0 },
-            { name: 'الأحياء', average: 89.2 },
-            { name: 'اللغة العربية', average: 91.0 },
-            { name: 'الإنجليزي', average: 76.4 }
-        ];
+        const subjectStats = (gradesState.metaData?.subject_stats && gradesState.metaData.subject_stats.length > 0) 
+            ? gradesState.metaData.subject_stats 
+            : [];
 
         const labels = subjectStats.map(s => s.name);
         const values = subjectStats.map(s => s.average);
@@ -678,13 +673,9 @@ function updateAnalyticsCharts() {
     const canvasLine = document.getElementById('lineTrendChart');
     if (canvasLine) {
         const ctxLine = canvasLine.getContext('2d');
-        const examTrends = gradesState.metaData?.exam_trends || [
-            { name: 'الشهر الأول', average: 72 },
-            { name: 'منتصف الفصل', average: 68 },
-            { name: 'الشهر الثاني', average: 75 },
-            { name: 'العملي', average: 82 },
-            { name: 'النهائي', average: 78.6 }
-        ];
+        const examTrends = (gradesState.metaData?.exam_trends && gradesState.metaData.exam_trends.length > 0)
+            ? gradesState.metaData.exam_trends
+            : [];
 
         const labels = examTrends.map(e => e.name);
         const values = examTrends.map(e => e.average);
@@ -725,18 +716,38 @@ function updateAnalyticsCharts() {
 function updateAcademicIntelligence() {
     const meta = gradesState.metaData;
 
-    const bestSub = meta?.best_subject?.name ? `${meta.best_subject.name} (متوسط ${meta.best_subject.average}%)` : 'الرياضيات (متوسط 84.5%)';
-    const hardSub = meta?.hardest_subject?.name ? `${meta.hardest_subject.name} (متوسط ${meta.hardest_subject.average}%)` : 'الفيزياء (متوسط 62.1%)';
+    const bestSub = (meta?.best_subject?.name && meta.best_subject.average > 0) 
+        ? `${meta.best_subject.name} (متوسط ${meta.best_subject.average}%)` 
+        : (meta?.best_subject?.name || 'لا توجد درجات مسجلة');
 
-    const topNames = meta?.top_5?.map(s => s.name).join('، ') || 'محمد أحمد علي، سارة محمد';
-    const lowNames = meta?.bottom_5?.map(s => s.name).join('، ') || 'علي حسن محمود، يوسف خالد';
+    const hardSub = (meta?.hardest_subject?.name && meta.hardest_subject.average > 0) 
+        ? `${meta.hardest_subject.name} (متوسط ${meta.hardest_subject.average}%)` 
+        : (meta?.hardest_subject?.name || 'لا توجد درجات مسجلة');
 
-    document.getElementById('aiBestSubject').textContent = bestSub;
-    document.getElementById('aiHardestSubject').textContent = hardSub;
-    document.getElementById('aiLowestExam').textContent = 'منتصف الفصل الأول (-12%)';
-    document.getElementById('aiHighestExam').textContent = 'الاختبار النهائي (+18%)';
-    document.getElementById('aiStrugglingStudents').textContent = lowNames || 'لا يوجد متعثرون';
-    document.getElementById('aiTopStudents').textContent = topNames;
+    const lowestEx = (meta?.lowest_exam?.name && meta.lowest_exam.average > 0) 
+        ? `${meta.lowest_exam.name} (متوسط ${meta.lowest_exam.average}%)` 
+        : (meta?.lowest_exam?.name || 'لا توجد بيانات');
+
+    const highestEx = (meta?.highest_exam?.name && meta.highest_exam.average > 0) 
+        ? `${meta.highest_exam.name} (متوسط ${meta.highest_exam.average}%)` 
+        : (meta?.highest_exam?.name || 'لا توجد بيانات');
+
+    const topNames = meta?.top_5?.map(s => s.name).join('، ');
+    const lowNames = meta?.bottom_5?.map(s => s.name).join('، ');
+
+    const elBest = document.getElementById('aiBestSubject');
+    const elHard = document.getElementById('aiHardestSubject');
+    const elLowEx = document.getElementById('aiLowestExam');
+    const elHighEx = document.getElementById('aiHighestExam');
+    const elStruggling = document.getElementById('aiStrugglingStudents');
+    const elTop = document.getElementById('aiTopStudents');
+
+    if (elBest) elBest.textContent = bestSub;
+    if (elHard) elHard.textContent = hardSub;
+    if (elLowEx) elLowEx.textContent = lowestEx;
+    if (elHighEx) elHighEx.textContent = highestEx;
+    if (elStruggling) elStruggling.textContent = lowNames || 'لا يوجد طلاب متعثرون';
+    if (elTop) elTop.textContent = topNames || 'لا يوجد طلاب متفوقون ممتاز';
 }
 
 /* ==========================================================================

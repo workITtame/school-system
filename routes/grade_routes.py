@@ -57,6 +57,59 @@ def manage_grades():
     
     active_sched = ExamSchedule.query.filter_by(is_deleted=False).order_by(ExamSchedule.ScheduleID.desc()).first()
 
+    # Dynamic Subject Averages
+    subject_stats = []
+    for sub in subjects:
+        sub_scores = [float(m.Score) for m in valid_marks if m.SubID == sub.SubID and m.Score is not None]
+        sub_avg = round(sum(sub_scores) / len(sub_scores), 1) if sub_scores else 0.0
+        subject_stats.append({"name": sub.SubName, "average": sub_avg})
+
+    sorted_sub_with_scores = [s for s in subject_stats if s["average"] > 0]
+    if sorted_sub_with_scores:
+        sorted_sub_with_scores.sort(key=lambda x: x["average"], reverse=True)
+        best_subject_str = f"{sorted_sub_with_scores[0]['name']} (متوسط {sorted_sub_with_scores[0]['average']}%)"
+        hardest_subject_str = f"{sorted_sub_with_scores[-1]['name']} (متوسط {sorted_sub_with_scores[-1]['average']}%)"
+    else:
+        best_subject_str = "لا توجد درجات مسجلة"
+        hardest_subject_str = "لا توجد درجات مسجلة"
+
+    # Dynamic Exam Trends
+    exam_trends = []
+    for ex in exams:
+        ex_scores = [float(m.Score) for m in valid_marks if m.ExamID == ex.ExamID and m.Score is not None]
+        ex_avg = round(sum(ex_scores) / len(ex_scores), 1) if ex_scores else 0.0
+        exam_trends.append({"name": ex.ExamName, "average": ex_avg})
+
+    sorted_exam_with_scores = [e for e in exam_trends if e["average"] > 0]
+    if sorted_exam_with_scores:
+        sorted_exam_with_scores.sort(key=lambda x: x["average"], reverse=True)
+        highest_exam_str = f"{sorted_exam_with_scores[0]['name']} (متوسط {sorted_exam_with_scores[0]['average']}%)"
+        lowest_exam_str = f"{sorted_exam_with_scores[-1]['name']} (متوسط {sorted_exam_with_scores[-1]['average']}%)"
+    else:
+        highest_exam_str = "لا توجد بيانات"
+        lowest_exam_str = "لا توجد بيانات"
+
+    # Student Rankings & AI Insights
+    student_avg_map = {}
+    for m in valid_marks:
+        if m.Score is not None:
+            student_avg_map.setdefault(m.SID, []).append(float(m.Score))
+
+    top_students_list = []
+    struggling_students_list = []
+    for sid, score_list in student_avg_map.items():
+        st_obj = Student.query.get(sid)
+        if st_obj and not getattr(st_obj, 'is_deleted', False):
+            st_name = getattr(st_obj, 'SName', None) or getattr(st_obj, 'StudentName', 'طالب')
+            st_avg = round(sum(score_list) / len(score_list), 1)
+            if st_avg >= 90:
+                top_students_list.append(st_name)
+            elif st_avg < 60:
+                struggling_students_list.append(st_name)
+
+    top_students_str = "، ".join(top_students_list[:3]) if top_students_list else "لا يوجد طلاب متفوقون ممتاز"
+    struggling_students_str = "، ".join(struggling_students_list[:3]) if struggling_students_list else "لا يوجد طلاب متعثرون"
+
     stats = {
         "total_students": total_students,
         "total_exams": total_exams,
@@ -71,10 +124,18 @@ def manage_grades():
         "pass_rate": pass_rate,
         "fail_rate": fail_rate,
         "rating_label": rating_label,
-        "active_exam_name": active_sched.ExamName if active_sched else 'اختبار شهري',
-        "active_subject_name": active_sched.subject.SubName if active_sched and active_sched.subject else 'القرآن الكريم',
-        "active_class_name": active_sched.school_class.CName if active_sched and active_sched.school_class else 'الأول',
-        "active_section_name": active_sched.section.SectionName if active_sched and active_sched.section else 'شعبة أ'
+        "active_exam_name": active_sched.ExamName if active_sched else (exams[0].ExamName if exams else 'اختبار شهري'),
+        "active_subject_name": active_sched.subject.SubName if active_sched and active_sched.subject else (subjects[0].SubName if subjects else 'المادة العامة'),
+        "active_class_name": active_sched.school_class.CName if active_sched and active_sched.school_class else (classes[0].CName if classes else 'الصف العام'),
+        "active_section_name": active_sched.section.SectionName if active_sched and active_sched.section else (sections[0].SectionName if sections else 'جميع الشعب'),
+        "best_subject": best_subject_str,
+        "hardest_subject": hardest_subject_str,
+        "highest_exam": highest_exam_str,
+        "lowest_exam": lowest_exam_str,
+        "top_students": top_students_str,
+        "struggling_students": struggling_students_str,
+        "subject_stats": subject_stats,
+        "exam_trends": exam_trends
     }
 
     all_students = Student.query.filter_by(is_deleted=False).order_by(Student.SName).all()

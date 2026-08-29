@@ -786,9 +786,14 @@ def get_class_grades():
             subject_stats.append({"name": sub.SubName, "average": avg})
 
         # Sort subjects to find best & hardest
-        sorted_subjects = sorted(subject_stats, key=lambda x: x["average"], reverse=True)
-        best_subject = sorted_subjects[0] if sorted_subjects else {"name": "الرياضيات", "average": 85.0}
-        hardest_subject = sorted_subjects[-1] if sorted_subjects else {"name": "الفيزياء", "average": 62.0}
+        valid_sub_stats = [s for s in subject_stats if s["average"] > 0]
+        if valid_sub_stats:
+            valid_sub_stats.sort(key=lambda x: x["average"], reverse=True)
+            best_subject = valid_sub_stats[0]
+            hardest_subject = valid_sub_stats[-1]
+        else:
+            best_subject = {"name": "لا توجد درجات مسجلة", "average": 0.0}
+            hardest_subject = {"name": "لا توجد درجات مسجلة", "average": 0.0}
 
         # Exam trends
         exams = TypeExams.query.filter_by(is_deleted=False).all()
@@ -797,6 +802,15 @@ def get_class_grades():
             ex_scores = [float(m.Score) for m in all_marks if m.ExamID == ex.ExamID and m.Score is not None]
             avg = round(sum(ex_scores) / len(ex_scores), 1) if ex_scores else 0.0
             exam_trends.append({"name": ex.ExamName, "average": avg})
+
+        valid_exam_trends = [e for e in exam_trends if e["average"] > 0]
+        if valid_exam_trends:
+            valid_exam_trends.sort(key=lambda x: x["average"], reverse=True)
+            highest_exam = valid_exam_trends[0]
+            lowest_exam = valid_exam_trends[-1]
+        else:
+            highest_exam = {"name": "لا توجد بيانات", "average": 0.0}
+            lowest_exam = {"name": "لا توجد بيانات", "average": 0.0}
 
         # Top 5 and Bottom 5 Students
         student_avg_map = {}
@@ -809,8 +823,8 @@ def get_class_grades():
         student_rankings = []
         for sid, score_list in student_avg_map.items():
             st_obj = Student.query.get(sid)
-            if st_obj and not st_obj.is_deleted:
-                st_name = st_obj.SName if hasattr(st_obj, 'SName') else st_obj.StudentName
+            if st_obj and not getattr(st_obj, 'is_deleted', False):
+                st_name = getattr(st_obj, 'SName', None) or getattr(st_obj, 'StudentName', 'طالب')
                 st_avg = round(sum(score_list) / len(score_list), 1)
                 student_rankings.append({"sid": sid, "name": st_name, "average": st_avg})
 
@@ -818,18 +832,29 @@ def get_class_grades():
         top_5 = student_rankings[:5]
         bottom_5 = sorted([s for s in student_rankings if s["average"] < 60], key=lambda x: x["average"])[:5]
 
+        from models.academic import ExamSchedule
+        sched_query = ExamSchedule.query.filter_by(is_deleted=False)
+        if class_id: sched_query = sched_query.filter_by(CID=class_id)
+        if section_id: sched_query = sched_query.filter_by(SectionID=section_id)
+        if subject_id: sched_query = sched_query.filter_by(SubID=subject_id)
+        if term_id: sched_query = sched_query.filter_by(T_ID=term_id)
+        total_active_exams = 1 if exam_id else sched_query.count()
+
+        filtered_scores = [m["Score"] for m in results if m["Score"] is not None]
         meta = {
-            "total_system_students": Student.query.filter_by(is_deleted=False).count(),
-            "total_system_exams": len(exams),
-            "total_system_subjects": len(subjects),
-            "total_marks_recorded": len(all_marks),
-            "overall_avg": round(sum(scores)/len(scores), 1) if scores else 0.0,
-            "overall_max": max(scores) if scores else 0.0,
-            "overall_min": min(scores) if scores else 0.0,
+            "total_system_students": len(students),
+            "total_system_exams": total_active_exams,
+            "total_system_subjects": 1 if subject_id else len(subjects),
+            "total_marks_recorded": len(filtered_scores),
+            "overall_avg": round(sum(filtered_scores)/len(filtered_scores), 1) if filtered_scores else (round(sum(scores)/len(scores), 1) if scores else 0.0),
+            "overall_max": max(filtered_scores) if filtered_scores else (max(scores) if scores else 0.0),
+            "overall_min": min(filtered_scores) if filtered_scores else (min(scores) if scores else 0.0),
             "subject_stats": subject_stats,
             "exam_trends": exam_trends,
             "best_subject": best_subject,
             "hardest_subject": hardest_subject,
+            "highest_exam": highest_exam,
+            "lowest_exam": lowest_exam,
             "top_5": top_5,
             "bottom_5": bottom_5
         }
