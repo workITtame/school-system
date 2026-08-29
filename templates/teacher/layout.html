@@ -96,6 +96,11 @@
                 </span>
 
                 <div class="d-flex align-items-center gap-3 ms-auto">
+                    <button type="button" class="btn btn-light rounded-pill px-3 py-1 me-2 border font-monospace extra-small d-none d-md-flex align-items-center gap-2 shadow-sm" onclick="openGlobalSpotlightModal()" title="البحث السريع والاختصارات (Ctrl+K)">
+                        <i class="fa-solid fa-magnifying-glass text-primary"></i>
+                        <span class="text-muted">بحث سريع...</span>
+                        <kbd class="bg-white border rounded text-muted px-1 small" style="font-size: 10px;">Ctrl K</kbd>
+                    </button>
                     <!-- Quick Theme Mode Toggle Button -->
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle me-1 d-flex align-items-center justify-content-center shadow-sm" id="globalThemeToggleBtn" onclick="toggleGlobalTheme()" style="width: 38px; height: 38px;" title="التبديل بين الوضع الليلي والنهاري">
                         <i class="fa-solid fa-moon text-warning fs-6" id="globalThemeIcon"></i>
@@ -186,4 +191,130 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- GLOBAL SPOTLIGHT SEARCH MODAL (Ctrl + K FOR TEACHER WORKSPACE) -->
+<div class="modal fade" id="globalSpotlightModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden font-cairo">
+            <div class="modal-header border-bottom p-3 bg-light">
+                <div class="input-group input-group-lg border-0">
+                    <span class="input-group-text bg-transparent border-0 text-primary"><i class="fa-solid fa-magnifying-glass fs-4"></i></span>
+                    <input type="text" id="globalSpotlightInput" class="form-control border-0 bg-transparent font-monospace text-dark fs-5 shadow-none" placeholder="ابحث في أقسام مساحة المعلم... (Ctrl + K)" oninput="filterGlobalSpotlight(this.value)">
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3" style="max-height: 420px; overflow-y: auto;">
+                <div id="globalSpotlightResults">
+                    <div class="text-muted extra-small font-monospace mb-2 fw-bold text-uppercase px-2">مساحة عمل المعلم والوصول السريع</div>
+                    <div class="list-group list-group-flush rounded-3 overflow-hidden" id="spotlightNavLinks">
+                        <a href="{{ url_for('teacher.dashboard') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-primary-subtle text-primary"><i class="fa-solid fa-house"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">لوحة تحكم المعلم</strong><small class="text-muted extra-small">الملخص الأكاديمي، الحصص اليومية، والمهام</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">صفحة</span>
+                        </a>
+                        <a href="{{ url_for('timetable.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-info-subtle text-info"><i class="fa-solid fa-calendar-days"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">جدولي الدراسي</strong><small class="text-muted extra-small">استعراض الحصص الأسبوعية والقاعات</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">جدول</span>
+                        </a>
+                        <a href="{{ url_for('students.home') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-success-subtle text-success"><i class="fa-solid fa-user-graduate"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">قائمة طلّابي والشعب</strong><small class="text-muted extra-small">عرض الطلاب المسجلين بالحسب والفصول</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">طلاب</span>
+                        </a>
+                        <a href="{{ url_for('attendance.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-warning-subtle text-warning"><i class="fa-solid fa-clipboard-user"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">الحضور والغياب</strong><small class="text-muted extra-small">رصد الحضور والغياب للطلاب للحصص اليومية</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">رصد</span>
+                        </a>
+                        <a href="{{ url_for('homework.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-primary-subtle text-primary"><i class="fa-solid fa-book-bookmark"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">الواجبات الدراسية</strong><small class="text-muted extra-small">إنشاء وتصحيح واجبات الطلاب</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">واجبات</span>
+                        </a>
+                        <a href="{{ url_for('exams.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-danger-subtle text-danger"><i class="fa-solid fa-file-signature"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">الاختبارات والتكليفات</strong><small class="text-muted extra-small">إنشاء نماذج الاختبارات والأدوات الأكاديمية</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">اختبارات</span>
+                        </a>
+                        <a href="{{ url_for('gradebook.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-warning-subtle text-warning"><i class="fa-solid fa-star"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">سجل الدرجات الشامل</strong><small class="text-muted extra-small">رصد وتقييم الدرجات والأعمال الفصلية</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">درجات</span>
+                        </a>
+                        <a href="{{ url_for('messages.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between border-bottom spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-primary-subtle text-primary"><i class="fa-regular fa-envelope"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">الرسائل والتواصل</strong><small class="text-muted extra-small">المحادثات والتواصل مع الإدارة وأولياء الأمور</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">تواصل</span>
+                        </a>
+                        <a href="{{ url_for('profile.index') }}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between spotlight-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 bg-info-subtle text-info"><i class="fa-solid fa-user-gear"></i></div>
+                                <div><strong class="d-block text-dark font-monospace">الملف الشخصي وإعداداتي</strong><small class="text-muted extra-small">تحديث البيانات والتفضيلات الشخصية</small></div>
+                            </div>
+                            <span class="badge bg-light text-muted border font-monospace extra-small">حسابي</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light p-2 justify-content-between">
+                <small class="text-muted extra-small font-monospace"><i class="fa-solid fa-keyboard me-1 text-primary"></i> استخدم اختصار <kbd class="bg-white border rounded px-1">Ctrl + K</kbd> أو <kbd class="bg-white border rounded px-1">Esc</kbd> للإغلاق</small>
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill extra-small font-monospace" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openGlobalSpotlightModal() {
+    const el = document.getElementById('globalSpotlightModal');
+    if (el) {
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+        setTimeout(() => {
+            const input = document.getElementById('globalSpotlightInput');
+            if (input) { input.value = ''; input.focus(); filterGlobalSpotlight(''); }
+        }, 200);
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openGlobalSpotlightModal();
+    }
+});
+
+function filterGlobalSpotlight(query) {
+    const q = query.toLowerCase().trim();
+    const items = document.querySelectorAll('.spotlight-item');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+            item.classList.remove('d-none');
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+}
+</script>
+
+{% block scripts %}{% endblock %}
+{% block extra_js %}{% endblock %}
 {% endblock %}

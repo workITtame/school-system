@@ -3,6 +3,35 @@
 {% block title %}مركز الرسائل والتواصل الأكاديمي | منصة عمل المعلم{% endblock %}
 
 {% block content %}
+<style>
+.messages-scroll-stream {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+.messages-scroll-stream .message-item-card,
+.messages-scroll-stream .card,
+.messages-scroll-stream .list-group-item {
+    flex-shrink: 0 !important;
+}
+.messages-scroll-stream::-webkit-scrollbar {
+    width: 6px;
+}
+.messages-scroll-stream::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 10px;
+}
+.messages-scroll-stream::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+.messages-scroll-stream::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+</style>
+
 <!-- Chart.js Engine -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -296,7 +325,7 @@
         
         <!-- LEFT SIDEBAR: ACTIVE CONVERSATIONS LIST (3 COLS) -->
         <div class="col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 overflow-hidden">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4 border-start border-4 border-primary">
                 <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
                     <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-comments text-primary me-2"></i>المحادثات النشطة</h6>
                     <button type="button" class="btn btn-sm btn-primary rounded-pill extra-small font-monospace fw-bold" data-bs-toggle="modal" data-bs-target="#newMessageModal" onclick="openNewMessageModal()">
@@ -311,7 +340,7 @@
                     </div>
                 </div>
 
-                <div class="list-group list-group-flush overflow-auto" style="max-height: 580px;" id="activeConversationsList">
+                <div class="list-group list-group-flush messages-scroll-stream" id="activeConversationsList">
                     {% if conversations and conversations|length > 0 %}
                         {% for conv in conversations %}
                         <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3 border-bottom active-conv-item" onclick="openChatThread('{{ conv.id }}', '{{ conv.sender.name if (conv.sender and conv.sender_id != current_user.id) else (conv.recipient.name if conv.recipient else 'مستخدم') }}', 'رسالة')">
@@ -379,7 +408,7 @@
             </div>
 
             <!-- MESSAGES CARDS CONTAINER -->
-            <div class="d-flex flex-column gap-3 mb-4" id="messagesCardsContainer">
+            <div class="d-flex flex-column gap-3 mb-4 messages-scroll-stream" id="messagesCardsContainer">
                 {% if message_cards and message_cards|length > 0 %}
                     {% for msg in message_cards %}
                     <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift message-item-card" data-type="{{ msg.type or 'inbox' }}" data-direction="{{ msg.type or 'inbox' }}" data-starred="{{ 'true' if msg.starred else 'false' }}">
@@ -540,7 +569,7 @@
     <!-- =================================================================== -->
     <!-- SECTION 4: FULL MESSAGE AUDIT HISTORY TABLE                         -->
     <!-- =================================================================== -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden fade-in">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden fade-in border-start border-4 border-primary">
         <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-table-list text-primary me-2"></i>سجل الرسائل الكامل والأرشيف</h6>
             <button type="button" class="btn btn-sm btn-outline-success rounded-pill font-monospace extra-small fw-bold" onclick="exportMessagesExcel()">
@@ -548,9 +577,9 @@
             </button>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive" style="max-height: 480px; overflow-y: auto; scrollbar-width: thin;">
             <table class="table table-hover align-middle mb-0 text-center custom-enterprise-table" id="messagesAuditTable">
-                <thead class="bg-light sticky-top">
+                <thead class="table-light sticky-top" style="position: sticky; top: 0; z-index: 5; background-color: #f8fafc;">
                     <tr>
                         <th class="py-3 font-monospace text-primary border-0" style="width: 40px;">#</th>
                         <th class="py-3 font-monospace text-primary border-0 text-start">المرسل</th>

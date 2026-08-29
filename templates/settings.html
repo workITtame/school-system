@@ -13,49 +13,42 @@
     <!-- ================================================================= -->
     <div id="settingsCatalogView" role="region" aria-label="كتالوج الإعدادات المعتمدة">
 
-        <!-- HERO HEADER -->
-        <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print"
-            style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%); color: #ffffff;">
-            <!-- Background Icon positioned at right (start-0 in RTL) with crisp 12% opacity -->
-            <div class="position-absolute start-0 top-0 ps-4 pt-2 pointer-events-none"
-                style="z-index: 1; opacity: 0.12;" aria-hidden="true">
-                <i class="fa-solid fa-sliders" style="font-size: 8rem; color: #ffffff;"></i>
-            </div>
-
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative"
-                style="z-index: 10;">
-                <div>
-                    <nav aria-label="breadcrumb" class="mb-2">
-                        <ol class="breadcrumb mb-0 extra-small font-monospace opacity-75">
-                            <li class="breadcrumb-item"><a href="/" class="text-white text-decoration-none"><i
-                                        class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                            <li class="breadcrumb-item active text-white opacity-75" aria-current="page">مركز إعدادات
-                                النظام</li>
-                        </ol>
-                    </nav>
-                    <div class="d-flex align-items-center gap-3">
-                        <h2 class="fw-bold text-white mb-0 font-monospace">مركز إعدادات النظام والتهيئة الشاملة</h2>
-                        <span
-                            class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 font-monospace extra-small border border-white-50">مركز
-                            التهيئة والإعدادات الشاملة</span>
+        <!-- EXECUTIVE HERO HEADER -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 p-md-4 border-start border-4 border-primary no-print">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-circle bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-sliders fs-3"></i>
                     </div>
-                    <p class="text-white-50 mt-2 mb-0 extra-small font-monospace">
-                        إدارة بيانات المدرسة، تفاصيل الخادم وقاعدة البيانات، خيارات الأمان وحظر المحاولات الخاطئة، وحفظ
-                        النسخ الاحتياطي.
-                    </p>
+                    <div>
+                        <nav aria-label="breadcrumb" class="mb-1">
+                            <ol class="breadcrumb mb-0 extra-small font-monospace">
+                                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
+                                <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">مركز إعدادات النظام</li>
+                            </ol>
+                        </nav>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="fw-extrabold text-dark mb-0 font-cairo" style="font-size: 1.35rem;">مركز إعدادات النظام والتهيئة الشاملة</h4>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 font-monospace extra-small">
+                                مركز التهيئة والإعدادات الشاملة
+                            </span>
+                        </div>
+                        <p class="text-muted extra-small font-monospace mb-0" style="font-size: 0.82rem;">
+                            إدارة بيانات المدرسة، تفاصيل الخادم وقاعدة البيانات، خيارات الأمان وحظر المحاولات الخاطئة، وحفظ النسخ الاحتياطي.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap position-relative"
-                    style="z-index: 10;">
+                <div class="d-flex align-items-center gap-2 flex-wrap text-nowrap no-print">
                     <button type="button"
-                        class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 text-white border-white-50 hover-light"
+                        class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift"
                         onclick="exportSettingsMasterExcel()" aria-label="تصدير كتالوج الإعدادات بصيغة Excel">
-                        <i class="fa-solid fa-file-excel text-success fs-6"></i> <span>تصدير الإعدادات Excel</span>
+                        <i class="fa-solid fa-file-excel fs-6"></i> <span>تصدير الإعدادات Excel</span>
                     </button>
                     <button type="button"
-                        class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2"
+                        class="btn btn-light border text-dark rounded-pill px-3 py-2 fw-bold extra-small shadow-sm d-flex align-items-center gap-2 hover-lift"
                         onclick="window.print()" aria-label="طباعة أو حفظ الإعدادات بصيغة PDF">
-                        <i class="fa-solid fa-print fs-6"></i> <span>طباعة / PDF</span>
+                        <i class="fa-solid fa-print text-secondary fs-6"></i> <span>طباعة / PDF</span>
                     </button>
                     <button type="button"
                         class="btn btn-light border rounded-circle shadow-sm text-secondary hover-rotate flex-shrink-0"
@@ -489,28 +482,30 @@
     <div id="settingWorkspace" class="d-none" role="region" aria-label="مساحة عمل بروفايل الإعداد الفعال">
 
         <!-- WORKSPACE HERO HEADER -->
-        <div class="hero-header-card p-4 rounded-4 shadow-sm mb-4 border-0 position-relative overflow-hidden no-print"
-            style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: #ffffff;">
-
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative"
-                style="z-index: 10;">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <button type="button"
-                            class="btn btn-sm btn-outline-light rounded-pill px-3 extra-small font-monospace"
-                            onclick="closeSettingWorkspace()" aria-label="العودة إلى جدول كتالوج الإعدادات">
-                            <i class="fa-solid fa-arrow-right me-1"></i> العودة للكتالوج
-                        </button>
-                        <span class="badge bg-primary rounded-pill px-3 font-monospace extra-small"
-                            id="wsHeroCode">SET-GEN-01</span>
-                        <span
-                            class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 font-monospace extra-small"
-                            id="wsHeroCategory">المدرسة</span>
+        <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3 p-md-4 border-start border-4 border-primary no-print">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-circle bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px;">
+                        <i class="fa-solid fa-gears fs-3"></i>
                     </div>
-                    <h2 class="fw-bold text-white mb-1 font-monospace" id="wsHeroName">إعدادات المدرسة والتواصل</h2>
-                    <p class="text-white-50 mb-0 extra-small font-monospace" id="wsHeroDesc">
-                        بيانات ومُدخلات الإعداد المحدد المحسوبة مباشرة من قاعدة البيانات الحالية.
-                    </p>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button type="button"
+                                class="btn btn-sm btn-outline-secondary rounded-pill px-3 extra-small font-monospace"
+                                onclick="closeSettingWorkspace()" aria-label="العودة إلى جدول كتالوج الإعدادات">
+                                <i class="fa-solid fa-arrow-right me-1"></i> العودة للكتالوج
+                            </button>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 font-monospace extra-small"
+                                id="wsHeroCode">SET-GEN-01</span>
+                            <span
+                                class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 font-monospace extra-small"
+                                id="wsHeroCategory">المدرسة</span>
+                        </div>
+                        <h4 class="fw-extrabold text-dark mb-1 font-cairo" style="font-size: 1.35rem;" id="wsHeroName">إعدادات المدرسة والتواصل</h4>
+                        <p class="text-muted mb-0 extra-small font-monospace" id="wsHeroDesc">
+                            بيانات ومُدخلات الإعداد المحدد المحسوبة مباشرة من قاعدة البيانات الحالية.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

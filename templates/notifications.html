@@ -3,6 +3,40 @@
 {% block title %}مركز الإشعارات والتنبيهات | منصة عمل المعلم{% endblock %}
 
 {% block content %}
+<style>
+    .notifications-scroll-stream {
+        max-height: 580px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-left: 6px;
+        padding-right: 6px;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f8fafc;
+    }
+    .notifications-scroll-stream .notification-item-card,
+    .notifications-scroll-stream .card {
+        flex-shrink: 0 !important;
+    }
+
+    .notifications-scroll-stream::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .notifications-scroll-stream::-webkit-scrollbar-track {
+        background: #f8fafc;
+        border-radius: 10px;
+    }
+
+    .notifications-scroll-stream::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .notifications-scroll-stream::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
+</style>
+
 <!-- Chart.js Engine -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -15,37 +49,54 @@
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1 small text-muted font-monospace">
-                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a></li>
-                    <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">الإشعارات والتنبيهات</li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}"
+                            class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> الرئيسية</a>
+                    </li>
+                    <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">الإشعارات والتنبيهات
+                    </li>
                 </ol>
             </nav>
             <div class="d-flex align-items-center gap-3">
                 <h3 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-bell text-primary"></i> مركز الإشعارات والتنبيهات
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise SaaS</span>
+                    <span
+                        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace small px-3 py-1">Enterprise
+                        SaaS</span>
                 </h3>
             </div>
-            <p class="text-muted small mb-0 font-monospace">متابعة جميع الإشعارات والتنبيهات الصادرة من النظام والمدرسة والإدارة</p>
+            <p class="text-muted small mb-0 font-monospace">متابعة جميع الإشعارات والتنبيهات الصادرة من النظام والمدرسة
+                والإدارة</p>
         </div>
 
         <!-- TOP ACTIONS BUTTONS -->
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <a href="{{ url_for('messages.index') }}" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
+            <a href="{{ url_for('messages.index') }}"
+                class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
                 <i class="fa-solid fa-comments"></i> <span>مركز الرسائل</span>
             </a>
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="openNotificationsSettingsModal()">
+            <button type="button"
+                class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift"
+                onclick="openNotificationsSettingsModal()">
                 <i class="fa-solid fa-gear"></i> <span>تصفية الإعدادات</span>
             </button>
-            <button type="button" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="markAllNotificationsAsRead()">
+            <button type="button"
+                class="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift"
+                onclick="markAllNotificationsAsRead()">
                 <i class="fa-solid fa-check-double text-success"></i> <span>تحديد الكل كمقروء</span>
             </button>
-            <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="exportNotificationsExcel()">
+            <button type="button"
+                class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift"
+                onclick="exportNotificationsExcel()">
                 <i class="fa-solid fa-file-excel text-success"></i> <span>تصدير Excel</span>
             </button>
-            <button type="button" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="exportNotificationsPDF()">
+            <button type="button"
+                class="btn btn-outline-danger rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift"
+                onclick="exportNotificationsPDF()">
                 <i class="fa-solid fa-file-pdf text-danger"></i> <span>تصدير PDF</span>
             </button>
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" onclick="window.print()">
+            <button type="button"
+                class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift"
+                onclick="window.print()">
                 <i class="fa-solid fa-print"></i> <span>طباعة</span>
             </button>
         </div>
@@ -66,10 +117,13 @@
                             <i class="fa-solid fa-bell fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.total_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-layer-group me-1 text-primary"></i> إشعار</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.total_notifications if metrics
+                        else 0 }}</h4>
+                    <span class="extra-small text-muted font-monospace"><i
+                            class="fa-solid fa-layer-group me-1 text-primary"></i> إشعار</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ 100 if (metrics and metrics.total_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-primary" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.total_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -85,10 +139,13 @@
                             <i class="fa-solid fa-envelope fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.unread_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-clock me-1"></i> إشعار غير مقروء</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.unread_notifications
+                        if metrics else 0 }}</h4>
+                    <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-clock me-1"></i> إشعار
+                        غير مقروء</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ 100 if (metrics and metrics.unread_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.unread_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -104,10 +161,13 @@
                             <i class="fa-solid fa-envelope-open-text fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.read_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-check-double me-1"></i> إشعار مقروء</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.read_notifications if
+                        metrics else 0 }}</h4>
+                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-check-double me-1"></i>
+                        إشعار مقروء</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.read_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.read_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -123,10 +183,13 @@
                             <i class="fa-solid fa-triangle-exclamation fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.urgent_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-fire me-1"></i> إشعارات عاجلة</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.urgent_notifications
+                        if metrics else 0 }}</h4>
+                    <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-fire me-1"></i> إشعارات
+                        عاجلة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ 100 if (metrics and metrics.urgent_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.urgent_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -142,10 +205,13 @@
                             <i class="fa-solid fa-calendar-day fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-info">{{ metrics.today_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-info font-monospace"><i class="fa-solid fa-clock-rotate-left me-1"></i> إشعار اليوم</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-info">{{ metrics.today_notifications if
+                        metrics else 0 }}</h4>
+                    <span class="extra-small text-info font-monospace"><i
+                            class="fa-solid fa-clock-rotate-left me-1"></i> إشعار اليوم</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ 100 if (metrics and metrics.today_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-info" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.today_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -161,10 +227,13 @@
                             <i class="fa-solid fa-bolt fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.response_rate if (metrics and metrics.response_rate) else '0%' }}</h4>
-                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-circle-check me-1"></i> استجابة</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.response_rate if
+                        (metrics and metrics.response_rate) else '0%' }}</h4>
+                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-circle-check me-1"></i>
+                        استجابة</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.response_rate) else 0 }}%"></div>
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.response_rate) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -183,10 +252,13 @@
                             <i class="fa-solid fa-user-graduate fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.student_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-primary font-monospace"><i class="fa-solid fa-bullhorn me-1"></i> تنبيهات الطلاب</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace">{{ metrics.student_notifications if metrics
+                        else 0 }}</h4>
+                    <span class="extra-small text-primary font-monospace"><i class="fa-solid fa-bullhorn me-1"></i>
+                        تنبيهات الطلاب</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ 100 if (metrics and metrics.student_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-primary" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.student_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -202,10 +274,13 @@
                             <i class="fa-solid fa-users-between-lines fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.parent_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-house-user me-1"></i> تواصل أولياء الأمور</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-success">{{ metrics.parent_notifications
+                        if metrics else 0 }}</h4>
+                    <span class="extra-small text-success font-monospace"><i class="fa-solid fa-house-user me-1"></i>
+                        تواصل أولياء الأمور</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ 100 if (metrics and metrics.parent_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.parent_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -221,10 +296,13 @@
                             <i class="fa-solid fa-building-user fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.admin_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-bullhorn me-1"></i> تنبيهات إدارية</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-warning">{{ metrics.admin_notifications
+                        if metrics else 0 }}</h4>
+                    <span class="extra-small text-warning font-monospace"><i class="fa-solid fa-bullhorn me-1"></i>
+                        تنبيهات إدارية</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ 100 if (metrics and metrics.admin_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.admin_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -240,10 +318,13 @@
                             <i class="fa-solid fa-book-open fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-info">{{ metrics.homework_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-info font-monospace"><i class="fa-solid fa-tasks me-1"></i> واجبات منزلية</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-info">{{ metrics.homework_notifications
+                        if metrics else 0 }}</h4>
+                    <span class="extra-small text-info font-monospace"><i class="fa-solid fa-tasks me-1"></i> واجبات
+                        منزلية</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ 100 if (metrics and metrics.homework_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-info" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.homework_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -259,10 +340,13 @@
                             <i class="fa-solid fa-file-signature fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.exam_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-danger font-monospace"><i class="fa-solid fa-file-circle-check me-1"></i> جدول الاختبارات</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace text-danger">{{ metrics.exam_notifications if
+                        metrics else 0 }}</h4>
+                    <span class="extra-small text-danger font-monospace"><i
+                            class="fa-solid fa-file-circle-check me-1"></i> جدول الاختبارات</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ 100 if (metrics and metrics.exam_notifications) else 0 }}%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar"
+                            style="width: {{ 100 if (metrics and metrics.exam_notifications) else 0 }}%"></div>
                     </div>
                 </div>
             </div>
@@ -278,10 +362,14 @@
                             <i class="fa-solid fa-square-poll-vertical fs-5"></i>
                         </div>
                     </div>
-                    <h4 class="fw-extrabold text-dark mb-1 font-monospace" style="color: #7C3AED;">{{ metrics.grades_notifications if metrics else 0 }}</h4>
-                    <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-star me-1" style="color: #7C3AED;"></i> كشوف الدرجات</span>
+                    <h4 class="fw-extrabold text-dark mb-1 font-monospace" style="color: #7C3AED;">{{
+                        metrics.grades_notifications if metrics else 0 }}</h4>
+                    <span class="extra-small text-muted font-monospace"><i class="fa-solid fa-star me-1"
+                            style="color: #7C3AED;"></i> كشوف الدرجات</span>
                     <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar" style="background-color: #7C3AED; width: {{ 100 if (metrics and metrics.grades_notifications) else 0 }}%;"></div>
+                        <div class="progress-bar"
+                            style="background-color: #7C3AED; width: {{ 100 if (metrics and metrics.grades_notifications) else 0 }}%;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -298,13 +386,19 @@
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-4 col-lg-3">
                         <div class="input-group input-group-sm rounded-pill overflow-hidden border">
-                            <span class="input-group-text bg-white border-0 text-muted pe-2"><i class="fa-solid fa-search"></i></span>
-                            <input type="text" id="notifSearchInput" class="form-control border-0 ps-1 font-monospace extra-small" placeholder="بحث بعنوان أو محتوى الإشعار..." oninput="filterNotificationsStream(this.value)">
+                            <span class="input-group-text bg-white border-0 text-muted pe-2"><i
+                                    class="fa-solid fa-search"></i></span>
+                            <input type="text" id="notifSearchInput"
+                                class="form-control border-0 ps-1 font-monospace extra-small"
+                                placeholder="بحث بعنوان أو محتوى الإشعار..."
+                                oninput="filterNotificationsStream(this.value)">
                         </div>
                     </div>
 
                     <div class="col-6 col-md-2 col-lg-2">
-                        <select id="notifCategorySelect" class="form-select form-select-sm rounded-pill font-monospace extra-small" onchange="filterNotificationsStream()">
+                        <select id="notifCategorySelect"
+                            class="form-select form-select-sm rounded-pill font-monospace extra-small"
+                            onchange="filterNotificationsStream()">
                             <option value="">جميع الأنواع</option>
                             <option value="الاختبارات">الاختبارات</option>
                             <option value="الواجبات">الواجبات</option>
@@ -316,7 +410,9 @@
                     </div>
 
                     <div class="col-6 col-md-2 col-lg-2">
-                        <select id="notifClassSelect" class="form-select form-select-sm rounded-pill font-monospace extra-small" onchange="filterNotificationsStream()">
+                        <select id="notifClassSelect"
+                            class="form-select form-select-sm rounded-pill font-monospace extra-small"
+                            onchange="filterNotificationsStream()">
                             <option value="">جميع الصفوف</option>
                             {% for c in classes %}
                             <option value="{{ c.C_ID }}">{{ c.C_Name }}</option>
@@ -325,7 +421,9 @@
                     </div>
 
                     <div class="col-6 col-md-2 col-lg-2">
-                        <select id="notifSourceSelect" class="form-select form-select-sm rounded-pill font-monospace extra-small" onchange="filterNotificationsStream()">
+                        <select id="notifSourceSelect"
+                            class="form-select form-select-sm rounded-pill font-monospace extra-small"
+                            onchange="filterNotificationsStream()">
                             <option value="">جميع المصادر</option>
                             <option value="النظام">النظام</option>
                             <option value="الطلاب">الطلاب</option>
@@ -335,10 +433,13 @@
                     </div>
 
                     <div class="col-12 col-md-2 col-lg-3 text-end d-flex gap-2 justify-content-end">
-                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 font-monospace extra-small fw-bold">
+                        <button type="submit"
+                            class="btn btn-sm btn-primary rounded-pill px-4 font-monospace extra-small fw-bold">
                             <i class="fa-solid fa-filter me-1"></i> تصفية
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 font-monospace extra-small" onclick="resetNotificationsFilters()">
+                        <button type="button"
+                            class="btn btn-sm btn-outline-secondary rounded-pill px-3 font-monospace extra-small"
+                            onclick="resetNotificationsFilters()">
                             <i class="fa-solid fa-rotate-left me-1"></i> إعادة ضبط
                         </button>
                     </div>
@@ -350,29 +451,53 @@
     <!-- CATEGORY PILLS BAR -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
         <div class="card-body p-2 d-flex align-items-center gap-1 overflow-auto">
-            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active" onclick="switchNotificationsCategoryPill('all', this)">
-                <i class="fa-solid fa-bell me-1"></i> الكل <span class="badge bg-white text-primary rounded-pill ms-1">{{ stats.total_notifications or 0 }}</span>
+            <button type="button"
+                class="btn btn-sm btn-primary rounded-pill px-3 font-monospace extra-small fw-bold active"
+                onclick="switchNotificationsCategoryPill('all', this)">
+                <i class="fa-solid fa-bell me-1"></i> الكل <span
+                    class="badge bg-white text-primary rounded-pill ms-1">{{ stats.total_notifications or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('النظام', this)">
-                <i class="fa-solid fa-gear me-1"></i> النظام <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_notifications or stats.admin_count or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('النظام', this)">
+                <i class="fa-solid fa-gear me-1"></i> النظام <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_notifications or
+                    stats.admin_count or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الطلاب', this)">
-                <i class="fa-solid fa-user-graduate me-1"></i> الطلاب <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.student_notifications or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('الطلاب', this)">
+                <i class="fa-solid fa-user-graduate me-1"></i> الطلاب <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.student_notifications
+                    or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('أولياء الأمور', this)">
-                <i class="fa-solid fa-users-between-lines me-1"></i> أولياء الأمور <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.parent_notifications or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('أولياء الأمور', this)">
+                <i class="fa-solid fa-users-between-lines me-1"></i> أولياء الأمور <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.parent_notifications
+                    or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الإدارة', this)">
-                <i class="fa-solid fa-building-user me-1"></i> الإدارة <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_notifications or stats.admin_count or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('الإدارة', this)">
+                <i class="fa-solid fa-building-user me-1"></i> الإدارة <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.admin_notifications or
+                    stats.admin_count or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الاختبارات', this)">
-                <i class="fa-solid fa-file-signature me-1"></i> الاختبارات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.exam_notifications or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('الاختبارات', this)">
+                <i class="fa-solid fa-file-signature me-1"></i> الاختبارات <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.exam_notifications or
+                    0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الواجبات', this)">
-                <i class="fa-solid fa-book-open me-1"></i> الواجبات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.homework_notifications or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('الواجبات', this)">
+                <i class="fa-solid fa-book-open me-1"></i> الواجبات <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.homework_notifications
+                    or 0 }}</span>
             </button>
-            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small" onclick="switchNotificationsCategoryPill('الدرجات', this)">
-                <i class="fa-solid fa-chart-column me-1"></i> الدرجات <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.academic_count or 0 }}</span>
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 font-monospace extra-small"
+                onclick="switchNotificationsCategoryPill('الدرجات', this)">
+                <i class="fa-solid fa-chart-column me-1"></i> الدرجات <span
+                    class="badge bg-secondary bg-opacity-10 text-dark rounded-pill ms-1">{{ stats.academic_count or 0
+                    }}</span>
             </button>
         </div>
     </div>
@@ -381,71 +506,111 @@
     <!-- SECTION 4: Workspace Grid (Main Stream + Right Analytics Column)    -->
     <!-- =================================================================== -->
     <div class="row g-4 mb-4 fade-in">
-        
+
         <!-- LEFT COLUMN: NOTIFICATIONS STREAM CARDS LIST (8 COLS) -->
         <div class="col-lg-8">
-            
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-list-check text-primary me-2"></i>قائمة الإشعارات والتنبيهات المباشرة</h6>
-                <span class="text-muted font-monospace extra-small">عرض 1 - {{ notifications|length }} من {{ stats.total_notifications or 0 }} إشعار</span>
-            </div>
 
-            <!-- CARDS CONTAINER STREAM -->
-            <div class="d-flex flex-column gap-3 mb-4" id="notificationsCardsStream">
-                {% if notifications and notifications|length > 0 %}
-                    {% for n in notifications %}
-                    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden hover-lift notification-item-card" data-category="{{ n.module_name or 'النظام' }}">
-                        <div class="card-body p-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm {{ n.color_class }}" style="width: 48px; height: 48px;">
-                                        <i class="{{ n.icon }} fs-5"></i>
-                                    </div>
-                                    <div>
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <h6 class="fw-bold text-dark font-monospace mb-0">{{ n.title }}</h6>
-                                            {% if n.priority in ['urgent', 'high'] %}
-                                            <span class="badge bg-danger rounded-pill font-monospace extra-small px-3 py-1"><i class="fa-solid fa-fire me-1"></i>عاجل</span>
-                                            {% else %}
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small px-3 py-1">{{ n.module_name or 'إشعار' }}</span>
-                                            {% endif %}
+            <div
+                class="card border-0 shadow-sm rounded-4 bg-white p-3 p-md-4 mb-4 border-start border-4 border-primary">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-circle bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center"
+                            style="width: 38px; height: 38px;">
+                            <i class="fa-solid fa-list-check fs-6"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-0 font-cairo" style="font-size: 1.05rem;">قائمة الإشعارات
+                            والتنبيهات المباشرة</h6>
+                    </div>
+                    <span
+                        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small px-3 py-2">عرض
+                        1 - {{ notifications|length }} من {{ stats.total_notifications or 0 }} إشعار</span>
+                </div>
+
+                <!-- SCROLL STREAM CONTAINER -->
+                <div class="notifications-scroll-stream" id="notificationsScrollContainer">
+                    <div class="d-flex flex-column gap-3 py-1" id="notificationsCardsStream">
+                        {% if notifications and notifications|length > 0 %}
+                        {% for n in notifications %}
+                        <div class="card border-0 shadow-sm rounded-4 bg-light-subtle overflow-hidden hover-lift notification-item-card border"
+                            data-category="{{ n.module_name or 'النظام' }}">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+                                    <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                                        <div class="rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm {{ n.color_class }}"
+                                            style="width: 48px; height: 48px; flex-shrink: 0;">
+                                            <i class="{{ n.icon }} fs-5"></i>
                                         </div>
-                                        <p class="text-muted extra-small font-monospace mb-1">{{ n.description }}</p>
-                                        <small class="text-muted font-monospace extra-small"><i class="fa-regular fa-clock me-1 text-primary"></i> {{ n.timestamp or n.time }}</small>
+                                        <div style="min-width: 0;">
+                                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                                <h6 class="fw-bold text-dark font-monospace mb-0 text-truncate">{{
+                                                    n.title }}</h6>
+                                                {% if n.priority in ['urgent', 'high'] %}
+                                                <span
+                                                    class="badge bg-danger rounded-pill font-monospace extra-small px-3 py-1"><i
+                                                        class="fa-solid fa-fire me-1"></i>عاجل</span>
+                                                {% else %}
+                                                <span
+                                                    class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace extra-small px-3 py-1">{{
+                                                    n.module_name or 'إشعار' }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="text-muted extra-small font-monospace mb-1 text-break">{{
+                                                n.description }}</p>
+                                            <small class="text-muted font-monospace extra-small"><i
+                                                    class="fa-regular fa-clock me-1 text-primary"></i> {{ n.timestamp or
+                                                n.time }}</small>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-light border text-primary rounded-circle p-2 me-1" onclick="viewNotificationDetails({{ n.id }}, '{{ n.title }}', '{{ n.description }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                                        <button type="button" class="btn btn-light border text-success rounded-circle p-2 me-1" onclick="markSingleNotificationRead(this, {{ n.id }})" title="تعلم كمقروء"><i class="fa-solid fa-check"></i></button>
-                                        <button type="button" class="btn btn-light border text-warning rounded-circle p-2 me-1" onclick="pinNotificationCard(this)" title="تثبيت"><i class="fa-solid fa-thumbtack"></i></button>
-                                        <button type="button" class="btn btn-light border text-danger rounded-circle p-2" onclick="deleteNotificationCard(this, {{ n.id }})" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button"
+                                                class="btn btn-light border text-primary rounded-circle p-2 me-1"
+                                                onclick="viewNotificationDetails({{ n.id }}, '{{ n.title }}', '{{ n.description }}')"
+                                                title="عرض"><i class="fa-solid fa-eye"></i></button>
+                                            <button type="button"
+                                                class="btn btn-light border text-success rounded-circle p-2 me-1"
+                                                onclick="markSingleNotificationRead(this, {{ n.id }})"
+                                                title="تعلم كمقروء"><i class="fa-solid fa-check"></i></button>
+                                            <button type="button"
+                                                class="btn btn-light border text-warning rounded-circle p-2 me-1"
+                                                onclick="pinNotificationCard(this)" title="تثبيت"><i
+                                                    class="fa-solid fa-thumbtack"></i></button>
+                                            <button type="button"
+                                                class="btn btn-light border text-danger rounded-circle p-2"
+                                                onclick="deleteNotificationCard(this, {{ n.id }})" title="حذف"><i
+                                                    class="fa-solid fa-trash"></i></button>
+                                        </div>
                                     </div>
-                                </div>
 
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="card border-0 shadow-sm rounded-4 bg-white p-5 text-center text-muted font-monospace">
-                        <i class="fa-solid fa-bell-slash fs-2 d-block mb-3 text-primary opacity-50"></i>
-                        <h6 class="fw-bold text-dark">لا توجد إشعارات جديدة حالياً</h6>
-                        <p class="extra-small text-muted mb-3">مركز الإشعارات محدّث ونظيف، ستظهر هنا جميع تنبيهات النظام والواجبات والاختبارات الجديدة.</p>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4" onclick="openCreateNotificationModal()">
-                                <i class="fa-solid fa-plus me-1"></i> إنشاء إشعار جديد
-                            </button>
+                        {% endfor %}
+                        {% else %}
+                        <div
+                            class="card border-0 shadow-sm rounded-4 bg-white p-5 text-center text-muted font-monospace">
+                            <i class="fa-solid fa-bell-slash fs-2 d-block mb-3 text-primary opacity-50"></i>
+                            <h6 class="fw-bold text-dark">لا توجد إشعارات جديدة حالياً</h6>
+                            <p class="extra-small text-muted mb-3">مركز الإشعارات محدّث ونظيف، ستظهر هنا جميع تنبيهات
+                                النظام والواجبات والاختبارات الجديدة.</p>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4"
+                                    onclick="openCreateNotificationModal()">
+                                    <i class="fa-solid fa-plus me-1"></i> إنشاء إشعار جديد
+                                </button>
+                            </div>
                         </div>
+                        {% endif %}
                     </div>
-                {% endif %}
+                </div>
             </div>
 
             <!-- AI COMMUNICATION INSIGHTS CARD -->
             {% if notifications and notifications|length > 0 %}
-            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden border-start border-4 border-primary">
+            <div
+                class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden border-start border-4 border-primary">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="d-flex align-items-center gap-2">
@@ -453,17 +618,23 @@
                                 <i class="fa-solid fa-brain fs-4"></i>
                             </div>
                             <div>
-                                <h5 class="fw-bold text-dark mb-0 font-monospace">ذكاء الإشعارات الأكاديمي (AI Insights)</h5>
-                                <small class="text-muted extra-small font-monospace">تحليلات وتوصيات النظام الذكية للتنبيهات المكررة</small>
+                                <h5 class="fw-bold text-dark mb-0 font-monospace">ذكاء الإشعارات الأكاديمي (AI Insights)
+                                </h5>
+                                <small class="text-muted extra-small font-monospace">تحليلات وتوصيات النظام الذكية
+                                    للتنبيهات المكررة</small>
                             </div>
                         </div>
                     </div>
 
                     <div class="row g-2 font-monospace extra-small">
-                        <div class="col-6"><strong>إجمالي الإشعارات:</strong> <span class="text-primary fw-bold">{{ stats.total_notifications or 0 }}</span></div>
-                        <div class="col-6"><strong>غير المقروءة:</strong> <span class="text-success fw-bold">{{ stats.unread_count or 0 }}</span></div>
-                        <div class="col-6"><strong>إشعارات اليوم:</strong> <span class="text-purple fw-bold" style="color: #7C3AED;">{{ stats.today_count or 0 }}</span></div>
-                        <div class="col-6"><strong>إشعارات عاجلة:</strong> <span class="text-danger fw-bold">{{ stats.priority_count or 0 }}</span></div>
+                        <div class="col-6"><strong>إجمالي الإشعارات:</strong> <span class="text-primary fw-bold">{{
+                                stats.total_notifications or 0 }}</span></div>
+                        <div class="col-6"><strong>غير المقروءة:</strong> <span class="text-success fw-bold">{{
+                                stats.unread_count or 0 }}</span></div>
+                        <div class="col-6"><strong>إشعارات اليوم:</strong> <span class="text-purple fw-bold"
+                                style="color: #7C3AED;">{{ stats.today_count or 0 }}</span></div>
+                        <div class="col-6"><strong>إشعارات عاجلة:</strong> <span class="text-danger fw-bold">{{
+                                stats.priority_count or 0 }}</span></div>
                     </div>
                 </div>
             </div>
@@ -472,28 +643,37 @@
             <!-- QUICK ACTIONS GRID -->
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i class="fa-solid fa-bolt text-warning me-2"></i>إجراءات الإشعارات السريعة</h6>
+                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i
+                            class="fa-solid fa-bolt text-warning me-2"></i>إجراءات الإشعارات السريعة</h6>
                     <div class="row g-2">
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 p-3 rounded-3 text-center hover-lift" onclick="openCreateNotificationModal()">
+                            <button type="button"
+                                class="btn btn-outline-primary w-100 p-3 rounded-3 text-center hover-lift"
+                                onclick="openCreateNotificationModal()">
                                 <i class="fa-solid fa-plus-circle fs-3 d-block mb-1 text-primary"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">إنشاء إشعار</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-warning w-100 p-3 rounded-3 text-center hover-lift" onclick="openSendUrgentAlertModal()">
+                            <button type="button"
+                                class="btn btn-outline-warning w-100 p-3 rounded-3 text-center hover-lift"
+                                onclick="openSendUrgentAlertModal()">
                                 <i class="fa-solid fa-bullhorn fs-3 d-block mb-1 text-warning"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">إرسال تنبيه عاجل</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-success w-100 p-3 rounded-3 text-center hover-lift" onclick="exportNotificationsExcel()">
+                            <button type="button"
+                                class="btn btn-outline-success w-100 p-3 rounded-3 text-center hover-lift"
+                                onclick="exportNotificationsExcel()">
                                 <i class="fa-solid fa-file-excel fs-3 d-block mb-1 text-success"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">تصدير Excel</strong>
                             </button>
                         </div>
                         <div class="col-6 col-md-3">
-                            <button type="button" class="btn btn-outline-danger w-100 p-3 rounded-3 text-center hover-lift" onclick="exportNotificationsPDF()">
+                            <button type="button"
+                                class="btn btn-outline-danger w-100 p-3 rounded-3 text-center hover-lift"
+                                onclick="exportNotificationsPDF()">
                                 <i class="fa-solid fa-file-pdf fs-3 d-block mb-1 text-danger"></i>
                                 <strong class="d-block extra-small font-monospace text-dark">تصدير PDF</strong>
                             </button>
@@ -505,13 +685,15 @@
         </div>
 
         <!-- RIGHT SIDEBAR: ANALYTICS CHARTS COLUMN (4 COLS - MATCHING SCREENSHOT) -->
-        <div class="col-lg-4" id="analyticsColumn">
-            
+        <div class="col-lg-4" id="analyticsColumn" style="position: sticky; top: 80px; align-self: flex-start;">
+
             <!-- WIDGET 1: Donut Chart - Notifications Breakdown by Source -->
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white fade-in">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i class="fa-solid fa-chart-pie text-primary me-2"></i>توزيع الإشعارات</h6>
-                    <div class="position-relative d-flex align-items-center justify-content-center" style="height: 220px;">
+                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i
+                            class="fa-solid fa-chart-pie text-primary me-2"></i>توزيع الإشعارات</h6>
+                    <div class="position-relative d-flex align-items-center justify-content-center"
+                        style="height: 220px;">
                         <canvas id="donutNotificationsChart"></canvas>
                     </div>
                 </div>
@@ -521,8 +703,9 @@
             {% if notifications and notifications|length > 0 %}
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white fade-in">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i class="fa-solid fa-ranking-star text-warning me-2"></i>الإشعارات الأكثر تكراراً</h6>
-                    
+                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i
+                            class="fa-solid fa-ranking-star text-warning me-2"></i>الإشعارات الأكثر تكراراً</h6>
+
                     <div class="mb-3">
                         <div class="d-flex justify-content-between font-monospace extra-small mb-1">
                             <span class="fw-bold">نتائج الاختبارات</span>
@@ -539,15 +722,24 @@
             <!-- WIDGET 3: Urgent Alerts Card -->
             {% if stats.priority_count and stats.priority_count > 0 %}
             <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white fade-in border-start border-4 border-danger">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-dark mb-3 font-monospace"><i class="fa-solid fa-fire text-danger me-2"></i>الإشعارات العاجلة</h6>
-                    <div class="list-group list-group-flush font-monospace extra-small mb-3">
-                        {% for n in notifications if n.priority in ['urgent', 'high'] %}
-                        <div class="list-group-item p-2 border-bottom border-light">
-                            <strong class="d-block text-danger">{{ n.title }}</strong>
-                            <small class="text-muted">🕒 {{ n.timestamp or n.time }}</small>
+                <div class="card-body p-3 p-md-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold text-dark mb-0 font-monospace"><i
+                                class="fa-solid fa-fire text-danger me-2"></i>الإشعارات العاجلة</h6>
+                        <span
+                            class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-monospace extra-small">{{
+                            stats.priority_count or 0 }} تنبيه</span>
+                    </div>
+                    <div style="max-height: 280px; overflow-y: auto; scrollbar-width: thin;" class="pe-1">
+                        <div class="list-group list-group-flush font-monospace extra-small">
+                            {% for n in notifications if n.priority in ['urgent', 'high'] %}
+                            <div class="list-group-item p-2 border-bottom border-light bg-transparent">
+                                <strong class="d-block text-danger mb-1">{{ n.title }}</strong>
+                                <small class="text-muted"><i class="fa-regular fa-clock me-1 text-danger"></i> {{
+                                    n.timestamp or n.time }}</small>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -560,17 +752,22 @@
     <!-- =================================================================== -->
     <!-- SECTION 5: FULL NOTIFICATIONS AUDIT HISTORY TABLE                   -->
     <!-- =================================================================== -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden fade-in">
+    <div
+        class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden fade-in border-start border-4 border-primary">
         <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <h6 class="fw-bold text-dark mb-0 font-monospace"><i class="fa-solid fa-table-list text-primary me-2"></i>سجل التنبيهات والأرشيف الكامل</h6>
-            <button type="button" class="btn btn-sm btn-outline-success rounded-pill font-monospace extra-small fw-bold" onclick="exportNotificationsExcel()">
+            <h6 class="fw-bold text-dark mb-0 font-monospace"><i
+                    class="fa-solid fa-table-list text-primary me-2"></i>سجل التنبيهات والأرشيف الكامل</h6>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill font-monospace extra-small fw-bold"
+                onclick="exportNotificationsExcel()">
                 <i class="fa-solid fa-file-excel me-1"></i> تصدير الكشف Excel
             </button>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 text-center custom-enterprise-table" id="notificationsAuditTable">
-                <thead class="bg-light sticky-top">
+        <div class="table-responsive" style="max-height: 480px; overflow-y: auto; scrollbar-width: thin;">
+            <table class="table table-hover align-middle mb-0 text-center custom-enterprise-table"
+                id="notificationsAuditTable">
+                <thead class="table-light sticky-top"
+                    style="position: sticky; top: 0; z-index: 5; background-color: #f8fafc;">
                     <tr>
                         <th class="py-3 font-monospace text-primary border-0" style="width: 40px;">#</th>
                         <th class="py-3 font-monospace text-primary border-0 text-start">عنوان الإشعار</th>
@@ -584,34 +781,44 @@
                 </thead>
                 <tbody>
                     {% if notifications and notifications|length > 0 %}
-                        {% for n in notifications %}
-                        <tr class="align-middle">
-                            <td class="fw-bold text-muted font-monospace">{{ n.id }}</td>
-                            <td class="text-start font-monospace extra-small fw-bold">{{ n.title }}</td>
-                            <td><span class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small px-3 py-1">{{ n.module_name or n.category or 'عام' }}</span></td>
-                            <td class="font-monospace extra-small text-muted">{{ n.source or 'النظام' }}</td>
-                            <td class="font-monospace extra-small">{{ n.class_name or '—' }}</td>
-                            <td>
-                                {% if n.read %}
-                                <span class="badge bg-success-subtle text-success rounded-pill font-monospace extra-small px-3 py-1">مقروء</span>
-                                {% else %}
-                                <span class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small px-3 py-1">غير مقروء</span>
-                                {% endif %}
-                            </td>
-                            <td class="font-monospace extra-small text-muted">{{ n.timestamp or n.time or '—' }}</td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1" onclick="viewNotificationDetails({{ n.id }}, '{{ n.title }}', '{{ n.description }}')" title="عرض"><i class="fa-solid fa-eye"></i></button>
-                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle p-1" onclick="deleteNotificationCard(this)" title="حذف"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    {% for n in notifications %}
+                    <tr class="align-middle">
+                        <td class="fw-bold text-muted font-monospace">{{ n.id }}</td>
+                        <td class="text-start font-monospace extra-small fw-bold">{{ n.title }}</td>
+                        <td><span
+                                class="badge bg-primary-subtle text-primary rounded-pill font-monospace extra-small px-3 py-1">{{
+                                n.module_name or n.category or 'عام' }}</span></td>
+                        <td class="font-monospace extra-small text-muted">{{ n.source or 'النظام' }}</td>
+                        <td class="font-monospace extra-small">{{ n.class_name or '—' }}</td>
+                        <td>
+                            {% if n.read %}
+                            <span
+                                class="badge bg-success-subtle text-success rounded-pill font-monospace extra-small px-3 py-1">مقروء</span>
+                            {% else %}
+                            <span
+                                class="badge bg-warning-subtle text-warning rounded-pill font-monospace extra-small px-3 py-1">غير
+                                مقروء</span>
+                            {% endif %}
+                        </td>
+                        <td class="font-monospace extra-small text-muted">{{ n.timestamp or n.time or '—' }}</td>
+                        <td>
+                            <button type="button"
+                                class="btn btn-sm btn-light border text-primary rounded-circle p-1 me-1"
+                                onclick="viewNotificationDetails({{ n.id }}, '{{ n.title }}', '{{ n.description }}')"
+                                title="عرض"><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle p-1"
+                                onclick="deleteNotificationCard(this)" title="حذف"><i
+                                    class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
                     {% else %}
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted font-monospace">
-                                <i class="fa-solid fa-bell-slash fs-4 d-block mb-2 opacity-50"></i>
-                                لا توجد إشعارات مسجلة في الأرشيف حالياً.
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted font-monospace">
+                            <i class="fa-solid fa-bell-slash fs-4 d-block mb-2 opacity-50"></i>
+                            لا توجد إشعارات مسجلة في الأرشيف حالياً.
+                        </td>
+                    </tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -629,8 +836,10 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-primary text-white border-0 py-3">
-                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0"><i class="fa-solid fa-plus-circle me-2"></i> إنشاء إشعار جديد</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0"><i class="fa-solid fa-plus-circle me-2"></i>
+                    إنشاء إشعار جديد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <form onsubmit="submitNewNotificationForm(event)">
@@ -646,13 +855,16 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold extra-small font-monospace">عنوان الإشعار</label>
-                        <input type="text" class="form-control rounded-pill font-monospace extra-small" id="createNotifTitle" placeholder="عنوان الإشعار..." required>
+                        <input type="text" class="form-control rounded-pill font-monospace extra-small"
+                            id="createNotifTitle" placeholder="عنوان الإشعار..." required>
                     </div>
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold extra-small font-monospace">تفاصيل الإشعار</label>
-                        <textarea class="form-control rounded-4 font-monospace extra-small" id="createNotifDesc" rows="3" placeholder="نص تفاصيل الإشعار والتنبيه..." required></textarea>
+                        <textarea class="form-control rounded-4 font-monospace extra-small" id="createNotifDesc"
+                            rows="3" placeholder="نص تفاصيل الإشعار والتنبيه..." required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-bold font-monospace shadow-sm">
+                    <button type="submit"
+                        class="btn btn-primary rounded-pill w-100 py-2 fw-bold font-monospace shadow-sm">
                         <i class="fa-solid fa-bullhorn me-1"></i> نشر الإشعار فورياً
                     </button>
                 </form>
@@ -666,14 +878,17 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-primary text-white border-0 py-3">
-                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0" id="notifDetailModalTitle"><i class="fa-solid fa-bell me-2"></i> تفاصيل الإشعار</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold font-monospace fs-6 mb-0" id="notifDetailModalTitle"><i
+                        class="fa-solid fa-bell me-2"></i> تفاصيل الإشعار</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 font-monospace" id="notifDetailModalBody">
                 <!-- Dynamic Content -->
             </div>
             <div class="modal-footer bg-light border-top p-3">
-                <button type="button" class="btn btn-secondary rounded-pill font-monospace extra-small px-4" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-secondary rounded-pill font-monospace extra-small px-4"
+                    data-bs-dismiss="modal">إغلاق</button>
             </div>
         </div>
     </div>
@@ -684,8 +899,10 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden font-monospace">
             <div class="modal-header bg-dark text-white border-0 py-3">
-                <h5 class="modal-title fw-bold fs-6 mb-0"><i class="fa-solid fa-gear me-2 text-warning"></i> تصفية وإعدادات التنبيهات الإدارية</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold fs-6 mb-0"><i class="fa-solid fa-gear me-2 text-warning"></i> تصفية
+                    وإعدادات التنبيهات الإدارية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <form onsubmit="saveNotificationsSettings(event)">
@@ -707,15 +924,18 @@
                     </div>
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="checkNotifGrades" checked>
-                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifGrades">تفعيل إشعارات رصد الدرجات الأكاديمية المباشرة</label>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifGrades">تفعيل
+                            إشعارات رصد الدرجات الأكاديمية المباشرة</label>
                     </div>
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="checkNotifAttendance" checked>
-                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifAttendance">تفعيل تنبيهات الغياب والحضور اليومي</label>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifAttendance">تفعيل
+                            تنبيهات الغياب والحضور اليومي</label>
                     </div>
                     <div class="form-check form-switch mb-4">
                         <input class="form-check-input" type="checkbox" id="checkNotifExams" checked>
-                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifExams">تفعيل إشعارات جدول الاختبارات والواجبات</label>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="checkNotifExams">تفعيل
+                            إشعارات جدول الاختبارات والواجبات</label>
                     </div>
                     <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-bold shadow-sm">
                         <i class="fa-solid fa-check me-1"></i> حفظ وتطبيق الإعدادات
@@ -727,177 +947,190 @@
 </div>
 
 <style>
-.hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08) !important;
-}
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-@media print {
-    body * { visibility: hidden !important; }
-    #notificationsCardsStream, #notificationsCardsStream * { visibility: visible !important; }
-    .btn, button, select, input { display: none !important; }
-}
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    @media print {
+        body * {
+            visibility: hidden !important;
+        }
+
+        #notificationsCardsStream,
+        #notificationsCardsStream * {
+            visibility: visible !important;
+        }
+
+        .btn,
+        button,
+        select,
+        input {
+            display: none !important;
+        }
+    }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    initNotificationsAnalyticsCharts();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        initNotificationsAnalyticsCharts();
+    });
 
-function initNotificationsAnalyticsCharts() {
-    const ctxDonut = document.getElementById('donutNotificationsChart');
-    if (ctxDonut) {
-        const totalNotifs = {{ stats.total_notifications or 0 }};
-        const unreadCount = {{ stats.unread_count or 0 }};
-        const priorityCount = {{ stats.priority_count or 0 }};
-        const readCount = Math.max(0, totalNotifs - unreadCount);
+    function initNotificationsAnalyticsCharts() {
+        const ctxDonut = document.getElementById('donutNotificationsChart');
+        if (ctxDonut) {
+            const totalNotifs = {{ stats.total_notifications or 0 }};
+            const unreadCount = {{ stats.unread_count or 0 }};
+            const priorityCount = {{ stats.priority_count or 0 }};
+    const readCount = Math.max(0, totalNotifs - unreadCount);
 
-        new Chart(ctxDonut, {
-            type: 'doughnut',
-            data: {
-                labels: totalNotifs > 0 ? ['مقروءة', 'غير مقروءة', 'عاجلة'] : ['لا توجد إشعارات'],
-                datasets: [{
-                    data: totalNotifs > 0 ? [readCount, unreadCount, priorityCount] : [0],
-                    backgroundColor: ['#2563eb', '#f59e0b', '#dc2626'],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Cairo', size: 10 } } } },
-                cutout: '68%'
+    new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+            labels: totalNotifs > 0 ? ['مقروءة', 'غير مقروءة', 'عاجلة'] : ['لا توجد إشعارات'],
+            datasets: [{
+                data: totalNotifs > 0 ? [readCount, unreadCount, priorityCount] : [0],
+                backgroundColor: ['#2563eb', '#f59e0b', '#dc2626'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Cairo', size: 10 } } } },
+            cutout: '68%'
+        }
+    });
+    }
+}
+
+    function openNotificationsSettingsModal() {
+        const bsModal = new bootstrap.Modal(document.getElementById('notificationsSettingsModal'));
+        bsModal.show();
+    }
+
+    function saveNotificationsSettings(e) {
+        if (e) e.preventDefault();
+        const modalEl = document.getElementById('notificationsSettingsModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+        }
+        showToast('تم حفظ تفضيلات وإعدادات التنبيهات بنجاح ⚙️', 'success');
+    }
+
+    function openCreateNotificationModal() {
+        const bsModal = new bootstrap.Modal(document.getElementById('createNotificationModal'));
+        bsModal.show();
+    }
+
+    function openSendUrgentAlertModal() {
+        openCreateNotificationModal();
+    }
+
+    function submitNewNotificationForm(e) {
+        e.preventDefault();
+        const title = document.getElementById('createNotifTitle').value;
+
+        fetch('/notifications/api/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title })
+        })
+            .then(res => res.json())
+            .then(data => {
+                const modalEl = document.getElementById('createNotificationModal');
+                const instance = bootstrap.Modal.getInstance(modalEl);
+                if (instance) instance.hide();
+                showToast(data.message || 'تم نشر الإشعار بنجاح', 'success');
+            })
+            .catch(err => {
+                showToast('تم إرسال الإشعار بنجاح في قاعدة البيانات', 'success');
+            });
+    }
+
+    function markAllNotificationsAsRead() {
+        fetch('/notifications/api/mark_all_read', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                showToast('تم تحديد جميع الإشعارات والتنبيهات كمقروءة بنجاح ✔️', 'success');
+                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+            })
+            .catch(err => {
+                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+            });
+
+        // Clear unread badges & update DOM
+        const cards = document.querySelectorAll('.notification-item-card');
+        cards.forEach(card => {
+            const badge = card.querySelector('.badge.bg-danger');
+            if (badge && (badge.textContent.includes('عاجل') || badge.textContent.includes('غير مقروء'))) {
+                badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
+                badge.textContent = 'مقروء';
             }
         });
+
+        // Update KPI card count for unread to 0
+        const unreadKpis = document.querySelectorAll('.card-body h4.text-warning, .card-body h4.text-danger');
+        unreadKpis.forEach(el => el.textContent = '0');
+
+        if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
     }
-}
 
-function openNotificationsSettingsModal() {
-    const bsModal = new bootstrap.Modal(document.getElementById('notificationsSettingsModal'));
-    bsModal.show();
-}
-
-function saveNotificationsSettings(e) {
-    if (e) e.preventDefault();
-    const modalEl = document.getElementById('notificationsSettingsModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        const instance = bootstrap.Modal.getInstance(modalEl);
-        if (instance) instance.hide();
-    }
-    showToast('تم حفظ تفضيلات وإعدادات التنبيهات بنجاح ⚙️', 'success');
-}
-
-function openCreateNotificationModal() {
-    const bsModal = new bootstrap.Modal(document.getElementById('createNotificationModal'));
-    bsModal.show();
-}
-
-function openSendUrgentAlertModal() {
-    openCreateNotificationModal();
-}
-
-function submitNewNotificationForm(e) {
-    e.preventDefault();
-    const title = document.getElementById('createNotifTitle').value;
-
-    fetch('/notifications/api/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title })
-    })
-    .then(res => res.json())
-    .then(data => {
-        const modalEl = document.getElementById('createNotificationModal');
-        const instance = bootstrap.Modal.getInstance(modalEl);
-        if (instance) instance.hide();
-        showToast(data.message || 'تم نشر الإشعار بنجاح', 'success');
-    })
-    .catch(err => {
-        showToast('تم إرسال الإشعار بنجاح في قاعدة البيانات', 'success');
-    });
-}
-
-function markAllNotificationsAsRead() {
-    fetch('/notifications/api/mark_all_read', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => {
-            showToast('تم تحديد جميع الإشعارات والتنبيهات كمقروءة بنجاح ✔️', 'success');
-            if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-        })
-        .catch(err => {
-            if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-        });
-
-    // Clear unread badges & update DOM
-    const cards = document.querySelectorAll('.notification-item-card');
-    cards.forEach(card => {
-        const badge = card.querySelector('.badge.bg-danger');
-        if (badge && (badge.textContent.includes('عاجل') || badge.textContent.includes('غير مقروء'))) {
-            badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
-            badge.textContent = 'مقروء';
+    function markSingleNotificationRead(btn, id) {
+        if (id) {
+            fetch(`/notifications/api/read/${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(() => {
+                    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+                })
+                .catch(() => { });
         }
-    });
-
-    // Update KPI card count for unread to 0
-    const unreadKpis = document.querySelectorAll('.card-body h4.text-warning, .card-body h4.text-danger');
-    unreadKpis.forEach(el => el.textContent = '0');
-
-    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-}
-
-function markSingleNotificationRead(btn, id) {
-    if (id) {
-        fetch(`/notifications/api/read/${id}`, { method: 'POST' })
-            .then(res => res.json())
-            .then(() => {
-                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-            })
-            .catch(() => {});
-    }
-    const card = btn.closest('.notification-item-card');
-    if (card) {
-        const badge = card.querySelector('.badge.bg-danger');
-        if (badge) {
-            badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
-            badge.textContent = 'مقروء';
+        const card = btn.closest('.notification-item-card');
+        if (card) {
+            const badge = card.querySelector('.badge.bg-danger');
+            if (badge) {
+                badge.className = 'badge bg-secondary-subtle text-dark border rounded-pill font-monospace extra-small px-3 py-1';
+                badge.textContent = 'مقروء';
+            }
+            showToast('تم تعليم الإشعار كمقروء ✔️', 'success');
         }
-        showToast('تم تعليم الإشعار كمقروء ✔️', 'success');
+        if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
     }
-    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-}
 
-function pinNotificationCard(btn) {
-    btn.classList.toggle('text-warning');
-    showToast('تم تثبيت الإشعار في أعلى القائمة', 'info');
-}
-
-function deleteNotificationCard(btn, id) {
-    const card = btn.closest('.notification-item-card') || btn.closest('tr');
-    if (id) {
-        fetch(`/notifications/api/delete/${id}`, { method: 'POST' })
-            .then(res => res.json())
-            .then(() => {
-                if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-            })
-            .catch(() => {});
+    function pinNotificationCard(btn) {
+        btn.classList.toggle('text-warning');
+        showToast('تم تثبيت الإشعار في أعلى القائمة', 'info');
     }
-    if (card) {
-        card.remove();
-        showToast('تم حذف الإشعار بنجاح من قاعدة البيانات 🗑', 'info');
+
+    function deleteNotificationCard(btn, id) {
+        const card = btn.closest('.notification-item-card') || btn.closest('tr');
+        if (id) {
+            fetch(`/notifications/api/delete/${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(() => {
+                    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
+                })
+                .catch(() => { });
+        }
+        if (card) {
+            card.remove();
+            showToast('تم حذف الإشعار بنجاح من قاعدة البيانات 🗑', 'info');
+        }
+        if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
     }
-    if (typeof updateNotificationBadges === 'function') updateNotificationBadges();
-}
 
-function viewNotificationDetails(id, title, desc) {
-    const titleEl = document.getElementById('notifDetailModalTitle');
-    const bodyEl = document.getElementById('notifDetailModalBody');
+    function viewNotificationDetails(id, title, desc) {
+        const titleEl = document.getElementById('notifDetailModalTitle');
+        const bodyEl = document.getElementById('notifDetailModalBody');
 
-    if (titleEl) titleEl.textContent = title;
-    if (bodyEl) {
-        bodyEl.innerHTML = `
+        if (titleEl) titleEl.textContent = title;
+        if (bodyEl) {
+            bodyEl.innerHTML = `
             <div class="mb-3 border-bottom pb-2">
                 <h6 class="fw-bold text-primary mb-1">${title}</h6>
                 <small class="text-muted">مستخرج من النظام الموحد للإشعارات والتنبيهات</small>
@@ -906,104 +1139,104 @@ function viewNotificationDetails(id, title, desc) {
             <div class="alert alert-info border-0 rounded-3 extra-small mb-0">
                 <i class="fa-solid fa-circle-info me-1"></i> هذا الإشعار تم توليده آلياً اعتماداً على سجل الأداء الأكاديمي الحقيقي بالشبكة.
             </div>`;
-    }
-
-    const bsModal = new bootstrap.Modal(document.getElementById('viewNotificationDetailModal'));
-    bsModal.show();
-}
-
-function filterNotificationsStream(query = '') {
-    const q = query.toLowerCase().trim();
-    const cards = document.querySelectorAll('.notification-item-card');
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        if (!q || text.includes(q)) card.classList.remove('d-none');
-        else card.classList.add('d-none');
-    });
-}
-
-function resetNotificationsFilters() {
-    document.getElementById('notifSearchInput').value = '';
-    document.getElementById('notifCategorySelect').value = '';
-    document.getElementById('notifClassSelect').value = '';
-    document.getElementById('notifSourceSelect').value = '';
-    filterNotificationsStream('');
-    switchNotificationsCategoryPill('all');
-    showToast('تمت إعادة ضبط الفلاتر', 'info');
-}
-
-function switchNotificationsCategoryPill(category, btnEl) {
-    // 1. Highlight active pill button
-    const buttons = document.querySelectorAll('.card-body .btn-sm.rounded-pill');
-    buttons.forEach(b => {
-        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('switchNotificationsCategoryPill')) {
-            b.classList.remove('btn-primary', 'active', 'fw-bold', 'text-white');
-            b.classList.add('btn-light', 'border');
         }
-    });
 
-    let targetBtn = btnEl;
-    if (!targetBtn && typeof event !== 'undefined' && event && event.currentTarget) {
-        targetBtn = event.currentTarget;
+        const bsModal = new bootstrap.Modal(document.getElementById('viewNotificationDetailModal'));
+        bsModal.show();
     }
-    if (!targetBtn) {
-        buttons.forEach(b => {
-            const attr = b.getAttribute('onclick') || '';
-            if (attr.includes(`'${category}'`)) targetBtn = b;
+
+    function filterNotificationsStream(query = '') {
+        const q = query.toLowerCase().trim();
+        const cards = document.querySelectorAll('.notification-item-card');
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (!q || text.includes(q)) card.classList.remove('d-none');
+            else card.classList.add('d-none');
         });
     }
-    if (targetBtn) {
-        targetBtn.classList.remove('btn-light', 'border');
-        targetBtn.classList.add('btn-primary', 'active', 'fw-bold', 'text-white');
+
+    function resetNotificationsFilters() {
+        document.getElementById('notifSearchInput').value = '';
+        document.getElementById('notifCategorySelect').value = '';
+        document.getElementById('notifClassSelect').value = '';
+        document.getElementById('notifSourceSelect').value = '';
+        filterNotificationsStream('');
+        switchNotificationsCategoryPill('all');
+        showToast('تمت إعادة ضبط الفلاتر', 'info');
     }
 
-    // 2. Filter notification stream cards
-    const cards = document.querySelectorAll('.notification-item-card');
-    let visibleCount = 0;
+    function switchNotificationsCategoryPill(category, btnEl) {
+        // 1. Highlight active pill button
+        const buttons = document.querySelectorAll('.card-body .btn-sm.rounded-pill');
+        buttons.forEach(b => {
+            if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('switchNotificationsCategoryPill')) {
+                b.classList.remove('btn-primary', 'active', 'fw-bold', 'text-white');
+                b.classList.add('btn-light', 'border');
+            }
+        });
 
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        const catAttr = card.getAttribute('data-category') || '';
-
-        let match = false;
-        if (category === 'all' || category === 'الكل') {
-            match = true;
-        } else if (category === 'النظام') {
-            match = text.includes('نظام') || text.includes('إداري') || catAttr === 'النظام';
-        } else if (category === 'الطلاب') {
-            match = text.includes('طالب') || text.includes('طلاب') || catAttr === 'الطلاب';
-        } else if (category === 'أولياء الأمور') {
-            match = text.includes('ولي') || text.includes('أسرة') || catAttr === 'أولياء الأمور';
-        } else if (category === 'الإدارة') {
-            match = text.includes('إدارة') || text.includes('مدير') || catAttr === 'الإدارة';
-        } else if (category === 'الاختبارات') {
-            match = text.includes('اختبار') || text.includes('امتحان') || catAttr === 'الاختبارات';
-        } else if (category === 'الواجبات') {
-            match = text.includes('واجب') || text.includes('تكليف') || catAttr === 'الواجبات';
-        } else if (category === 'الدرجات') {
-            match = text.includes('درجة') || text.includes('رصد') || catAttr === 'الدرجات';
-        } else {
-            match = text.includes(category.toLowerCase());
+        let targetBtn = btnEl;
+        if (!targetBtn && typeof event !== 'undefined' && event && event.currentTarget) {
+            targetBtn = event.currentTarget;
+        }
+        if (!targetBtn) {
+            buttons.forEach(b => {
+                const attr = b.getAttribute('onclick') || '';
+                if (attr.includes(`'${category}'`)) targetBtn = b;
+            });
+        }
+        if (targetBtn) {
+            targetBtn.classList.remove('btn-light', 'border');
+            targetBtn.classList.add('btn-primary', 'active', 'fw-bold', 'text-white');
         }
 
-        if (match) {
-            card.classList.remove('d-none');
-            visibleCount++;
-        } else {
-            card.classList.add('d-none');
-        }
-    });
+        // 2. Filter notification stream cards
+        const cards = document.querySelectorAll('.notification-item-card');
+        let visibleCount = 0;
 
-    // 3. Show empty state if no notifications match category
-    let emptyState = document.getElementById('notifCategoryEmptyState');
-    const container = document.getElementById('notificationsCardsStream');
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const catAttr = card.getAttribute('data-category') || '';
 
-    if (visibleCount === 0 && container) {
-        if (!emptyState) {
-            emptyState = document.createElement('div');
-            emptyState.id = 'notifCategoryEmptyState';
-            emptyState.className = 'card border-0 shadow-sm rounded-4 bg-white p-5 text-center my-2 font-monospace';
-            emptyState.innerHTML = `
+            let match = false;
+            if (category === 'all' || category === 'الكل') {
+                match = true;
+            } else if (category === 'النظام') {
+                match = text.includes('نظام') || text.includes('إداري') || catAttr === 'النظام';
+            } else if (category === 'الطلاب') {
+                match = text.includes('طالب') || text.includes('طلاب') || catAttr === 'الطلاب';
+            } else if (category === 'أولياء الأمور') {
+                match = text.includes('ولي') || text.includes('أسرة') || catAttr === 'أولياء الأمور';
+            } else if (category === 'الإدارة') {
+                match = text.includes('إدارة') || text.includes('مدير') || catAttr === 'الإدارة';
+            } else if (category === 'الاختبارات') {
+                match = text.includes('اختبار') || text.includes('امتحان') || catAttr === 'الاختبارات';
+            } else if (category === 'الواجبات') {
+                match = text.includes('واجب') || text.includes('تكليف') || catAttr === 'الواجبات';
+            } else if (category === 'الدرجات') {
+                match = text.includes('درجة') || text.includes('رصد') || catAttr === 'الدرجات';
+            } else {
+                match = text.includes(category.toLowerCase());
+            }
+
+            if (match) {
+                card.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+
+        // 3. Show empty state if no notifications match category
+        let emptyState = document.getElementById('notifCategoryEmptyState');
+        const container = document.getElementById('notificationsCardsStream');
+
+        if (visibleCount === 0 && container) {
+            if (!emptyState) {
+                emptyState = document.createElement('div');
+                emptyState.id = 'notifCategoryEmptyState';
+                emptyState.className = 'card border-0 shadow-sm rounded-4 bg-white p-5 text-center my-2 font-monospace';
+                emptyState.innerHTML = `
                 <div class="mb-3 text-muted">
                     <i class="fa-solid fa-bell-slash fs-1 text-primary opacity-50"></i>
                 </div>
@@ -1014,38 +1247,38 @@ function switchNotificationsCategoryPill(category, btnEl) {
                         <i class="fa-solid fa-arrows-rotate me-1"></i> عرض جميع الإشعارات
                     </button>
                 </div>`;
-            container.appendChild(emptyState);
-        } else {
-            emptyState.classList.remove('d-none');
-            const h6 = emptyState.querySelector('h6');
-            if (h6) h6.textContent = `لا توجد إشعارات حالياً في فئة (${category})`;
+                container.appendChild(emptyState);
+            } else {
+                emptyState.classList.remove('d-none');
+                const h6 = emptyState.querySelector('h6');
+                if (h6) h6.textContent = `لا توجد إشعارات حالياً في فئة (${category})`;
+            }
+        } else if (emptyState) {
+            emptyState.classList.add('d-none');
         }
-    } else if (emptyState) {
-        emptyState.classList.add('d-none');
+
+        showToast(`تمت تصفية الإشعارات حسب فئة: ${category}`, 'info');
     }
 
-    showToast(`تمت تصفية الإشعارات حسب فئة: ${category}`, 'info');
-}
-
-function exportNotificationsExcel() {
-    window.location.href = '/reports/student/1/excel';
-}
-
-function exportNotificationsPDF() {
-    window.location.href = '/reports/student/1/pdf_fast';
-}
-
-function showToast(message, icon = 'info') {
-    if (typeof Swal !== 'undefined') {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true
-        });
-        Toast.fire({ icon: icon, title: message });
+    function exportNotificationsExcel() {
+        window.location.href = '/reports/student/1/excel';
     }
-}
+
+    function exportNotificationsPDF() {
+        window.location.href = '/reports/student/1/pdf_fast';
+    }
+
+    function showToast(message, icon = 'info') {
+        if (typeof Swal !== 'undefined') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+            Toast.fire({ icon: icon, title: message });
+        }
+    }
 </script>
 {% endblock %}
