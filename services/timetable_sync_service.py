@@ -82,7 +82,7 @@ def sync_subject_timetable_slots(subject_id):
                         if slots_needed <= 0:
                             break
                         
-                        preferred_lesson_id = ((day_id - 1) + (cls.CID % 5)) % 5 + 1
+                        preferred_lesson_id = ((day_id - 1) % 5) + 1
                         lesson_candidates = [preferred_lesson_id] + [l for l in range(1, 6) if l != preferred_lesson_id]
                         
                         placed_today = False

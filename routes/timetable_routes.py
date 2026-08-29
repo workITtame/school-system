@@ -235,25 +235,31 @@ def index():
 
     occupancy_rate = min(100, round((today_lessons_count / 6.0) * 100)) if today_lessons_count > 0 else 0
 
-    week_days = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+    week_days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+    lessons_list = Lessons.query.filter_by(is_deleted=False).order_by(Lessons.LessonID.asc()).all()
+    if not lessons_list:
+        _ensure_default_days_and_lessons()
+        lessons_list = Lessons.query.filter_by(is_deleted=False).order_by(Lessons.LessonID.asc()).all()
+
     weekly_matrix = {}
     for day in week_days:
-        weekly_matrix[day] = []
-        day_slots = [s for s in slots if s.day and s.day.DName == day]
-        day_slots_sorted = sorted(day_slots, key=lambda s: (s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '00:00'))
-        for s in day_slots_sorted:
+        weekly_matrix[day] = {}
+
+    for s in slots:
+        if s.day and s.day.DName in weekly_matrix and s.lesson:
             sub_name = s.subject.SubName if s.subject else ''
             cls_name = s.school_class.CName if s.school_class else ''
             sec_name = s.section.SectionName if s.section else ''
             full_cls = f"{cls_name} - {sec_name}".strip(" -")
-            start_t = s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '08:00'
-            room_name = getattr(s, 'RoomNo', None) or 'قاعة 201'
-            weekly_matrix[day].append({
+            start_t = s.lesson.StartTime if s.lesson.StartTime else '08:00'
+            lesson_name = s.lesson.LessonName or f"الحصة {s.LessonID}"
+            weekly_matrix[s.day.DName][s.LessonID] = {
                 'subject': sub_name,
                 'class': full_cls,
                 'time': start_t,
-                'room': room_name
-            })
+                'lesson_name': lesson_name,
+                'room': getattr(s, 'RoomNo', None) or 'قاعة 201'
+            }
 
     if class_id:
         today_present = Attendance.query.join(Student, Attendance.SID == Student.SID).filter(Attendance.Date == today, Student.CID == class_id, Attendance.Status.in_(['حاضر', 'متأخر'])).count()
@@ -291,6 +297,7 @@ def index():
                            daily_timeline=daily_timeline,
                            weekly_matrix=weekly_matrix,
                            week_days=week_days,
+                           lessons_list=lessons_list,
                            today_summary=today_summary,
                            today_date=today.strftime('%Y-%m-%d'),
                            today_day_name=today_day_name,
