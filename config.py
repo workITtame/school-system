@@ -26,10 +26,10 @@ def get_database_uri():
 
     # 3. If running in a cloud environment (like Railway) without MySQL env vars set:
     if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT') or os.environ.get('RAILWAY_STATIC_URL'):
-        # Store SQLite database on the persistent Volume (/app/static/uploads) to prevent data loss on new deployments
-        uploads_dir = os.path.join(BASE_DIR, 'static', 'uploads')
-        os.makedirs(uploads_dir, exist_ok=True)
-        return 'sqlite:///' + os.path.join(uploads_dir, 'database.db')
+        db_dir = os.path.abspath(os.path.join(BASE_DIR, 'instance'))
+        os.makedirs(db_dir, exist_ok=True)
+        db_file = os.path.abspath(os.path.join(db_dir, 'school_system.db'))
+        return f"sqlite:///{db_file}"
 
     # 4. Local development default (local MySQL)
     user = os.environ.get('MYSQLUSER') or 'root'
@@ -39,17 +39,26 @@ def get_database_uri():
     database = os.environ.get('MYSQLDATABASE') or 'school_system_db'
     return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset=utf8mb4"
 
+db_uri = get_database_uri()
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'super_secret_key_school_management_system_2026_secure'
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'super_secret_jwt_key_school_management_system_2026'
-    SQLALCHEMY_DATABASE_URI = get_database_uri()
+    SQLALCHEMY_DATABASE_URI = db_uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,
-        'max_overflow': 20,
-        'pool_recycle': 280,
-        'pool_pre_ping': True
-    }
+    
+    if db_uri.startswith('mysql'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,
+            'max_overflow': 20,
+            'pool_recycle': 280,
+            'pool_pre_ping': True
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True
+        }
+
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload size
 
