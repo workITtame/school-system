@@ -176,8 +176,8 @@
         <!-- Top Header -->
         <div class="top-navbar">
             <div class="d-flex align-items-center gap-3">
-                <button type="button" id="sidebarCollapse" class="btn btn-light shadow-sm" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff;">
-                    <i class="fa-solid fa-bars text-muted"></i>
+                <button type="button" id="sidebarCollapse" onclick="if(window.setupResponsiveSidebar) setupResponsiveSidebar(); const s=document.getElementById('sidebar'); const o=document.getElementById('sidebarOverlay'); if(s){s.classList.toggle('active');} if(o){o.classList.toggle('active');}" class="btn btn-light shadow-sm me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff; cursor: pointer;" aria-label="Toggle Navigation">
+                    <i class="fa-solid fa-bars text-muted fs-5"></i>
                 </button>
                 <!-- Breadcrumbs dynamically set -->
                 <div class="d-none d-md-block ms-3">

@@ -395,6 +395,8 @@ body {
 @media (max-width: 991.98px) {
     #sidebar {
         transform: translateX(100%) !important;
+        margin-right: 0 !important;
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.25) !important;
     }
     #sidebar.active {
         transform: translateX(0) !important;
@@ -405,83 +407,24 @@ body {
     }
 }
 
-/* Top Navbar */
-.top-navbar {
-    background: var(--card-bg) !important;
-    border-bottom: 1px solid var(--border-color);
-    padding: 0.8rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-    margin-bottom: 1.5rem;
+/* Sidebar Mobile Overlay Backdrop */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 1045;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 }
 
-.navbar-user-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.navbar-user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-}
-
-.navbar-user-info h6 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.navbar-user-info small {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.top-navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    background: transparent;
-    border: 1px solid transparent;
-    transition: all 0.2s;
-    text-decoration: none;
-    position: relative;
-}
-
-.icon-btn:hover {
-    background: var(--bg-color);
-    color: var(--primary);
-    border-color: var(--border-color);
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    #sidebar {
-        margin-right: -260px;
-        position: fixed;
-        height: 100%;
-    }
-    #sidebar.active {
-        margin-right: 0;
-    }
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* High Contrast Action Buttons */

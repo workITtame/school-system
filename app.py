@@ -80,19 +80,30 @@ def create_app(config_class=Config):
     def ensure_jwt_token():
         if request.endpoint == 'static':
             return
-        if (hasattr(current_user, 'is_authenticated') and current_user.is_authenticated) or 'user_id' in session:
+        if 'jwt_token' not in session and ((hasattr(current_user, 'is_authenticated') and current_user.is_authenticated) or 'user_id' in session):
             user_id = str(current_user.id) if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else str(session.get('user_id', '1'))
             session['jwt_token'] = create_access_token(identity=user_id)
 
+    @app.after_request
+    def add_header(response):
+        if request.endpoint == 'static':
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
+
+    _cached_school_data = {}
     @app.context_processor
     def inject_school_info():
-        try:
-            from models.school import School
-            school = db.session.query(School).first()
-            if school and school.SchoolName:
-                return {'school_info': school, 'current_school_name': school.SchoolName}
-        except Exception:
-            pass
+        if 'school_info' not in _cached_school_data:
+            try:
+                from models.school import School
+                school = db.session.query(School).first()
+                if school and school.SchoolName:
+                    _cached_school_data['data'] = {'school_info': school, 'current_school_name': school.SchoolName}
+                    _cached_school_data['school_info'] = True
+            except Exception:
+                pass
+        if 'data' in _cached_school_data:
+            return _cached_school_data['data']
         return {'school_info': None, 'current_school_name': 'مدرسة المستقبل'}
 
     app.register_blueprint(auth_bp)

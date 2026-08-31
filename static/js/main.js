@@ -164,3 +164,73 @@ document.addEventListener("turbo:load", function () {
         });
     });
 });
+
+// ==========================================
+// 4. Responsive Mobile Sidebar & Dropdown Manager
+// ==========================================
+function setupResponsiveSidebar() {
+    const sidebarBtn = document.getElementById('sidebarCollapse');
+    const sidebar = document.getElementById('sidebar');
+    let overlay = document.getElementById('sidebarOverlay');
+
+    if (!overlay && document.body) {
+        overlay = document.createElement('div');
+        overlay.id = 'sidebarOverlay';
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+    }
+
+    function toggleSidebar(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!sidebar) return;
+        const isActive = sidebar.classList.contains('active');
+        if (isActive) {
+            sidebar.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+        } else {
+            sidebar.classList.add('active');
+            if (overlay) overlay.classList.add('active');
+        }
+    }
+
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+    }
+
+    if (sidebarBtn) {
+        sidebarBtn.removeEventListener('click', toggleSidebar);
+        sidebarBtn.addEventListener('click', toggleSidebar);
+    }
+
+    if (overlay) {
+        overlay.removeEventListener('click', closeSidebar);
+        overlay.addEventListener('click', closeSidebar);
+    }
+
+    // Auto-close sidebar when clicking links on mobile (< 992px)
+    if (sidebar) {
+        const sidebarLinks = sidebar.querySelectorAll('a:not(.dropdown-toggle)');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 992) {
+                    closeSidebar();
+                }
+            });
+        });
+    }
+
+    // Ensure all Bootstrap Dropdowns are properly initialized
+    if (window.bootstrap && window.bootstrap.Dropdown) {
+        const dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+        dropdownElementList.map(function (dropdownToggleEl) {
+            return bootstrap.Dropdown.getOrCreateInstance(dropdownToggleEl);
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", setupResponsiveSidebar);
+document.addEventListener("turbo:load", setupResponsiveSidebar);

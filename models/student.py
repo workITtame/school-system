@@ -36,8 +36,8 @@ class Attendance(db.Model, AuditMixin):
         {'mysql_engine': 'InnoDB'}
     )
     AttendanceID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    SID = db.Column(db.Integer, db.ForeignKey('student.SID', ondelete='RESTRICT'))
-    Date = db.Column(db.Date)
-    Status = db.Column(db.String(10))
+    SID = db.Column(db.Integer, db.ForeignKey('student.SID', ondelete='RESTRICT'), index=True)
+    Date = db.Column(db.Date, index=True)
+    Status = db.Column(db.String(10), index=True)
     
     student = db.relationship('Student', backref=db.backref('attendances', lazy=True))
