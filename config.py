@@ -26,8 +26,10 @@ def get_database_uri():
 
     # 3. If running in a cloud environment (like Railway) without MySQL env vars set:
     if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT') or os.environ.get('RAILWAY_STATIC_URL'):
-        # Fallback to SQLite in production if MySQL variables are not configured in Railway UI
-        return 'sqlite:///' + os.path.join(BASE_DIR, 'database.db')
+        # Store SQLite database on the persistent Volume (/app/static/uploads) to prevent data loss on new deployments
+        uploads_dir = os.path.join(BASE_DIR, 'static', 'uploads')
+        os.makedirs(uploads_dir, exist_ok=True)
+        return 'sqlite:///' + os.path.join(uploads_dir, 'database.db')
 
     # 4. Local development default (local MySQL)
     user = os.environ.get('MYSQLUSER') or 'root'
