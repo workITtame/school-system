@@ -123,7 +123,10 @@ def create_app(config_class=Config):
     def index():
         return redirect(url_for('auth.login'))
 
-    # Database initialization and seeding should be done via a separate script like reset_admin.py
+    try:
+        init_db_if_not_exists(app)
+    except Exception as e:
+        print(f"Auto DB init status: {e}")
 
     return app
 
