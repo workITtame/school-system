@@ -166,13 +166,9 @@ def init_db_if_not_exists(app):
     if db_uri.startswith('sqlite'):
         with app.app_context():
             db.create_all()
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(username='admin', name='مدير النظام', role='admin')
-                admin.set_password('123456')
-                db.session.add(admin)
-                db.session.commit()
-                print("Default admin created in SQLite.")
+            ensure_admin_users()
+            import_seed_data_if_needed()
+            cleanup_attendance_duplicates()
         return
 
     if not db_uri.startswith('mysql'):
@@ -210,38 +206,46 @@ def init_db_if_not_exists(app):
             except Exception as mig_err:
                 print(f"Auto migration status: {mig_err}")
             
-            # Ensure primary admin user ezzedinekhaled030@gmail.com exists
-            ezz_admin = User.query.filter_by(username='ezzedinekhaled030@gmail.com').first()
-            if not ezz_admin:
-                ezz_admin = User(username='ezzedinekhaled030@gmail.com', name='مدير النظام التنفيذي', role='admin')
-                ezz_admin.set_password('123456')
-                db.session.add(ezz_admin)
-                db.session.commit()
-                print("Created primary admin user (username: ezzedinekhaled030@gmail.com / pass: 123456).")
-            else:
-                ezz_admin.role = 'admin'
-                ezz_admin.set_password('123456')
-                ezz_admin.failed_login_attempts = 0
-                ezz_admin.locked_until = None
-                db.session.commit()
-
-            # Ensure default 'admin' user also exists
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(username='admin', name='مدير النظام', role='admin')
-                admin.set_password('123456')
-                db.session.add(admin)
-                db.session.commit()
-            else:
-                admin.set_password('123456')
-                admin.failed_login_attempts = 0
-                admin.locked_until = None
-                db.session.commit()
-                
+            ensure_admin_users()
             import_seed_data_if_needed()
             cleanup_attendance_duplicates()
     except Exception as e:
         print(f"Error checking/creating database: {e}")
+
+def ensure_admin_users():
+    """Ensure primary admin ezzedinekhaled030@gmail.com and admin exist with valid password 123456."""
+    try:
+        from models import User
+        # Primary admin: ezzedinekhaled030@gmail.com
+        ezz_admin = User.query.filter_by(username='ezzedinekhaled030@gmail.com').first()
+        if not ezz_admin:
+            ezz_admin = User(username='ezzedinekhaled030@gmail.com', name='مدير النظام التنفيذي', role='admin')
+            ezz_admin.set_password('123456')
+            db.session.add(ezz_admin)
+            db.session.commit()
+            print("Created primary admin user (username: ezzedinekhaled030@gmail.com / pass: 123456).")
+        else:
+            ezz_admin.role = 'admin'
+            ezz_admin.set_password('123456')
+            ezz_admin.failed_login_attempts = 0
+            ezz_admin.locked_until = None
+            db.session.commit()
+
+        # Secondary admin: admin
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(username='admin', name='مدير النظام', role='admin')
+            admin.set_password('123456')
+            db.session.add(admin)
+            db.session.commit()
+        else:
+            admin.role = 'admin'
+            admin.set_password('123456')
+            admin.failed_login_attempts = 0
+            admin.locked_until = None
+            db.session.commit()
+    except Exception as e:
+        print(f"Error ensuring admin users: {e}")
 
 def import_seed_data_if_needed():
     """Auto-import local seed_data.json to online DB if empty."""

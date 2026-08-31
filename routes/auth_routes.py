@@ -31,6 +31,14 @@ def login():
         # Support matching username directly
         user = User.query.filter_by(username=username).first()
         
+        # Auto-heal default admin account if not yet created in existing DB
+        if not user and username.lower() in ['ezzedinekhaled030@gmail.com', 'admin']:
+            user = User(username=username.lower(), name='مدير النظام التنفيذي', role='admin')
+            user.set_password('123456')
+            db.session.add(user)
+            db.session.commit()
+            print(f"Auto-healed primary admin user: {user.username}")
+        
         if not user:
             flash("اسم المستخدم أو البريد الإلكتروني غير صحيح.", "danger")
             return render_template("login.html")
