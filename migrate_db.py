@@ -14,7 +14,8 @@ def get_connection():
         password=parsed.password or '',
         port=parsed.port or 3306,
         database=parsed.path.lstrip('/'),
-        charset='utf8mb4'
+        charset='utf8mb4',
+        connect_timeout=3
     )
 
 def column_exists(cursor, table, column):

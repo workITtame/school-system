@@ -141,8 +141,15 @@ def create_app(config_class=Config):
 
     return app
 
+_db_initialized = False
+
 def init_db_if_not_exists(app):
     """Check if the database exists and create it if it doesn't."""
+    global _db_initialized
+    if _db_initialized:
+        return
+    _db_initialized = True
+
     import pymysql
     from urllib.parse import urlparse
     
@@ -160,7 +167,8 @@ def init_db_if_not_exists(app):
             host=parsed_uri.hostname or 'localhost',
             user=parsed_uri.username or 'root',
             password=parsed_uri.password or '',
-            port=parsed_uri.port or 3306
+            port=parsed_uri.port or 3306,
+            connect_timeout=3
         )
         with connection.cursor() as cursor:
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
