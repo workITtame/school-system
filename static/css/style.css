@@ -1198,6 +1198,23 @@ body {
     }
 }
 
+/* Universal Automatic Table & Card Mobile Responsiveness */
+@media (max-width: 767.98px) {
+    .table:not(.table-borderless) {
+        display: block;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .card-body, .container-fluid {
+        overflow-x: hidden;
+    }
+    img, svg, iframe {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
 /* Accessibility Focus Ring */
 :focus-visible {
     outline: 3px solid rgba(37, 99, 235, 0.5) !important;
