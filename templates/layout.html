@@ -175,43 +175,44 @@
     <div id="content" class="main-content">
         <!-- Top Header -->
         <div class="top-navbar">
-            <div class="d-flex align-items-center gap-3">
-                <button type="button" id="sidebarCollapse" onclick="if(window.setupResponsiveSidebar) setupResponsiveSidebar(); const s=document.getElementById('sidebar'); const o=document.getElementById('sidebarOverlay'); if(s){s.classList.toggle('active');} if(o){o.classList.toggle('active');}" class="btn btn-light shadow-sm me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff; cursor: pointer;" aria-label="Toggle Navigation">
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="sidebarCollapse" onclick="if(window.setupResponsiveSidebar) setupResponsiveSidebar(); const s=document.getElementById('sidebar'); const o=document.getElementById('sidebarOverlay'); if(s){s.classList.toggle('active');} if(o){o.classList.toggle('active');}" class="btn btn-light shadow-sm me-1" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: #fff; cursor: pointer; flex-shrink: 0;" aria-label="Toggle Navigation">
                     <i class="fa-solid fa-bars text-muted fs-5"></i>
                 </button>
-                <!-- Breadcrumbs dynamically set -->
-                <div class="d-none d-md-block ms-3">
-                    <span class="text-muted font-monospace extra-small">نظام المستقبل الإداري</span>
+                <div class="d-none d-md-block ms-2">
+                    <span class="text-dark font-cairo fw-bold extra-small text-truncate d-inline-block" style="max-width: 180px;">نظام المستقبل الإداري</span>
                 </div>
             </div>
 
             <div class="top-navbar-actions">
-                <button type="button" class="btn btn-light rounded-pill px-3 py-1 me-2 border font-monospace extra-small d-none d-md-flex align-items-center gap-2 hover-lift" onclick="openGlobalSpotlightModal()" title="البحث السريع والاختصارات (Ctrl+K)">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-1 me-1 border font-monospace extra-small d-none d-xl-flex align-items-center gap-2 hover-lift" onclick="openGlobalSpotlightModal()" title="البحث السريع والاختصارات (Ctrl+K)">
                     <i class="fa-solid fa-magnifying-glass text-primary"></i>
                     <span class="text-muted">بحث سريع...</span>
                     <kbd class="bg-white border rounded text-muted px-1 small" style="font-size: 10px;">Ctrl K</kbd>
                 </button>
+
                 <a href="{{ url_for('messages.index') }}" class="icon-btn position-relative" title="مركز الرسائل والمحادثات">
                     <i class="fa-regular fa-envelope"></i>
                     <span class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; color: white;">3</span>
                 </a>
+
                 <a href="{{ url_for('notifications.index') }}" class="icon-btn position-relative" id="headerNotificationBtn" title="مركز الإشعارات والتنبيهات">
                     <i class="fa-regular fa-bell"></i>
                     <span id="headerNotificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 16px; height: 16px; font-size: 10px; display: none; align-items: center; justify-content: center; color: white;">0</span>
                 </a>
 
                 <!-- Dark / Light Mode Toggle Button -->
-                <button type="button" class="icon-btn border-0 bg-transparent position-relative ms-1 me-1" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي / النهاري" style="cursor: pointer;">
+                <button type="button" class="icon-btn border-0 bg-transparent position-relative" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي / النهاري" style="cursor: pointer;">
                     <i class="fa-solid fa-moon text-primary fs-5" id="themeToggleIcon"></i>
                 </button>
                 
-                <div class="dropdown border-start-md ps-1 ps-md-3 ms-1 ms-md-2">
+                <div class="dropdown border-start ps-2 ms-1">
                     <div class="navbar-user-profile" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-                        <div class="navbar-user-info text-end d-none d-sm-block">
-                            <h6>أ. {{ session.user_name }}</h6>
-                            <small>{{ 'مدير النظام' if session.user_role == 'admin' else 'معلم' }}</small>
-                        </div>
                         <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ session.user_name }}&background=2563eb&color=fff'">
+                        <div class="navbar-user-info text-start d-none d-lg-block" style="max-width: 120px;">
+                            <h6 class="text-truncate mb-0">أ. {{ session.user_name }}</h6>
+                            <small class="text-muted text-truncate d-block">{{ 'مدير النظام' if session.user_role == 'admin' else 'معلم' }}</small>
+                        </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3" aria-labelledby="userDropdown">
                         <li><a class="dropdown-item py-2" href="{{ url_for('profile.index') }}"><i class="fa-solid fa-user-gear me-2 text-primary"></i> الملف الشخصي والإعدادات</a></li>
