@@ -16,16 +16,23 @@ LOCKOUT_MINUTES = 15
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
+        if hasattr(current_user, 'role') and current_user.role == 'teacher':
+            return redirect(url_for('teacher.dashboard'))
         return redirect(url_for('dashboard.index'))
         
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
         
+        if not username or not password:
+            flash("يرجى إدخال اسم المستخدم وكلمة السر.", "warning")
+            return render_template("login.html")
+        
+        # Support matching username directly
         user = User.query.filter_by(username=username).first()
         
         if not user:
-            flash("اسم المستخدم غير صحيح.", "danger")
+            flash("اسم المستخدم أو البريد الإلكتروني غير صحيح.", "danger")
             return render_template("login.html")
             
         if user.is_locked():
@@ -51,7 +58,8 @@ def login():
             access_token = create_access_token(identity=str(user.id))
             session['jwt_token'] = access_token
             
-            
+            if user.role == 'teacher':
+                return redirect(url_for('teacher.dashboard'))
             return redirect(url_for('dashboard.index'))
         else:
             # Failed attempt

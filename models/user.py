@@ -23,20 +23,34 @@ class User(db.Model, UserMixin, AuditMixin):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        if not self.password_hash:
+        if not self.password_hash or not password:
             return False
 
-        # إذا كان hash قديم (scrypt أو pbkdf2)
-        if self.password_hash.startswith('scrypt:') or self.password_hash.startswith('pbkdf2:'):
+        try:
+            # إذا كان hash قديم (scrypt أو pbkdf2)
+            if self.password_hash.startswith('scrypt:') or self.password_hash.startswith('pbkdf2:'):
+                if check_werkzeug(self.password_hash, password):
+                    self.set_password(password)
+                    db.session.commit()
+                    return True
+                return False
+
+            # bcrypt
+            if bcrypt.check_password_hash(self.password_hash, password):
+                return True
+        except Exception:
+            pass
+
+        # Fallback to check werkzeug just in case
+        try:
             if check_werkzeug(self.password_hash, password):
-                # 🔥 تحويل إلى bcrypt
                 self.set_password(password)
                 db.session.commit()
                 return True
-            return False
+        except Exception:
+            pass
 
-        # bcrypt
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return False
 
     def is_locked(self):
         if self.locked_until and self.locked_until > datetime.utcnow():

@@ -210,7 +210,7 @@ def init_db_if_not_exists(app):
             except Exception as mig_err:
                 print(f"Auto migration status: {mig_err}")
             
-            # Ensure default admin exists
+            # Ensure default admin exists and password is set to 123456
             admin = User.query.filter_by(username='admin').first()
             if not admin:
                 admin = User(username='admin', name='مدير النظام', role='admin')
@@ -218,6 +218,18 @@ def init_db_if_not_exists(app):
                 db.session.add(admin)
                 db.session.commit()
                 print("Default admin user created (username: admin / pass: 123456).")
+            else:
+                admin.set_password('123456')
+                admin.failed_login_attempts = 0
+                admin.locked_until = None
+                db.session.commit()
+
+            admin_email = User.query.filter_by(username='admin@school.com').first()
+            if admin_email:
+                admin_email.set_password('123456')
+                admin_email.failed_login_attempts = 0
+                admin_email.locked_until = None
+                db.session.commit()
                 
             import_seed_data_if_needed()
             cleanup_attendance_duplicates()
