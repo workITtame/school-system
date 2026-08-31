@@ -427,6 +427,133 @@ body {
     visibility: visible;
 }
 
+/* Top Navbar Base Styles */
+.top-navbar {
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 70px;
+    margin-bottom: 1.5rem;
+    flex-wrap: nowrap !important;
+    width: 100%;
+}
+
+.top-navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap !important;
+}
+
+.navbar-user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.navbar-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.navbar-user-info h6 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.navbar-user-info small {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    text-decoration: none;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.icon-btn:hover {
+    background: var(--bg-color);
+    color: var(--primary);
+    border-color: var(--border-color);
+}
+
+/* Mobile & Tablet Responsiveness Overrides (< 992px & < 576px) */
+@media (max-width: 991.98px) {
+    .top-navbar {
+        padding: 0.5rem 1rem !important;
+        min-height: 60px !important;
+    }
+    .top-navbar-actions {
+        gap: 8px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .top-navbar {
+        padding: 0.4rem 0.5rem !important;
+        min-height: 56px !important;
+    }
+    .top-navbar-actions {
+        gap: 4px !important;
+    }
+    .top-navbar-actions .dropdown {
+        border-right: none !important;
+        border-left: none !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    .icon-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.85rem !important;
+    }
+    .navbar-user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    #sidebarCollapse {
+        width: 34px !important;
+        height: 34px !important;
+        margin-left: 4px !important;
+    }
+    .container-fluid {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    img, svg {
+        max-width: 100%;
+        height: auto;
+    }
+    .navbar-user-avatar, .user-avatar, .avatar-img {
+        max-width: 48px;
+        max-height: 48px;
+    }
+}
+
 /* High Contrast Action Buttons */
 .action-btn {
     width: 34px !important;
