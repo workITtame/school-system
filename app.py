@@ -119,6 +119,17 @@ def create_app(config_class=Config):
     def page_not_found(e):
         return render_template('404.html'), 404
 
+    @app.errorhandler(500)
+    def server_error(e):
+        import traceback
+        err_tb = traceback.format_exc()
+        print("=== CRITICAL 500 SERVER ERROR ===", flush=True)
+        print(err_tb, flush=True)
+        print("=================================", flush=True)
+        if os.path.exists(os.path.join(app.template_folder, '500.html')):
+            return render_template('500.html'), 500
+        return f"<div style='direction:rtl; font-family:sans-serif; padding:20px;'><h2>حدث خطأ في الخادم (500)</h2><pre>{err_tb}</pre></div>", 500
+
     @app.route('/')
     def index():
         return redirect(url_for('auth.login'))
@@ -161,6 +172,13 @@ def init_db_if_not_exists(app):
         with app.app_context():
             db.create_all()
             print("Verified/Created database tables.")
+            
+            # Run automatic schema migration to ensure all missing columns exist
+            try:
+                from migrate_db import run_migrations
+                run_migrations()
+            except Exception as mig_err:
+                print(f"Auto migration status: {mig_err}")
             
             # Ensure default admin exists
             admin = User.query.filter_by(username='admin').first()
