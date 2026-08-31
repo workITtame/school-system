@@ -150,14 +150,25 @@ def init_db_if_not_exists(app):
         return
     _db_initialized = True
 
+    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+
+    if db_uri.startswith('sqlite'):
+        with app.app_context():
+            db.create_all()
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(username='admin', name='مدير النظام', role='admin')
+                admin.set_password('123456')
+                db.session.add(admin)
+                db.session.commit()
+                print("Default admin created in SQLite.")
+        return
+
+    if not db_uri.startswith('mysql'):
+        return
+
     import pymysql
     from urllib.parse import urlparse
-    
-    # Parse the DATABASE_URI to get host, user, password, and db name
-    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
-    if not db_uri.startswith('mysql'):
-        return # Only do this for MySQL
-        
     parsed_uri = urlparse(db_uri)
     db_name = parsed_uri.path.lstrip('/')
     
