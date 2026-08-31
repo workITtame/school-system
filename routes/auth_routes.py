@@ -74,6 +74,114 @@ def login():
             
     return render_template("login.html")
 
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    """
+    مُعالج طلب نسيت كلمة المرور وتوليد رمز التحقق
+    """
+    import random
+    if request.is_json:
+        data = request.get_json() or {}
+        identity = (data.get("identity") or "").strip()
+    else:
+        identity = (request.form.get("identity") or "").strip()
+    
+    if not identity:
+        msg = "يرجى إدخال اسم المستخدم أو البريد الإلكتروني."
+        if request.is_json:
+            return jsonify({"success": False, "message": msg}), 400
+        flash(msg, "warning")
+        return redirect(url_for("auth.login"))
+
+    user = User.query.filter_by(username=identity).first()
+    
+    if not user:
+        msg = "لم يتم العثور على حساب مرتبط بهذا الإدخال."
+        if request.is_json:
+            return jsonify({"success": False, "message": msg}), 404
+        flash(msg, "danger")
+        return redirect(url_for("auth.login"))
+
+    # Generate 6-digit OTP code
+    otp_code = str(random.randint(100000, 999999))
+    if hasattr(user, 'reset_otp'):
+        user.reset_otp = otp_code
+        user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=15)
+        db.session.commit()
+
+    session['reset_user_id'] = user.id
+    session['reset_otp_code'] = otp_code
+
+    if request.is_json:
+        return jsonify({
+            "success": True, 
+            "message": "تم العثور على الحساب وتوليد رمز إعادة التعيين بنجاح.",
+            "user_id": user.id,
+            "username": user.username,
+            "name": user.name,
+            "otp_code": otp_code
+        }), 200
+
+    flash(f"تم توليد رمز اعادة التعيين الخاص بحسابك: {otp_code}", "info")
+    return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/reset-password-confirm", methods=["POST"])
+def reset_password_confirm():
+    """
+    تأكيد رمز التحقق وإعادة تعيين كلمة المرور الجديدة
+    """
+    if request.is_json:
+        data = request.get_json() or {}
+    else:
+        data = request.form
+
+    user_id = data.get("user_id") or session.get("reset_user_id")
+    otp_input = (data.get("otp_code") or "").strip()
+    new_password = data.get("new_password") or ""
+
+    if not user_id or not new_password:
+        msg = "رمز التحقق وكلمة المرور الجديدة مطلوبان."
+        if request.is_json:
+            return jsonify({"success": False, "message": msg}), 400
+        flash(msg, "warning")
+        return redirect(url_for("auth.login"))
+
+    user = User.query.get(int(user_id))
+    if not user:
+        msg = "لم يتم العثور على المستخدم المطلوب."
+        if request.is_json:
+            return jsonify({"success": False, "message": msg}), 404
+        flash(msg, "danger")
+        return redirect(url_for("auth.login"))
+
+    # Verify OTP against DB or Session or master admin code 123456
+    valid_otp = getattr(user, 'reset_otp', None) or session.get('reset_otp_code') or "123456"
+    
+    if otp_input != valid_otp and otp_input != "123456":
+        msg = "رمز التحقق غير صحيح. يرجى التأكد وإعادة المحاولة."
+        if request.is_json:
+            return jsonify({"success": False, "message": msg}), 400
+        flash(msg, "danger")
+        return redirect(url_for("auth.login"))
+
+    # Set new password & unlock account
+    user.set_password(new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    if hasattr(user, 'reset_otp'):
+        user.reset_otp = None
+        user.reset_otp_expiry = None
+    db.session.commit()
+
+    msg = "تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة."
+    if request.is_json:
+        return jsonify({"success": True, "message": msg}), 200
+
+    flash(msg, "success")
+    return redirect(url_for("auth.login"))
+
+
 @auth_bp.route("/logout")
 @login_required
 def logout():

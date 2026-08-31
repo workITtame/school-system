@@ -244,7 +244,7 @@
                             تذكرني
                         </label>
                     </div>
-                    <a href="javascript:void(0)" onclick="Swal.fire('نسيت كلمة المرور', 'يرجى التواصل مع مدير النظام لإعادة تعيين كلمة المرور', 'info')" class="text-decoration-none fw-bold" style="color: #2563eb; font-size: 0.85rem;">نسيت كلمة المرور؟</a>
+                    <a href="javascript:void(0)" onclick="handleForgotPasswordModal()" class="text-decoration-none fw-bold" style="color: #2563eb; font-size: 0.85rem;">نسيت كلمة المرور؟</a>
                 </div>
 
                 <button type="submit" class="btn-login">
@@ -260,17 +260,11 @@
                 </button>
             </form>
 
-            <a href="javascript:void(0)" onclick="Swal.fire('الدعم الفني', 'تواصل مع الإدارة عبر البريد: admin@future-school.com', 'info')" class="support-link">ليس لديك حساب؟ <b>تواصل مع الإدارة</b></a>
+            <a href="javascript:void(0)" onclick="Swal.fire('الدعم الفني والخدمة', 'يرجى التواصل مع إدارة المدرسة عبر الهاتف أو البريد الرسمي لتفعيل حساب جديد.', 'info')" class="support-link">ليس لديك حساب؟ <b>تواصل مع الإدارة</b></a>
         </div>
     </div>
 
-    <!-- Left Brand Side (Visual Right in RTL, appears on the left in the mockup image) -->
-    <!-- The mockup image shows the blue panel on the LEFT and the form on the RIGHT. -->
-    <!-- Since dir="rtl", normal flex flow makes the first child go to the RIGHT. -->
-    <!-- So we put the blue panel first to be on the RIGHT, wait! -->
-    <!-- Image 1 shows: Blue panel is on the LEFT of the screen. Form is on the RIGHT. -->
-    <!-- In RTL, if we want Blue panel on the left, it should be the LAST child in a flex row, or use flex-direction: row-reverse. -->
-    <!-- I will change login-container to flex-direction: row-reverse to force Blue panel on Left, Form on Right, regardless of RTL layout. -->
+    <!-- Left Brand Side (Visual Right in RTL) -->
     <style>
         .login-container { flex-direction: row-reverse; }
     </style>
@@ -278,14 +272,134 @@
     <div class="login-brand-side">
         <div class="brand-content">
             <div class="brand-logo">
-                <i class="fa-solid fa-book-open"></i>
+                <i class="fa-solid fa-school"></i>
             </div>
             <h1 class="brand-title">{{ current_school_name }}</h1>
-            <p class="brand-subtitle">نظام إدارة المدارس</p>
+            <p class="brand-subtitle">نظام إدارة المدارس والشؤون التعليمية</p>
             
-            <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&auto=format&fit=crop" alt="School Building" class="brand-illustration">
+            <div class="p-4 rounded-4 shadow-lg border border-white border-opacity-10 bg-white bg-opacity-10 text-white text-center font-cairo mt-4">
+                <i class="fa-solid fa-graduation-cap fs-1 text-warning mb-3 d-block"></i>
+                <h5 class="fw-bold text-white mb-2">منظومة المستقبل الأكاديمية</h5>
+                <p class="extra-small text-white-50 mb-0">بيئة تعليمية تفاعلية متكاملة للإدارة والطلاب والمعلمين</p>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+async function handleForgotPasswordModal() {
+    const { value: identity } = await Swal.fire({
+        title: 'نسيت كلمة المرور؟ 🔑',
+        text: 'يرجى إدخال اسم المستخدم أو البريد الإلكتروني الخاص بحسابك لتوليد رمز التحقق:',
+        input: 'text',
+        inputPlaceholder: 'اسم المستخدم أو البريد الإلكتروني...',
+        showCancelButton: true,
+        confirmButtonText: 'متابعة والتحقق ➔',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#2563eb',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'يرجى إدخال اسم المستخدم أو البريد الإلكتروني!';
+            }
+        }
+    });
+
+    if (identity) {
+        Swal.fire({
+            title: 'جاري التحقق من الحساب...',
+            text: 'يرجى الانتظار لحظة',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const res = await fetch('/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identity: identity.trim() })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                openResetPasswordStep2(data.user_id, data.username, data.name, data.otp_code);
+            } else {
+                Swal.fire('خطأ!', data.message || 'لم يتم العثور على الحساب المطلوب.', 'error');
+            }
+        } catch (err) {
+            Swal.fire('خطأ!', 'حدث خطأ أثناء التواصل مع السيرفر.', 'error');
+        }
+    }
+}
+
+async function openResetPasswordStep2(userId, username, name, generatedOtp) {
+    const { value: formValues } = await Swal.fire({
+        title: `إعادة تعيين كلمة المرور (${name || username})`,
+        html: `
+            <div class="alert alert-info extra-small text-start font-cairo mb-3">
+                <i class="fa-solid fa-shield-halved me-1"></i> تم توليد رمز إعادة التعيين الحصري لحسابك:<br>
+                <div class="text-center my-2"><span class="badge bg-primary fs-5 px-3 py-2 font-monospace">${generatedOtp}</span></div>
+                <small class="text-muted d-block text-center">أدخل هذا الرمز أدناه مع كلمة المرور الجديدة لتحديث حسابك فوراً.</small>
+            </div>
+            <div class="mb-3 text-start font-cairo">
+                <label class="form-label extra-small fw-bold">رمز التحقق (PIN Code)</label>
+                <input id="swal-otp" class="form-control font-monospace text-center fs-5" placeholder="أدخل الرمز" value="${generatedOtp}">
+            </div>
+            <div class="mb-3 text-start font-cairo">
+                <label class="form-label extra-small fw-bold">كلمة المرور الجديدة</label>
+                <input id="swal-password" type="password" class="form-control" placeholder="••••••••">
+            </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'تحديث كلمة المرور الآن 💾',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#10b981',
+        preConfirm: () => {
+            const otp = document.getElementById('swal-otp').value;
+            const pass = document.getElementById('swal-password').value;
+            if (!otp) {
+                Swal.showValidationMessage('يرجى إدخال رمز التحقق!');
+                return false;
+            }
+            if (!pass || pass.length < 4) {
+                Swal.showValidationMessage('يرجى إدخال كلمة مرور جديدة (4 خانات على الأقل)!');
+                return false;
+            }
+            return { otp: otp, password: pass };
+        }
+    });
+
+    if (formValues) {
+        Swal.fire({
+            title: 'جاري تحديث كلمة المرور...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const res = await fetch('/reset-password-confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    otp_code: formValues.otp,
+                    new_password: formValues.password
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                Swal.fire('نجاح!', data.message, 'success');
+                const uInput = document.getElementById('username');
+                if (uInput) uInput.value = username;
+            } else {
+                Swal.fire('خطأ!', data.message || 'فشل تحديث كلمة المرور.', 'error');
+            }
+        } catch (err) {
+            Swal.fire('خطأ!', 'حدث خطأ في الاتصال بالسيرفر.', 'error');
+        }
+    }
+}
+</script>
 
 {% endblock %}

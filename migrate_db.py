@@ -65,6 +65,8 @@ def run_migrations():
         add_column_if_missing(cursor, 'users', 'failed_login_attempts', "INT DEFAULT 0")
         add_column_if_missing(cursor, 'users', 'locked_until', "DATETIME NULL")
         add_column_if_missing(cursor, 'users', 'last_login', "DATETIME NULL")
+        add_column_if_missing(cursor, 'users', 'reset_otp', "VARCHAR(10) NULL")
+        add_column_if_missing(cursor, 'users', 'reset_otp_expiry', "DATETIME NULL")
         add_column_if_missing(cursor, 'users', 'created_at', "DATETIME NULL")
         add_column_if_missing(cursor, 'users', 'updated_at', "DATETIME NULL")
         add_column_if_missing(cursor, 'users', 'is_deleted', "TINYINT(1) DEFAULT 0")

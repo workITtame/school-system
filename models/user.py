@@ -12,10 +12,12 @@ class User(db.Model, UserMixin, AuditMixin):
     role = db.Column(db.String(20), nullable=False, default='teacher') # 'admin' or 'teacher'
     name = db.Column(db.String(100), nullable=False)
     
-    # Brute-force protection
+    # Brute-force protection & Password Reset
     failed_login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
+    reset_otp = db.Column(db.String(10), nullable=True)
+    reset_otp_expiry = db.Column(db.DateTime, nullable=True)
     
     teacher_profile = db.relationship('Teacher', back_populates='user', uselist=False, cascade='all, delete-orphan')
 
