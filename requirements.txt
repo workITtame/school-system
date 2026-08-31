@@ -10,5 +10,8 @@ Flask-Caching==2.4.0
 pymysql
 cryptography
 fpdf2
+openpyxl
+requests
 gunicorn
 python-dotenv
+Werkzeug
