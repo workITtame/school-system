@@ -161,6 +161,16 @@ def init_db_if_not_exists(app):
         with app.app_context():
             db.create_all()
             print("Verified/Created database tables.")
+            
+            # Ensure default admin exists
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(username='admin', name='مدير النظام', role='admin')
+                admin.set_password('123456')
+                db.session.add(admin)
+                db.session.commit()
+                print("Default admin user created (username: admin / pass: 123456).")
+                
             cleanup_attendance_duplicates()
     except Exception as e:
         print(f"Error checking/creating database: {e}")

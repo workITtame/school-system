@@ -569,30 +569,32 @@ def get_admin_dashboard_data():
     grade_dist_data = [excellent_count, very_good_count, good_count, below_60_count]
 
     # 9. Top 5 Students & Top 5 Teachers
-    top_students_raw = db.session.query(
-        Student,
+    top_avg_scores = db.session.query(
+        Marks.SID,
         func.avg(Marks.Score).label('avg_score')
-    ).join(Marks, Marks.SID == Student.SID)\
-     .options(joinedload(Student.school_class))\
-     .filter(Student.is_deleted == False)\
-     .group_by(Student.SID)\
-     .order_by(text('avg_score DESC'))\
-     .limit(5).all()
+    ).filter(
+        Marks.Score.isnot(None),
+        Marks.is_deleted == False
+    ).group_by(Marks.SID).order_by(text('avg_score DESC')).limit(10).all()
 
     top_students = []
-    for st, avg_s in top_students_raw:
-        avg_val = round(float(avg_s), 1) if avg_s else 0.0
-        badge_text = 'متفوق ممتاز' if avg_val >= 90 else ('جيد جداً' if avg_val >= 75 else 'ناجح')
-        badge_color = 'success' if avg_val >= 90 else ('primary' if avg_val >= 75 else 'info')
-        top_students.append({
-            'id': st.SID,
-            'name': st.SName,
-            'image': st.Image,
-            'class_name': st.school_class.CName if st.school_class else 'غير محدد',
-            'avg_score': avg_val,
-            'badge_text': badge_text,
-            'badge_color': badge_color
-        })
+    for sid, avg_s in top_avg_scores:
+        st = Student.query.options(joinedload(Student.school_class)).filter_by(SID=sid, is_deleted=False).first()
+        if st:
+            avg_val = round(float(avg_s), 1) if avg_s else 0.0
+            badge_text = 'متفوق ممتاز' if avg_val >= 90 else ('جيد جداً' if avg_val >= 75 else 'ناجح')
+            badge_color = 'success' if avg_val >= 90 else ('primary' if avg_val >= 75 else 'info')
+            top_students.append({
+                'id': st.SID,
+                'name': st.SName,
+                'image': st.Image,
+                'class_name': st.school_class.CName if st.school_class else 'غير محدد',
+                'avg_score': avg_val,
+                'badge_text': badge_text,
+                'badge_color': badge_color
+            })
+            if len(top_students) >= 5:
+                break
 
     # Top 5 Teachers
     teachers_query = Teacher.query.options(joinedload(Teacher.subjects)).filter_by(is_deleted=False).all()
@@ -702,7 +704,7 @@ def get_admin_dashboard_data():
         })
 
     from services.teacher_students_service import get_teacher_student_stats
-    admin_st_stats = get_teacher_student_stats(uid)
+    admin_st_stats = get_teacher_student_stats(uid if uid else 1)
     admin_needing_attention_cnt = admin_st_stats.get('needing_attention_count', 0) if admin_st_stats else 0
     if admin_needing_attention_cnt > 0:
         smart_attention_items.append({
