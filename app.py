@@ -219,9 +219,96 @@ def init_db_if_not_exists(app):
                 db.session.commit()
                 print("Default admin user created (username: admin / pass: 123456).")
                 
+            import_seed_data_if_needed()
             cleanup_attendance_duplicates()
     except Exception as e:
         print(f"Error checking/creating database: {e}")
+
+def import_seed_data_if_needed():
+    """Auto-import local seed_data.json to online DB if empty."""
+    try:
+        from models import User, Student, Teacher, Classes, Sections, Subject, Homework, School
+        if Classes.query.count() > 0 and Teacher.query.count() > 0:
+            return
+
+        json_path = os.path.join(BASE_DIR, 'seed_data.json')
+        if not os.path.exists(json_path):
+            return
+
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        print("Importing seed data from seed_data.json...")
+
+        for item in data.get('schools', []):
+            if not School.query.filter_by(SchoolID=item.get('SchoolID')).first():
+                s = School(**item)
+                db.session.add(s)
+        db.session.commit()
+
+        for item in data.get('users', []):
+            if not User.query.filter_by(id=item.get('id')).first() and not User.query.filter_by(username=item.get('username')).first():
+                u = User()
+                for k, v in item.items():
+                    if hasattr(u, k):
+                        if k in ['created_at', 'updated_at', 'last_login', 'locked_until'] and v:
+                            try:
+                                v = datetime.fromisoformat(v)
+                            except Exception:
+                                v = None
+                        setattr(u, k, v)
+                db.session.add(u)
+        db.session.commit()
+
+        for item in data.get('classes', []):
+            if not Classes.query.filter_by(CID=item.get('CID')).first():
+                c = Classes(**item)
+                db.session.add(c)
+        db.session.commit()
+
+        for item in data.get('sections', []):
+            if not Sections.query.filter_by(SectionID=item.get('SectionID')).first():
+                sec = Sections(**item)
+                db.session.add(sec)
+        db.session.commit()
+
+        for item in data.get('subjects', []):
+            if not Subject.query.filter_by(SubID=item.get('SubID')).first():
+                sub = Subject(**item)
+                db.session.add(sub)
+        db.session.commit()
+
+        for item in data.get('teachers', []):
+            if not Teacher.query.filter_by(TID=item.get('TID')).first():
+                t = Teacher(**item)
+                db.session.add(t)
+        db.session.commit()
+
+        for item in data.get('students', []):
+            if not Student.query.filter_by(SID=item.get('SID')).first():
+                if item.get('SBirthDate'):
+                    try:
+                        item['SBirthDate'] = date.fromisoformat(item['SBirthDate'])
+                    except Exception:
+                        item['SBirthDate'] = None
+                st = Student(**item)
+                db.session.add(st)
+        db.session.commit()
+
+        for item in data.get('homeworks', []):
+            if not Homework.query.filter_by(id=item.get('id')).first():
+                if item.get('due_date'):
+                    try:
+                        item['due_date'] = date.fromisoformat(item['due_date'])
+                    except Exception:
+                        item['due_date'] = None
+                h = Homework(**item)
+                db.session.add(h)
+        db.session.commit()
+
+        print("Successfully imported seed_data.json to online database!")
+    except Exception as e:
+        print(f"Error importing seed_data.json: {e}")
 
 def cleanup_attendance_duplicates():
     """Remove duplicate attendance records for the same student on the same date."""
