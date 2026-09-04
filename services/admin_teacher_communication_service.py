@@ -1,14 +1,15 @@
 import logging
 from datetime import datetime
 from sqlalchemy.orm import joinedload, selectinload
-from models import db, Teacher, Student, Classes, Subject, Sections, User
+from models import db, Teacher, Student, Classes, Subject, Sections, User, Message
 from services.teacher_students_service import get_teacher_students_query, get_teacher_by_user_id
 
 logger = logging.getLogger(__name__)
 
-_STORED_REQUESTS = []
+_STORED_REQUESTS = {}
 _STORED_ADMIN_MESSAGES = {}
 _STORED_ACKNOWLEDGED = set()
+_STORED_TASKS = {}
 
 def _get_teacher_scope(user_id):
     user = User.query.get(user_id)
@@ -26,12 +27,19 @@ def _get_teacher_scope(user_id):
 def get_dashboard_statistics(user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
     
-    new_announcements = 3
-    private_messages = 2
-    open_requests = len([r for r in _STORED_REQUESTS if r.get('status') in ['Draft', 'Submitted', 'Under Review']]) + 1
-    approved_requests = len([r for r in _STORED_REQUESTS if r.get('status') == 'Approved']) + 2
-    rejected_requests = len([r for r in _STORED_REQUESTS if r.get('status') == 'Rejected'])
-    assigned_tasks = 4
+    announcements = get_teacher_announcements(user_id)
+    new_announcements = len([a for a in announcements if not a.get('acknowledged')])
+    
+    threads = get_teacher_private_messages(user_id)
+    private_messages = len(threads)
+    
+    user_reqs = _STORED_REQUESTS.get(user_id, [])
+    open_requests = len([r for r in user_reqs if r.get('status') in ['Draft', 'Submitted', 'Under Review']])
+    approved_requests = len([r for r in user_reqs if r.get('status') == 'Approved'])
+    rejected_requests = len([r for r in user_reqs if r.get('status') == 'Rejected'])
+    
+    tasks = get_assigned_tasks(user_id)
+    assigned_tasks = len([t for t in tasks if t.get('status') != 'Completed'])
 
     return {
         'new_announcements': new_announcements,
@@ -60,7 +68,7 @@ def get_teacher_announcements(user_id, search=None, priority=None):
             'priority_badge': 'danger',
             'attachment_name': 'جدول_الاختبارات_النهائي.pdf',
             'attachment_url': '#',
-            'acknowledged': 1001 in _STORED_ACKNOWLEDGED,
+            'acknowledged': (user_id, 1001) in _STORED_ACKNOWLEDGED,
             'read': True
         },
         {
@@ -76,7 +84,7 @@ def get_teacher_announcements(user_id, search=None, priority=None):
             'priority_badge': 'warning',
             'attachment_name': 'جدول_أعمال_الاجتماع.docx',
             'attachment_url': '#',
-            'acknowledged': 1002 in _STORED_ACKNOWLEDGED,
+            'acknowledged': (user_id, 1002) in _STORED_ACKNOWLEDGED,
             'read': False
         },
         {
@@ -92,7 +100,7 @@ def get_teacher_announcements(user_id, search=None, priority=None):
             'priority_badge': 'success',
             'attachment_name': 'دليل_رصد_الدرجات.pdf',
             'attachment_url': '#',
-            'acknowledged': 1003 in _STORED_ACKNOWLEDGED,
+            'acknowledged': (user_id, 1003) in _STORED_ACKNOWLEDGED,
             'read': True
         }
     ]
@@ -111,28 +119,51 @@ def get_teacher_announcements(user_id, search=None, priority=None):
 def get_teacher_private_messages(user_id, search=None):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
 
+    threads = []
+    try:
+        msgs = Message.query.filter(
+            (Message.sender_id == user_id) | (Message.recipient_id == user_id)
+        ).order_by(Message.timestamp.desc()).all()
+
+        interlocutors = {}
+        for msg in msgs:
+            other_id = msg.recipient_id if msg.sender_id == user_id else msg.sender_id
+            if other_id not in interlocutors:
+                interlocutors[other_id] = []
+            interlocutors[other_id].append(msg)
+
+        for other_id, conv_msgs in interlocutors.items():
+            other_user = User.query.get(other_id)
+            admin_name = getattr(other_user, 'name', 'إدارة المدرسة')
+            admin_role = 'إدارة المدرسة' if getattr(other_user, 'role', '') in ['admin', 'supervisor'] else 'مستخدم'
+            last_msg = conv_msgs[0]
+            unread = sum(1 for m in conv_msgs if m.recipient_id == user_id and not m.is_read)
+            threads.append({
+                'conversation_id': other_id,
+                'admin_name': admin_name,
+                'admin_role': admin_role,
+                'last_message': last_msg.content,
+                'last_time': last_msg.timestamp.strftime('%H:%M ص') if last_msg.timestamp else '',
+                'unread_count': unread,
+                'status': 'نشطة'
+            })
+    except Exception as e:
+        logger.error(f"Error querying Message model: {e}")
+
     stored_list = _STORED_ADMIN_MESSAGES.get(user_id, [])
-    
-    threads = [
-        {
-            'conversation_id': 501,
-            'admin_name': 'إدارة الموارد البشرية والتعيينات',
-            'admin_role': 'الإدارة المركزية',
-            'last_message': stored_list[-1]['text'] if stored_list else 'تمت الموافقة المبدئية على طلب تعديل النصاب الأسبوعي.',
-            'last_time': stored_list[-1]['time'] if stored_list else '10:15 ص',
+    if stored_list and not threads:
+        admin_user = User.query.filter_by(role='admin').first()
+        admin_id = admin_user.id if admin_user else 1
+        admin_title = getattr(admin_user, 'name', 'إدارة المدرسة')
+        threads.append({
+            'conversation_id': admin_id,
+            'admin_name': admin_title,
+            'admin_role': 'إدارة المدرسة',
+            'last_message': stored_list[-1]['text'],
+            'last_time': stored_list[-1]['time'],
             'unread_count': 0,
             'status': 'نشطة'
-        },
-        {
-            'conversation_id': 502,
-            'admin_name': 'مكتب الناظر والمدير الأكاديمي',
-            'admin_role': 'إدارة المدرسة',
-            'last_message': 'يرجى تزويدنا بتقرير متابعة الطلاب المتعثرين قبل نهاية الأسبوع.',
-            'last_time': 'أمس 02:00 م',
-            'unread_count': 1,
-            'status': 'بانتظار الرد'
-        }
-    ]
+        })
 
     if search:
         s_lower = search.lower().strip()
@@ -143,41 +174,66 @@ def get_teacher_private_messages(user_id, search=None):
 def get_conversation(conversation_id, user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
 
-    default_messages = [
-        {
-            'id': 1,
-            'sender': 'admin',
-            'sender_name': 'إدارة الموارد البشرية والتعيينات',
-            'text': f'مرحباً بك أستاذ {teacher.TeacherName}، نود إحاطتكم بتحديث نصاب الحصص الأسبوعي.',
-            'time': '09:00 ص',
-            'status': 'read'
-        },
-        {
-            'id': 2,
-            'sender': 'teacher',
-            'sender_name': teacher.TeacherName,
-            'text': 'أهلاً بحضرتك، شاكر جداً للتحديث وسأقوم بالمتابعة والالتزام فوراً.',
-            'time': '09:15 ص',
-            'status': 'delivered'
-        }
-    ]
+    messages = []
+    admin_name = 'إدارة المدرسة'
+    try:
+        other_user = User.query.get(conversation_id)
+        if other_user:
+            admin_name = getattr(other_user, 'name', 'إدارة المدرسة')
+
+        msgs = Message.query.filter(
+            ((Message.sender_id == user_id) & (Message.recipient_id == conversation_id)) |
+            ((Message.sender_id == conversation_id) & (Message.recipient_id == user_id))
+        ).order_by(Message.timestamp.asc()).all()
+
+        for m in msgs:
+            is_me = (m.sender_id == user_id)
+            messages.append({
+                'id': m.id,
+                'sender': 'teacher' if is_me else 'admin',
+                'sender_name': getattr(teacher, 'TeacherName', 'المعلم') if is_me else admin_name,
+                'text': m.content,
+                'time': m.timestamp.strftime('%H:%M ص') if m.timestamp else '',
+                'status': 'read' if m.is_read else 'delivered'
+            })
+    except Exception as e:
+        logger.error(f"Error querying conversation messages: {e}")
 
     stored_list = _STORED_ADMIN_MESSAGES.get(user_id, [])
-    full_stream = default_messages + stored_list
+    for sm in stored_list:
+        messages.append(sm)
 
     return {
         'conversation_id': conversation_id,
-        'admin_name': 'إدارة الموارد البشرية والتعيينات',
-        'messages': full_stream
+        'admin_name': admin_name,
+        'messages': messages
     }
 
 def send_message(user_id, message_text, recipient_id=None):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
 
+    try:
+        if not recipient_id:
+            admin_user = User.query.filter_by(role='admin').first()
+            recipient_id = admin_user.id if admin_user else 1
+
+        db_msg = Message(
+            sender_id=user_id,
+            recipient_id=recipient_id,
+            content=message_text,
+            timestamp=datetime.utcnow(),
+            is_read=False
+        )
+        db.session.add(db_msg)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error saving message to DB: {e}")
+        db.session.rollback()
+
     msg_obj = {
         'id': int(datetime.now().timestamp()),
         'sender': 'teacher',
-        'sender_name': teacher.TeacherName,
+        'sender_name': getattr(teacher, 'TeacherName', 'المعلم'),
         'text': message_text,
         'time': datetime.now().strftime('%H:%M ص'),
         'status': 'delivered'
@@ -187,17 +243,19 @@ def send_message(user_id, message_text, recipient_id=None):
     return msg_obj
 
 def reply_message(user_id, conversation_id, message_text):
-    return send_message(user_id, message_text)
+    return send_message(user_id, message_text, recipient_id=conversation_id)
 
 def create_request(user_id, request_type, title, description, attachments=None):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    teacher_name = getattr(teacher, 'TeacherName', 'المعلم')
 
+    user_reqs = _STORED_REQUESTS.setdefault(user_id, [])
     req_obj = {
-        'id': len(_STORED_REQUESTS) + 2001,
+        'id': len(user_reqs) + 2001,
         'request_type': request_type,
         'title': title,
         'description': description,
-        'teacher_name': teacher.TeacherName,
+        'teacher_name': teacher_name,
         'date_str': datetime.now().strftime('%Y-%m-%d'),
         'status': 'Submitted',
         'status_label': 'مقدم للإدارة 🟡',
@@ -205,47 +263,20 @@ def create_request(user_id, request_type, title, description, attachments=None):
         'attachments': attachments or []
     }
 
-    _STORED_REQUESTS.append(req_obj)
+    user_reqs.append(req_obj)
     return req_obj
 
 def get_teacher_requests(user_id, status=None):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-
-    defaults = [
-        {
-            'id': 1991,
-            'request_type': 'إجازة اعتيادية',
-            'title': 'طلب إجازة اعتيادية لمدة يومين',
-            'description': 'يرجى الموافقة على طلب إجازة قصيرة لظروف عائلية وتكليف المعلم البديل.',
-            'teacher_name': teacher.TeacherName,
-            'date_str': datetime.now().strftime('%Y-%m-%d'),
-            'status': 'Approved',
-            'status_label': 'معتمد 🟢',
-            'status_badge': 'success',
-            'attachments': []
-        },
-        {
-            'id': 1992,
-            'request_type': 'تعديل الجدول',
-            'title': 'طلب تبديل حصة الرياضيات الرابعة',
-            'description': 'طلب تبديل الحصة الرابعة يوم الثلاثاء مع المعلم التخصصي.',
-            'teacher_name': teacher.TeacherName,
-            'date_str': datetime.now().strftime('%Y-%m-%d'),
-            'status': 'Under Review',
-            'status_label': 'قيد المراجعة 🟡',
-            'status_badge': 'warning',
-            'attachments': []
-        }
-    ]
-
-    all_reqs = defaults + _STORED_REQUESTS
+    user_reqs = _STORED_REQUESTS.get(user_id, [])
     if status and status != 'all':
-        all_reqs = [r for r in all_reqs if r['status'] == status]
-    return all_reqs
+        return [r for r in user_reqs if r.get('status') == status]
+    return list(user_reqs)
 
 def cancel_request(request_id, user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    for r in _STORED_REQUESTS:
+    user_reqs = _STORED_REQUESTS.get(user_id, [])
+    for r in user_reqs:
         if r['id'] == request_id:
             r['status'] = 'Cancelled'
             r['status_label'] = 'ملغي ⚪'
@@ -254,41 +285,28 @@ def cancel_request(request_id, user_id):
 
 def get_assigned_tasks(user_id, status=None):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-
-    tasks = [
-        {
-            'id': 3001,
-            'title': '📋 الإشراف على مراقبة اختبار المنتصف بالقاعة #4',
-            'description': 'تكليف إداري بالإشراف والتواجد بقاعة الاختبارات الرئيسية الحصة الثانية.',
-            'due_date': '2026-08-10',
-            'priority': 'عاجل',
-            'status': 'Pending',
-            'status_label': 'بانتظار القبول 🟡',
-            'status_badge': 'warning'
-        },
-        {
-            'id': 3002,
-            'title': '📊 تسليم التقرير الأكاديمي الشهري للطلاب المتعثرين',
-            'description': 'يرجى إرفاق تقرير المتابعة الخاص بمركز الدرجات لمكتب مدير المدرسة.',
-            'due_date': '2026-08-12',
-            'priority': 'هام',
-            'status': 'Completed',
-            'status_label': 'مكتمل 🟢',
-            'status_badge': 'success'
-        }
-    ]
-
+    user_tasks = _STORED_TASKS.get(user_id, [])
     if status and status != 'all':
-        tasks = [t for t in tasks if t['status'] == status]
-    return tasks
+        user_tasks = [t for t in user_tasks if t.get('status') == status]
+    return list(user_tasks)
 
 def update_task_status(task_id, user_id, status):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
+    user_tasks = _STORED_TASKS.get(user_id, [])
+    for t in user_tasks:
+        if t['id'] == task_id:
+            t['status'] = status
+            if status == 'Completed':
+                t['status_label'] = 'مكتمل 🟢'
+                t['status_badge'] = 'success'
+            elif status == 'Pending':
+                t['status_label'] = 'بانتظار القبول 🟡'
+                t['status_badge'] = 'warning'
     return True
 
 def acknowledge_announcement(announcement_id, user_id):
     teacher, students, class_ids, section_ids = _get_teacher_scope(user_id)
-    _STORED_ACKNOWLEDGED.add(announcement_id)
+    _STORED_ACKNOWLEDGED.add((user_id, announcement_id))
     return True
 
 def archive_conversation(conversation_id, user_id):

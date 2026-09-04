@@ -27,9 +27,9 @@ def cleanup_and_scope_teacher_notifications(user_id):
         my_students = st_q.all() if st_q else []
         my_st_ids = [s.SID for s in my_students]
 
-        other_students = Student.query.filter(Student.SID.notin_(my_st_ids)).all() if my_st_ids else []
+        other_students = Student.query.filter(Student.SID.notin_(my_st_ids)).all() if my_st_ids else Student.query.all()
         other_st_names = [s.SName for s in other_students if s.SName]
-        other_subjects = Subject.query.filter(Subject.SubID.notin_(sub_ids)).all() if sub_ids else []
+        other_subjects = Subject.query.filter(Subject.SubID.notin_(sub_ids)).all() if sub_ids else Subject.query.all()
         other_sub_names = [s.SubName for s in other_subjects if s.SubName]
 
         notifs = Notification.query.filter_by(user_id=user_id).all()

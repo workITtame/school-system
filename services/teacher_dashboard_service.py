@@ -106,18 +106,23 @@ def get_today_classes(teacher_id):
 def get_teacher_students(teacher):
     """
     Fetch all students taught by current teacher across their classes & sections.
+    If the teacher has no assigned classes, returns empty list (strictly scoped).
     """
+    if not teacher:
+        return []
+
     try:
         _, class_ids, section_ids = get_teacher_subject_and_class_ids(teacher)
+        if not class_ids:
+            return []
+
         query = Student.query.options(
             joinedload(Student.school_class),
             joinedload(Student.section)
-        ).filter(Student.is_deleted == False, Student.CID.isnot(None))
+        ).filter(Student.is_deleted == False, Student.CID.isnot(None), Student.CID.in_(class_ids))
 
-        if class_ids:
-            query = query.filter(Student.CID.in_(class_ids))
-            if section_ids:
-                query = query.filter(or_(Student.SectionID.in_(section_ids), Student.SectionID.is_(None)))
+        if section_ids:
+            query = query.filter(or_(Student.SectionID.in_(section_ids), Student.SectionID.is_(None)))
 
         return query.all()
     except Exception as e:
@@ -459,7 +464,7 @@ def get_dashboard_statistics(teacher):
         teacher_name = teacher.TeacherName if teacher else 'المعلم الأكاديمي'
         teacher_title = teacher.TeacherTitle if (teacher and teacher.TeacherTitle) else 'معلم أكاديمي'
         subjects_list = [s.SubName for s in teacher.subjects] if (teacher and teacher.subjects) else []
-        subjects_str = " | ".join(subjects_list) if subjects_list else 'المواد الدراسية'
+        subjects_str = " | ".join(subjects_list) if subjects_list else 'لم يتم إسناد مواد بعد'
 
         now_time = datetime.now()
         arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']

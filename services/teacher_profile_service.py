@@ -109,36 +109,41 @@ def get_teacher_profile(user_id):
     name_val = teacher.TeacherName if (isinstance(teacher, Teacher) and teacher.TeacherName) else (user.name if user else '')
     email_val = teacher.Email if (isinstance(teacher, Teacher) and teacher.Email) else (user.username if user else '')
     phone_val = getattr(teacher, 'Phone', '') if (isinstance(teacher, Teacher) and teacher.Phone) else getattr(user, 'phone', '')
-    if not phone_val:
-        phone_val = '0501234567'
 
-    qual_val = getattr(teacher, 'Qualification', '') if isinstance(teacher, Teacher) else ''
+    qual_val = (teacher.qualification.QName if (teacher and teacher.qualification) else getattr(teacher, 'Qualification', '')) if isinstance(teacher, Teacher) else ''
     if not qual_val:
-        qual_val = 'بكالوريوس في العلوم والتربية'
+        qual_val = 'غير محدد'
 
     hours_val = getattr(teacher, 'OfficeHours', '') if isinstance(teacher, Teacher) else ''
-    if not hours_val:
-        hours_val = 'الأحد - الخميس (08:00 ص - 01:30 م)'
 
     bio_val = (getattr(teacher, 'Bio', None) or getattr(teacher, 'Notes', None)) if isinstance(teacher, Teacher) else ''
-    if not bio_val:
-        bio_val = 'معلم مادة العلوم للمرحلة الأساسية، متخصص في استراتيجيات التدريس التفاعلي والمتابعة الأكاديمية والتربوية للطلاب.'
+
+    spec_val = spec or (teacher.TeacherTitle if (teacher and teacher.TeacherTitle) else 'معلم أكاديمي')
+
+    photo_url = None
+    if isinstance(teacher, Teacher) and teacher.Image:
+        clean_img = teacher.Image.replace('static/', '').lstrip('/')
+        try:
+            from flask import has_request_context
+            photo_url = url_for('static', filename=clean_img) if has_request_context() else f"/static/{clean_img}"
+        except Exception:
+            photo_url = f"/static/{clean_img}"
 
     return {
         'teacher_id': teacher.TeacherID if isinstance(teacher, Teacher) else None,
         'user_id': user_id,
         'name': name_val or '',
         'email': email_val or '',
-        'phone': phone_val,
-        'specialization': spec or 'معلم مواد علمية (العلوم)',
-        'bio': bio_val,
+        'phone': phone_val or '',
+        'specialization': spec_val,
+        'bio': bio_val or '',
         'qualification': qual_val,
-        'office_hours': hours_val,
+        'office_hours': hours_val or '',
         'avatar': getattr(teacher, 'Image', None) if isinstance(teacher, Teacher) else getattr(user, 'avatar', None),
-        'photo_url': url_for('static', filename=teacher.Image.replace('static/', '').lstrip('/')) if (isinstance(teacher, Teacher) and teacher.Image) else None,
+        'photo_url': photo_url,
         'member_since': teacher.created_at.strftime('%Y-%m-%d') if (isinstance(teacher, Teacher) and hasattr(teacher, 'created_at') and teacher.created_at) else '2023-09-01',
         'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if (user and user.last_login) else datetime.now().strftime('%Y-%m-%d %H:%M'),
-        'completion_pct': completion_pct if completion_pct > 0 else 95,
+        'completion_pct': completion_pct if completion_pct > 0 else 50,
         'security_score': 'A+ (98%)',
         'account_status': teacher.Status if (isinstance(teacher, Teacher) and teacher.Status) else 'نشط 🟢'
     }

@@ -10,10 +10,10 @@ def _get_teacher_scope(user_id):
     teacher = get_teacher_by_user_id(user_id)
     if not teacher:
         user = User.query.get(user_id)
-        if user and getattr(user, 'role', '') in ['teacher', 'admin']:
+        if user and getattr(user, 'role', '') == 'admin':
             query = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None))
             return user, query.all(), [], []
-        raise PermissionError("Teacher not found")
+        return user, [], [], []
     query, class_ids, section_ids = get_teacher_students_query(teacher)
     students = query.all()
     return teacher, students, class_ids, section_ids

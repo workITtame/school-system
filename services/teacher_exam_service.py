@@ -42,8 +42,8 @@ def _get_teacher_and_scope(user_id):
     return teacher, teacher_class_ids, teacher_section_ids, teacher_subject_ids
 
 def get_teacher_exam_statistics(user_id):
-    teacher, teacher_class_ids, _, _ = _get_teacher_and_scope(user_id)
-    if not teacher:
+    teacher, teacher_class_ids, _, teacher_subject_ids = _get_teacher_and_scope(user_id)
+    if not teacher or (not teacher_class_ids and not teacher_subject_ids):
         return {
             'total_count': 0,
             'active_count': 0,
@@ -56,6 +56,8 @@ def get_teacher_exam_statistics(user_id):
     query = ExamSchedule.query
     if teacher_class_ids:
         query = query.filter(ExamSchedule.CID.in_(list(teacher_class_ids)))
+    elif teacher_subject_ids:
+        query = query.filter(ExamSchedule.SubID.in_(list(teacher_subject_ids)))
 
     all_exams = query.all()
     today_date = date.today()
@@ -115,9 +117,12 @@ def get_teacher_exam_statistics(user_id):
     }
 
 def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, status=None, search=None, page=1, per_page=10):
-    teacher, teacher_class_ids, _, _ = _get_teacher_and_scope(user_id)
+    teacher, teacher_class_ids, _, teacher_subject_ids = _get_teacher_and_scope(user_id)
     if not teacher:
         raise PermissionError("Teacher access required")
+
+    if not teacher_class_ids and not teacher_subject_ids:
+        return {'items': [], 'total': 0, 'page': 1, 'per_page': per_page, 'total_pages': 1}
 
     query = ExamSchedule.query.options(
         joinedload(ExamSchedule.subject),
@@ -127,6 +132,8 @@ def get_teacher_exams(user_id, subject_id=None, class_id=None, section_id=None, 
 
     if teacher_class_ids:
         query = query.filter(ExamSchedule.CID.in_(list(teacher_class_ids)))
+    elif teacher_subject_ids:
+        query = query.filter(ExamSchedule.SubID.in_(list(teacher_subject_ids)))
 
     if subject_id:
         try: query = query.filter(ExamSchedule.SubID == int(subject_id))

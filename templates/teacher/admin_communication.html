@@ -172,6 +172,11 @@
                                     <p class="text-secondary mb-1 text-truncate">{{ m.last_message }}</p>
                                     <small class="text-muted font-monospace">{{ m.last_time }}</small>
                                 </div>
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fa-regular fa-comments fs-3 text-secondary mb-2 d-block"></i>
+                                    لا توجد محادثات سابقة
+                                </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -181,15 +186,14 @@
                 <div class="col-12 col-lg-8">
                     <div class="card rounded-4 shadow-sm border-0 h-100 d-flex flex-column bg-white">
                         <div class="card-header bg-white p-3 border-bottom d-flex align-items-center justify-content-between">
-                            <h6 class="fw-bold text-dark mb-0 fs-6" id="activeAdminTitle">إدارة الموارد البشرية والتعيينات</h6>
-                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 extra-small">متصل الآن</span>
+                            <h6 class="fw-bold text-dark mb-0 fs-6" id="activeAdminTitle">إدارة المدرسة</h6>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 extra-small">قناة الاتصال الرسمية</span>
                         </div>
                         <div class="card-body p-3 flex-grow-1 overflow-y-auto bg-light d-flex flex-column gap-3" id="adminMessagesStream" style="max-height: 360px; min-height: 300px;">
-                            <div class="d-flex flex-column align-items-start max-w-75 me-auto">
-                                <div class="p-3 bg-white text-dark rounded-4 shadow-sm border extra-small line-height-lg">
-                                    مرحباً بك أستاذ، نود إحاطتكم بتحديث نصاب الحصص الأسبوعي لهذا الفصل.
-                                </div>
-                                <small class="text-muted font-monospace extra-small mt-1 ms-1">09:00 ص</small>
+                            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted my-auto text-center" id="adminMessagesEmptyPlaceholder">
+                                <i class="fa-regular fa-comments fs-2 text-secondary mb-2"></i>
+                                <span class="fw-bold">مساحة التواصل المباشر مع الإدارة</span>
+                                <small class="text-muted">اكتب استفسارك أو رسالتك في الحقل أدناه لإرسالها مباشرة لإدارة المدرسة</small>
                             </div>
                         </div>
                         <div class="card-footer bg-white p-3 border-top">
@@ -243,6 +247,13 @@
                                         {% endif %}
                                     </td>
                                 </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <i class="fa-regular fa-folder-open fs-3 text-secondary d-block mb-2"></i>
+                                        لا توجد طلبات أو رسائل خدمة مقدمة حالياً
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -272,6 +283,12 @@
                                     {% endif %}
                                 </div>
                             </div>
+                        </div>
+                    {% else %}
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="fa-solid fa-clipboard-check fs-2 text-secondary d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark">لا توجد مهام أو تكليفات مسندة حالياً</h6>
+                            <p class="extra-small text-muted mb-0">سيتم إدراج أي تكليفات أو مهام مراقبة جديدة هنا فور صدورها من إدارة المدرسة.</p>
                         </div>
                     {% endfor %}
                 </div>

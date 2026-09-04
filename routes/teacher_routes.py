@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from flask_login import login_required, current_user
 from datetime import datetime
 import time
@@ -173,7 +173,13 @@ def add_teacher():
         q_name = request.form.get('q_name')
         salary = request.form.get('salary')
         currency = request.form.get('currency', 'USD')
-        dob = request.form.get('dob')
+        dob_str = request.form.get('dob')
+        dob_val = None
+        if dob_str:
+            try:
+                dob_val = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
         pob = request.form.get('pob')
         gender = request.form.get('gender', 'ذكر')
         selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if x.isdigit()]
@@ -203,6 +209,7 @@ def add_teacher():
             Salary=float(salary) if salary else None,
             Currency=currency,
             Gender=gender,
+            DOB=dob_val,
             POB=pob,
             QID=qual.QID if qual else None,
             user_id=user_id,
@@ -244,10 +251,26 @@ def edit_teacher(id):
             teacher.user.username = teacher.Email
         teacher.Phone = request.form.get('phone', teacher.Phone)
         teacher.TeacherTitle = request.form.get('teacher_title', teacher.TeacherTitle)
-        teacher.Salary = float(request.form.get('salary')) if request.form.get('salary') else teacher.Salary
+        salary_str = request.form.get('salary')
+        if salary_str:
+            try:
+                teacher.Salary = float(salary_str)
+            except (ValueError, TypeError):
+                pass
+        else:
+            teacher.Salary = None
         teacher.Currency = request.form.get('currency', teacher.Currency)
         teacher.Gender = request.form.get('gender', teacher.Gender)
         teacher.POB = request.form.get('pob', teacher.POB)
+        
+        dob_str = request.form.get('dob')
+        if dob_str:
+            try:
+                teacher.DOB = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
+        else:
+            teacher.DOB = None
         
         selected_subject_ids = [int(x) for x in request.form.getlist('subject_ids') if str(x).isdigit()]
         current_sub_ids = {s.SubID for s in teacher.subjects}
@@ -268,7 +291,13 @@ def edit_teacher(id):
         q_name = request.form.get('q_name')
         if q_name:
             qual = Qualifications.query.filter_by(QName=q_name).first()
-            if qual: teacher.QID = qual.QID
+            if not qual:
+                qual = Qualifications(QName=q_name)
+                db.session.add(qual)
+                db.session.flush()
+            teacher.QID = qual.QID
+        else:
+            teacher.QID = None
             
         photo = request.files.get('photo')
         if photo and photo.filename:
@@ -279,6 +308,7 @@ def edit_teacher(id):
             teacher.Image = f"uploads/teachers/{filename}"
             
         db.session.commit()
+        flash('تم حفظ وتحديث بيانات المعلم بنجاح', 'success')
         return redirect(url_for('teacher.view_teacher', id=teacher.TeacherID))
 
     qualifications = Qualifications.query.all()

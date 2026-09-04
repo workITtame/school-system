@@ -225,11 +225,11 @@
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark">تاريخ الميلاد <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-dark">تاريخ الميلاد</label>
                                 <div class="position-relative">
                                     <i class="fa-solid fa-calendar input-icon-prepend"></i>
-                                    <input type="date" class="form-control form-control-lg input-with-icon rounded-3" name="dob" id="inputDob" value="{{ teacher.DOB or '' }}" required>
-                                    <div class="invalid-feedback">يرجى تحديد تاريخ الميلاد</div>
+                                    <input type="date" class="form-control form-control-lg input-with-icon rounded-3" name="dob" id="inputDob" value="{{ teacher.DOB or '' }}">
+                                    <div class="invalid-feedback">يرجى تحديد تاريخ الميلاد بشكل صحيح</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -289,14 +289,13 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">المؤهل التعليمي <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark">المؤهل التعليمي</label>
                         <div class="position-relative">
                             <i class="fa-solid fa-graduation-cap input-icon-prepend"></i>
-                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="q_name" list="qList" value="{{ teacher.qualification.QName if teacher.qualification else '' }}" required placeholder="بكالوريوس / ماجستير">
+                            <input type="text" class="form-control form-control-lg input-with-icon rounded-3" name="q_name" list="qList" value="{{ teacher.qualification.QName if teacher.qualification else '' }}" placeholder="بكالوريوس / ماجستير / دبلوم">
                             <datalist id="qList">
                                 {% for q in qualifications %}<option value="{{ q.QName }}"></option>{% endfor %}
                             </datalist>
-                            <div class="invalid-feedback">يرجى تحديد المؤهل العلمي</div>
                         </div>
                     </div>
 
@@ -368,11 +367,11 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">رقم الهاتف للتواصل <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark">رقم الهاتف للتواصل</label>
                         <div class="position-relative">
                             <i class="fa-solid fa-phone input-icon-prepend"></i>
-                            <input type="tel" class="form-control form-control-lg input-with-icon rounded-3 font-monospace" name="phone" id="tPhone" value="{{ teacher.Phone or '' }}" required placeholder="0555123456">
-                            <div class="invalid-feedback">يرجى إدخال رقم الهاتف</div>
+                            <input type="tel" class="form-control form-control-lg input-with-icon rounded-3 font-monospace" name="phone" id="tPhone" value="{{ teacher.Phone or '' }}" placeholder="0555123456">
+                            <div class="invalid-feedback">يرجى إدخال رقم هاتف صالح</div>
                         </div>
                     </div>
 
@@ -557,6 +556,61 @@ function initTeacherWizard() {
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
             if (currentStep > 0) showStep(currentStep - 1);
+        });
+    }
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            const form = document.getElementById('teacherForm');
+            if (!form) return;
+
+            // Check validity across all panes
+            const allRequired = form.querySelectorAll('input[required], select[required], textarea[required]');
+            let firstInvalid = null;
+            let invalidPaneIndex = -1;
+
+            allRequired.forEach(input => {
+                if (!firstInvalid && !input.checkValidity()) {
+                    firstInvalid = input;
+                    const pane = input.closest('.form-step-pane');
+                    if (pane) {
+                        invalidPaneIndex = Array.from(stepPanes).indexOf(pane);
+                    }
+                }
+            });
+
+            if (firstInvalid) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (invalidPaneIndex >= 0) {
+                    showStep(invalidPaneIndex);
+                }
+                setTimeout(() => {
+                    firstInvalid.classList.add('is-invalid');
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                    if (typeof firstInvalid.reportValidity === 'function') {
+                        firstInvalid.reportValidity();
+                    }
+                }, 150);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'warning',
+                        title: 'يرجى استكمال الحقول الإلزامية الناقصة',
+                        showConfirmButton: false,
+                        timer: 3500,
+                        timerProgressBar: true
+                    });
+                }
+                return;
+            }
+
+            // All valid - show loading feedback
+            submitBtn.style.pointerEvents = 'none';
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري حفظ التعديلات...';
+            form.submit();
         });
     }
 

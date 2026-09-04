@@ -52,12 +52,12 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         for sub in (t_subs + slot_subs):
             if sub and sub.SubID not in all_subs_map and not getattr(sub, 'is_deleted', False):
                 all_subs_map[sub.SubID] = sub
-        teacher_subjects = list(all_subs_map.values()) if all_subs_map else Subject.query.filter_by(is_deleted=False).all()
+        teacher_subjects = list(all_subs_map.values()) if all_subs_map else []
         sub_names = [s.SubName for s in teacher_subjects]
 
     today_display = f"{today_day_name} {today.strftime('%Y-%m-%d')}"
 
-    subjects_str = " | ".join(sub_names) if sub_names else 'المواد الدراسية'
+    subjects_str = " | ".join(sub_names) if sub_names else 'لم يتم إسناد مواد بعد'
 
     selected_subid = None
     selected_sub_name = None
@@ -110,7 +110,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         secs_str = "، ".join(secs)
         formatted_classes_sections.append(f"{c_name} ({secs_str})")
 
-    assigned_scope_str = " | ".join(formatted_classes_sections) if formatted_classes_sections else "الرابع (شعبة أ)"
+    assigned_scope_str = " | ".join(formatted_classes_sections) if formatted_classes_sections else "لم يتم إسناد صفوف بعد"
 
     filter_slots = scoped_slots
     if selected_cid:
@@ -230,7 +230,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     elif teacher_subjects:
         cur_sub = teacher_subjects[0].SubName
     else:
-        cur_sub = 'العلوم'
+        cur_sub = 'لم تسند مادة بعد'
 
     # Determine Class and Section
     cur_cls = None
@@ -243,7 +243,7 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     elif formatted_classes_sections:
         cur_cls = list(class_sec_map.keys())[0]
     else:
-        cur_cls = 'الرابع'
+        cur_cls = ''
 
     if selected_secid:
         sec_obj = Sections.query.filter_by(SectionID=selected_secid).first()
@@ -251,9 +251,9 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     elif current_slot and current_slot.section:
         cur_sec = current_slot.section.SectionName
     elif formatted_classes_sections:
-        cur_sec = class_sec_map.get(cur_cls, ['شعبة أ'])[0]
+        cur_sec = class_sec_map.get(cur_cls, [''])[0]
     else:
-        cur_sec = 'شعبة أ'
+        cur_sec = ''
 
     if selected_cid and selected_secid:
         class_sec_label = f"الصف: {cur_cls} - {cur_sec}"
@@ -266,13 +266,14 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
     elif formatted_classes_sections:
         class_sec_label = f"الصف: {formatted_classes_sections[0]}"
     else:
-        class_sec_label = "الصف: الرابع (شعبة أ)"
+        class_sec_label = "لم يتم إسناد صفوف بعد"
 
-    query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None))
-    if teacher_class_ids:
-        query = query.filter(Student.CID.in_(teacher_class_ids))
-    if teacher_section_ids:
-        query = query.filter(Student.SectionID.in_(teacher_section_ids))
+    if not teacher_class_ids:
+        query = Student.query.filter(Student.CID == -1)
+    else:
+        query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None), Student.CID.in_(teacher_class_ids))
+        if teacher_section_ids:
+            query = query.filter(or_(Student.SectionID.in_(teacher_section_ids), Student.SectionID.is_(None)))
 
     if selected_cid:
         query = query.filter_by(CID=selected_cid)
@@ -552,12 +553,6 @@ def index():
             for s in slots:
                 if s.CID: teacher_class_ids.add(s.CID)
                 if s.SectionID: teacher_section_ids.add(s.SectionID)
-
-        if not teacher_class_ids:
-            assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-            for st in assigned_students:
-                if st.CID: teacher_class_ids.add(st.CID)
-                if st.SectionID: teacher_section_ids.add(st.SectionID)
 
         classes = Classes.query.filter(Classes.CID.in_(teacher_class_ids), Classes.is_deleted == False).all() if teacher_class_ids else []
 

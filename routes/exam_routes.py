@@ -90,9 +90,9 @@ def index():
 
         teacher_meta = {
             'name': teacher.TeacherName if (teacher and teacher.TeacherName) else (current_user.name if hasattr(current_user, 'name') else 'المعلم الأكاديمي'),
-            'subjects_str': ' | '.join(subj_names) if subj_names else 'جميع المواد الدراسية',
-            'classes_str': ' | '.join(cls_names) if cls_names else 'جميع الصفوف المخصصة',
-            'sections_str': ' | '.join(sec_names) if sec_names else 'جميع الشعب المتاحة'
+            'subjects_str': ' | '.join(subj_names) if subj_names else 'لا توجد مواد مسندة',
+            'classes_str': ' | '.join(cls_names) if cls_names else 'لا توجد صفوف مسندة',
+            'sections_str': ' | '.join(sec_names) if sec_names else 'لا توجد شعب مسندة'
         }
 
         return render_template(

@@ -16,7 +16,7 @@ def get_teacher_students_query(teacher):
     If timetable SchoolTable has slots for teacher, filters by taught CID/SectionID.
     """
     if not teacher:
-        return Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)), [], []
+        return Student.query.filter(Student.CID == -1), [], []
 
     subject_ids, class_ids, section_ids = get_teacher_subject_and_class_ids(teacher)
 
@@ -48,15 +48,8 @@ def get_teacher_student_stats(user_id):
         student_ids = [st.SID for st in students]
 
         # Calculate taught classes & sections count
-        if class_ids:
-            taught_classes_count = len(class_ids)
-        else:
-            taught_classes_count = len(set([st.CID for st in students if st.CID])) or Classes.query.filter_by(is_deleted=False).count()
-
-        if section_ids:
-            taught_sections_count = len(section_ids)
-        else:
-            taught_sections_count = len(set([st.SectionID for st in students if st.SectionID])) or Sections.query.filter_by(is_deleted=False).count()
+        taught_classes_count = len(class_ids) if class_ids else 0
+        taught_sections_count = len(section_ids) if section_ids else 0
 
         today = datetime.now().date()
         present_today_count = 0

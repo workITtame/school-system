@@ -42,7 +42,7 @@ def get_homework_grading_workspace(homework_id, user_id):
 
     # Server-side Comprehensive Teacher Scope Validation (Class, Section, Subject)
     if user and user.role != 'admin' and teacher:
-        if teacher_class_ids and hw.class_id not in teacher_class_ids:
+        if not teacher_class_ids or hw.class_id not in teacher_class_ids:
             raise PermissionError("Access forbidden: Out-of-scope class homework")
         if teacher_section_ids and hw.section_id and hw.section_id not in teacher_section_ids:
             raise PermissionError("Access forbidden: Out-of-scope section homework")
@@ -205,7 +205,7 @@ def save_grade(homework_id, student_id, user_id, grade, feedback=None):
     if not hw:
         return False
 
-    if teacher_class_ids and hw.class_id not in teacher_class_ids:
+    if not teacher_class_ids or hw.class_id not in teacher_class_ids:
         raise PermissionError("Access forbidden")
 
     if grade is not None:
@@ -279,7 +279,7 @@ def publish_grades(homework_id, user_id):
     if not hw:
         return False
 
-    if teacher_class_ids and hw.class_id not in teacher_class_ids:
+    if not teacher_class_ids or hw.class_id not in teacher_class_ids:
         raise PermissionError("Access forbidden")
 
     hw.status = 'مكتمل'
@@ -295,7 +295,7 @@ def reopen_submission(homework_id, student_id, user_id):
     if not hw:
         return False
 
-    if teacher_class_ids and hw.class_id not in teacher_class_ids:
+    if not teacher_class_ids or hw.class_id not in teacher_class_ids:
         raise PermissionError("Access forbidden")
 
     store_key = f"{homework_id}_{student_id}"

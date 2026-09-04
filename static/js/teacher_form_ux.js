@@ -77,16 +77,34 @@
             }
         });
 
-        // 5. Auto Scroll to First Error Helper
+        // 5. Auto Scroll to First Error Helper with multi-step pane support
         window.scrollToFirstError = function (container) {
             const firstError = (container || teacherForm).querySelector('.is-invalid, :invalid');
             if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                firstError.focus();
+                // If error is inside a hidden step pane, switch to it
+                const stepPane = firstError.closest('.form-step-pane');
+                if (stepPane) {
+                    const allPanes = Array.from(document.querySelectorAll('.form-step-pane'));
+                    const stepIndex = allPanes.indexOf(stepPane);
+                    if (stepIndex >= 0) {
+                        const stepItems = document.querySelectorAll('.stepper-step-item');
+                        if (stepItems[stepIndex]) {
+                            stepItems[stepIndex].click();
+                        }
+                    }
+                }
+                setTimeout(() => {
+                    firstError.classList.add('is-invalid');
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                    if (typeof firstError.reportValidity === 'function') {
+                        firstError.reportValidity();
+                    }
+                }, 150);
             }
         };
 
-        // 6. SweetAlert2 Submit Confirmation & Loading Overlay
+        // 6. Submit Handling & Loading Feedback
         teacherForm.addEventListener('submit', function (e) {
             if (!teacherForm.checkValidity()) {
                 e.preventDefault();
@@ -96,6 +114,21 @@
                 return;
             }
 
+            const isEdit = teacherForm.action.includes('edit') || window.location.pathname.includes('/edit/');
+
+            // On edit mode, the user is already on Step 5 (Review & Save), submit immediately with spinner
+            if (isEdit) {
+                isSubmitted = true;
+                localStorage.removeItem(DRAFT_KEY);
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.style.pointerEvents = 'none';
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري حفظ التعديلات...';
+                }
+                return;
+            }
+
+            // On add mode, show confirmation if Swal exists
             if (typeof Swal !== 'undefined' && !isSubmitted) {
                 e.preventDefault();
                 Swal.fire({
@@ -124,6 +157,14 @@
                         teacherForm.submit();
                     }
                 });
+            } else {
+                isSubmitted = true;
+                localStorage.removeItem(DRAFT_KEY);
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري حفظ البيانات...';
+                }
             }
         });
     }

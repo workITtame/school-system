@@ -20,10 +20,10 @@ def _get_students_for_teacher(user_id, subject_id=None, class_id=None, section_i
     if not teacher:
         from models import User
         user = db.session.get(User, user_id)
-        if user and getattr(user, 'role', '') in ['teacher', 'admin']:
+        if user and getattr(user, 'role', '') == 'admin':
             query = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None))
         else:
-            raise PermissionError("Teacher not found")
+            query = Student.query.filter(Student.CID == -1)
     else:
         query, class_ids, section_ids = get_teacher_students_query(teacher)
 

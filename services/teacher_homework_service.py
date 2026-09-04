@@ -23,23 +23,15 @@ def _get_teacher_and_scope(user_id):
         if s.CID: teacher_class_ids.add(s.CID)
         if s.SectionID: teacher_section_ids.add(s.SectionID)
 
-    if not teacher_class_ids:
-        assigned_students = Student.query.filter(Student.is_deleted == False, Student.CID.isnot(None)).all()
-        for st in assigned_students:
-            if st.CID: teacher_class_ids.add(st.CID)
-            if st.SectionID: teacher_section_ids.add(st.SectionID)
-            
     return teacher, teacher_class_ids, teacher_section_ids
 
 def get_teacher_homework_statistics(user_id):
     try:
         teacher, class_ids, _ = _get_teacher_and_scope(user_id)
-        if not teacher:
+        if not teacher or not class_ids:
             return {'total_count': 0, 'active_count': 0, 'pending_count': 0, 'completed_count': 0}
 
-        query = Homework.query
-        if class_ids:
-            query = query.filter(Homework.class_id.in_(class_ids))
+        query = Homework.query.filter(Homework.class_id.in_(class_ids))
 
         homeworks = query.all()
         total_count = len(homeworks)
@@ -60,17 +52,14 @@ def get_teacher_homework_statistics(user_id):
 def get_teacher_homeworks(user_id, class_id=None, section_id=None, subject_id=None, status=None, due_date=None, search_query=None):
     try:
         teacher, teacher_class_ids, _ = _get_teacher_and_scope(user_id)
-        if not teacher:
+        if not teacher or not teacher_class_ids:
             return []
 
         query = Homework.query.options(
             joinedload(Homework.subject),
             joinedload(Homework.school_class),
             joinedload(Homework.section)
-        )
-
-        if teacher_class_ids:
-            query = query.filter(Homework.class_id.in_(teacher_class_ids))
+        ).filter(Homework.class_id.in_(teacher_class_ids))
 
         if class_id:
             query = query.filter(Homework.class_id == class_id)

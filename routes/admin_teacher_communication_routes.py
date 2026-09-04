@@ -25,10 +25,27 @@ logger = logging.getLogger(__name__)
 admin_teacher_bp = Blueprint('admin_teacher', __name__, url_prefix='/admin-communication')
 
 def _get_teacher_meta(user_id):
-    teacher = Teacher.query.filter_by(user_id=user_id).first()
-    subjects = Subject.query.filter_by(is_deleted=False).all()
-    classes = Classes.query.filter_by(is_deleted=False).all()
-    sections = Sections.query.filter_by(is_deleted=False).all()
+    from services.teacher_students_service import get_teacher_by_user_id
+    teacher = get_teacher_by_user_id(user_id)
+    if not teacher:
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
+    if not teacher:
+        return None, [], [], []
+
+    teacher_id = getattr(teacher, 'TeacherID', None)
+    from models import SchoolTable
+    slots = SchoolTable.query.filter_by(TeacherID=teacher_id, is_deleted=False).all() if teacher_id else []
+    sub_ids = {s.SubID for s in slots if s.SubID}
+    cls_ids = {s.CID for s in slots if s.CID}
+    sec_ids = {s.SectionID for s in slots if s.SectionID}
+
+    if hasattr(teacher, 'subjects') and teacher.subjects:
+        for s in teacher.subjects:
+            if hasattr(s, 'SubID'): sub_ids.add(s.SubID)
+
+    subjects = Subject.query.filter(Subject.SubID.in_(list(sub_ids)), Subject.is_deleted == False).all() if sub_ids else []
+    classes = Classes.query.filter(Classes.CID.in_(list(cls_ids)), Classes.is_deleted == False).all() if cls_ids else []
+    sections = Sections.query.filter(Sections.SectionID.in_(list(sec_ids)), Sections.is_deleted == False).all() if sec_ids else []
     return teacher, subjects, classes, sections
 
 @admin_teacher_bp.route('/', methods=['GET'])
