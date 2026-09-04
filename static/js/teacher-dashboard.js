@@ -852,18 +852,22 @@ function savePageAttendanceBulk(slotId) {
     });
 }
 
-// 6. Timetable View Switcher (Today Timeline vs Weekly Calendar)
+// 6. Timetable View Switcher (Today Timeline vs Weekly Calendar vs Detailed Table)
 function switchTimetableTab(viewMode) {
     const todayTab = document.getElementById('todayTimelineView');
     const weekTab = document.getElementById('weeklyCalendarView');
-    if (todayTab && weekTab) {
-        if (viewMode === 'today') {
-            todayTab.classList.add('show', 'active');
-            weekTab.classList.remove('show', 'active');
-        } else {
-            weekTab.classList.add('show', 'active');
-            todayTab.classList.remove('show', 'active');
-        }
+    const tableTab = document.getElementById('detailedTableView');
+    
+    if (todayTab) todayTab.classList.remove('show', 'active');
+    if (weekTab) weekTab.classList.remove('show', 'active');
+    if (tableTab) tableTab.classList.remove('show', 'active');
+
+    if (viewMode === 'today' && todayTab) {
+        todayTab.classList.add('show', 'active');
+    } else if (viewMode === 'week' && weekTab) {
+        weekTab.classList.add('show', 'active');
+    } else if (viewMode === 'table' && tableTab) {
+        tableTab.classList.add('show', 'active');
     }
 }
 

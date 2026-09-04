@@ -136,6 +136,45 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
     }
 
+    .password-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .password-wrapper input {
+        padding-left: 45px !important; /* Space for the show/hide icon on the left (RTL end) */
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 6px 8px;
+        font-size: 1.15rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: color 0.2s ease, background-color 0.2s ease;
+        z-index: 5;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .password-toggle-btn:hover {
+        color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.08);
+    }
+
+    .password-toggle-btn:focus {
+        color: #1d4ed8;
+    }
+
     .btn-login {
         background: #2563eb;
         border: none;
@@ -226,7 +265,7 @@
                 <p>يرجى تسجيل الدخول إلى حسابك</p>
             </div>
             
-            <form method="POST" action="/login" data-turbo="false">
+            <form method="POST" action="/login" data-turbo="false" id="loginForm">
                 <div class="mb-4">
                     <label for="username" class="form-label">البريد الإلكتروني أو اسم المستخدم</label>
                     <input type="text" class="form-control form-control-custom w-100" id="username" name="username" required placeholder="أدخل اسم المستخدم">
@@ -234,13 +273,18 @@
                 
                 <div class="mb-4">
                     <label for="password" class="form-label">كلمة المرور</label>
-                    <input type="password" class="form-control form-control-custom w-100" id="password" name="password" required placeholder="••••••••">
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control form-control-custom w-100" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+                        <button type="button" class="password-toggle-btn" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="إظهار كلمة المرور" aria-label="إظهار أو إخفاء كلمة المرور">
+                            <i class="fa-regular fa-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="rememberMe">
-                        <label class="form-check-label text-muted fw-bold" for="rememberMe" style="font-size: 0.85rem;">
+                    <div class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" name="remember" value="true" id="rememberMe" style="cursor: pointer; width: 1.15em; height: 1.15em;">
+                        <label class="form-check-label text-muted fw-bold user-select-none" for="rememberMe" style="font-size: 0.85rem; cursor: pointer;">
                             تذكرني
                         </label>
                     </div>
@@ -400,6 +444,73 @@ async function openResetPasswordStep2(userId, username, name, generatedOtp) {
         }
     }
 }
+
+// ----------------------------------------------------
+// 1. Password Visibility Toggle (Show / Hide Password)
+// ----------------------------------------------------
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    const toggleIcon = document.getElementById('togglePasswordIcon');
+    if (!passwordInput || !toggleIcon) return;
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.className = 'fa-regular fa-eye-slash text-primary';
+        toggleBtn.setAttribute('title', 'إخفاء كلمة المرور');
+        toggleBtn.setAttribute('aria-label', 'إخفاء كلمة المرور');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.className = 'fa-regular fa-eye';
+        toggleBtn.setAttribute('title', 'إظهار كلمة المرور');
+        toggleBtn.setAttribute('aria-label', 'إظهار كلمة المرور');
+    }
+}
+
+// ----------------------------------------------------
+// 2. Remember Me (Client-side & Auto-Fill Persistence)
+// ----------------------------------------------------
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    const loginForm = document.getElementById('loginForm');
+
+    // Restore username and checkbox state if previously remembered
+    try {
+        const savedUsername = localStorage.getItem('school_remembered_username');
+        const savedRemember = localStorage.getItem('school_remember_me');
+
+        if (savedRemember === 'true' && savedUsername) {
+            if (usernameInput && !usernameInput.value) {
+                usernameInput.value = savedUsername;
+            }
+            if (rememberMeCheckbox) {
+                rememberMeCheckbox.checked = true;
+            }
+        }
+    } catch (e) {
+        console.warn('localStorage not accessible for remember me:', e);
+    }
+
+    // Save or clear remembered username on form submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', function() {
+            try {
+                if (rememberMeCheckbox && rememberMeCheckbox.checked) {
+                    if (usernameInput && usernameInput.value.trim()) {
+                        localStorage.setItem('school_remembered_username', usernameInput.value.trim());
+                        localStorage.setItem('school_remember_me', 'true');
+                    }
+                } else {
+                    localStorage.removeItem('school_remembered_username');
+                    localStorage.removeItem('school_remember_me');
+                }
+            } catch (e) {
+                console.warn('localStorage error on submit:', e);
+            }
+        });
+    }
+});
 </script>
 
 {% endblock %}

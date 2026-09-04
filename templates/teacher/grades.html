@@ -13,8 +13,21 @@
     <div class="card rounded-4 border-0 shadow-sm mb-4 bg-white p-3 p-md-4">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-primary-subtle text-primary p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
-                    <i class="fa-solid fa-star fs-4 text-warning"></i>
+                <div class="rounded-circle shadow-sm flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center bg-white" 
+                     style="width: 52px; height: 52px; border: 2.5px solid #2563eb;">
+                    {% if teacher_photo_url %}
+                        <img src="{{ teacher_photo_url }}" 
+                             alt="{{ teacher_info.TeacherName if teacher_info else current_user.name }}" 
+                             style="width: 100%; height: 100%; object-fit: cover;"
+                             onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <div class="text-primary w-100 h-100 align-items-center justify-content-center" style="display: none;">
+                            <i class="fa-solid fa-star fs-4 text-warning"></i>
+                        </div>
+                    {% else %}
+                        <div class="rounded-circle bg-primary-subtle text-primary p-3 d-flex align-items-center justify-content-center w-100 h-100">
+                            <i class="fa-solid fa-star fs-4 text-warning"></i>
+                        </div>
+                    {% endif %}
                 </div>
                 <div>
                     <h4 class="fw-bold text-dark mb-1 font-cairo fs-5">
@@ -177,7 +190,7 @@
             </small>
         </div>
 
-        <div class="table-responsive" style="overflow-x: auto;">
+        <div class="table-responsive table-scroll-container" style="overflow-x: auto; overflow-y: auto; max-height: 560px;">
             <table class="table table-hover align-middle mb-0 extra-small" id="gradebookTable" style="min-width: 900px;">
                 <thead class="bg-light text-muted sticky-top">
                     <tr>

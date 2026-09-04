@@ -467,6 +467,8 @@ def get_dashboard_statistics(teacher):
         current_date_str = now_time.strftime('%Y-%m-%d')
         last_update_time = now_time.strftime('%H:%M')
 
+        teacher_image = teacher.Image if (teacher and teacher.Image) else None
+
         return {
             'today_classes_count': today_classes_count,
             'remaining_classes_count': remaining_classes_count,
@@ -478,6 +480,7 @@ def get_dashboard_statistics(teacher):
             'attention_students_count': attention_students_count,
             'teacher_name': teacher_name,
             'teacher_title': teacher_title,
+            'teacher_image': teacher_image,
             'subjects_str': subjects_str,
             'current_day_name': current_day_name,
             'current_date_str': current_date_str,

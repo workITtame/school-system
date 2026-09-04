@@ -674,9 +674,17 @@ def add_student():
     countries = Country.query.all()
     governorates = Governorates.query.all()
     directorates = Directorate.query.all()
-    classes = Classes.query.all()
-    sections = Sections.query.all()
-    return render_template('add_student.html', countries=countries, governorates=governorates, directorates=directorates, classes=classes, sections=sections)
+    classes = Classes.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
+    class_sections_map = {
+        str(c.CID): [
+            {'id': s.SectionID, 'name': s.SectionName}
+            for s in c.sections
+            if not getattr(s, 'is_deleted', False)
+        ]
+        for c in classes
+    }
+    return render_template('add_student.html', countries=countries, governorates=governorates, directorates=directorates, classes=classes, sections=sections, class_sections_map=class_sections_map)
 
 @students_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
@@ -757,9 +765,17 @@ def edit_student(id):
     countries = Country.query.all()
     governorates = Governorates.query.all()
     directorates = Directorate.query.all()
-    classes = Classes.query.all()
-    sections = Sections.query.all()
-    return render_template('edit_student.html', student=student, countries=countries, governorates=governorates, directorates=directorates, classes=classes, sections=sections)
+    classes = Classes.query.filter_by(is_deleted=False).all()
+    sections = Sections.query.filter_by(is_deleted=False).all()
+    class_sections_map = {
+        str(c.CID): [
+            {'id': s.SectionID, 'name': s.SectionName}
+            for s in c.sections
+            if not getattr(s, 'is_deleted', False)
+        ]
+        for c in classes
+    }
+    return render_template('edit_student.html', student=student, countries=countries, governorates=governorates, directorates=directorates, classes=classes, sections=sections, class_sections_map=class_sections_map)
 
 @students_bp.route('/delete/<int:id>', methods=['POST'])
 @admin_required

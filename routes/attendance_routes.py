@@ -13,7 +13,11 @@ from sqlalchemy import or_
 
 def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_date=None, subject_id=None, status_filter=None, search_query=None):
     today = target_date if target_date else date.today()
-    now_time_str = datetime.now().strftime('%H:%M')
+    now_dt = datetime.now()
+    now_time_str = now_dt.strftime('%H:%M')
+    is_today = (today == now_dt.date())
+    is_past = (today < now_dt.date())
+    is_future = (today > now_dt.date())
     arabic_days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
     today_day_name = arabic_days[today.weekday()]
 
@@ -66,15 +70,28 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         except (ValueError, TypeError):
             selected_subid = None
 
+    selected_cid = None
+    if class_id is not None and str(class_id).strip() != '':
+        try:
+            selected_cid = int(class_id)
+        except (ValueError, TypeError):
+            selected_cid = None
+
+    selected_secid = None
+    if section_id is not None and str(section_id).strip() != '':
+        try:
+            selected_secid = int(section_id)
+        except (ValueError, TypeError):
+            selected_secid = None
+
     if selected_subid:
-        subject_slots = [s for s in slots if s.SubID == selected_subid]
-        if subject_slots:
-            teacher_class_ids = list(set([s.CID for s in subject_slots if s.CID]))
-            teacher_section_ids = list(set([s.SectionID for s in subject_slots if s.SectionID]))
-        else:
-            teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
-            teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
+        scoped_slots = [s for s in slots if s.SubID == selected_subid]
+        if not scoped_slots:
+            scoped_slots = slots
+        teacher_class_ids = list(set([s.CID for s in scoped_slots if s.CID]))
+        teacher_section_ids = list(set([s.SectionID for s in scoped_slots if s.SectionID]))
     else:
+        scoped_slots = slots
         teacher_class_ids = list(set([s.CID for s in slots if s.CID]))
         teacher_section_ids = list(set([s.SectionID for s in slots if s.SectionID]))
 
@@ -93,73 +110,163 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         secs_str = "، ".join(secs)
         formatted_classes_sections.append(f"{c_name} ({secs_str})")
 
-    assigned_scope_str = " | ".join(formatted_classes_sections) if formatted_classes_sections else "جميع الصفوف والشعب"
+    assigned_scope_str = " | ".join(formatted_classes_sections) if formatted_classes_sections else "الرابع (شعبة أ)"
 
-    today_slots = [s for s in slots if s.day and s.day.DName == today_day_name]
+    filter_slots = scoped_slots
+    if selected_cid:
+        filter_slots = [s for s in filter_slots if s.CID == selected_cid]
+    if selected_secid:
+        filter_slots = [s for s in filter_slots if s.SectionID == selected_secid]
+
+    today_slots = [s for s in filter_slots if s.day and s.day.DName == today_day_name]
     today_slots_sorted = sorted(today_slots, key=lambda s: (s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '00:00'))
-    
-    current_slot = None
-    for s in today_slots_sorted:
-        st_t = s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '00:00'
-        en_t = s.lesson.EndTime if (s.lesson and s.lesson.EndTime) else '23:59'
-        if st_t <= now_time_str <= en_t:
-            current_slot = s
-            break
-            
-    if not current_slot and today_slots_sorted:
-        current_slot = today_slots_sorted[0]
 
+    current_slot = None
+    status = 'لا توجد حصص مجدولة اليوم ☕'
+    status_code = 'none'
+    badge_class = 'bg-secondary'
+    icon = 'fa-solid fa-mug-hot text-warning'
+    remaining_minutes = None
+
+    if today_slots_sorted:
+        if is_today:
+            # 1. Live slot in progress
+            live_slot = None
+            for s in today_slots_sorted:
+                st_t = s.lesson.StartTime if (s.lesson and s.lesson.StartTime) else '00:00'
+                en_t = s.lesson.EndTime if (s.lesson and s.lesson.EndTime) else '23:59'
+                if st_t <= now_time_str <= en_t:
+                    live_slot = s
+                    break
+
+            if live_slot:
+                current_slot = live_slot
+                status_code = 'current'
+                status = 'الحصة جارية الآن 🟢'
+                badge_class = 'bg-success'
+                icon = 'fa-solid fa-circle-dot fa-beat text-white'
+                try:
+                    en_t = current_slot.lesson.EndTime
+                    en_h, en_m = map(int, en_t.split(':'))
+                    end_dt = datetime(now_dt.year, now_dt.month, now_dt.day, en_h, en_m)
+                    diff_mins = max(1, int((end_dt - now_dt).total_seconds() / 60))
+                    remaining_minutes = f"متبقي {diff_mins} دقيقة لنهاية الحصة ({en_t})"
+                except Exception:
+                    remaining_minutes = f"تنتهي الحصة في تمام {current_slot.lesson.EndTime}"
+            else:
+                # 2. Upcoming slots today
+                upcoming_slots = [s for s in today_slots_sorted if (s.lesson and s.lesson.StartTime and s.lesson.StartTime > now_time_str)]
+                if upcoming_slots:
+                    current_slot = upcoming_slots[0]
+                    status_code = 'upcoming'
+                    status = 'الحصة القادمة ⏳'
+                    badge_class = 'bg-primary'
+                    icon = 'fa-solid fa-hourglass-start text-warning'
+                    try:
+                        st_t = current_slot.lesson.StartTime
+                        st_h, st_m = map(int, st_t.split(':'))
+                        start_dt = datetime(now_dt.year, now_dt.month, now_dt.day, st_h, st_m)
+                        diff_mins = max(1, int((start_dt - now_dt).total_seconds() / 60))
+                        remaining_minutes = f"تبدأ بعد {diff_mins} دقيقة (الساعة {st_t})"
+                    except Exception:
+                        remaining_minutes = f"موعد الحصة القادمة: {current_slot.lesson.StartTime}"
+                else:
+                    # 3. All lessons today have ended
+                    current_slot = today_slots_sorted[-1]
+                    status_code = 'ended'
+                    status = 'انتهت الحصة ⏱️'
+                    badge_class = 'bg-secondary'
+                    icon = 'fa-solid fa-clock-rotate-left text-light'
+                    remaining_minutes = f"انتهت الحصة في تمام الساعة {current_slot.lesson.EndTime}"
+
+        elif is_past:
+            current_slot = today_slots_sorted[0]
+            status_code = 'ended'
+            status = 'حصة سابقة (منتهية) 📅'
+            badge_class = 'bg-secondary'
+            icon = 'fa-solid fa-calendar-check text-light'
+            remaining_minutes = f"حصة مسجلة بتاريخ {today.strftime('%Y-%m-%d')}"
+
+        elif is_future:
+            current_slot = today_slots_sorted[0]
+            status_code = 'upcoming'
+            status = 'حصة مجدولة قادمة ⏳'
+            badge_class = 'bg-primary'
+            icon = 'fa-solid fa-calendar-days text-info'
+            remaining_minutes = f"مجدولة في موعدها ({current_slot.lesson.StartTime} - {current_slot.lesson.EndTime})"
+
+    else:
+        # No slots today (e.g. Friday / weekend)
+        current_slot = None
+        status_code = 'none'
+        if today_day_name in ['الجمعة', 'السبت']:
+            status = 'عطلة نهاية الأسبوع 🌴'
+        else:
+            status = 'لا توجد حصص مجدولة اليوم ☕'
+        badge_class = 'bg-secondary'
+        icon = 'fa-solid fa-mug-hot text-warning'
+        remaining_minutes = 'لا توجد حصص في جدول اليوم'
+
+    # Determine timing string
+    if current_slot and current_slot.lesson:
+        cur_st_time = current_slot.lesson.StartTime or 'غير محدد'
+        cur_en_time = current_slot.lesson.EndTime or 'غير محدد'
+        lesson_time_display = f"{cur_st_time} - {cur_en_time}"
+    else:
+        if filter_slots:
+            first_slot = sorted(filter_slots, key=lambda s: (s.day.DayID if s.day else 0, s.lesson.StartTime if s.lesson else '00:00'))[0]
+            day_text = first_slot.day.DName if first_slot.day else 'الأحد'
+            st_text = first_slot.lesson.StartTime if first_slot.lesson else '08:00'
+            en_text = first_slot.lesson.EndTime if first_slot.lesson else '08:45'
+            lesson_time_display = f"أقرب حصة: {day_text} ({st_text} - {en_text})"
+        else:
+            lesson_time_display = "الدوام المدرسي المعتمد"
+
+    # Determine Subject
     if selected_sub_name:
         cur_sub = selected_sub_name
-    elif current_slot:
-        cur_sub = current_slot.subject.SubName if current_slot.subject else (sub_names[0] if sub_names else 'المادة الدراسية')
+    elif current_slot and current_slot.subject:
+        cur_sub = current_slot.subject.SubName
+    elif teacher_subjects:
+        cur_sub = teacher_subjects[0].SubName
     else:
-        cur_sub = sub_names[0] if sub_names else 'المادة الدراسية'
+        cur_sub = 'العلوم'
 
-    if current_slot:
-        cur_cls = current_slot.school_class.CName if current_slot.school_class else 'الصف الأول'
-        cur_sec = current_slot.section.SectionName if current_slot.section else 'شعبة أ'
-        cur_st_time = current_slot.lesson.StartTime if (current_slot.lesson and current_slot.lesson.StartTime) else 'غير محدد'
-        cur_en_time = current_slot.lesson.EndTime if (current_slot.lesson and current_slot.lesson.EndTime) else 'غير محدد'
-    else:
-        cur_st_time = 'غير محدد'
-        cur_en_time = 'غير محدد'
-        cur_cls = 'الصف الأول'
-        cur_sec = 'شعبة أ'
-
-    selected_cid = None
-    selected_secid = None
-
-    if class_id is not None and str(class_id).strip() != '':
-        try:
-            selected_cid = int(class_id)
-        except (ValueError, TypeError):
-            selected_cid = None
-
-    if section_id is not None and str(section_id).strip() != '':
-        try:
-            selected_secid = int(section_id)
-        except (ValueError, TypeError):
-            selected_secid = None
-
+    # Determine Class and Section
     cur_cls = None
     cur_sec = None
-
     if selected_cid:
         cls_obj = Classes.query.filter_by(CID=selected_cid).first()
         if cls_obj: cur_cls = cls_obj.CName
+    elif current_slot and current_slot.school_class:
+        cur_cls = current_slot.school_class.CName
+    elif formatted_classes_sections:
+        cur_cls = list(class_sec_map.keys())[0]
+    else:
+        cur_cls = 'الرابع'
+
     if selected_secid:
         sec_obj = Sections.query.filter_by(SectionID=selected_secid).first()
         if sec_obj: cur_sec = sec_obj.SectionName
+    elif current_slot and current_slot.section:
+        cur_sec = current_slot.section.SectionName
+    elif formatted_classes_sections:
+        cur_sec = class_sec_map.get(cur_cls, ['شعبة أ'])[0]
+    else:
+        cur_sec = 'شعبة أ'
 
     if selected_cid and selected_secid:
         class_sec_label = f"الصف: {cur_cls} - {cur_sec}"
     elif selected_cid and not selected_secid:
-        class_sec_label = f"الصف: {cur_cls} (جميع الشعب)"
+        class_sec_label = f"الصف: {cur_cls}"
     elif not selected_cid and selected_secid:
-        class_sec_label = f"الشعبة: {cur_sec} (جميع الصفوف)"
+        class_sec_label = f"الشعبة: {cur_sec}"
+    elif cur_cls and cur_sec:
+        class_sec_label = f"الصف: {cur_cls} ({cur_sec})"
+    elif formatted_classes_sections:
+        class_sec_label = f"الصف: {formatted_classes_sections[0]}"
     else:
-        class_sec_label = "جميع الصفوف والشعب"
+        class_sec_label = "الصف: الرابع (شعبة أ)"
 
     query = Student.query.options(joinedload(Student.school_class), joinedload(Student.section)).filter(Student.is_deleted == False, Student.CID.isnot(None))
     if teacher_class_ids:
@@ -355,14 +462,17 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
 
     current_lesson_info = {
         'subject': cur_sub,
-        'time': f"{cur_st_time} - {cur_en_time}" if current_slot else 'غير محدد',
-        'class_name': cur_cls if cur_cls else 'جميع الصفوف',
-        'section_name': cur_sec if cur_sec else 'جميع الشعب',
+        'time': lesson_time_display,
+        'class_name': cur_cls,
+        'section_name': cur_sec,
         'class_sec_label': class_sec_label,
-        'lesson_num': getattr(current_slot.lesson, 'LName', None) if (current_slot and current_slot.lesson) else 'نظرة عامة',
+        'lesson_num': getattr(current_slot.lesson, 'LName', None) if (current_slot and current_slot.lesson) else ('الحصة المجدولة' if current_slot else 'المقرر الأكاديمي'),
         'students_count': total_st,
-        'remaining_minutes': None,
-        'status': 'جارية الآن' if current_slot else 'نظرة عامة'
+        'remaining_minutes': remaining_minutes,
+        'status': status,
+        'status_code': status_code,
+        'badge_class': badge_class,
+        'icon': icon
     }
 
     teacher_info = {
@@ -371,6 +481,8 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'subjects_str': subjects_str,
         'assigned_scope_str': assigned_scope_str
     }
+
+    active_slot_id = current_slot.SchoolTableID if current_slot else (today_slots_sorted[0].SchoolTableID if today_slots_sorted else (slots[0].SchoolTableID if slots else None))
 
     return {
         'teacher_info': teacher_info,
@@ -384,7 +496,8 @@ def get_teacher_attendance_data(user_id, class_id=None, section_id=None, target_
         'selected_subid': selected_subid,
         'teacher_subjects': teacher_subjects,
         'today_day_name': today_day_name,
-        'today_display': today_display
+        'today_display': today_display,
+        'active_slot_id': active_slot_id
     }
 
 @attendance_bp.route('/api/lesson/<int:slot_id>')
@@ -476,11 +589,7 @@ def index():
             search_query=search_query
         )
 
-        active_slot_id = None
-        if teacher:
-            slot = SchoolTable.query.filter_by(TeacherID=teacher.TeacherID, is_deleted=False).first()
-            if slot:
-                active_slot_id = slot.SchoolTableID
+        active_slot_id = data.get('active_slot_id')
 
         return render_template('teacher/attendance.html',
                                classes=classes,

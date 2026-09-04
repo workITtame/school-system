@@ -17,12 +17,21 @@ LOCKOUT_MINUTES = 15
 def login():
     if current_user.is_authenticated:
         if hasattr(current_user, 'role') and current_user.role == 'teacher':
-            return redirect(url_for('teacher.dashboard'))
+            try:
+                from services.teacher_profile_service import get_dashboard_preferences
+                dash_prefs = get_dashboard_preferences(current_user.id)
+                landing = dash_prefs.get('default_landing') or url_for('teacher.dashboard')
+                return redirect(landing)
+            except Exception:
+                return redirect(url_for('teacher.dashboard'))
         return redirect(url_for('dashboard.index'))
         
     if request.method == "POST":
         username = (request.form.get("username") or "").strip()
         password = request.form.get("password") or ""
+        remember = (request.form.get("remember") in ["true", "on", "1", "yes"]) or \
+                   (request.form.get("remember_me") in ["true", "on", "1", "yes"]) or \
+                   (request.form.get("rememberMe") in ["true", "on", "1", "yes"])
         
         if not username or not password:
             flash("يرجى إدخال اسم المستخدم وكلمة السر.", "warning")
@@ -54,8 +63,9 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             
-            # Login user session
-            login_user(user)
+            # Login user session with remember me option
+            session.permanent = bool(remember)
+            login_user(user, remember=bool(remember))
             
             # Keep legacy session variables just in case old templates use them
             session['user_id'] = user.id
@@ -67,7 +77,13 @@ def login():
             session['jwt_token'] = access_token
             
             if user.role == 'teacher':
-                return redirect(url_for('teacher.dashboard'))
+                try:
+                    from services.teacher_profile_service import get_dashboard_preferences
+                    dash_prefs = get_dashboard_preferences(user.id)
+                    landing = dash_prefs.get('default_landing') or url_for('teacher.dashboard')
+                    return redirect(landing)
+                except Exception:
+                    return redirect(url_for('teacher.dashboard'))
             return redirect(url_for('dashboard.index'))
         else:
             # Failed attempt
@@ -191,12 +207,20 @@ def reset_password_confirm():
 
 
 @auth_bp.route("/logout")
-@login_required
 def logout():
+    from flask import current_app
     logout_user()
     session.clear() # Clear legacy session
     flash("تم تسجيل الخروج بنجاح", "success")
-    return redirect(url_for('auth.login'))
+    resp = redirect(url_for('auth.login'))
+    
+    # Explicitly clear remember and session cookies
+    rem_cookie = current_app.config.get('REMEMBER_COOKIE_NAME', 'remember_token')
+    resp.delete_cookie(rem_cookie, path='/')
+    resp.delete_cookie('remember_token', path='/')
+    resp.delete_cookie('session', path='/')
+    resp.delete_cookie('jwt_token', path='/')
+    return resp
 
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required

@@ -305,10 +305,7 @@
                         <div class="position-relative">
                             <i class="fa-solid fa-cubes input-icon-prepend"></i>
                             <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required>
-                                <option value="">اختر الشعبة</option>
-                                {% for s in sections %}
-                                <option value="{{ s.SectionID }}" data-class-id="{{ s.CID }}" {% if student.SectionID == s.SectionID %}selected{% endif %}>{{ s.SectionName }}</option>
-                                {% endfor %}
+                                <option value="">اختر الشعبة...</option>
                             </select>
                             <div class="invalid-feedback">يرجى اختيار الشعبة</div>
                         </div>
@@ -582,6 +579,62 @@ function initFormWizard() {
                 reader.readAsDataURL(this.files[0]);
             }
         });
+    }
+
+    // Dynamic Section filtering by Class
+    const classSectionsData = {{ class_sections_map | tojson }};
+    const currentStudentSectionId = "{{ student.SectionID or '' }}";
+
+    function updateEditSectionOptions(selectedClassId, preselectedSectionId = null) {
+        const inputSec = document.getElementById('inputSection');
+        if (!inputSec) return;
+
+        inputSec.innerHTML = '';
+        if (!selectedClassId) {
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'اختر الصف الدراسي أولاً...';
+            inputSec.appendChild(defaultOpt);
+            inputSec.disabled = true;
+            return;
+        }
+
+        const sections = classSectionsData[String(selectedClassId)] || [];
+        if (sections.length === 0) {
+            const emptyOpt = document.createElement('option');
+            emptyOpt.value = '';
+            emptyOpt.textContent = 'لا توجد شعب مخصصة لهذا الصف';
+            inputSec.appendChild(emptyOpt);
+            inputSec.disabled = false;
+        } else {
+            const promptOpt = document.createElement('option');
+            promptOpt.value = '';
+            promptOpt.textContent = 'اختر الشعبة...';
+            inputSec.appendChild(promptOpt);
+
+            const seenIds = new Set();
+            sections.forEach(s => {
+                if (!seenIds.has(s.id)) {
+                    seenIds.add(s.id);
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    if (preselectedSectionId && String(s.id) === String(preselectedSectionId)) {
+                        opt.selected = true;
+                    }
+                    inputSec.appendChild(opt);
+                }
+            });
+            inputSec.disabled = false;
+        }
+    }
+
+    const classSelect = document.getElementById('inputClass');
+    if (classSelect) {
+        classSelect.addEventListener('change', function() {
+            updateEditSectionOptions(this.value);
+        });
+        updateEditSectionOptions(classSelect.value, currentStudentSectionId);
     }
 }
 </script>

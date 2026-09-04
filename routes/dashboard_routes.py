@@ -31,12 +31,19 @@ def get_teacher_dashboard_data(user_id):
     words = teacher_name.split() if teacher_name else []
     initials = ". ".join([w[0] for w in words[:2]]) if len(words) >= 2 else (words[0][:2] if words else 'م.أ')
     
+    raw_img = teacher.Image.strip().replace('\\', '/').lstrip('/') if (teacher and teacher.Image) else None
+    if raw_img and raw_img.startswith('static/'):
+        raw_img = raw_img[7:]
+    photo_url = url_for('static', filename=raw_img) if raw_img else None
+
     teacher_info = {
         'TeacherName': teacher_name,
         'TeacherTitle': teacher_title,
         'Status': teacher_status,
         'subjects_str': subjects_str,
-        'initials': initials
+        'initials': initials,
+        'Image': teacher.Image if teacher else None,
+        'photo_url': photo_url
     }
 
     if not teacher:

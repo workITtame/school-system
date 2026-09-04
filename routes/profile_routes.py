@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, Response
 from flask_login import login_required, current_user
 from models import Teacher, Classes, Subject, Sections
 from services.teacher_profile_service import (
@@ -19,13 +19,16 @@ from services.teacher_profile_service import (
     terminate_all_sessions,
     export_personal_data
 )
+from services.teacher_students_service import get_teacher_by_user_id
 
 logger = logging.getLogger(__name__)
 
 profile_bp = Blueprint('profile', __name__, url_prefix='/profile')
 
 def _get_teacher_meta(user_id):
-    teacher = Teacher.query.filter_by(user_id=user_id).first()
+    teacher = get_teacher_by_user_id(user_id)
+    if not teacher:
+        teacher = Teacher.query.filter_by(user_id=user_id).first()
     subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
@@ -41,12 +44,15 @@ def index():
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
 
+    client_ip = request.remote_addr or '127.0.0.1'
+    user_agent = request.headers.get('User-Agent', '')
+
     if user_role != 'teacher':
         profile = get_teacher_profile(user_id)
         notif_prefs = get_notification_preferences(user_id)
         dash_prefs = get_dashboard_preferences(user_id)
-        sessions = get_active_sessions(user_id)
-        history = get_login_history(user_id)
+        sessions = get_active_sessions(user_id, client_ip, user_agent)
+        history = get_login_history(user_id, client_ip)
         return render_template(
             'profile.html',
             profile=profile,
@@ -66,15 +72,18 @@ def index():
         profile = get_teacher_profile(user_id)
         notif_prefs = get_notification_preferences(user_id)
         dash_prefs = get_dashboard_preferences(user_id)
-        sessions = get_active_sessions(user_id)
-        history = get_login_history(user_id)
+        sessions = get_active_sessions(user_id, client_ip, user_agent)
+        history = get_login_history(user_id, client_ip)
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
         logger.error(f"Error loading profile center: {e}")
-        profile = {}
-        notif_prefs, dash_prefs, sessions, history = {}, {}, [], []
-        teacher = None
+        teacher = get_teacher_by_user_id(user_id)
+        profile = get_teacher_profile(user_id)
+        notif_prefs = get_notification_preferences(user_id)
+        dash_prefs = get_dashboard_preferences(user_id)
+        sessions = get_active_sessions(user_id, client_ip, user_agent)
+        history = get_login_history(user_id, client_ip)
 
     return render_template(
         'teacher/profile.html',
@@ -122,7 +131,7 @@ def api_security():
     try:
         profile = get_teacher_profile(user_id)
         return jsonify({
-            'security_score': profile.get('security_score', 'A+'),
+            'security_score': profile.get('security_score', 'A+ (98%)'),
             'two_factor_enabled': False,
             'last_password_change': '2026-07-01'
         })
@@ -135,9 +144,11 @@ def api_security():
 @login_required
 def api_sessions():
     user_id = current_user.id
+    client_ip = request.remote_addr or '127.0.0.1'
+    user_agent = request.headers.get('User-Agent', '')
     try:
-        sessions = get_active_sessions(user_id)
-        history = get_login_history(user_id)
+        sessions = get_active_sessions(user_id, client_ip, user_agent)
+        history = get_login_history(user_id, client_ip)
         return jsonify({'active_sessions': sessions, 'login_history': history})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
@@ -166,7 +177,7 @@ def api_password():
     new_pass = payload.get('new_password', '')
 
     if not new_pass:
-        return jsonify({'error': 'New password is required'}), 400
+        return jsonify({'error': 'كلمة المرور الجديدة مطلوبة'}), 400
 
     try:
         update_password(user_id, curr_pass, new_pass)
@@ -233,7 +244,7 @@ def api_logout_session():
     session_id = payload.get('session_id')
     try:
         terminate_session(user_id, session_id)
-        return jsonify({'success': True, 'message': 'تم إنهاء وتمرير الجلسة المحددة بنجاح'})
+        return jsonify({'success': True, 'message': 'تم إنهاء الجلسة المحددة بنجاح'})
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403
     except Exception as e:
@@ -255,9 +266,17 @@ def api_logout_all():
 @login_required
 def api_export():
     user_id = current_user.id
-    fmt = request.args.get('format', 'json')
+    fmt = request.args.get('format', 'json').lower()
     try:
         data = export_personal_data(user_id, format=fmt)
+        if fmt == 'csv':
+            csv_content = data.get('csv', '')
+            filename = data.get('filename', f'teacher_profile_{user_id}.csv')
+            return Response(
+                csv_content,
+                mimetype='text/csv; charset=utf-8',
+                headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+            )
         return jsonify(data)
     except PermissionError:
         return jsonify({'error': 'Out-of-scope access forbidden'}), 403

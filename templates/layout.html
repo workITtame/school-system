@@ -64,13 +64,13 @@
             </div>
             <div class="sidebar-logo-text">
                 <h5>{{ current_school_name }}</h5>
-                <small>{% if session.get('user_role') == 'admin' %}لوحة الإدارة التنفيذية{% else %}مساحة عمل المعلم{% endif %}</small>
+                <small>{% if (current_user.is_authenticated and current_user.role == 'admin') or session.get('user_role') == 'admin' %}لوحة الإدارة التنفيذية{% else %}مساحة عمل المعلم{% endif %}</small>
             </div>
         </div>
         
         <ul class="list-unstyled components">
 
-            {% if session.get('user_role') == 'admin' or current_user.role == 'admin' %}
+            {% if (current_user.is_authenticated and current_user.role == 'admin') or session.get('user_role') == 'admin' %}
 
                 <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
                     <a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house text-primary me-2"></i> <span>لوحة التحكم</span></a>
@@ -208,14 +208,16 @@
                 
                 <div class="dropdown border-start ps-2 ms-1">
                     <div class="navbar-user-profile" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-                        <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ session.user_name }}&background=2563eb&color=fff'">
-                        <div class="navbar-user-info text-start d-none d-lg-block" style="max-width: 120px;">
-                            <h6 class="text-truncate mb-0">أ. {{ session.user_name }}</h6>
-                            <small class="text-muted text-truncate d-block">{{ 'مدير النظام' if session.user_role == 'admin' else 'معلم' }}</small>
+                        {% set is_admin_role = (current_user.is_authenticated and current_user.role == 'admin') or session.get('user_role') == 'admin' %}
+                        {% set user_display_name = (current_user.name if (current_user.is_authenticated and current_user.name) else session.get('user_name')) or ('مدير النظام التنفيذي' if is_admin_role else 'المعلم') %}
+                        <img src="{{ url_for('static', filename='img/default_avatar.png') }}" class="navbar-user-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ user_display_name }}&background=2563eb&color=fff'">
+                        <div class="navbar-user-info text-start d-none d-lg-block" style="max-width: 150px;">
+                            <h6 class="text-truncate mb-0">{% if is_admin_role %}{{ user_display_name }}{% else %}أ. {{ user_display_name }}{% endif %}</h6>
+                            <small class="text-muted text-truncate d-block">{{ 'مدير النظام' if is_admin_role else 'معلم' }}</small>
                         </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item py-2" href="{{ url_for('profile.index') }}"><i class="fa-solid fa-user-gear me-2 text-primary"></i> الملف الشخصي والإعدادات</a></li>
+                        <li><a class="dropdown-item py-2" href="{{ url_for('dashboard.settings') if is_admin_role else url_for('profile.index') }}"><i class="fa-solid fa-user-gear me-2 text-primary"></i> {% if is_admin_role %}إعدادات النظام والحساب{% else %}الملف الشخصي والإعدادات{% endif %}</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger py-2" href="{{ url_for('auth.logout') }}" data-turbo="false"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
                     </ul>

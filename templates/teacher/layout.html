@@ -41,6 +41,28 @@
                 <small>مساحة عمل المعلم</small>
             </div>
         </div>
+
+        <!-- Teacher Profile Sidebar Panel -->
+        <div class="sidebar-user-panel px-3 py-2 my-2 mx-3 rounded-3 d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);">
+            <div class="rounded-circle overflow-hidden flex-shrink-0 shadow-sm d-flex align-items-center justify-content-center bg-white" style="width: 38px; height: 38px; border: 2px solid rgba(255,255,255,0.5);">
+                {% if teacher_photo_url %}
+                    <img src="{{ teacher_photo_url }}" alt="{{ current_user.name }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                    <div class="w-100 h-100 bg-primary text-white align-items-center justify-content-center" style="display: none;">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                {% else %}
+                    <div class="w-100 h-100 bg-primary text-white d-flex align-items-center justify-content-center">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="overflow-hidden">
+                <h6 class="text-white mb-0 text-truncate font-cairo extra-small fw-bold">{{ current_user.name or 'المعلم الأكاديمي' }}</h6>
+                <small class="text-white-50 extra-small d-block text-truncate">
+                    <i class="fa-solid fa-circle text-success me-1" style="font-size: 7px;"></i> متصل الآن
+                </small>
+            </div>
+        </div>
         
         <ul class="list-unstyled components">
             <li class="{% if request.endpoint == 'teacher.dashboard' %}active{% endif %}">
@@ -65,10 +87,20 @@
                 <a href="{{ url_for('gradebook.index') }}"><i class="fa-solid fa-star text-warning me-2"></i> <span>سجل الدرجات</span></a>
             </li>
             <li class="{% if request.blueprint == 'messages' %}active{% endif %}">
-                <a href="{{ url_for('messages.index') }}"><i class="fa-regular fa-envelope text-primary me-2"></i> <span>الرسائل</span></a>
+                <a href="{{ url_for('messages.index') }}" class="d-flex align-items-center justify-content-between">
+                    <div><i class="fa-regular fa-envelope text-primary me-2"></i> <span>الرسائل</span></div>
+                    {% if unread_messages_count and unread_messages_count > 0 %}
+                        <span class="badge bg-danger rounded-pill px-2 extra-small">{{ unread_messages_count if unread_messages_count < 100 else '+99' }}</span>
+                    {% endif %}
+                </a>
             </li>
             <li class="{% if request.blueprint == 'notifications' %}active{% endif %}">
-                <a href="{{ url_for('notifications.index') }}"><i class="fa-regular fa-bell text-danger me-2"></i> <span>الإشعارات</span></a>
+                <a href="{{ url_for('notifications.index') }}" class="d-flex align-items-center justify-content-between">
+                    <div><i class="fa-regular fa-bell text-danger me-2"></i> <span>الإشعارات</span></div>
+                    {% if unread_notifications_count and unread_notifications_count > 0 %}
+                        <span class="badge bg-danger rounded-pill px-2 extra-small">{{ unread_notifications_count if unread_notifications_count < 100 else '+99' }}</span>
+                    {% endif %}
+                </a>
             </li>
             <li class="{% if request.blueprint == 'admin_teacher' %}active{% endif %}">
                 <a href="{{ url_for('admin_teacher.index') }}"><i class="fa-solid fa-building-columns text-secondary me-2"></i> <span>الاتصالات الإدارية</span></a>
@@ -108,17 +140,61 @@
                         <i class="fa-solid fa-moon text-warning fs-6" id="globalThemeIcon"></i>
                     </button>
 
+                    <!-- Quick Messages Nav Icon with Dynamic Badge Counter -->
+                    <a href="{{ url_for('messages.index') }}" id="topbarMessagesBtn" class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0 position-relative" style="width: 34px; height: 34px;" title="الرسائل والمحادثات">
+                        <i class="fa-regular fa-envelope text-primary fs-6"></i>
+                        {% if unread_messages_count and unread_messages_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 10px; min-width: 18px; padding: 2px 4px;">
+                                {{ unread_messages_count if unread_messages_count < 100 else '+99' }}
+                            </span>
+                        {% endif %}
+                    </a>
+
+                    <!-- Quick Notifications Nav Icon with Dynamic Badge Counter -->
+                    <a href="{{ url_for('notifications.index') }}" id="topbarNotificationsBtn" class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0 position-relative" style="width: 34px; height: 34px;" title="مركز الإشعارات والتنبيهات">
+                        <i class="fa-regular fa-bell text-danger fs-6"></i>
+                        {% if unread_notifications_count and unread_notifications_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 10px; min-width: 18px; padding: 2px 4px;">
+                                {{ unread_notifications_count if unread_notifications_count < 100 else '+99' }}
+                            </span>
+                        {% endif %}
+                    </a>
+
                     <div class="dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-1 p-1 text-dark" href="#" id="teacherUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="avatar-circle bg-primary text-white rounded-circle fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
-                                <i class="fa-solid fa-user-tie"></i>
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 p-1 text-dark" href="#" id="teacherUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="avatar-circle rounded-circle shadow-sm overflow-hidden d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; border: 1.5px solid #2563eb; background: #eff6ff;">
+                                {% if teacher_photo_url %}
+                                    <img src="{{ teacher_photo_url }}" alt="{{ current_user.name }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                    <div class="text-primary w-100 h-100 align-items-center justify-content-center" style="display: none;">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="text-primary w-100 h-100 d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    </div>
+                                {% endif %}
                             </div>
-                            <span class="font-cairo fw-bold extra-small d-none d-lg-inline text-truncate" style="max-width: 120px;">{{ current_user.name or 'المعلم' }}</span>
+                            <span class="font-cairo fw-bold extra-small d-none d-lg-inline text-truncate" style="max-width: 130px;">{{ current_user.name or 'المعلم' }}</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 font-cairo extra-small" aria-labelledby="teacherUserDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('profile.index') }}"><i class="fa-regular fa-user me-2 text-primary"></i>الملف الشخصي وحسابي</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>تسجيل الخروج</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 font-cairo extra-small p-2" style="min-width: 230px;" aria-labelledby="teacherUserDropdown">
+                            <li class="px-2 py-2 mb-2 bg-light rounded-3 text-center border">
+                                <div class="mx-auto rounded-circle overflow-hidden shadow-sm mb-2 d-flex align-items-center justify-content-center bg-white" style="width: 52px; height: 52px; border: 2px solid #2563eb;">
+                                    {% if teacher_photo_url %}
+                                        <img src="{{ teacher_photo_url }}" alt="{{ current_user.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                        <div class="w-100 h-100 bg-primary text-white d-flex align-items-center justify-content-center fs-4">
+                                            <i class="fa-solid fa-user-tie"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="fw-bold text-dark text-truncate">{{ current_user.name or 'المعلم الأكاديمي' }}</div>
+                                <small class="text-muted d-block">{{ logged_teacher.TeacherTitle if logged_teacher and logged_teacher.TeacherTitle else 'معلم مادة' }}</small>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small px-2 py-0 mt-1">حساب معتمد 🟢</span>
+                            </li>
+                            <li><a class="dropdown-item rounded-2 py-2" href="{{ url_for('profile.index') }}"><i class="fa-regular fa-user me-2 text-primary"></i>الملف الشخصي وحسابي</a></li>
+                            <li><a class="dropdown-item rounded-2 py-2" href="{{ url_for('timetable.index') }}"><i class="fa-solid fa-calendar-days me-2 text-info"></i>جدولي الدراسي</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item rounded-2 py-2 text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>تسجيل الخروج</a></li>
                         </ul>
                     </div>
                 </div>

@@ -5,135 +5,248 @@ from services.teacher_students_service import get_teacher_students_query, get_te
 
 logger = logging.getLogger(__name__)
 
+def cleanup_and_scope_teacher_notifications(user_id):
+    """
+    Cleans up any notifications for a teacher that are outside their assigned scope
+    (e.g., other teachers' subjects, other students) and eliminates duplicates.
+    """
+    try:
+        user = User.query.get(user_id) if user_id else None
+        if not user or getattr(user, 'role', '') == 'admin':
+            return
+
+        teacher = get_teacher_by_user_id(user_id)
+        if not teacher:
+            return
+
+        from services.teacher_dashboard_service import get_teacher_subject_and_class_ids
+        from services.teacher_students_service import get_teacher_students_query
+
+        sub_ids, c_ids, s_ids = get_teacher_subject_and_class_ids(teacher)
+        st_q, _, _ = get_teacher_students_query(teacher)
+        my_students = st_q.all() if st_q else []
+        my_st_ids = [s.SID for s in my_students]
+
+        other_students = Student.query.filter(Student.SID.notin_(my_st_ids)).all() if my_st_ids else []
+        other_st_names = [s.SName for s in other_students if s.SName]
+        other_subjects = Subject.query.filter(Subject.SubID.notin_(sub_ids)).all() if sub_ids else []
+        other_sub_names = [s.SubName for s in other_subjects if s.SubName]
+
+        notifs = Notification.query.filter_by(user_id=user_id).all()
+        to_delete = []
+        seen = set()
+
+        for n in notifs:
+            key = (n.title, n.message)
+            if key in seen:
+                to_delete.append(n)
+                continue
+            seen.add(key)
+
+            content = (n.title or '') + ' ' + (n.message or '')
+            if n.notification_type in ['homework', 'exam', 'attendance', 'student', 'grade']:
+                if any(oth in content for oth in other_st_names):
+                    to_delete.append(n)
+                    continue
+                if any(oth in content for oth in other_sub_names):
+                    to_delete.append(n)
+                    continue
+
+        if to_delete:
+            for d in to_delete:
+                db.session.delete(d)
+            db.session.commit()
+    except Exception as e:
+        logger.warning(f"Error in cleanup_and_scope_teacher_notifications: {e}")
+        db.session.rollback()
+
 def auto_generate_teacher_notifications(user_id):
     """
     Ensure real notifications generated from actual DB activities in
-    Homework, HomeworkMarks, ExamSchedule, Marks, Student, Attendance, Messages.
+    Homework, HomeworkMarks, ExamSchedule, Marks, Student, Attendance, Messages
+    are STRICTLY within the teacher's assigned subjects, classes, sections, and students.
     """
     try:
-        user_notifs_cnt = Notification.query.filter_by(user_id=user_id).count()
-        if user_notifs_cnt >= 8:
+        cleanup_and_scope_teacher_notifications(user_id)
+
+        user = User.query.get(user_id) if user_id else None
+        if not user:
             return
 
+        is_admin = (getattr(user, 'role', '') == 'admin')
+        teacher = get_teacher_by_user_id(user_id)
+        if not teacher and not is_admin:
+            return
+
+        from services.teacher_dashboard_service import get_teacher_subject_and_class_ids
+        from services.teacher_students_service import get_teacher_students_query
         from models.grade import HomeworkMarks, Marks
         from models import Attendance, Message, Homework, ExamSchedule, Student
 
-        # 1. Homework Marks activity notifications
-        hw_marks = HomeworkMarks.query.filter(HomeworkMarks.Score.isnot(None), HomeworkMarks.is_deleted == False).order_by(HomeworkMarks.HM_ID.desc()).limit(3).all()
-        for hm in hw_marks:
-            st_name = hm.student.SName if hm.student else f"طالب #{hm.SID}"
-            hw_title = hm.homework.title if (hasattr(hm, 'homework') and hm.homework and hm.homework.title) else f"واجب #{hm.HomeworkID}"
-            sc = float(hm.Score) if hm.Score is not None else 0.0
-            norm_sc = round(min(10.0, max(0.0, sc / 10.0 if sc > 10.0 else sc)), 1)
-            
-            notif = Notification(
-                user_id=user_id,
-                title=f"تم رصد درجة واجب: {hw_title}",
-                message=f"تم رصد درجة الطالب {st_name} بنجاح ({norm_sc} / 10).",
-                notification_type='homework',
-                action_url='/gradebook/?view_type=homework',
-                priority='normal',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+        if teacher:
+            subject_ids, class_ids, section_ids = get_teacher_subject_and_class_ids(teacher)
+            st_query, _, _ = get_teacher_students_query(teacher)
+            students = st_query.all() if st_query else []
+            student_ids = [st.SID for st in students]
+        else:
+            subject_ids, class_ids, section_ids = [], [], []
+            students = Student.query.filter_by(is_deleted=False).limit(10).all()
+            student_ids = [st.SID for st in students]
 
-        # 2. Exam Marks activity notifications
-        ex_marks = Marks.query.filter(Marks.assessment_type == 'exam', Marks.Score.isnot(None), Marks.is_deleted == False).order_by(Marks.M_ID.desc()).limit(3).all()
-        for em in ex_marks:
-            st_name = em.student.SName if (hasattr(em, 'student') and em.student) else f"طالب #{em.SID}"
-            sc = float(em.Score) if em.Score is not None else 0.0
-            max_s = float(em.MaxScore) if em.MaxScore else 100.0
-            
-            notif = Notification(
-                user_id=user_id,
-                title="تم نشر نتائج الاختبارات في سجل الدرجات",
-                message=f"تم رصد درجة الطالب {st_name} بنتيجة ({round(sc, 1)} / {int(max_s)}).",
-                notification_type='exam',
-                action_url='/exams/',
-                priority='high',
-                is_read=False,
-                created_at=datetime.utcnow()
+        # 1. Homework Marks activity notifications (Strictly for this teacher's students and homework)
+        if student_ids:
+            hw_marks_q = HomeworkMarks.query.filter(
+                HomeworkMarks.SID.in_(student_ids),
+                HomeworkMarks.Score.isnot(None),
+                HomeworkMarks.is_deleted == False
             )
-            db.session.add(notif)
+            if subject_ids:
+                hw_marks_q = hw_marks_q.join(Homework, HomeworkMarks.HomeworkID == Homework.id).filter(
+                    Homework.sub_id.in_(subject_ids)
+                )
+            hw_marks = hw_marks_q.order_by(HomeworkMarks.HM_ID.desc()).limit(3).all()
+            for hm in hw_marks:
+                st_name = hm.student.SName if hm.student else f"طالب #{hm.SID}"
+                hw_title = hm.homework.title if (hasattr(hm, 'homework') and hm.homework and hm.homework.title) else f"واجب #{hm.HomeworkID}"
+                sc = float(hm.Score) if hm.Score is not None else 0.0
+                norm_sc = round(min(10.0, max(0.0, sc / 10.0 if sc > 10.0 else sc)), 1)
+                title = f"تم رصد درجة واجب: {hw_title}"
+                msg = f"تم رصد درجة الطالب {st_name} بنجاح ({norm_sc} / 10)."
+                if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='homework',
+                        action_url='/gradebook/?view_type=homework',
+                        priority='normal',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
 
-        # 3. Attendance warning notifications
-        absents = Attendance.query.filter_by(Status='غائب').order_by(Attendance.AttendanceID.desc()).limit(2).all()
-        for ab in absents:
-            st_name = ab.student.SName if (hasattr(ab, 'student') and ab.student) else f"طالب #{ab.SID}"
-            notif = Notification(
-                user_id=user_id,
-                title=f"تنبيه غياب: {st_name}",
-                message=f"تم تسجيل غياب الطالب {st_name} اليوم في كشف الحضور والغياب.",
-                notification_type='attendance',
-                action_url='/students/',
-                priority='urgent',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+        # 2. Exam Marks activity notifications (Strictly for this teacher's students & subjects)
+        if student_ids and subject_ids:
+            ex_marks = Marks.query.filter(
+                Marks.assessment_type == 'exam',
+                Marks.SID.in_(student_ids),
+                Marks.SubID.in_(subject_ids),
+                Marks.Score.isnot(None),
+                Marks.is_deleted == False
+            ).order_by(Marks.M_ID.desc()).limit(3).all()
+            for em in ex_marks:
+                st_name = em.student.SName if (hasattr(em, 'student') and em.student) else f"طالب #{em.SID}"
+                sc = float(em.Score) if em.Score is not None else 0.0
+                max_s = float(em.MaxScore) if em.MaxScore else 100.0
+                title = "تم نشر نتائج الاختبارات في سجل الدرجات"
+                msg = f"تم رصد درجة الطالب {st_name} بنتيجة ({round(sc, 1)} / {int(max_s)})."
+                if not Notification.query.filter_by(user_id=user_id, title=title, message=msg).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='exam',
+                        action_url='/exams/',
+                        priority='high',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
 
-        # 4. Homework Creation activity notifications
-        hws = Homework.query.order_by(Homework.id.desc()).limit(3).all()
-        for hw in hws:
-            sub_name = hw.subject.SubName if hw.subject else 'المادة'
-            notif = Notification(
-                user_id=user_id,
-                title=f"تم إسناد واجب جديد: {hw.title}",
-                message=f"تم إسناد واجب مادة {sub_name} وتحديد الموعد النهائي.",
-                notification_type='homework',
-                action_url='/homework/',
-                priority='normal',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+        # 3. Attendance warning notifications (Strictly for this teacher's students)
+        if student_ids:
+            absents = Attendance.query.filter(
+                Attendance.SID.in_(student_ids),
+                Attendance.Status == 'غائب'
+            ).order_by(Attendance.AttendanceID.desc()).limit(2).all()
+            for ab in absents:
+                st_name = ab.student.SName if (hasattr(ab, 'student') and ab.student) else f"طالب #{ab.SID}"
+                title = f"تنبيه غياب: {st_name}"
+                msg = f"تم تسجيل غياب الطالب {st_name} اليوم في كشف الحضور والغياب."
+                if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='attendance',
+                        action_url='/students/',
+                        priority='urgent',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
 
-        # 5. Exam Schedule activity notifications
-        schedules = ExamSchedule.query.order_by(ExamSchedule.ScheduleID.desc()).limit(3).all()
-        for sch in schedules:
-            sub_name = sch.subject.SubName if sch.subject else 'المادة'
-            notif = Notification(
-                user_id=user_id,
-                title=f"جدولة اختبار: {sch.ExamName or sub_name}",
-                message=f"تمت جدولة امتحان مادة {sub_name} وتوزيع القاعات.",
-                notification_type='exam',
-                action_url='/exams/',
-                priority='high',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+        # 4. Homework Creation activity notifications (Strictly for this teacher's subjects and classes)
+        if subject_ids:
+            hw_query = Homework.query.filter(Homework.sub_id.in_(subject_ids))
+            if class_ids:
+                hw_query = hw_query.filter(Homework.class_id.in_(class_ids))
+            hws = hw_query.order_by(Homework.id.desc()).limit(3).all()
+            for hw in hws:
+                sub_name = hw.subject.SubName if hw.subject else 'المادة'
+                title = f"تم إسناد واجب جديد: {hw.title}"
+                msg = f"تم إسناد واجب مادة {sub_name} وتحديد الموعد النهائي."
+                if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='homework',
+                        action_url='/homework/',
+                        priority='normal',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
 
-        # 6. Student activity notifications
-        students = Student.query.filter_by(is_deleted=False).order_by(Student.SID.desc()).limit(3).all()
-        for st in students:
-            notif = Notification(
-                user_id=user_id,
-                title=f"إشعار طالب: {st.SName}",
-                message=f"متابعة تحديث ملف ونشاط الطالب {st.SName} في المنظومة.",
-                notification_type='student',
-                action_url='/students/',
-                priority='normal',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+        # 5. Exam Schedule activity notifications (Strictly for this teacher's subjects)
+        if subject_ids:
+            schedules = ExamSchedule.query.filter(ExamSchedule.SubID.in_(subject_ids)).order_by(ExamSchedule.ScheduleID.desc()).limit(3).all()
+            for sch in schedules:
+                sub_name = sch.subject.SubName if sch.subject else 'المادة'
+                title = f"جدولة اختبار: {sch.ExamName or sub_name}"
+                msg = f"تمت جدولة امتحان مادة {sub_name} وتوزيع القاعات."
+                if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='exam',
+                        action_url='/exams/',
+                        priority='high',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
 
-        # 7. Administration / User activity notifications
+        # 6. Student activity notifications (Strictly for this teacher's students)
+        if students:
+            for st in students[:3]:
+                title = f"إشعار طالب: {st.SName}"
+                msg = f"متابعة تحديث ملف ونشاط الطالب {st.SName} في المنظومة."
+                if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                    db.session.add(Notification(
+                        user_id=user_id,
+                        title=title,
+                        message=msg,
+                        notification_type='student',
+                        action_url='/students/',
+                        priority='normal',
+                        is_read=False,
+                        created_at=datetime.utcnow()
+                    ))
+
+        # 7. Administration / User activity notifications (Official directives only)
         admin_users = User.query.filter(User.role == 'admin').limit(2).all()
         for u in admin_users:
-            notif = Notification(
-                user_id=user_id,
-                title=f"توجيه إداري من: {u.name}",
-                message="تحديث الإجراءات وتوجيهات المنظومة الإدارية الموحدة.",
-                notification_type='admin',
-                action_url='/notifications/',
-                priority='normal',
-                is_read=False,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(notif)
+            title = f"توجيه إداري من: {u.name}"
+            msg = "تحديث الإجراءات وتوجيهات المنظومة الإدارية الموحدة."
+            if not Notification.query.filter_by(user_id=user_id, title=title).first():
+                db.session.add(Notification(
+                    user_id=user_id,
+                    title=title,
+                    message=msg,
+                    notification_type='admin',
+                    action_url='/notifications/',
+                    priority='normal',
+                    is_read=False,
+                    created_at=datetime.utcnow()
+                ))
 
         db.session.commit()
     except Exception as e:

@@ -11,9 +11,21 @@
         <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
             <div class="col-12 col-md-7 col-xl-8">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
-                         style="width: 54px; height: 54px; border: 2px solid rgba(255,255,255,0.4);">
-                        <i class="fa-solid fa-clipboard-user fs-4"></i>
+                    <div class="rounded-circle shadow flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center bg-white" 
+                         style="width: 56px; height: 56px; border: 2.5px solid rgba(255,255,255,0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        {% if teacher_photo_url %}
+                            <img src="{{ teacher_photo_url }}" 
+                                 alt="{{ teacher_info.TeacherName or current_user.name }}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                 onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <div class="text-primary fw-bold font-monospace fs-3 align-items-center justify-content-center w-100 h-100" style="display: none;">
+                                <i class="fa-solid fa-clipboard-user fs-4"></i>
+                            </div>
+                        {% else %}
+                            <div class="text-primary fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center w-100 h-100">
+                                <i class="fa-solid fa-clipboard-user fs-4"></i>
+                            </div>
+                        {% endif %}
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -61,18 +73,20 @@
     </div>
 
     <!-- 3. CURRENT LESSON SUMMARY CARD -->
-    <div class="card rounded-4 shadow-sm border-0 p-3 mb-4 bg-gradient-primary text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-start: 4px solid #3b82f6 !important;">
+    <div class="card rounded-4 shadow-sm border-0 p-3 mb-4 text-white position-relative overflow-hidden" 
+         style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+                border-start: 5px solid {% if current_lesson.status_code == 'current' %}#10b981{% elif current_lesson.status_code == 'upcoming' %}#3b82f6{% elif current_lesson.status_code == 'ended' %}#64748b{% else %}#0ea5e9{% endif %} !important;">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 position-relative" style="z-index: 10;">
             <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-primary text-white fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 50px; height: 50px;">
+                <div class="rounded-circle {% if current_lesson.status_code == 'current' %}bg-success{% elif current_lesson.status_code == 'upcoming' %}bg-primary{% elif current_lesson.status_code == 'ended' %}bg-secondary{% else %}bg-info{% endif %} text-white fw-bold font-monospace fs-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 50px; height: 50px;">
                     <i class="fa-solid fa-chalkboard"></i>
                 </div>
                 <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-primary text-white rounded-pill px-3 py-1 extra-small fw-bold">
-                            <i class="fa-solid fa-circle-dot fa-beat text-danger me-1"></i> {{ current_lesson.status or 'الحصة الحالية' }}
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                        <span class="badge {{ current_lesson.badge_class or 'bg-primary' }} text-white rounded-pill px-3 py-1 extra-small fw-bold">
+                            <i class="{{ current_lesson.icon or 'fa-solid fa-circle-dot' }} me-1"></i> {{ current_lesson.status }}
                         </span>
-                        <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1"></i> التوقيت: <span id="currentLessonTimeLiveDisplay">{{ current_lesson.time if current_lesson.time != 'غير محدد' else '--:--' }}</span></small>
+                        <small class="text-white-50 font-monospace"><i class="fa-regular fa-clock me-1 text-warning"></i> التوقيت: <span id="currentLessonTimeLiveDisplay">{{ current_lesson.time if current_lesson.time != 'غير محدد' else '--:--' }}</span></small>
                     </div>
                     <h5 class="fw-bold text-white mb-0">{{ current_lesson.subject }} — {{ current_lesson.class_sec_label }}</h5>
                 </div>
@@ -80,7 +94,9 @@
             <div class="d-flex align-items-center gap-3 flex-wrap text-white-50 extra-small">
                 <span><i class="fa-solid fa-users text-success me-1"></i> {{ current_lesson.students_count }} طالب مسجل</span>
                 {% if current_lesson.remaining_minutes %}
-                    <span><i class="fa-solid fa-hourglass-half text-warning me-1"></i> {{ current_lesson.remaining_minutes }}</span>
+                    <span class="badge bg-dark bg-opacity-50 border border-secondary text-warning rounded-pill px-3 py-1 font-monospace">
+                        <i class="fa-solid fa-hourglass-half me-1"></i> {{ current_lesson.remaining_minutes }}
+                    </span>
                 {% endif %}
             </div>
         </div>
@@ -208,8 +224,8 @@
             </small>
         </div>
 
-        <div class="sticky-table-container">
-            <table class="table table-hover align-middle mb-0 extra-small" id="attendancePageTable">
+        <div class="table-responsive sticky-table-container table-scroll-container" style="max-height: 560px; overflow-x: auto; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0 extra-small" id="attendancePageTable" style="min-width: 850px;">
                 <thead class="bg-light text-muted">
                     <tr>
                         <th style="width: 40px;" class="text-center ps-3">#</th>

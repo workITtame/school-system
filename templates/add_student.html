@@ -302,11 +302,8 @@
                         <label class="form-label fw-bold text-dark">الشعبة الدراسية <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <i class="fa-solid fa-users-rectangle input-icon-prepend"></i>
-                            <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required>
-                                <option value="">اختر الشعبة...</option>
-                                {% for s in sections %}
-                                    <option value="{{ s.SectionID }}">{{ s.SectionName }}</option>
-                                {% endfor %}
+                            <select class="form-select form-select-lg input-with-icon rounded-3" name="section_id" id="inputSection" required disabled>
+                                <option value="">اختر الصف الدراسي أولاً...</option>
                             </select>
                             <div class="invalid-feedback">يرجى اختيار الشعبة الدراسية</div>
                         </div>
@@ -460,12 +457,14 @@
                             </div>
                             <div class="d-flex align-items-center gap-3 mb-3">
                                 <div id="summaryAvatarBox">
-                                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; font-size: 1.2rem;" id="summaryAvatarInitial">
+                                    <img id="summaryAvatarImg" src="" alt="صورة الطالب" class="rounded-circle border border-2 border-primary shadow-sm d-none" style="width: 52px; height: 52px; object-fit: cover;">
+                                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold font-monospace d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px; font-size: 1.2rem;" id="summaryAvatarInitial">
                                         ط
                                     </div>
                                 </div>
                                 <div>
-                                    <h6 class="fw-bold text-dark mb-0 font-cairo" id="summaryName">—</h6>
+                                    <h6 class="fw-bold text-dark mb-0 font-cairo fs-6" id="summaryName">—</h6>
+                                    <span class="text-muted extra-small"><i class="fa-solid fa-user-graduate me-1"></i> طالب جديد</span>
                                 </div>
                             </div>
                             <p class="mb-2"><strong>تاريخ الميلاد:</strong> <span id="summaryDob">—</span></p>
@@ -484,7 +483,7 @@
                             </div>
                             <p class="mb-2"><strong>الصف الدراسي:</strong> <span id="summaryClass" class="fw-bold text-dark">—</span></p>
                             <p class="mb-2"><strong>الشعبة الدراسية:</strong> <span id="summarySection" class="fw-bold text-dark">—</span></p>
-                            <p class="mb-0"><strong>حالة الطالب:</strong> <span id="summaryStatus" class="badge bg-success-subtle text-success border">—</span></p>
+                            <p class="mb-0"><strong>حالة الطالب:</strong> <span id="summaryStatus" class="badge bg-success-subtle text-success border border-success-subtle">نشط</span></p>
                         </div>
                     </div>
 
@@ -497,10 +496,10 @@
                                     <i class="fa-solid fa-pen me-1"></i> تعديل
                                 </button>
                             </div>
-                            <p class="mb-2"><strong>اسم ولي الأمر:</strong> <span id="summaryParentName">—</span></p>
-                            <p class="mb-2"><strong>رقم الهاتف:</strong> <span id="summaryParentNumber">—</span></p>
+                            <p class="mb-2"><strong>اسم ولي الأمر:</strong> <span id="summaryParentName" class="fw-bold text-dark">—</span></p>
+                            <p class="mb-2"><strong>رقم الهاتف:</strong> <span id="summaryParentNumber" dir="ltr" class="d-inline-block font-monospace">—</span></p>
                             <p class="mb-2"><strong>المهنة / العمل:</strong> <span id="summaryParentWork">—</span></p>
-                            <p class="mb-0"><strong>الحي السكني:</strong> <span id="summaryNeighborhood">—</span></p>
+                            <p class="mb-0"><strong>الحي والعنوان:</strong> <span id="summaryNeighborhood">—</span></p>
                         </div>
                     </div>
 
@@ -513,8 +512,8 @@
                                     <i class="fa-solid fa-pen me-1"></i> تعديل
                                 </button>
                             </div>
-                            <p class="mb-2"><strong>شهادة الميلاد / الهوية:</strong> <span id="summaryDocBirth">غير مرفق</span></p>
-                            <p class="mb-0"><strong>السجل الأكاديمي:</strong> <span id="summaryDocAcademic">غير مرفق</span></p>
+                            <p class="mb-2"><strong>شهادة الميلاد / الهوية:</strong> <span id="summaryDocBirth"><span class="badge bg-light text-muted border px-2 py-1">⚪ غير مرفق</span></span></p>
+                            <p class="mb-0"><strong>السجل الأكاديمي:</strong> <span id="summaryDocAcademic"><span class="badge bg-light text-muted border px-2 py-1">⚪ غير مرفق</span></span></p>
                         </div>
                     </div>
                 </div>
@@ -542,6 +541,52 @@
 <script>
 let currentStepIndex = 0;
 const totalStepsCount = 5;
+const classSectionsData = {{ class_sections_map | tojson }};
+
+function updateSectionOptions(selectedClassId, preselectedSectionId = null) {
+    const inputSection = document.getElementById('inputSection');
+    if (!inputSection) return;
+
+    inputSection.innerHTML = '';
+
+    if (!selectedClassId) {
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'اختر الصف الدراسي أولاً...';
+        inputSection.appendChild(defaultOpt);
+        inputSection.disabled = true;
+        return;
+    }
+
+    const sections = classSectionsData[String(selectedClassId)] || [];
+    if (sections.length === 0) {
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        emptyOpt.textContent = 'لا توجد شعب مخصصة لهذا الصف';
+        inputSection.appendChild(emptyOpt);
+        inputSection.disabled = false;
+    } else {
+        const promptOpt = document.createElement('option');
+        promptOpt.value = '';
+        promptOpt.textContent = 'اختر الشعبة...';
+        inputSection.appendChild(promptOpt);
+
+        const seenIds = new Set();
+        sections.forEach(s => {
+            if (!seenIds.has(s.id)) {
+                seenIds.add(s.id);
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                if (preselectedSectionId && String(s.id) === String(preselectedSectionId)) {
+                    opt.selected = true;
+                }
+                inputSection.appendChild(opt);
+            }
+        });
+        inputSection.disabled = false;
+    }
+}
 
 function updateStepperUI() {
     const progressPercent = Math.round(((currentStepIndex + 1) / totalStepsCount) * 100);
@@ -631,60 +676,6 @@ function navigateStep(direction) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function populateReviewSummary() {
-    const nameVal = document.getElementById('inputName')?.value || '—';
-    const dobVal = document.getElementById('inputDob')?.value || '—';
-    const genderVal = document.getElementById('inputGender')?.value || '—';
-    const nationalIdVal = document.querySelector('input[name="national_id"]')?.value || '—';
-
-    document.getElementById('summaryName').innerText = nameVal;
-    document.getElementById('summaryDob').innerText = dobVal;
-    document.getElementById('summaryGender').innerText = genderVal;
-    document.getElementById('summaryNationalId').innerText = `الرقم الوطني / الإقامة: ${nationalIdVal}`;
-    document.getElementById('summaryAvatarInitial').innerText = nameVal ? nameVal[0] : 'ط';
-
-    const classSelect = document.getElementById('inputClass');
-    if (classSelect && classSelect.selectedIndex >= 0) {
-        document.getElementById('summaryClass').innerText = classSelect.options[classSelect.selectedIndex]?.text || '—';
-    }
-
-    const sectionSelect = document.getElementById('inputSection');
-    if (sectionSelect && sectionSelect.selectedIndex >= 0) {
-        document.getElementById('summarySection').innerText = sectionSelect.options[sectionSelect.selectedIndex]?.text || '—';
-    }
-
-    const statusSelect = document.getElementById('inputStatus');
-    if (statusSelect && statusSelect.selectedIndex >= 0) {
-        document.getElementById('summaryStatus').innerText = statusSelect.options[statusSelect.selectedIndex]?.text || 'نشط';
-    }
-
-    document.getElementById('summaryParentName').innerText = document.getElementById('inputParentName')?.value || '—';
-    document.getElementById('summaryParentNumber').innerText = document.getElementById('inputParentNumber')?.value || '—';
-    document.getElementById('summaryParentWork').innerText = document.getElementById('inputParentWork')?.value || '—';
-    document.getElementById('summaryNeighborhood').innerText = document.getElementById('inputNeighborhood')?.value || '—';
-
-    // File attachments status
-    const docBirthInput = document.querySelector('input[name="doc_birth"]');
-    const docAcademicInput = document.querySelector('input[name="doc_academic"]');
-    
-    let fileCount = 0;
-    if (docBirthInput && docBirthInput.files && docBirthInput.files.length > 0) {
-        document.getElementById('summaryDocBirth').innerHTML = `<span class="badge bg-success-subtle text-success border">🟢 تم المرفق (${docBirthInput.files[0].name})</span>`;
-        fileCount++;
-    } else {
-        document.getElementById('summaryDocBirth').innerHTML = `<span class="badge bg-light text-muted border">⚪ غير مرفق</span>`;
-    }
-
-    if (docAcademicInput && docAcademicInput.files && docAcademicInput.files.length > 0) {
-        document.getElementById('summaryDocAcademic').innerHTML = `<span class="badge bg-success-subtle text-success border">🟢 تم المرفق (${docAcademicInput.files[0].name})</span>`;
-        fileCount++;
-    } else {
-        document.getElementById('summaryDocAcademic').innerHTML = `<span class="badge bg-light text-muted border">⚪ غير مرفق</span>`;
-    }
-
-    document.getElementById('reviewFileCount').innerText = `المرفقات المضافة: ${fileCount}`;
-}
-
 function previewAvatar(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -692,12 +683,168 @@ function previewAvatar(input) {
             const img = document.getElementById('avatarPreviewImg');
             const previewContainer = document.getElementById('avatarPreviewContainer');
             const placeholder = document.getElementById('avatarPlaceholder');
+            const summaryImg = document.getElementById('summaryAvatarImg');
+            const summaryInitial = document.getElementById('summaryAvatarInitial');
 
             if (img) img.src = e.target.result;
             if (previewContainer) previewContainer.classList.remove('d-none');
             if (placeholder) placeholder.classList.add('d-none');
-        }
+
+            if (summaryImg) {
+                summaryImg.src = e.target.result;
+                summaryImg.classList.remove('d-none');
+            }
+            if (summaryInitial) summaryInitial.classList.add('d-none');
+        };
         reader.readAsDataURL(input.files[0]);
+    } else {
+        const summaryImg = document.getElementById('summaryAvatarImg');
+        const summaryInitial = document.getElementById('summaryAvatarInitial');
+        if (summaryImg) summaryImg.classList.add('d-none');
+        if (summaryInitial) summaryInitial.classList.remove('d-none');
+    }
+}
+
+function populateReviewSummary() {
+    try {
+        const nameVal = document.getElementById('inputName')?.value?.trim() || '—';
+        const dobVal = document.getElementById('inputDob')?.value || '—';
+        const genderVal = document.getElementById('inputGender')?.value || '—';
+
+        // أ. البيانات الشخصية
+        const nameEl = document.getElementById('summaryName');
+        if (nameEl) nameEl.innerText = nameVal;
+        const dobEl = document.getElementById('summaryDob');
+        if (dobEl) dobEl.innerText = dobVal;
+        const genderEl = document.getElementById('summaryGender');
+        if (genderEl) genderEl.innerText = genderVal;
+
+        // Student photo preview in Step 5
+        const avatarImg = document.getElementById('avatarPreviewImg');
+        const summaryImg = document.getElementById('summaryAvatarImg');
+        const summaryInitial = document.getElementById('summaryAvatarInitial');
+        const avatarFileInput = document.getElementById('avatarFileInput');
+
+        if (avatarFileInput && avatarFileInput.files && avatarFileInput.files.length > 0 && avatarImg && avatarImg.src && !avatarImg.src.endsWith('#') && avatarImg.src !== window.location.href) {
+            if (summaryImg) {
+                summaryImg.src = avatarImg.src;
+                summaryImg.classList.remove('d-none');
+            }
+            if (summaryInitial) summaryInitial.classList.add('d-none');
+        } else {
+            if (summaryImg) summaryImg.classList.add('d-none');
+            if (summaryInitial) {
+                summaryInitial.classList.remove('d-none');
+                summaryInitial.innerText = (nameVal && nameVal !== '—') ? nameVal[0] : 'ط';
+            }
+        }
+
+        // ب. البيانات الأكاديمية والقيد
+        const classSelect = document.getElementById('inputClass');
+        const classEl = document.getElementById('summaryClass');
+        if (classEl) {
+            if (classSelect && classSelect.selectedIndex > 0) {
+                classEl.innerText = classSelect.options[classSelect.selectedIndex].text;
+            } else {
+                classEl.innerText = '—';
+            }
+        }
+
+        const sectionSelect = document.getElementById('inputSection');
+        const sectionEl = document.getElementById('summarySection');
+        if (sectionEl) {
+            if (sectionSelect && sectionSelect.selectedIndex > 0) {
+                sectionEl.innerText = sectionSelect.options[sectionSelect.selectedIndex].text;
+            } else {
+                sectionEl.innerText = '—';
+            }
+        }
+
+        const statusSelect = document.getElementById('inputStatus');
+        const statusEl = document.getElementById('summaryStatus');
+        if (statusEl) {
+            if (statusSelect && statusSelect.selectedIndex >= 0) {
+                statusEl.innerText = statusSelect.options[statusSelect.selectedIndex].text;
+            } else {
+                statusEl.innerText = 'نشط';
+            }
+        }
+
+        // ج. بيانات ولي الأمر والتواصل
+        const parentName = document.getElementById('inputParentName')?.value?.trim();
+        const parentNumber = document.getElementById('inputParentNumber')?.value?.trim();
+        const parentWork = document.getElementById('inputParentWork')?.value?.trim();
+        const neighborhood = document.getElementById('inputNeighborhood')?.value?.trim();
+        const govName = document.querySelector('input[name="g_name"]')?.value?.trim();
+        const dirName = document.querySelector('input[name="directorate_name"]')?.value?.trim();
+
+        const parentNameEl = document.getElementById('summaryParentName');
+        if (parentNameEl) parentNameEl.innerText = parentName || '—';
+
+        const parentNumEl = document.getElementById('summaryParentNumber');
+        if (parentNumEl) parentNumEl.innerText = parentNumber || '—';
+
+        const parentWorkEl = document.getElementById('summaryParentWork');
+        if (parentWorkEl) parentWorkEl.innerText = parentWork || '—';
+
+        const fullAddress = [govName, dirName, neighborhood].filter(Boolean).join(' - ');
+        const neighborhoodEl = document.getElementById('summaryNeighborhood');
+        if (neighborhoodEl) neighborhoodEl.innerText = fullAddress || neighborhood || '—';
+
+        // د. المرفقات والمستندات الرسمية
+        const docBirthInput = document.querySelector('input[name="doc_birth"]');
+        const docAcademicInput = document.querySelector('input[name="doc_academic"]');
+
+        let fileCount = 0;
+        const docBirthEl = document.getElementById('summaryDocBirth');
+        if (docBirthEl) {
+            if (docBirthInput && docBirthInput.files && docBirthInput.files.length > 0) {
+                const f = docBirthInput.files[0];
+                const sizeKB = (f.size / 1024).toFixed(1);
+                docBirthEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-file-circle-check me-1"></i> ${f.name} (${sizeKB} KB)</span>`;
+                fileCount++;
+            } else {
+                docBirthEl.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1">⚪ غير مرفق</span>`;
+            }
+        }
+
+        const docAcademicEl = document.getElementById('summaryDocAcademic');
+        if (docAcademicEl) {
+            if (docAcademicInput && docAcademicInput.files && docAcademicInput.files.length > 0) {
+                const f = docAcademicInput.files[0];
+                const sizeKB = (f.size / 1024).toFixed(1);
+                docAcademicEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-file-circle-check me-1"></i> ${f.name} (${sizeKB} KB)</span>`;
+                fileCount++;
+            } else {
+                docAcademicEl.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1">⚪ غير مرفق</span>`;
+            }
+        }
+
+        const fileCountBadge = document.getElementById('reviewFileCount');
+        if (fileCountBadge) {
+            fileCountBadge.innerText = `المرفقات المضافة: ${fileCount}`;
+        }
+
+        // Missing fields counter
+        let missingFields = 0;
+        if (!nameVal || nameVal === '—') missingFields++;
+        if (!dobVal || dobVal === '—') missingFields++;
+        if (!genderVal || genderVal === '—') missingFields++;
+        if (!classSelect || !classSelect.value) missingFields++;
+        if (!sectionSelect || !sectionSelect.value) missingFields++;
+
+        const missingCountEl = document.getElementById('reviewMissingCount');
+        if (missingCountEl) {
+            if (missingFields === 0) {
+                missingCountEl.className = 'badge bg-success text-white border rounded-pill me-1';
+                missingCountEl.innerHTML = `<i class="fa-solid fa-check me-1"></i> الحقول المطلوبة مكتملة`;
+            } else {
+                missingCountEl.className = 'badge bg-warning text-dark border rounded-pill me-1';
+                missingCountEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i> الحقول المطلوبة الناقصة: ${missingFields}`;
+            }
+        }
+    } catch (err) {
+        console.error("Error in populateReviewSummary:", err);
     }
 }
 
@@ -708,6 +855,10 @@ document.querySelectorAll('.stepper-step-item').forEach((item, index) => {
             updateStepperUI();
         }
     });
+});
+
+document.getElementById('inputClass')?.addEventListener('change', function() {
+    updateSectionOptions(this.value);
 });
 
 document.getElementById('studentCreateForm')?.addEventListener('submit', function(e) {
@@ -723,6 +874,8 @@ document.getElementById('studentCreateForm')?.addEventListener('submit', functio
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    const classVal = document.getElementById('inputClass')?.value;
+    updateSectionOptions(classVal);
     updateStepperUI();
 });
 </script>

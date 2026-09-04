@@ -207,18 +207,200 @@
     transform: translateY(-1px);
 }
 
-/* Table Enhancements & Sticky Header */
-.sticky-table-container {
-    max-height: 320px;
-    overflow-y: auto;
+/* ==========================================================================
+   SMOOTH & ELEGANT DUAL SCROLLBAR SYSTEM (VERTICAL & HORIZONTAL) FOR TABLES
+   ========================================================================== */
+
+/* Universal smooth scrolling behavior */
+html, body,
+.table-responsive,
+.sticky-table-container,
+.custom-table-responsive,
+.table-scroll-container,
+.homework-table-scroll-container,
+[class*="table-responsive"] {
+    scroll-behavior: smooth !important;
+    -webkit-overflow-scrolling: touch !important;
 }
 
-.sticky-table-container table thead th {
-    position: sticky;
-    top: 0;
-    background: #f8fafc;
-    z-index: 10;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+/* Dual scrollable table containers */
+.table-responsive,
+.sticky-table-container,
+.custom-table-responsive,
+.table-scroll-container,
+.homework-table-scroll-container {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    max-height: 540px;
+    position: relative;
+    border-radius: 12px;
+}
+
+/* WebKit Scrollbars (Chrome, Safari, Edge, Opera) - Vertical (width) & Horizontal (height) */
+.table-responsive::-webkit-scrollbar,
+.sticky-table-container::-webkit-scrollbar,
+.custom-table-responsive::-webkit-scrollbar,
+.table-scroll-container::-webkit-scrollbar,
+.homework-table-scroll-container::-webkit-scrollbar,
+[class*="table-responsive"]::-webkit-scrollbar {
+    width: 8px !important;   /* Vertical scrollbar width */
+    height: 8px !important;  /* Horizontal scrollbar height */
+}
+
+/* Scrollbar Track (Background) */
+.table-responsive::-webkit-scrollbar-track,
+.sticky-table-container::-webkit-scrollbar-track,
+.custom-table-responsive::-webkit-scrollbar-track,
+.table-scroll-container::-webkit-scrollbar-track,
+.homework-table-scroll-container::-webkit-scrollbar-track,
+[class*="table-responsive"]::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 10px !important;
+    margin: 3px !important;
+}
+
+/* Scrollbar Thumb (Handle) */
+.table-responsive::-webkit-scrollbar-thumb,
+.sticky-table-container::-webkit-scrollbar-thumb,
+.custom-table-responsive::-webkit-scrollbar-thumb,
+.table-scroll-container::-webkit-scrollbar-thumb,
+.homework-table-scroll-container::-webkit-scrollbar-thumb,
+[class*="table-responsive"]::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    border-radius: 10px !important;
+    border: 2px solid #f1f5f9 !important;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.15) !important;
+    transition: background 0.25s ease, border-color 0.25s ease !important;
+}
+
+/* Scrollbar Thumb on Hover & Active */
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.sticky-table-container::-webkit-scrollbar-thumb:hover,
+.custom-table-responsive::-webkit-scrollbar-thumb:hover,
+.table-scroll-container::-webkit-scrollbar-thumb:hover,
+.homework-table-scroll-container::-webkit-scrollbar-thumb:hover,
+[class*="table-responsive"]::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%) !important;
+    border-color: #e2e8f0 !important;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:active,
+.sticky-table-container::-webkit-scrollbar-thumb:active,
+.custom-table-responsive::-webkit-scrollbar-thumb:active,
+.table-scroll-container::-webkit-scrollbar-thumb:active,
+.homework-table-scroll-container::-webkit-scrollbar-thumb:active,
+[class*="table-responsive"]::-webkit-scrollbar-thumb:active {
+    background: #312e81 !important;
+}
+
+/* Scrollbar Corner */
+.table-responsive::-webkit-scrollbar-corner,
+.sticky-table-container::-webkit-scrollbar-corner,
+.custom-table-responsive::-webkit-scrollbar-corner,
+.table-scroll-container::-webkit-scrollbar-corner,
+.homework-table-scroll-container::-webkit-scrollbar-corner,
+[class*="table-responsive"]::-webkit-scrollbar-corner {
+    background: transparent !important;
+}
+
+/* Firefox Standard Scrollbar */
+.table-responsive,
+.sticky-table-container,
+.custom-table-responsive,
+.table-scroll-container,
+.homework-table-scroll-container,
+[class*="table-responsive"] {
+    scrollbar-width: thin !important;
+    scrollbar-color: #6366f1 #f1f5f9 !important;
+}
+
+/* Sticky Header for Smooth Vertical Table Scrolling */
+.sticky-table-container table thead th,
+.table-responsive table thead th,
+.table-scroll-container table thead th,
+.homework-table-scroll-container table thead th,
+.table thead.sticky-top th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Dark Mode Support for Smooth Table Scrollbars */
+[data-bs-theme="dark"] .table-responsive::-webkit-scrollbar-track,
+[data-bs-theme="dark"] .sticky-table-container::-webkit-scrollbar-track,
+[data-bs-theme="dark"] .custom-table-responsive::-webkit-scrollbar-track,
+[data-bs-theme="dark"] .table-scroll-container::-webkit-scrollbar-track,
+[data-bs-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-track,
+[data-bs-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-track,
+[data-theme="dark"] .table-responsive::-webkit-scrollbar-track,
+[data-theme="dark"] .sticky-table-container::-webkit-scrollbar-track,
+[data-theme="dark"] .custom-table-responsive::-webkit-scrollbar-track,
+[data-theme="dark"] .table-scroll-container::-webkit-scrollbar-track,
+[data-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-track,
+[data-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-track {
+    background: #1e293b !important;
+}
+
+[data-bs-theme="dark"] .table-responsive::-webkit-scrollbar-thumb,
+[data-bs-theme="dark"] .sticky-table-container::-webkit-scrollbar-thumb,
+[data-bs-theme="dark"] .custom-table-responsive::-webkit-scrollbar-thumb,
+[data-bs-theme="dark"] .table-scroll-container::-webkit-scrollbar-thumb,
+[data-bs-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-thumb,
+[data-bs-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-thumb,
+[data-theme="dark"] .table-responsive::-webkit-scrollbar-thumb,
+[data-theme="dark"] .sticky-table-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] .custom-table-responsive::-webkit-scrollbar-thumb,
+[data-theme="dark"] .table-scroll-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%) !important;
+    border: 2px solid #1e293b !important;
+}
+
+[data-bs-theme="dark"] .table-responsive::-webkit-scrollbar-thumb:hover,
+[data-bs-theme="dark"] .sticky-table-container::-webkit-scrollbar-thumb:hover,
+[data-bs-theme="dark"] .custom-table-responsive::-webkit-scrollbar-thumb:hover,
+[data-bs-theme="dark"] .table-scroll-container::-webkit-scrollbar-thumb:hover,
+[data-bs-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-thumb:hover,
+[data-bs-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .table-responsive::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .sticky-table-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .custom-table-responsive::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .table-scroll-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .homework-table-scroll-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] [class*="table-responsive"]::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%) !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .table-responsive,
+[data-bs-theme="dark"] .sticky-table-container,
+[data-bs-theme="dark"] .custom-table-responsive,
+[data-bs-theme="dark"] .table-scroll-container,
+[data-bs-theme="dark"] .homework-table-scroll-container,
+[data-bs-theme="dark"] [class*="table-responsive"],
+[data-theme="dark"] .table-responsive,
+[data-theme="dark"] .sticky-table-container,
+[data-theme="dark"] .custom-table-responsive,
+[data-theme="dark"] .table-scroll-container,
+[data-theme="dark"] .homework-table-scroll-container,
+[data-theme="dark"] [class*="table-responsive"] {
+    scrollbar-color: #818cf8 #1e293b !important;
+}
+
+[data-bs-theme="dark"] .sticky-table-container table thead th,
+[data-bs-theme="dark"] .table-responsive table thead th,
+[data-bs-theme="dark"] .table-scroll-container table thead th,
+[data-bs-theme="dark"] .homework-table-scroll-container table thead th,
+[data-theme="dark"] .sticky-table-container table thead th,
+[data-theme="dark"] .table-responsive table thead th,
+[data-theme="dark"] .table-scroll-container table thead th,
+[data-theme="dark"] .homework-table-scroll-container table thead th {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Custom Status Badges */

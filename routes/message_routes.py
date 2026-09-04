@@ -180,7 +180,7 @@ def api_list():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@messages_bp.route('/api/conversation/<int:conversation_id>', methods=['GET'])
+@messages_bp.route('/api/conversation/<conversation_id>', methods=['GET'])
 @login_required
 def api_conversation(conversation_id):
     user_id = current_user.id
@@ -232,7 +232,13 @@ def api_send():
             pass
 
         # Handle prefix strings if any
-        if raw_str.startswith('student_') or raw_str.startswith('st_'):
+        if raw_str.startswith('admin_'):
+            try:
+                adm_id = int(raw_str.split('_')[-1])
+                target_user_id = adm_id
+            except (ValueError, TypeError):
+                pass
+        elif raw_str.startswith('student_') or raw_str.startswith('st_'):
             st_id = raw_str.split('_')[-1]
             st = Student.query.get(st_id)
             if st and hasattr(st, 'user_id') and st.user_id:
@@ -245,20 +251,31 @@ def api_send():
         else:
             try:
                 rec_num = int(raw_str)
-                # 1. Try matching User ID directly
-                u = User.query.get(rec_num)
-                if u and u.id != user_id:
-                    target_user_id = u.id
-                else:
-                    # 2. Try matching Teacher ID
-                    t = Teacher.query.get(rec_num)
-                    if t and t.user_id and t.user_id != user_id:
-                        target_user_id = t.user_id
+                # Check if rec_num is a Message ID
+                msg_check = Message.query.get(rec_num)
+                if msg_check and (msg_check.sender_id == user_id or msg_check.recipient_id == user_id):
+                    other_uid = msg_check.sender_id if msg_check.sender_id != user_id else msg_check.recipient_id
+                    if other_uid != user_id:
+                        target_user_id = other_uid
+
+                if not target_user_id:
+                    # 1. Try matching User ID directly
+                    u = User.query.get(rec_num)
+                    if u and u.id != user_id:
+                        target_user_id = u.id
                     else:
-                        # 3. Try matching Student ID
-                        st = Student.query.get(rec_num)
-                        if st and hasattr(st, 'user_id') and st.user_id and st.user_id != user_id:
-                            target_user_id = st.user_id
+                        # 2. Try matching Teacher ID
+                        t = Teacher.query.get(rec_num)
+                        if t and t.user_id and t.user_id != user_id:
+                            target_user_id = t.user_id
+                        else:
+                            # 3. Try matching Student ID
+                            st = Student.query.get(rec_num)
+                            if st:
+                                from services.teacher_message_service import get_student_user_id
+                                st_uid = get_student_user_id(st)
+                                if st_uid and st_uid != user_id:
+                                    target_user_id = st_uid
             except (ValueError, TypeError):
                 target_user_id = None
 

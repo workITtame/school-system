@@ -11,9 +11,21 @@
         <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
             <div class="col-12 col-md-7 col-xl-8">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
-                         style="width: 62px; height: 62px; border: 2px solid rgba(255,255,255,0.4);">
-                        <i class="fa-solid fa-user-graduate fs-3"></i>
+                    <div class="rounded-circle shadow flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center bg-white" 
+                         style="width: 62px; height: 62px; border: 2.5px solid rgba(255,255,255,0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        {% if teacher_photo_url %}
+                            <img src="{{ teacher_photo_url }}" 
+                                 alt="{{ current_user.name }}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                 onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <div class="text-primary fw-bold font-monospace fs-2 align-items-center justify-content-center w-100 h-100" style="display: none;">
+                                <i class="fa-solid fa-user-graduate fs-3"></i>
+                            </div>
+                        {% else %}
+                            <div class="text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center w-100 h-100">
+                                <i class="fa-solid fa-user-graduate fs-3"></i>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div>
@@ -132,8 +144,8 @@
             </h6>
         </div>
 
-        <div class="sticky-table-container" style="overflow-x: auto; min-height: 280px;">
-            <table class="table table-hover align-middle mb-0 extra-small">
+        <div class="table-responsive sticky-table-container table-scroll-container" style="overflow-x: auto; overflow-y: auto; max-height: 560px; min-height: 280px;">
+            <table class="table table-hover align-middle mb-0 extra-small" style="min-width: 800px;">
                 <thead class="bg-light text-muted">
                     <tr>
                         <th style="width: 40px;" class="text-center ps-3">

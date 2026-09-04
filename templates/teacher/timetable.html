@@ -11,9 +11,21 @@
         <div class="row align-items-center g-3 position-relative" style="z-index: 10;">
             <div class="col-12 col-md-7 col-xl-8">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-white text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center shadow flex-shrink-0" 
-                         style="width: 62px; height: 62px; border: 2px solid rgba(255,255,255,0.4);">
-                        <i class="fa-solid fa-calendar-days fs-3"></i>
+                    <div class="rounded-circle shadow flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center bg-white" 
+                         style="width: 62px; height: 62px; border: 2.5px solid rgba(255,255,255,0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        {% if teacher_photo_url %}
+                            <img src="{{ teacher_photo_url }}" 
+                                 alt="{{ current_user.name }}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                 onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                            <div class="text-primary fw-bold font-monospace fs-2 align-items-center justify-content-center w-100 h-100" style="display: none;">
+                                <i class="fa-solid fa-calendar-days fs-3"></i>
+                            </div>
+                        {% else %}
+                            <div class="text-primary fw-bold font-monospace fs-2 d-flex align-items-center justify-content-center w-100 h-100">
+                                <i class="fa-solid fa-calendar-days fs-3"></i>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div>
@@ -78,8 +90,13 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill px-3 py-1" id="week-tab" data-bs-toggle="pill" data-bs-target="#weeklyCalendarView" type="button" role="tab" aria-controls="weeklyCalendarView" aria-selected="false" onclick="switchTimetableTab('week')">
+                    <button class="nav-link rounded-pill px-3 py-1 me-1" id="week-tab" data-bs-toggle="pill" data-bs-target="#weeklyCalendarView" type="button" role="tab" aria-controls="weeklyCalendarView" aria-selected="false" onclick="switchTimetableTab('week')">
                         <i class="fa-solid fa-calendar-week me-1"></i> عرض الأسبوع (Calendar)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-3 py-1" id="table-tab" data-bs-toggle="pill" data-bs-target="#detailedTableView" type="button" role="tab" aria-controls="detailedTableView" aria-selected="false" onclick="switchTimetableTab('table')">
+                        <i class="fa-solid fa-table me-1"></i> جدول الحصص الشامل (Table)
                     </button>
                 </li>
             </ul>
@@ -153,6 +170,58 @@
                             </div>
                         </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <!-- 3. DETAILED TABLE VIEW WITH SMOOTH DUAL SCROLLBARS -->
+            <div class="tab-pane fade" id="detailedTableView" role="tabpanel" aria-labelledby="table-tab">
+                <div class="table-responsive sticky-table-container table-scroll-container" style="overflow-x: auto; overflow-y: auto; max-height: 520px;">
+                    <table class="table table-hover align-middle mb-0 text-center extra-small" id="teacherTimetableTable" style="min-width: 800px;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 100px;">اليوم</th>
+                                <th style="width: 90px;">الحصة</th>
+                                <th>المادة الدراسية</th>
+                                <th>الصف والشعبة</th>
+                                <th>التوقيت</th>
+                                <th>عدد الطلاب</th>
+                                <th>الحالة</th>
+                                <th style="width: 130px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set ns = namespace(has_slots=false) %}
+                            {% for day_name in ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] %}
+                                {% if weekly_schedule and weekly_schedule[day_name] and weekly_schedule[day_name]|length > 0 %}
+                                    {% for slot in weekly_schedule[day_name] %}
+                                        {% set ns.has_slots = true %}
+                                        <tr>
+                                            <td class="fw-bold bg-light-subtle">{{ day_name }}</td>
+                                            <td><span class="badge bg-primary-subtle text-primary fw-bold font-monospace px-2 py-1">الحصة {{ slot.period_num }}</span></td>
+                                            <td class="fw-bold text-dark">{{ slot.subject_name }}</td>
+                                            <td><span class="badge bg-light text-dark border">{{ slot.full_class }}</span></td>
+                                            <td class="font-monospace text-muted"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ slot.start_time }} - {{ slot.end_time }}</td>
+                                            <td><span class="text-success fw-bold"><i class="fa-solid fa-users me-1"></i>{{ slot.students_count }}</span></td>
+                                            <td>{{ macros.render_lesson_status_badge(slot.status_code) }}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm {% if slot.status_code == 'current' %}btn-success{% else %}btn-outline-primary{% endif %} rounded-pill px-2 py-1 extra-small" data-action="open-lesson-drawer" data-slot-id="{{ slot.TableID }}" onclick="openLessonDrawer({{ slot.TableID }})">
+                                                    <i class="fa-solid fa-chalkboard-user me-1"></i> {% if slot.status_code == 'current' %}بدء الحصة{% else %}إدارة الحصة{% endif %}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if not ns.has_slots %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-calendar-xmark fs-2 d-block mb-2 opacity-50"></i>
+                                        لا توجد حصص مسجلة في الجدول الدراسي حالياً
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

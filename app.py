@@ -80,9 +80,18 @@ def create_app(config_class=Config):
     def ensure_jwt_token():
         if request.endpoint == 'static':
             return
+        # Ensure session is always synchronized with authenticated current_user
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            session['user_id'] = current_user.id
+            if hasattr(current_user, 'name') and current_user.name:
+                session['user_name'] = current_user.name
+            if hasattr(current_user, 'role') and current_user.role:
+                session['user_role'] = current_user.role
+
         if 'jwt_token' not in session and ((hasattr(current_user, 'is_authenticated') and current_user.is_authenticated) or 'user_id' in session):
             user_id = str(current_user.id) if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else str(session.get('user_id', '1'))
             session['jwt_token'] = create_access_token(identity=user_id)
+
 
     @app.after_request
     def add_header(response):
@@ -105,6 +114,44 @@ def create_app(config_class=Config):
         if 'data' in _cached_school_data:
             return _cached_school_data['data']
         return {'school_info': None, 'current_school_name': 'مدرسة المستقبل'}
+
+    @app.context_processor
+    def inject_teacher_profile():
+        from flask_login import current_user
+        logged_teacher = None
+        teacher_photo_url = None
+        unread_messages_count = 0
+        unread_notifications_count = 0
+        try:
+            if current_user and current_user.is_authenticated:
+                # 1. Teacher profile & photo
+                logged_teacher = getattr(current_user, 'teacher_profile', None)
+                if not logged_teacher and getattr(current_user, 'role', None) == 'teacher':
+                    from models.teacher import Teacher
+                    logged_teacher = Teacher.query.filter(
+                        (Teacher.user_id == current_user.id) | 
+                        (Teacher.Email == getattr(current_user, 'username', ''))
+                    ).first()
+                
+                if logged_teacher and logged_teacher.Image:
+                    raw = logged_teacher.Image.strip().replace('\\', '/').lstrip('/')
+                    if raw.startswith('static/'):
+                        raw = raw[7:]
+                    teacher_photo_url = url_for('static', filename=raw)
+
+                # 2. Live unread message and notification counters
+                from models.message import Message
+                from models.notification import Notification
+                unread_messages_count = Message.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+                unread_notifications_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+        except Exception:
+            pass
+        return {
+            'logged_teacher': logged_teacher,
+            'teacher_photo_url': teacher_photo_url,
+            'unread_messages_count': unread_messages_count,
+            'unread_notifications_count': unread_notifications_count
+        }
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(students_bp)
@@ -143,6 +190,17 @@ def create_app(config_class=Config):
 
     @app.route('/')
     def index():
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            if hasattr(current_user, 'role') and current_user.role == 'teacher':
+                try:
+                    from services.teacher_profile_service import get_dashboard_preferences
+                    dash_prefs = get_dashboard_preferences(current_user.id)
+                    landing = dash_prefs.get('default_landing') or url_for('teacher.dashboard')
+                    return redirect(landing)
+                except Exception:
+                    return redirect(url_for('teacher.dashboard'))
+            return redirect(url_for('dashboard.index'))
         return redirect(url_for('auth.login'))
 
     try:

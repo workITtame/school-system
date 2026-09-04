@@ -35,6 +35,7 @@ def dashboard():
     
     return render_template(
         'teacher/dashboard.html',
+        teacher=teacher,
         stats=stats,
         today_classes=today_classes,
         attention_students=attention_students,

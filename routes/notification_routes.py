@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 notifications_bp = Blueprint('notifications', __name__, url_prefix='/notifications')
 
 def _get_teacher_meta(user_id):
-    teacher = Teacher.query.filter_by(user_id=user_id).first()
+    from services.teacher_dashboard_service import get_teacher_by_user_id
+    teacher = get_teacher_by_user_id(user_id)
     subjects = Subject.query.filter_by(is_deleted=False).all()
     classes = Classes.query.filter_by(is_deleted=False).all()
     sections = Sections.query.filter_by(is_deleted=False).all()
